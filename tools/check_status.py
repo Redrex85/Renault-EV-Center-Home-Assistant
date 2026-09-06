@@ -57,6 +57,7 @@ attesi = [
     "custom_components/renault_ev_center/translations/it.json",
     "custom_components/renault_ev_center/translations/en.json",
     "hacs.json", "README.md", "LICENSE", "CHANGELOG.md", "agent.md",
+    "VERSION",
     "dashboards/01_panoramica.yaml",
     "dashboards/02_viaggi.yaml",
     "dashboards/03_statistiche.yaml",
@@ -205,11 +206,20 @@ if not problemi or all("entità" not in p for p in problemi):
 # ---------------------------------------------------------------- versione
 print("\n[5b] Versione")
 try:
-    man = json.load(open(os.path.join(CC, "manifest.json"), encoding="utf-8"))
-    if man.get("version") == "1.0.0":
-        ok("manifest version 1.0.0")
+    version = open(os.path.join(BASE, "VERSION"), encoding="utf-8").read().strip()
+    if version:
+        ok(f"version {version}")
     else:
-        bad(f"manifest version = {man.get('version')} (attesa 1.0.0)")
+        bad("VERSION vuoto")
+except Exception as e:
+    version = None
+    bad(f"VERSION illeggibile: {e}")
+try:
+    man = json.load(open(os.path.join(CC, "manifest.json"), encoding="utf-8"))
+    if version and man.get("version") == version:
+        ok("manifest version = VERSION")
+    else:
+        bad(f"manifest version = {man.get('version')} (attesa {version})")
 except Exception as e:
     bad(f"manifest.json illeggibile: {e}")
 
@@ -221,10 +231,10 @@ if os.path.isfile(p_new):
     bad("preview/index_new.html esiste ancora: cancellalo e tieni solo index.html")
 elif os.path.isfile(p_old):
     txt = open(p_old, encoding="utf-8").read()
-    if "Salute batteria" in txt and "Manutenzione" in txt and "v1.0.0" in txt:
-        ok("preview/index.html v4 (8 tab, palette, v1.0.0)")
+    if "Salute batteria" in txt and "Manutenzione" in txt and f"v{version}" in txt:
+        ok(f"preview/index.html (8 tab, palette, v{version})")
     else:
-        bad("preview/index.html non è la v4 (mancano Manutenzione/v1.0.0)")
+        bad("preview/index.html non aggiornato alla versione corrente")
 else:
     bad("preview/index.html mancante")
 
