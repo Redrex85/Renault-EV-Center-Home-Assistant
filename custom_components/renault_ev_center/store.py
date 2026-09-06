@@ -26,6 +26,7 @@ class MateStore:
             "health": {},
             "maintenance": [],
             "monthly_km": {},
+            "scadenze": {},
         }
 
     @staticmethod
@@ -56,6 +57,7 @@ class MateStore:
         self.data["health"] = raw.get("health", {}) if isinstance(raw.get("health"), dict) else {}
         self.data["maintenance"] = [m for m in raw.get("maintenance", []) if isinstance(m, dict)]
         self.data["monthly_km"] = raw.get("monthly_km", {}) if isinstance(raw.get("monthly_km"), dict) else {}
+        self.data["scadenze"] = raw.get("scadenze", {}) if isinstance(raw.get("scadenze"), dict) else {}
         counters = raw.get("counters", {})
         if isinstance(counters, dict):
             self.data["counters"] = counters
@@ -72,5 +74,6 @@ class MateStore:
             "health": self.data.get("health", {}),
             "maintenance": self.data.get("maintenance", [])[-200:],
             "monthly_km": self.data.get("monthly_km", {}),
+            "scadenze": self.data.get("scadenze", {}),
         }
         self._store.async_delay_save(lambda: payload, SAVE_DELAY)

@@ -125,24 +125,24 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "charging": return (S._ov("charging") ? S._hass.states[S._ov("charging")] : S._hass.states[S._bid("in_carica")]);
       case "plug": return S._hass.states[S._car("binary_sensor", "plug_status")] || S._hass.states[S._car("binary_sensor", "plugged_in")];
       case "batt_kwh": return S._num(S._sid("batteria_kwh_disponibili"));
-      case "km_oggi": return S._num(S._sid("km_oggi"), S._sid("km_oggi_trip"));
+      case "km_oggi": return S._num(S._sid("km_giornalieri"), S._sid("km_oggi_trip"));
       case "km_per_kwh": return S._num(S._sid("km_per_kwh"));
       case "kwh_100": return S._num(S._sid("kwh_per_100km"));
       case "kwh_tot": return S._num(S._sid("kwh_totali_consumati"));
       case "costo_km": return S._num(S._sid("costo_per_km"));
       case "costo_100": return S._num(S._sid("costo_per_100_km"));
-      case "risp_tot": return S._num(S._sid("risparmio_netto_totale"), `sensor.${n}_risparmio_totale_vs_diesel`, `sensor.totale_vs_diesel_${n}`, S._ov("risp_tot"));
+      case "risp_tot": { const t = S._spesaTeo(S._num(S._ov("odometer"), S._car("sensor", "odometer"))); const c = S._num(S._sid("costo_ricarica_totale")); return (t === null || c === null) ? null : t - c; }
       case "trip_attivo": return S._st(S._sid("trip_attivo"));
       // Ultima ricarica / ricariche
       case "ultima": return S._st(S._sid("ultima_ricarica"));
-      case "kwh_oggi_wb": return S._num(S._sid("wb_energy_oggi"), S._sid("ricariche_oggi"));
-      case "kwh_sett_wb": return S._num(S._sid("wb_energy_settimana"), S._sid("ricariche_settimana"));
-      case "kwh_mese_wb": return S._num(S._sid("wb_energy_mese"), S._sid("ricariche_mese"));
-      case "kwh_anno_wb": return S._num(S._sid("wb_energy_anno"), S._sid("ricariche_anno"));
-      case "costo_oggi": return S._num(S._sid("costo_ricarica_oggi"));
-      case "costo_sett": return S._num(S._sid("costo_ricarica_settimana"));
-      case "costo_mese": return S._num(S._sid("costo_ricarica_mese"));
-      case "costo_anno": return S._num(S._sid("costo_ricarica_anno"));
+      case "kwh_oggi_wb": return S._num(S._sid("energia_caricata_giornaliera"), S._sid("wb_energy_oggi"), S._sid("ricariche_oggi"));
+      case "kwh_sett_wb": return S._num(S._sid("energia_caricata_settimanale"), S._sid("wb_energy_settimana"), S._sid("ricariche_settimana"));
+      case "kwh_mese_wb": return S._num(S._sid("energia_caricata_mensile"), S._sid("wb_energy_mese"), S._sid("ricariche_mese"));
+      case "kwh_anno_wb": return S._num(S._sid("energia_caricata_annuale"), S._sid("wb_energy_anno"), S._sid("ricariche_anno"));
+      case "costo_oggi": return S._num(S._sid("costo_ricarica_giornaliero"), S._sid("costo_ricarica_oggi"));
+      case "costo_sett": return S._num(S._sid("costo_ricarica_settimanale"), S._sid("costo_ricarica_settimana"));
+      case "costo_mese": return S._num(S._sid("costo_ricarica_mensile"), S._sid("costo_ricarica_mese"));
+      case "costo_anno": return S._num(S._sid("costo_ricarica_annuale"), S._sid("costo_ricarica_anno"));
       case "lista_ric": return S._list(S._sid("lista_ricariche"));
       case "wb_potenza": return S._num(S._sid("wallbox_potenza"));
       case "tipo_ric": return S._st(S._sid("tipo_ricarica_attuale"));
@@ -163,7 +163,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "eff_ric": return S._num(S._sid("efficienza_ricarica"));
       case "perdite": return S._st(S._sid("perdite_ultima_ricarica"));
       case "batt_ult": return S._num(S._sid("energia_batteria_ultima_ricarica"));
-      case "rete_ult": return S._num(S._sid("energia_rete_ultima_ricarica"), S._sid("kwh_ultima_ricarica"));
+      case "rete_ult": return S._num(S._sid("energia_rete_ultima_ricarica"), S._sid("kwh_ultima_ricarica"), S._sid("ultima_ricarica"));
       // Manutenzione
       case "tagliandi": return S._st(S._sid("tagliandi"));
       case "assic": return S._st(S._sid("assicurazione"));
@@ -171,16 +171,23 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "risp_tagliandi": return S._num(S._sid("risparmio_tagliandi"));
       case "risp_bollo": return S._num(S._sid("risparmio_bollo"));
       case "assic_costo": return S._num(S._nid("assic_costo"), S._nid("costo_assicurazione"));
-      // Risparmi carburante
-      case "risp_mese": return S._num(S._sid("risparmio_mese"), S._ov("risp_mese"));
-      case "risp_anno": return S._num(S._sid("risparmio_anno"), S._ov("risp_anno"));
-      case "spesa_teorica": return S._num(S._sid("spesa_teorica_carburante"), S._ov("spesa_teorica"));
+      // Risparmi carburante (calcolati client: le entità risparmio_* non esistono nell'integrazione)
+      case "risp_mese": return S._rispKm(S._num(S._sid("km_mensili")), S._num(S._sid("costo_ricarica_mensile"), S._sid("costo_ricarica_mese")));
+      case "risp_anno": return S._rispKm(S._num(S._sid("km_annuali")), S._num(S._sid("costo_ricarica_annuale"), S._sid("costo_ricarica_anno")));
+      case "spesa_teorica": return S._ov("spesa_teorica") ? S._num(S._ov("spesa_teorica")) : S._spesaTeo(S._num(S._ov("odometer"), S._car("sensor", "odometer")));
       case "costo_ric_tot": return S._num(S._sid("costo_ricarica_totale"), S._ov("costo_ric_tot"));
       // Extra
       case "drain": return S._num(S._sid("batteria_persa_da_fermo_oggi"));
       case "co2": return S._st(S._sid("co2_risparmiata"));
       case "zona": return S._list(S._sid("consumo_per_zona"));
       case "topstop": return S._st(S._sid("viaggio_top_stop_del_mese"), S._sid("viaggio_top_stop"));
+      // Extra p1/p10
+      case "name": return S._cfg.name;
+      case "notify": return S._cfg.notify || "da configurare";
+      case "diesel": {
+        const s = S._ov("diesel_price") ? S._hass.states[S._ov("diesel_price")] : null;
+        return s ? s.state : (localStorage.getItem("rec_diesel") || "1.72");
+      }
       // Impostazioni (entità di configurazione)
       case "n_price_home": return S._nid("costo_energia_casa");
       case "n_price_public": return S._nid("costo_colonnina");
@@ -188,7 +195,8 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "n_capacity": return S._nid("capacita_batteria");
       case "n_target": return S._nid("obiettivo_ricarica");
       case "n_soh": return S._nid("soh_ufficiale");
-      case "n_assic": return S._nid("assic_costo");
+      case "n_assic": return S._nid("costo_assicurazione");
+      case "n_prio": return S._nid("priorita_batteria_casa");
       case "sw_start": return S._swid("notifica_avvio_ricarica");
       case "sw_end": return S._swid("notifica_fine_ricarica");
       case "sw_low": return S._swid("promemoria_batteria_bassa");
@@ -206,6 +214,25 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
   _f(k) { const v = this._field(k); return v === null || v === undefined ? "—" : v; }
   _on(k) { const s = this._field(k); return s && s.state === "on"; }
+  /** prezzo diesel €/l: overrides.diesel_price (sensore live) → localStorage rec_diesel → default */
+  _dieselPrice() {
+    const s = this._ov("diesel_price") ? this._hass.states[this._ov("diesel_price")] : null;
+    const v = s ? parseFloat(s.state) : NaN;
+    if (!isNaN(v)) return v;
+    const ls = parseFloat(localStorage.getItem("rec_diesel"));
+    return isNaN(ls) ? 1.72 : ls;
+  }
+  _spesaTeo(km) {
+    if (km === null) return null;
+    // ponytail: equivalenza fissa 6 l/100km diesel, configurabile via overrides.diesel_l100
+    const l100 = parseFloat(this._cfg.overrides.diesel_l100) || 6;
+    return km / 100 * l100 * this._dieselPrice();
+  }
+  /** risparmio = spesa teorica su quei km − costo ricarica periodo */
+  _rispKm(km, costo) {
+    if (km === null || km === undefined || costo === null || costo === undefined) return null;
+    return this._spesaTeo(km) - costo;
+  }
 
   // ------------------------------------------------------------- costruzione DOM
   _build() {
@@ -228,16 +255,21 @@ class RenaultEvCenterPanel extends HTMLElement {
           ${THEMES.map(([id, dot, label]) => `<button data-t="${id}" class="${id === this._theme ? "active" : ""}"><span class="sw" style="background:${dot}"></span> ${label}</button>`).join("")}
         </div>
       </div>
+      <div class="mobilenav" id="mnav">
+        ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
+      </div>
       <div class="main">${Object.entries(PAGES).map(([id, html]) => `<section id="${id}" class="page ${id === this._page ? "active" : ""}">${html}</section>`).join("")}
       </div>
     </div>
     <div id="toast"></div>`;
     // nav + temi
-    this.shadowRoot.getElementById("nav").addEventListener("click", (ev) => {
+    const gotoHandler = (ev) => {
       const b = ev.target.closest("button[data-p]");
       if (!b) return;
       this._goto(b.dataset.p);
-    });
+    };
+    this.shadowRoot.getElementById("nav").addEventListener("click", gotoHandler);
+    this.shadowRoot.getElementById("mnav").addEventListener("click", gotoHandler);
     this.shadowRoot.querySelectorAll(".themes button").forEach((b) => {
       b.addEventListener("click", () => this._theme_(b.dataset.t));
     });
@@ -245,7 +277,8 @@ class RenaultEvCenterPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-cmd]").forEach((el) => {
       el.addEventListener("click", () => this._cmd(el.dataset.cmd, el));
     });
-    // input numerici → number.set_value (risolve data-fallback o data-n)
+    // input number: risolvi entità dal mapping PRIMA di attaccare i listener
+    this.shadowRoot.querySelectorAll("input[data-n]").forEach((inp) => { if (!inp.dataset.ent) inp.dataset.ent = this._field(inp.dataset.n); });
     this.shadowRoot.querySelectorAll("input[data-ent]").forEach((inp) => {
       inp.addEventListener("change", () => {
         const v = parseFloat(inp.value.replace(",", "."));
@@ -258,12 +291,20 @@ class RenaultEvCenterPanel extends HTMLElement {
     // switch/number live-bind: popola data-ent al primo update
     this.shadowRoot.querySelectorAll("[data-sw]").forEach((el) => { el.dataset.ent = this._field(el.dataset.sw); });
     this.shadowRoot.querySelectorAll("input[data-n]").forEach((inp) => { inp.dataset.ent = this._field(inp.dataset.n); });
+    // input locali (localStorage): prezzo diesel, consumo equivalente, notify, preavviso
+    this.shadowRoot.querySelectorAll("input[data-ls]").forEach((inp) => {
+      const saved = localStorage.getItem(inp.dataset.ls);
+      if (saved !== null && saved !== "") inp.value = saved;
+      inp.addEventListener("change", () => { localStorage.setItem(inp.dataset.ls, inp.value); this._update(); });
+    });
+    // notify salvato localmente → config runtime se non impostato in YAML
+    if (!this._cfg.notify) { const nn = localStorage.getItem("rec_notify"); if (nn) this._cfg.notify = nn; }
     this._update();
   }
   _goto(p) {
     this._page = p;
     localStorage.setItem("rec_panel_page", p);
-    this.shadowRoot.querySelectorAll(".nav button").forEach((b) => b.classList.toggle("active", b.dataset.p === p));
+    this.shadowRoot.querySelectorAll(".nav button, .mobilenav button").forEach((b) => b.classList.toggle("active", b.dataset.p === p));
     this.shadowRoot.querySelectorAll(".page").forEach((s) => s.classList.toggle("active", s.id === p));
   }
   _theme_(t) {
@@ -564,6 +605,15 @@ h1{font-size:26px;margin-bottom:4px}
 .g2{grid-template-columns:repeat(2,1fr)}
 @media(max-width:1100px){.g3{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.g3,.g2{grid-template-columns:1fr}.sidebar{display:none}.main{margin-left:0}}
+.mobilenav{display:none}
+@media(max-width:700px){
+  .mobilenav{display:flex;gap:6px;overflow-x:auto;padding:10px 0 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .mobilenav::-webkit-scrollbar{display:none}
+  .mobilenav button{flex:0 0 auto;display:flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:8px 12px;border-radius:10px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+  .mobilenav .em{font-size:15px}
+  .mobilenav button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+  .main{padding:14px 14px}
+}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
 .card h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-weight:600}
 .big{font-size:44px;font-weight:800;line-height:1}
@@ -644,7 +694,7 @@ const PAGES = {
       <div class="row"><span>Perdite</span><b data-f="perdite">—</b></div>
       <div class="row"><span>Costo stimato</span><b><span data-f="costo_corr">—</span> €</b></div></div></div>
   <div class="grid g3" style="margin-top:16px">
-    <div class="carbox" data-c="carimg"><div class="ph">🚗</div><b>${"${this._cfg.name}"}</b></div>
+    <div class="carbox" data-c="carimg"><div class="ph">🚗</div><b data-f="name">—</b></div>
     <div class="card"><h3>Stato ricarica &amp; comandi</h3>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
         <div class="cmd"><span class="em">🔌</span>Carica<b data-v="cmd_charge">—</b></div>
@@ -782,31 +832,36 @@ const PAGES = {
       <div class="row"><span>⚡ Avvio ricarica</span><b class="chip" data-cmd="switch" data-sw="sw_start">—</b></div>
       <div class="row"><span>🔋 Fine ricarica</span><b class="chip" data-cmd="switch" data-sw="sw_end">—</b></div>
       <div class="row"><span>⚠️ Batteria bassa</span><b class="chip" data-cmd="switch" data-sw="sw_low">—</b></div>
-      <div class="row"><span>📨 Servizio notify</span><b>${"${this._cfg.notify || 'da configurare'}"}</b></div></div>
+      <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div></div>
     <div class="card"><h3>⏰ Carica programmata</h3>
       <div class="row"><span>Stato</span><b class="chip" data-cmd="switch" data-sw="sw_sched">—</b></div>
       <div class="row"><span>Avvio (orario)</span><b data-f="t_start">—</b></div>
       <div class="row"><span>Stop (orario)</span><b data-f="t_stop">—</b></div>
       <div class="row"><span>Promemoria fascia</span><b><span data-f="t_low_start">—</span> → <span data-f="t_low_end">—</span></b></div></div></div>`,
 
-  p10: `<h1>Impostazioni</h1><div class="sub">Prezzi, batteria, reset — salvati nell'integrazione</div>
+  p10: `<h1>Impostazioni</h1><div class="sub">Prezzi, batteria, notifiche, palette e reset — salvati nell'integrazione</div>
   <div class="grid g3">
     <div class="card"><h3>Prezzi energia</h3>
       <div class="inp"><span>Costo casa</span><input data-n="n_price_home"><span class="u">€/kWh</span></div>
       <div class="inp"><span>Costo colonnina</span><input data-n="n_price_public"><span class="u">€/kWh</span></div>
-      <div class="inp"><span>Costo fotovoltaico</span><input data-n="n_price_solar"><span class="u">€/kWh</span></div></div>
+      <div class="inp"><span>Costo fotovoltaico</span><input data-n="n_price_solar"><span class="u">€/kWh</span></div>
+      <div class="inp"><span>Prezzo diesel (o sensore live)</span><input data-ls="rec_diesel" data-f="diesel" value="1.72"><span class="u">€/l</span></div></div>
     <div class="card"><h3>Batteria</h3>
       <div class="inp"><span>Obiettivo ricarica</span><input data-n="n_target"><span class="u">%</span></div>
       <div class="inp"><span>Capacità</span><input data-n="n_capacity"><span class="u">kWh</span></div>
       <div class="inp"><span>SOH ufficiale</span><input data-n="n_soh"><span class="u">%</span></div>
-      <div class="inp"><span>Costo assicurazione</span><input data-n="n_assic"><span class="u">€/anno</span></div></div>
+      <div class="inp"><span>Costo assicurazione</span><input data-n="n_assic"><span class="u">€/anno</span></div>
+      <div class="inp"><span>🏠 Priorità batteria casa</span><input data-n="n_prio"><span class="u">%</span></div></div>
     <div class="card"><h3>Reset &amp; export</h3>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div class="btn" data-cmd="close_trip">🏁 Chiudi viaggio ora</div>
         <div class="btn" data-cmd="reset_km">🔄 Reset contatori Km</div>
         <div class="btn" data-cmd="reset_energia">🔄 Reset contatori Energia</div>
         <div class="btn" data-cmd="reset_costi">🔄 Reset contatori Costi</div>
-        <div class="btn" data-cmd="csv">📥 Esporta viaggi CSV</div></div></div></div>`,
+        <div class="btn" data-cmd="csv">📥 Esporta viaggi CSV</div></div></div></div>
+  <div class="card" style="margin-top:16px"><h3>🔔 Notifiche</h3>
+    <div class="inp"><span>Servizio notify (es. notify.michele)</span><input data-ls="rec_notify" data-f="notify" style="width:170px"><span class="u"></span></div>
+    <div class="inp"><span>Giorni preavviso scadenze</span><input data-ls="rec_preavviso" value="30"><span class="u">gg</span></div></div>`,
 };
 
 customElements.define("renault-ev-center-panel", RenaultEvCenterPanel);
