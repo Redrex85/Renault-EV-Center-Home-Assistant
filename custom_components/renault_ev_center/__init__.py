@@ -17,6 +17,7 @@ from homeassistant.util import dt as dt_util
 from .const import CONF_CREATE_DASHBOARD, CONF_NAME, DOMAIN, PLATFORMS
 from .coordinator import RenaultMateCoordinator
 from .dashboard import (
+    async_remove_dashboard,
     async_setup_dashboard,
     setup_card_js,
     setup_car_image,
@@ -228,20 +229,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     name = str(opts.get(CONF_NAME, "Renault"))
 
     # 1) dashboard laterale creata dall'integrazione
-    lovelace_data = hass.data.get("lovelace")
-    collection = getattr(lovelace_data, "dashboards", None)
-    if collection is not None:
-        url_path = f"renault-ev-center-{slugify(name)}"
-        try:
-            for item in list(collection.async_items()):
-                if item.get("url_path") == url_path:
-                    res = collection.async_delete_item(item["id"])
-                    if res is not None and hasattr(res, "__await__"):
-                        await res
-                    _LOGGER.info("Dashboard '%s' rimossa", url_path)
-                    break
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.warning("Rimozione dashboard fallita: %s", err)
+    await async_remove_dashboard(hass, name)
 
     # 2) notifiche persistenti create dall'integrazione
     for nid in (f"renault_ev_center_dashboard_{slugify(name)}",):

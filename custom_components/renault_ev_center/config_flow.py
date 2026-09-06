@@ -358,14 +358,11 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry):
-        return RenaultMateOptionsFlow(config_entry)
+        return RenaultMateOptionsFlow()
 
 
 class RenaultMateOptionsFlow(config_entries.OptionsFlow):
     """Modifica entità e impostazioni dopo l'installazione."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
