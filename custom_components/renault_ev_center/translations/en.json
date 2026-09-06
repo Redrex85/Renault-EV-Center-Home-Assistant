@@ -75,16 +75,17 @@
           "charge_target_number": "Charge target number (fallback stop)"
         }
       }
-    },
-    "options": {
-      "step": {
-        "init": {
-          "title": "Renault EV Center — Options",
-          "description": "Change mapped entities and settings."
-        }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Renault EV Center — Options",
+        "description": "Change mapped entities and settings."
       }
-    },
-    "services": {
+    }
+  },
+  "services": {
       "close_trip": {
         "name": "Close trip now",
         "description": "Force-close the ongoing trip."
@@ -165,4 +166,3 @@
       }
     }
   }
-}

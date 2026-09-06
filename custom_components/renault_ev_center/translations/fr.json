@@ -75,16 +75,17 @@
           "charge_target_number": "Nombre cible de charge (repli arrêt)"
         }
       }
-    },
-    "options": {
-      "step": {
-        "init": {
-          "title": "Renault EV Center — Options",
-          "description": "Modifier les entités et paramètres."
-        }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Renault EV Center — Options",
+        "description": "Modifier les entités et paramètres."
       }
-    },
-    "services": {
+    }
+  },
+  "services": {
       "close_trip": {
         "name": "Clôturer trajet maintenant",
         "description": "Forcer la clôture du trajet en cours."
@@ -202,4 +203,3 @@
       }
     }
   }
-}

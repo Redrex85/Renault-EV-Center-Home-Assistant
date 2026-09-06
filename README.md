@@ -1,20 +1,24 @@
 <p align="center">
-  <img src="docs/images/logo_renault.png" alt="Renault" width="260">
+  <img src="docs/images/logo_ev_center.svg" alt="Renault EV Center" width="320">
 </p>
 
 # Renault EV Center
 
 <p align="left">
-  <a href="https://www.paypal.me/TUO-NOME"><img src="https://img.shields.io/badge/Dona-PayPal-00457C?logo=paypal" alt="PayPal"></a>
-  <a href="https://www.buymeacoffee.com/TUO-NOME"><img src="https://img.shields.io/badge/Offrimi%20un%20caffè-BuyMeACoffee-FFDD00?logo=buy-me-a-coffee" alt="BuyMeACoffee"></a>
   <a href="https://github.com/Redrex/renault-ev-center/releases"><img src="https://img.shields.io/github/v/release/Redrex/renault-ev-center" alt="Release"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2025.11%2B-41BDF5?logo=homeassistant" alt="HA">
 </p>
-<!-- Sostituisci TUO-NOME con i tuoi link reali PayPal.me e buymeacoffee.com/username -->
 
 **Viaggi, consumi, costi e ricariche per le tue Renault elettriche — direttamente in Home Assistant.**
 
-Un *companion* stile **TeslaMate/LeapMotor Mate** per **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Tech e Alpine A290**, costruito sopra l'integrazione **Renault ufficiale di Home Assistant**: nessun account extra, nessun cloud, nessuna riga di codice. Installi da HACS, scegli le entità dalla lista, e via.
+Un *companion* per **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Tech, Renault 5 e Renault 4 **, costruito sopra l'integrazione **Renault ufficiale di Home Assistant**: nessun account extra, nessun cloud, nessuna riga di codice. Installi da HACS, scegli le entità dalla lista, e via.
+
+Renault EV Center è gratuito e open-source, sviluppato nel tempo libero. Se ti è utile, puoi sostenerne lo sviluppo con un caffè — grazie! ☕
+
+<p align="left">
+  <a href="https://www.paypal.me/lamortella"><img src="https://img.shields.io/badge/Dona-PayPal-00457C?logo=paypal" alt="PayPal"></a>
+  <a href="https://www.buymeacoffee.com/redrex72v"><img src="https://img.shields.io/badge/Offrimi%20un%20caffè-BuyMeACoffee-FFDD00?logo=buy-me-a-coffee" alt="BuyMeACoffee"></a>
+</p>
 
 > 🇬🇧 [English below](#-english)
 
@@ -214,7 +218,14 @@ Licenza: **MIT** — vedi [LICENSE](LICENSE).
 
 **Trips, consumption, costs and charging for your Renault EVs — fully inside Home Assistant.**
 
-A TeslaMate-style companion for **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Tech and Alpine A290**, built on top of the official **Home Assistant Renault integration**. No extra accounts, no cloud, no code: install from HACS, pick your entities from dropdowns, done.
+A companion for **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Tech, Renault 5 and Renault 4**, built on top of the official **Home Assistant Renault integration**. No extra accounts, no cloud, no code: install from HACS, pick your entities from dropdowns, done.
+
+Renault EV Center is free and open-source, developed in spare time. If you find it useful, you can support its development with a coffee — thank you! ☕
+
+<p align="left">
+  <a href="https://www.paypal.me/lamortella"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal" alt="PayPal"></a>
+  <a href="https://www.buymeacoffee.com/redrex72v"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-BuyMeACoffee-FFDD00?logo=buy-me-a-coffee" alt="BuyMeACoffee"></a>
+</p>
 
 ### Highlights
 
@@ -235,3 +246,140 @@ A TeslaMate-style companion for **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Te
 4. Import the dashboards from [`dashboards/`](dashboards/)
 
 See the Italian section above for the full entity reference, services and FAQ — screenshots live in [`preview/index.html`](preview/index.html).
+
+---
+
+# 🇫🇷 Français
+
+**Trajets, consommation, coûts et recharges de vos Renault électriques — entièrement dans Home Assistant.**
+
+Un compagnon pour **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Tech, Renault 5 et Renault 4**, construit au-dessus de l'intégration **Renault officielle de Home Assistant**. Aucun compte supplémentaire, aucun cloud, aucun code : installez depuis HACS, choisissez vos entités dans des listes, c'est tout.
+
+Renault EV Center est gratuit et open-source, développé pendant mon temps libre. S'il vous est utile, vous pouvez soutenir son développement avec un café — merci ! ☕
+
+<p align="left">
+  <a href="https://www.paypal.me/lamortella"><img src="https://img.shields.io/badge/Faire%20un%20don-PayPal-00457C?logo=paypal" alt="PayPal"></a>
+  <a href="https://www.buymeacoffee.com/redrex72v"><img src="https://img.shields.io/badge/Offrez%20moi%20un%20caf%C3%A9-BuyMeACoffee-FFDD00?logo=buy-me-a-coffee" alt="BuyMeACoffee"></a>
+</p>
+
+> 🇮🇹 [Versione italiana in alto](#-cosè) · 🇬🇧 [English above](#-english)
+
+## ✨ C'est quoi
+
+L'intégration **Renault** donne les chiffres bruts (% batterie, autonomie, odomètre). **Renault EV Center** les transforme en ce qui manque :
+
+- **Détection automatique des trajets** depuis l'odomètre : km, batterie consommée, kWh, efficacité (kWh/100km), clôture automatique après l'arrêt, avec **coût estimé**
+- **Sessions de recharge** avec énergie AC mesurée par la wallbox, SoC initial→final, durée, type (Maison/Solaire/Public) et coût réel
+- **Coûts réels** : €/km, €/100km, coûts par jour/semaine/mois/an/total, tarifs séparés maison/born publique/solaire modifiables **depuis le tableau de bord**
+- **Statistiques et rapports** : compteurs avec `last_period` (style utility_meter), tableaux Général/Hebdomadaire/Mensuel, historique 365 jours
+- **Estimations de recharge** : temps restant, heure de fin prévue, énergie manquante et coût estimé vers votre % cible
+- **Économies vs thermique** : combien d'euros économisés par rapport à votre ancienne diesel/essence
+- **Santé batterie** : efficacité de recharge (jamais >100%), **énergie perdue**, SOH estimé et **SOH officiel** du concessionnaire
+- **Entretien** : registre des révisions, prochaine révision **au km ou à la date**, **assurance** avec renouvellement +6 mois/+1 an/date
+- **Automatisations intégrées** : notification début/fin de charge, **rappel batterie faible** à la maison (% et plage horaire), **charge programmée** via wallbox (horaire **ou** pourcentage)
+- **Installation guidée** : choix du **modèle** (photo de la voiture) et **tableau de bord créé automatiquement** dans la barre latérale
+
+Tout est calculé **localement dans votre Home Assistant** et sauvegardé dans `.storage`. Aucun envoi externe.
+
+## 🖼️ Aperçu
+
+Ouvrez **[`preview/index.html`](preview/index.html)** dans le navigateur pour voir les tableaux de bord (données fictives).
+
+*(Captures d'écran réelles à venir — PR bienvenues !)*
+
+## 📦 Prérequis
+
+1. Home Assistant **2025.11+** (les tableaux de bord utilisent la carte native *metric*)
+2. L'intégration **[Renault](https://www.home-assistant.io/integrations/renault/)** configurée (véhicule relié)
+3. *(Optionnel)* Une wallbox intégrée à HA : Wallbox, go-e, Easee, Zappi, OCPP, Shelly EM dédié…
+
+> Fonctionne aussi sans wallbox : les recharges publiques sont estimées par le delta SoC et peuvent être enregistrées à la main avec le service `add_manual_charge`.
+
+## 🔧 Installation
+
+### Via HACS (recommandé)
+
+1. **HACS** → ⋮ → **Dépôts personnalisés**
+2. Collez `https://github.com/Redrex/renault-ev-center`
+3. Catégorie : **Intégration** → Ajouter
+4. Ouvrez **Renault EV Center** → Télécharger
+5. **Redémarrez Home Assistant**
+6. **Paramètres → Appareils et services → Ajouter l'intégration → "Renault EV Center"**
+
+### Manuelle
+
+Copiez le dossier `custom_components/renault_ev_center/` dans `<config>/custom_components/`, redémarrez et ajoutez l'intégration depuis le menu.
+
+## 🧙 Configuration (3 écrans)
+
+### 1️⃣ La voiture
+
+Donnez un nom court à la voiture (ex. `Renault`) — il devient le préfixe de toutes les entités créées (`sensor.renault_…`). Puis sélectionnez :
+
+| Champ | Entité typique de l'intégration Renault |
+|---|---|
+| Modèle | Megane E-Tech, Scenic E-Tech, Zoe, Twingo, A290 → définit la **photo de la voiture** |
+| Créer le tableau de bord | Crée seul la plance latérale avec toutes les vues |
+| Odomètre | `sensor.mileage` |
+| Batterie (%) | `sensor.battery_level` |
+| Autonomie | `sensor.battery_autonomy` |
+| En charge | `binary_sensor.charging` ou `sensor.charge_state` |
+| Prise (opt.) | `sensor.plug_state` |
+| GPS (opt.) | `device_tracker.location` |
+
+### 2️⃣ La wallbox
+
+Activez l'interrupteur si vous avez une wallbox dans HA et mappez les capteurs :
+
+| Champ | Exemples |
+|---|---|
+| Puissance instantanée | `sensor.wallbox_instant_power` (W ou kW — conversion automatique) |
+| État wallbox | `sensor.wallbox_charger_state` (état type *charging*) |
+| Compteur énergie session | kWh de la session en cours |
+| Compteur énergie totale | kWh totaux délivrés (utilisé si pas de compteur session) |
+| Démarrage/arrêt charge (automatisation) | switch ou button de la wallbox |
+| Cible de charge (secours arrêt) | `number.*charge_target` Renault |
+
+### 3️⃣ Réglages
+
+Capacité batterie (**60 kWh** pour Megane EV60, 40 pour EV40), % cible de recharge, tarifs **maison/born publique/solaire**, nom de la zone FV, intervalle de mise à jour, minutes de timeout des trajets, et comparaison optionnelle avec une voiture thermique (consommation et prix du gasoil/essence).
+
+Tout est modifiable après : ⚙️ **Paramètres → Intégrations → Renault EV Center → Configurer**.
+
+## 🛠️ Services
+
+```yaml
+# Clôture immédiatement le trajet en cours
+service: renault_ev_center.close_trip
+
+# Réinitialise les compteurs (scope: km | energia | costi | viaggi | ricariche | all)
+service: renault_ev_center.reset_counters
+data: { scope: km }
+
+# Enregistre une recharge publique non mesurée par la wallbox
+service: renault_ev_center.add_manual_charge
+data: { kwh: 24.8, costo: 11.90, tipo: Pubblica }
+
+# Exporte tous les trajets en CSV (config/renault_ev_center_export/)
+service: renault_ev_center.export_trips_csv
+```
+
+## ❓ FAQ
+
+**Comment est calculée la durée du trajet ?** Le trajet s'ouvre quand l'odomètre augmente et se ferme **après ~20 minutes sans mouvement** — en pratique quand vous **éteignez la voiture** et qu'odomètre/position se mettent à jour (le cloud Renault a quelques minutes de retard). La durée enregistrée va du départ au **dernier mouvement détecté** : l'arrêt après le trajet n'est pas compté. Tant que la voiture est allumée, le trajet apparaît comme « Trip Attivo » avec des données provisoires.
+
+**Les capteurs Renault restent parfois « indisponibles ».** C'est normal : le cloud Renault met à jour lentement. L'intégration tolère les trous et reprend quand les données reviennent.
+
+**Les IDs d'entités diffèrent de ceux des tableaux de bord ?** Les tableaux utilisent le préfixe du nom donné à la voiture en minuscules. Renommez l'entrée ou cherchez/remplacez dans les fichiers YAML.
+
+**Deux voitures ?** Oui : ajoutez une seconde instance de l'intégration avec un autre nom.
+
+**Où sont mes données ?** Dans `.storage/renault_ev_center.<entry_id>` — elles restent les vôtres, aucun envoi externe.
+
+## 🤝 Crédits et avertissement
+
+- Inspiré de [LeapMotor Mate](https://github.com/ProtossBlaster/leapmotor-mate) et de TeslaMate.
+- Nécessite l'[intégration Renault](https://www.home-assistant.io/integrations/renault/) de Home Assistant.
+- Projet **non officiel**, non affilié à Renault. Les données dépendent de la fiabilité des capteurs configurés.
+
+Licence : **MIT** — voir [LICENSE](LICENSE).

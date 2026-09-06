@@ -13,6 +13,9 @@
   `_in_window()`; start/stop ora usano la stessa finestra.
 - **Switch**: la variazione richiede subito un refresh del coordinator.
 - **Number `balance_max_amps`**: corretta la chiave iniziale (`balance_max_amps`).
+- **Traduzioni**: `options` spostato a livello radice in `en.json`/`fr.json` (hassfest
+  lo rifiuta dentro `config`); workflow `validate` aggiornato a `checkout@v5` /
+  `setup-python@v6` (deprecation Node 20).
 - Rimossi import duplicati; aggiunto file `VERSION`; checker versione aggiornato.
 
 ## 1.0.0 — Prima release pubblica
