@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import shutil
 from datetime import datetime as dt
 
 import voluptuous as vol
@@ -14,7 +16,12 @@ from homeassistant.util import dt as dt_util
 
 from .const import CONF_CREATE_DASHBOARD, CONF_NAME, DOMAIN, PLATFORMS
 from .coordinator import RenaultMateCoordinator
-from .dashboard import async_setup_dashboard, setup_card_js, setup_car_image
+from .dashboard import (
+    async_setup_dashboard,
+    setup_card_js,
+    setup_car_image,
+    slugify,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -203,4 +210,59 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
+        # nessun altro entry → rimuovi i servizi
+        if not hass.data[DOMAIN]:
+            for name in (
+                SERVICE_CLOSE_TRIP, SERVICE_RESET_COUNTERS, SERVICE_EXPORT_CSV,
+                SERVICE_ADD_CHARGE, SERVICE_DELETE_TRIP, SERVICE_ADD_MAINTENANCE,
+                SERVICE_DELETE_MAINTENANCE, SERVICE_RENEW_INSURANCE,
+                SERVICE_SET_SCADENZA, SERVICE_SET_TAGLIANDO, SERVICE_CREATE_DASHBOARD,
+            ):
+                hass.services.async_remove(DOMAIN, name)
     return unload_ok
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Rimozione integrazione: pulizia di dashboard, file, storage e notifiche."""
+    opts = {**entry.data, **entry.options}
+    name = str(opts.get(CONF_NAME, "Renault"))
+
+    # 1) dashboard laterale creata dall'integrazione
+    lovelace_data = hass.data.get("lovelace")
+    collection = getattr(lovelace_data, "dashboards", None)
+    if collection is not None:
+        url_path = f"renault-ev-center-{slugify(name)}"
+        try:
+            for item in list(collection.async_items()):
+                if item.get("url_path") == url_path:
+                    res = collection.async_delete_item(item["id"])
+                    if res is not None and hasattr(res, "__await__"):
+                        await res
+                    _LOGGER.info("Dashboard '%s' rimossa", url_path)
+                    break
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Rimozione dashboard fallita: %s", err)
+
+    # 2) notifiche persistenti create dall'integrazione
+    for nid in (f"renault_ev_center_dashboard_{slugify(name)}",):
+        await hass.services.async_call(
+            "persistent_notification", "dismiss",
+            {"notification_id": nid}, blocking=False,
+        )
+
+    # 3) file copiati in /config/www/renault-ev-center/, YAML fallback e storage
+    def _cleanup_files() -> None:
+        www = hass.config.path("www", "renault-ev-center")
+        if os.path.isdir(www):
+            shutil.rmtree(www, ignore_errors=True)
+        storage_file = hass.config.path(".storage", f"renault_ev_center.{entry.entry_id}")
+        for leftover in (
+            hass.config.path(f"renault-ev-center_{slugify(name)}_dashboard.yaml"),
+            storage_file,
+        ):
+            try:
+                os.remove(leftover)
+            except OSError:
+                pass
+
+    await hass.async_add_executor_job(_cleanup_files)

@@ -305,7 +305,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if not scad.get("tagliando_mode"):
             scad["tagliando_mode"] = self.tagliando_mode
         # P1-2: save atomico allo shutdown
-        self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self._async_save_on_stop)
+        self.entry.async_on_unload(
+            self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self._async_save_on_stop)
+        )
         for p in PERIODS:
             self.km_meters[p] = PeriodMeter.from_dict(counters.get(f"km_{p}"))
             self.wb_meters[p] = DeltaMeter.from_dict(counters.get(f"wb_{p}"))
