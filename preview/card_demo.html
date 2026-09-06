@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Renault EV Center Card — Demo</title>
+<style>
+  body{background:#0d1522;color:#e8eef6;font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:30px;gap:18px}
+  h1{font-size:20px}
+  p{color:#8296ad;font-size:13px;max-width:420px;text-align:center;margin:0}
+  renault-ev-center-card{width:420px;display:block}
+</style>
+</head>
+<body>
+<h1>🚗⚡ Renault EV Center Card — anteprima dal vivo</h1>
+<p>Questa pagina carica il <b>file reale</b> della card (<code>www/renault-ev-center-card.js</code>)
+con dati fittizi: in Home Assistant apparirà così, ma con i tuoi sensori.</p>
+<renault-ev-center-card id="demo"></renault-ev-center-card>
+
+<script src="../www/renault-ev-center-card.js"></script>
+<script>
+const P = "renault";
+const S = (id, state, attrs={}) => ({ state: String(state), attributes: attrs });
+const states = {};
+[
+  ["sensor.battery_level", 74],
+  ["sensor.battery_autonomy", 270],
+  ["sensor.mileage", 68718],
+  [`binary_sensor.${P}_in_carica`, "off"],
+  [`sensor.${P}_km_per_kwh`, 6.08],
+  [`sensor.${P}_kwh_per_100km`, 16.4],
+  [`sensor.${P}_km_giornalieri`, 34],
+  [`sensor.${P}_costo_per_km`, 0.039],
+  [`sensor.${P}_tipo_ricarica_attuale`, "Non in Carica"],
+  [`sensor.${P}_wallbox_potenza`, 0.0],
+  [`sensor.${P}_trip_attivo`, "off"],
+  [`sensor.${P}_km_trip_corrente`, 0],
+  [`sensor.${P}_batteria_kwh_disponibili`, 44.4],
+].forEach(([id, v]) => states[id] = S(id, v));
+
+document.getElementById("demo").setConfig({
+  name: P,
+  image: "logo_renault.png",
+  battery_entity: "sensor.battery_level",
+  range_entity: "sensor.battery_autonomy",
+  odometer_entity: "sensor.mileage",
+});
+document.getElementById("demo").hass = { states };
+</script>
+</body>
+</html>

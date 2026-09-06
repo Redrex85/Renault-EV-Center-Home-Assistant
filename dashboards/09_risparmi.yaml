@@ -1,0 +1,85 @@
+# ============================================================
+#  RENAULT EV CENTER — RISPARMI
+# ============================================================
+title: Renault EV Center
+views:
+  - title: Risparmi
+    path: risparmi
+    icon: mdi:piggy-bank
+    max_columns: 2
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: 💶 Risparmio carburante
+          - type: entities
+            entities:
+              - {entity: sensor.renault_risparmio_totale_vs_diesel, name: "Risparmiato effettivo TOTALE"}
+              - {entity: sensor.renault_costo_ricarica_totale, name: "Costo totale ricariche (wallbox)"}
+              - {entity: sensor.renault_risparmio_mese_vs_diesel, name: "Risparmiato MESE"}
+              - {entity: sensor.renault_risparmio_anno_vs_diesel, name: "Risparmiato ANNO"}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: 📄 Spesa teorica dell'auto termica
+          - type: markdown
+            content: >
+              {% set termica = state_attr('sensor.renault_risparmio_totale_vs_diesel', 'termica_totale') or 0 %}
+              {% set prezzo = state_attr('sensor.renault_risparmio_totale_vs_diesel', 'prezzo_termico') %}
+              {% set consumo = states('sensor.mileage') | float(0) %}
+              Se fosse stata termica avresti speso **{{ termica }} €**
+              ({{ consumo }} km al consumo configurato{% if prezzo %} · carburante {{ prezzo }} €/l{% endif %}).
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: 🔧 Manutenzione e bollo
+          - type: entities
+            entities:
+              - entity: sensor.renault_risparmio_tagliandi_vs_diesel
+                name: "Risparmio TAGLIANDI (termica − spesa reale EV)"
+              - entity: sensor.renault_tagliandi
+                name: "Spesa reale tagliandi EV"
+              - entity: sensor.renault_risparmio_bollo_vs_diesel
+                name: "Risparmio BOLLO"
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: 🏆 Risultato netto
+          - type: markdown
+            content: >
+              {% set netto = states('sensor.renault_risparmio_netto_vs_diesel') | float(0) %}
+              {% set carburante = states('sensor.renault_risparmio_totale_vs_diesel') | float(0) %}
+              {% set tagliandi = states('sensor.renault_risparmio_tagliandi_vs_diesel') | float(0) %}
+              {% set bollo = states('sensor.renault_risparmio_bollo_vs_diesel') | float(0) %}
+              | Voce | Euro |
+              | --- | --- |
+              | Carburante evitato | {{ carburante }} € |
+              | + Tagliandi | {{ tagliandi }} € |
+              | + Bollo | {{ bollo }} € |
+              | **★ RISPARMIO NETTO TOTALE** | **{{ netto }} €** |
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: ☀️ Fotovoltaico
+          - type: entities
+            entities:
+              - {entity: sensor.renault_ricaricato_fotovoltaico_mese, name: "Ricaricato FV questo mese"}
+              - {entity: sensor.renault_energia_caricata_casa_totale, name: "Energia casa totale"}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Dettaglio calcolo
+          - type: markdown
+            content: >
+              - **Carburante**: km × consumo termico × prezzo carburante
+              (live da sensore se configurato, altrimenti fisso) − costi ricariche pagati
+              - **Tagliandi**: (km ÷ intervallo) × costo tagliando termico (media **450 €**)
+              − **spesa reale EV** dal registro manutenzioni
+              - **Bollo**: anni stimati × differenza bollo termico/elettrica
+              - Il **FV** non entra nei costi: prezzo configurabile a 0 €

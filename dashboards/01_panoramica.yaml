@@ -1,0 +1,279 @@
+# ============================================================
+#  RENAULT EV CENTER — PANORAMICA
+# ============================================================
+# Richiede la CARD DEDICATA (copiata automaticamente dall'integrazione
+# in /config/www/renault-ev-center/): registra la risorsa una volta sola:
+#   Impostazioni → Dashboard → ⋮ → Risorse → +
+#   URL: /local/renault-ev-center/renault-ev-center-card.js   (Javascript)
+# Card opzionali per i grafici (HACS → Frontend):
+#   - apexcharts-card   (grafico km + consumi)
+#   - mini-graph-card   (potenza wallbox)
+# Immagine auto: /config/www/renault-ev-center/auto.png
+#   (verrà servita come /local/renault-ev-center/auto.png) — oppure scelta
+#   dal modello nel wizard.
+# Se la tua auto NON si chiama "Renault", sostituisci il prefisso
+# sensor.renault_ / binary_sensor.renault_ / number.renault_ col tuo.
+# ============================================================
+title: Renault EV Center
+views:
+- title: Panoramica
+  path: panoramica
+  icon: mdi:view-dashboard
+  type: sections
+  sections:
+  - type: grid
+    cards:
+    - type: custom:renault-ev-center-card
+      name: Renault
+      image: /local/renault-ev-center/auto.png
+      battery_entity: sensor.battery_level
+      range_entity: sensor.battery_autonomy
+      odometer_entity: sensor.mileage
+    - type: horizontal-stack
+      cards:
+      - type: tile
+        entity: device_tracker.location
+        name: Posizione
+        vertical: true
+      - type: tile
+        entity: sensor.renault_risparmio_totale_vs_diesel
+        name: Risparmio vs Diesel
+        icon: mdi:currency-eur-off
+        vertical: true
+  - type: grid
+    cards:
+    - type: heading
+      heading: Stato ricarica
+    - square: true
+      columns: 2
+      type: grid
+      cards:
+      - type: tile
+        entity: binary_sensor.charging
+        name: Carica
+        vertical: true
+      - type: tile
+        entity: sensor.charge_state
+        name: Stato
+        vertical: true
+      - type: tile
+        entity: sensor.plug_state
+        name: Presa ricarica
+        vertical: true
+      - type: tile
+        entity: binary_sensor.plugged_in
+        name: Stato presa
+        vertical: true
+    - square: true
+      columns: 2
+      type: grid
+      cards:
+      - type: tile
+        entity: button.start_air_conditioner
+        name: Avvia A/C
+        hide_state: true
+        vertical: true
+      - type: tile
+        entity: button.start_charge
+        name: Avvia carica
+        hide_state: true
+        vertical: true
+      - type: tile
+        entity: sensor.renault_tipo_ricarica_attuale
+        name: Zona Ricarica
+        vertical: true
+      - type: tile
+        entity: sensor.charging_remaining_time
+        name: Fine ricarica
+        vertical: true
+  - type: grid
+    cards:
+    - type: heading
+      heading: Efficienza
+    - square: true
+      columns: 2
+      type: grid
+      cards:
+      - type: tile
+        entity: sensor.renault_km_per_kwh
+        name: Km / kWh
+        icon: mdi:chart-areaspline
+        vertical: true
+      - type: tile
+        entity: sensor.renault_kwh_per_100km
+        name: kWh/100km
+        icon: mdi:chart-gantt
+        vertical: true
+      - type: tile
+        entity: sensor.renault_kwh_totali_consumati
+        name: kWh Consumati
+        icon: mdi:battery-charging-high
+        vertical: true
+      - type: tile
+        entity: sensor.renault_km_giornalieri
+        name: Km Oggi
+        icon: mdi:sign-direction-plus
+        vertical: true
+    - type: horizontal-stack
+      cards:
+      - type: entity
+        entity: sensor.renault_costo_per_km
+        name: Costo km
+      - type: entity
+        entity: sensor.renault_costo_per_100_km
+        name: Costo 100km
+      - type: entity
+        entity: sensor.renault_batteria_per_100km
+        name: '% /100KM'
+  - type: grid
+    cards:
+    - type: heading
+      heading: Ultima ricarica
+    - type: markdown
+      content: "{% set r = state_attr('sensor.renault_ultima_ricarica', 'data') %} {% if r %}\n  \U0001F4C5 {{ r }} · {{ state_attr('sensor.renault_ultima_ricarica','ora_inizio') }}–{{ state_attr('sensor.renault_ultima_ricarica','ora_fine')\
+        \ }}\n\n  ⚡ **{{ states('sensor.renault_ultima_ricarica') }} kWh** · {{ state_attr('sensor.renault_ultima_ricarica','tipo') }} · \U0001F4B0 {{ state_attr('sensor.renault_ultima_ricarica','costo')\
+        \ }} €\n\n  \U0001F50B {{ state_attr('sensor.renault_ultima_ricarica','soc_start') }}% → {{ state_attr('sensor.renault_ultima_ricarica','soc_end') }}%\n  {% if state_attr('sensor.renault_ultima_ricarica','efficienza')\
+        \ %}\n  · \U0001F52C {{ state_attr('sensor.renault_ultima_ricarica','efficienza') }}%\n  {% endif %}\n{% else %}\n  Nessuna ricarica registrata.\n{% endif %}\n"
+    - type: entities
+      entities:
+      - entity: sensor.renault_tempo_ricarica_stimato
+        name: Tempo stimato
+      - entity: sensor.renault_ora_completamento_ricarica
+        name: Completamento
+      - entity: sensor.renault_costo_ricarica_corrente_stimato
+        name: Costo ricarica
+  - type: grid
+    cards:
+    - type: heading
+      heading: Risparmi
+    - type: markdown
+      content: '{% set s = state_attr(''sensor.renault_risparmio_totale_vs_diesel'', ''termica_totale'') %} {% set carburante = states(''sensor.renault_risparmio_totale_vs_diesel'') | float(0) %} {% set
+        mese = states(''sensor.renault_risparmio_mese_vs_diesel'') | float(0) %} {% set anno = states(''sensor.renault_risparmio_anno_vs_diesel'') | float(0) %} 💶 **Carburante evitato:** {{ carburante }}
+        € (mese {{ mese }} € · anno {{ anno }} €)
+
+        {% if has_value(''sensor.renault_risparmio_tagliandi_vs_diesel'') %} 🔧 **Tagliandi:** {{ states(''sensor.renault_risparmio_tagliandi_vs_diesel'') }} € *(termica teorica {{ state_attr(''sensor.renault_risparmio_tagliandi_vs_diesel'',''spesa_termica_teoria'')
+        }} € − spesa reale EV {{ state_attr(''sensor.renault_risparmio_tagliandi_vs_diesel'',''spesa_reale_elettrica'') }} €)*
+
+        📄 **Bollo risparmiato:** {{ states(''sensor.renault_risparmio_bollo_vs_diesel'') }} €
+
+        ───────────────
+
+        🏆 **RISPARMIO NETTO: {{ states(''sensor.renault_risparmio_netto_vs_diesel'') }} €** {% else %} ───────────────
+
+        💡 Attiva il *confronto termica* nelle impostazioni per includere tagliandi e bollo nel risparmio netto. {% endif %}
+
+        {% if s %} *Calcolato con {{ state_attr(''sensor.renault_risparmio_totale_vs_diesel'', ''prezzo_termico'') or ''prezzo fisso'' }} €/l.* {% endif %}
+
+        '
+  - type: grid
+    cards:
+    - type: heading
+      heading: Oggi a colpo d'occhio
+    - type: entities
+      entities:
+      - entity: sensor.renault_batteria_scaricata_oggi
+        name: Consumata oggi
+      - entity: sensor.renault_energia_caricata_giornaliera
+        name: Ricaricati oggi
+      - entity: sensor.renault_batteria_caricata_oggi
+        name: '% caricata oggi'
+      - entity: sensor.renault_energia_batteria_giornaliera
+        name: kWh usati oggi
+      - entity: sensor.renault_costo_ricarica_giornaliero
+        name: Ricariche oggi
+      - entity: sensor.renault_km_giornalieri
+        name: Km oggi
+      - entity: sensor.renault_costo_ricarica_mensile
+        name: Ricariche mensili
+    - type: markdown
+      content: '⚡ **Consumo istantaneo wallbox:** {{ (states(''sensor.renault_wallbox_potenza'') | float(0) * 1000) | round(0) }} W
+
+        '
+  - type: grid
+    cards:
+    - type: heading
+      heading: Consumi (7 giorni)
+    - type: custom:apexcharts-card
+      graph_span: 7d
+      span:
+        end: day
+      update_interval: 10min
+      apex_config:
+        chart:
+          height: 200px
+      yaxis:
+      - id: first
+        min: 0
+        decimals: 0
+      - id: second
+        opposite: true
+        min: 12
+        decimals: 1
+      series:
+      - entity: sensor.renault_km_giornalieri
+        name: Km Percorsi
+        type: column
+        yaxis_id: first
+        color: '#ff9933'
+        stroke_width: 2
+        float_precision: 0
+        fill_raw: last
+        group_by:
+          func: max
+          fill: zero
+          duration: 1day
+        show:
+          legend_value: false
+      - entity: sensor.renault_kwh_per_100km
+        name: Media Consumi
+        yaxis_id: second
+        color: green
+        stroke_width: 3
+        curve: smooth
+        float_precision: 2
+        fill_raw: last
+        group_by:
+          func: avg
+          fill: last
+          duration: 1day
+        show:
+          legend_value: false
+      header:
+        show: true
+        show_states: true
+  - type: grid
+    cards:
+    - type: heading
+      heading: Wallbox e posizione
+    - type: custom:mini-graph-card
+      name: Consumo Istantaneo Wallbox
+      entities:
+      - entity: sensor.renault_wallbox_potenza
+        name: Potenza
+        unit: kW
+      hours_to_show: 24
+      points_per_hour: 12
+      line_width: 3
+      hour24: true
+      show:
+        icon: false
+        extrema: true
+    - type: map
+      entities:
+      - device_tracker.location
+      hours_to_show: 24
+      default_zoom: 12
+  - type: grid
+    cards:
+    - type: heading
+      heading: Tagliandi
+    - type: markdown
+      content: '{% set prossimo = state_attr(''sensor.renault_tagliandi'', ''prossimo_km'') %} {% set ultimo = state_attr(''sensor.renault_tagliandi'', ''ultimo_km'') %} {% set items = state_attr(''sensor.renault_tagliandi'',
+        ''items'') or [] %} 🔧 Prossimo tagliando a: **{{ prossimo | default(''—'') }} km** (ultimo a {{ ultimo | default(''—'') }} km)
+
+        💸 Speso finora: **{{ states(''sensor.renault_tagliandi'') }} €** su {{ state_attr(''sensor.renault_tagliandi'',''n'') or 0 }} interventi
+
+        {% if items %} | Data | Km | Tipo | Costo | | --- | --- | --- | --- | {% for t in items | reverse %} | {{ t.data }} | {{ t.km }} | {{ t.tipo }} | {{ t.costo }} € | {% endfor %} {% else %} Nessun
+        tagliando registrato. Aggiungine uno col servizio `renault_ev_center.add_maintenance`. {% endif %}
+
+        '

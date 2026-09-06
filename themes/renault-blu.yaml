@@ -1,0 +1,23 @@
+﻿# Tema "Renault Blu Elettrico" â€” blu notte + azzurro
+renault-blu:
+  primary-color: "#4d8dff"
+  accent-color: "#4d8dff"
+  primary-background-color: "#0d1522"
+  secondary-background-color: "#101b2c"
+  card-background-color: "#14202f"
+  app-header-background-color: "#0a111c"
+  sidebar-background-color: "#101a29"
+  sidebar-selected-icon-color: "#4d8dff"
+  sidebar-selected-background-color: "rgba(77, 163, 255, 0.12)"
+  primary-text-color: "#e8eef6"
+  secondary-text-color: "#8296ad"
+  text-primary-color: "#0d1522"
+  divider-color: "#1e2d40"
+  state-icon-color: "#4d8dff"
+  state-icon-active-color: "#4d8dff"
+  paper-item-icon-active-color: "#4d8dff"
+  label-badge-background-color: "#1b2940"
+  label-badge-text-color: "#e8eef6"
+  ha-card-border-width: 0
+  switch-checked-color: "#4d8dff"
+

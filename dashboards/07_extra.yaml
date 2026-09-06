@@ -1,0 +1,142 @@
+# ============================================================
+#  RENAULT EV CENTER — EXTRA
+# ============================================================
+# Vampire drain, consumo per zona, meteo vs consumi, CO2,
+# scadenze, viaggio top/stop del mese, Energy Dashboard.
+# Le funzioni opzionali si attivano nella configurazione dell'
+# integrazione (sensore temperatura, CO2, scadenze).
+# ============================================================
+title: Renault EV Center
+views:
+  - title: Extra
+    path: extra
+    icon: mdi:star-four-points
+    max_columns: 2
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Vampire drain (consumo da fermo)
+          - type: horizontal-stack
+            cards:
+              - type: metric
+                entity: sensor.renault_batteria_persa_da_fermo_oggi
+                icon: mdi:battery-clock
+                name: "% persa oggi"
+              - type: metric
+                entity: sensor.renault_batteria_persa_da_fermo_oggi
+                icon: mdi:lightning-bolt-circle
+                name: "≈ kWh"
+                state_content:
+                  - attribute: equivalente_kwh
+          - type: markdown
+            content: >
+              🔌 SoC persa oggi mentre l'auto era **ferma e non in carica**.
+              Un valore tipico è 0,5–1,5% al giorno: molto di più può indicare
+              precondizionamenti o consumi anomali.
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Consumo per zona (rotte)
+          - type: markdown
+            content: >
+              {% set rotte = state_attr('sensor.renault_consumo_per_zona', 'rotte') or [] %}
+              {% if rotte %}
+                | Rotta | Viaggi | Km | kWh | kWh/100km |
+                | --- | --- | --- | --- | --- |
+                {% for z in rotte %}
+                | **{{ z.rotta }}** | {{ z.n }} | {{ z.km }} | {{ z.kwh }} | {{ z.eff }} |
+                {% endfor %}
+              {% else %}
+                Serve il tracker GPS configurato: le rotte compaiono dopo i primi viaggi.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Meteo vs consumi
+          - type: markdown
+            content: >
+              {% set days = state_attr('sensor.renault_storico_giornaliero', 'days') or [] %}
+              {% set samples = days | selectattr('temp', 'defined') | selectattr('temp', 'ne', none) | list %}
+              {% if samples %}
+                | Data | Temp. esterna | kWh/100km |
+                | --- | --- | --- |
+                {% for d in samples | reverse %}
+                | {{ d.data }} | {{ d.temp }} °C | {{ d.eff }} |
+                {% endfor %}
+                *Regola pratica: sotto i 10 °C i consumi salgono del 15–30%.*
+              {% else %}
+                Attiva il **sensore temperatura esterna** nella configurazione
+                (es. il tuo sensore Daikin outdoor): la tabella si riempirà giorno per giorno.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: CO2 risparmiata
+          - type: markdown
+            content: >
+              {% if has_value('sensor.renault_co2_risparmiata') %}
+                🌍 **{{ states('sensor.renault_co2_risparmiata') }} kg di CO2** evitati in totale
+
+                📅 Quest'anno: **{{ state_attr('sensor.renault_co2_risparmiata','quest_anno') }} kg**
+
+                🚗 L'auto termica equivalente avrebbe emesso
+                {{ state_attr('sensor.renault_co2_risparmiata','emesso_termica') }} kg,
+                la tua (energia da rete) {{ state_attr('sensor.renault_co2_risparmiata','emesso_rete') }} kg.
+              {% else %}
+                Attiva il **confronto CO2** nella configurazione dell'integrazione.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Scadenze
+          - type: markdown
+            content: >
+              {% set scad = state_attr('sensor.renault_prossima_scadenza', 'scadenze') or [] %}
+              {% if scad %}
+                | Cosa | Data | Mancano |
+                | --- | --- | --- |
+                {% for s in scad %}
+                | {{ s.nome }} | {{ s.data }} | **{{ s.giorni }} gg** |
+                {% endfor %}
+              {% else %}
+                Attiva i **promemoria scadenze** nella configurazione (bollo, revisione, assicurazione).
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Viaggio Top & Stop del mese
+          - type: markdown
+            content: >
+              {% set b = state_attr('sensor.renault_viaggio_topstop_del_mese', 'migliore') %}
+              {% set w = state_attr('sensor.renault_viaggio_topstop_del_mese', 'peggiore') %}
+              {% if b %}
+                🏆 **Migliore:** {{ b.data }} {{ b.ora_inizio }} — {{ b.km }} km a
+                **{{ b.kwh_per_100km }} kWh/100km**
+
+                🐢 **Peggiore:** {{ w.data }} {{ w.ora_inizio }} — {{ w.km }} km a
+                **{{ w.kwh_per_100km }} kWh/100km**
+              {% else %}
+                Nessun viaggio valutabile questo mese.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Energy Dashboard
+          - type: entities
+            entities:
+              - entity: sensor.renault_energia_caricata_casa_totale
+                name: "Energia casa (totale, per Energy Dashboard)"
+          - type: markdown
+            content: >
+              Per aggiungere le ricariche di casa al **Energy Dashboard** di HA:
+              Impostazioni → Dashboard → Energia → *Dispositivi che consumano energia
+              dalla rete* → scegli **"Renault Energia Caricata Casa (totale)"**.
+              È un sensore `total_increasing` già pronto all'uso.

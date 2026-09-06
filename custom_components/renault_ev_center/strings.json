@@ -1,0 +1,123 @@
+{
+  "title": "Renault EV Center",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Renault EV Center — L'auto",
+        "description": "Seleziona le entità della tua Renault elettrica (integrazione Renault). Dai all'auto un nome breve (es. Megane): verrà usato come prefisso per tutte le nuove entità.",
+        "data": {
+          "name": "Nome dell'auto",
+          "odometer_entity": "Sensore odometro/chilometraggio",
+          "battery_level_entity": "Sensore livello batteria (%)",
+          "range_entity": "Sensore autonomia residua",
+          "charging_entity": "Sensore/binary sensor in carica",
+          "plug_entity": "Stato spina collegata (opzionale)",
+          "location_entity": "Tracker GPS posizione auto (opzionale)"
+        }
+      },
+      "wallbox": {
+        "title": "Renault EV Center — Wallbox",
+        "description": "Mappa i sensori della tua wallbox (Wallbox, go-e, Easee, OCPP…). Puoi lasciare vuoti i campi che non hai.",
+        "data": {
+          "wallbox_enabled": "Ho una wallbox in Home Assistant",
+          "wallbox_power_entity": "Potenza istantanea di carica (W o kW)",
+          "wallbox_state_entity": "Stato della wallbox (es. charging)",
+          "wallbox_session_energy_entity": "Contatore energia sessione (kWh)",
+          "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
+          "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
+          "has_pv": "Ho il fotovoltaico (profilo Enterprise)",
+          "balance_grid_sensor": "Sensore potenza scambiata/prelevata dalla rete (W)",
+          "balance_battery_sensor": "Sensore potenza batteria (W, opzionale)",
+          "balance_invert_grid": "Inverti il segno del sensore rete",
+          "balance_include_battery": "Includi la scarica batteria nel surplus",
+          "balance_watts_per_amp": "Watt per ampere (230V mono ≈ 690)",
+          "balance_battery_soc_sensor": "Sensore SoC batteria casa (%) — per la priorità",
+          "battery_priority_min": "SoC minimo batteria casa prima di dare surplus all'auto (%)"
+        }
+      },
+      "settings": {
+        "title": "Renault EV Center — Impostazioni",
+        "description": "Capacità batteria, prezzi dell'energia e preferenze. Tutto modificabile dopo dalle opzioni.",
+                "data": {
+          "notify_charge_start": "Notifica avvio ricarica",
+          "notify_charge_end": "Notifica fine ricarica",
+          "low_soc_enabled": "Promemoria batteria bassa (a casa)",
+          "low_soc_threshold": "% minima promemoria",
+          "low_soc_start": "Inizio fascia oraria",
+          "low_soc_end": "Fine fascia oraria",
+          "charge_sched_enabled": "Carica programmata",
+          "charge_sched_mode": "Modalit\u00e0 (orario o percentuale)",
+          "charge_start_time": "Orario avvio carica",
+          "charge_stop_time": "Orario stop carica",
+          "charge_start_soc": "% avvio carica",
+          "charge_stop_soc": "% stop carica",
+          "charge_start_button": "Pulsante avvio carica (Renault)",
+          "charge_target_number": "Number target di carica (per lo stop)",
+          "notify_service": "Servizio notifiche (es. notify.michele)",
+          "notify_days": "Giorni di preavviso scadenze",
+          "tagliando_mode": "Tagliando: scadenza per km o data",
+          "tagliando_data": "Data tagliando (se modalit\u00e0 data)",
+          "assicurazione_costo": "Costo annuo assicurazione",
+          "assicurazione_data": "Scadenza assicurazione (YYYY-MM-DD)",
+          "model": "Modello dell'auto (imposta la foto)",
+          "create_dashboard": "Crea automaticamente la dashboard nella barra laterale",
+          "battery_capacity": "Capacità utile batteria",
+          "target_soc": "Obiettivo Ricarica (% per le stime di fine carica)",
+          "price_home": "Prezzo energia a casa",
+          "price_public": "Prezzo colonnine pubbliche",
+          "price_solar": "Costo fotovoltaico (0 = gratis)",
+          "charging_efficiency": "Rendimento di carica AC→batteria",
+          "solar_zone": "Nome della zona fotovoltaico/BEB (vuoto = nessuna)",
+          "poll_interval": "Intervallo di aggiornamento",
+          "trip_timeout": "Minuti di odometro fermo prima di chiudere un viaggio",
+          "fuel_comparison": "Confronto risparmio con auto termica",
+          "fuel_label": "Nome carburante (Diesel, Benzina…)",
+          "fuel_consumption": "Consumo auto termica equivalente",
+          "fuel_price": "Prezzo carburante"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Renault EV Center — Opzioni",
+        "description": "Modifica entità mappate e impostazioni."
+      }
+    }
+  },
+  "services": {
+    "close_trip": {
+      "name": "Chiudi viaggio ora",
+      "description": "Forza la chiusura del viaggio in corso."
+    },
+    "reset_counters": {
+      "name": "Reset contatori",
+      "description": "Azzera i contatori scelti.",
+      "fields": {
+        "scope": {"name": "Ambito", "description": "km, energia, costi, viaggi, ricariche o all"}
+      }
+    },
+    "export_trips_csv": {
+      "name": "Esporta viaggi CSV",
+      "description": "Scrive i CSV dei viaggi nella cartella config/renault_ev_center_export."
+    },
+    "add_manual_charge": {
+      "name": "Aggiungi ricarica manuale",
+      "description": "Registra a mano una ricarica (utile per colonnine DC non misurate dalla wallbox).",
+      "fields": {
+        "kwh": {"name": "kWh caricati"},
+        "costo": {"name": "Costo €"},
+        "tipo": {"name": "Tipo"},
+        "quando": {"name": "Data/ora (ISO, opzionale)"}
+      }
+    },
+    "delete_trip": {
+      "name": "Elimina viaggio",
+      "description": "Cancella un viaggio dallo storico.",
+      "fields": {
+        "trip_id": {"name": "ID viaggio"}
+      }
+    }
+  }
+}

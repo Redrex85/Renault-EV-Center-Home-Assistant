@@ -1,0 +1,23 @@
+# Tema "Renault Luce" — chiaro, minimal, accenti giallo scuro
+renault-luce:
+  primary-color: "#b8860b"
+  accent-color: "#b8860b"
+  primary-background-color: "#f2f3f5"
+  secondary-background-color: "#e9ebee"
+  card-background-color: "#ffffff"
+  app-header-background-color: "#ffffff"
+  sidebar-background-color: "#ffffff"
+  sidebar-selected-icon-color: "#b8860b"
+  sidebar-selected-background-color: "rgba(184, 134, 11, 0.10)"
+  primary-text-color: "#1a1a1a"
+  secondary-text-color: "#6b7280"
+  text-primary-color: "#ffffff"
+  divider-color: "#e3e6ea"
+  state-icon-color: "#b8860b"
+  state-icon-active-color: "#b8860b"
+  paper-item-icon-active-color: "#b8860b"
+  label-badge-background-color: "#f4efe2"
+  label-badge-text-color: "#1a1a1a"
+  ha-card-border-color: "#e3e6ea"
+  ha-card-border-width: 1px
+  switch-checked-color: "#b8860b"

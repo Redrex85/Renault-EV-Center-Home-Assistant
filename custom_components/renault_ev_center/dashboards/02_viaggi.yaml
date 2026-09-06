@@ -1,0 +1,106 @@
+# ============================================================
+#  RENAULT EV CENTER — VIAGGI (albero Anno → Mese → Giorno)
+# ============================================================
+title: Renault EV Center
+views:
+  - title: Viaggi
+    path: viaggi
+    icon: mdi:map-marker-path
+    max_columns: 2
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Come vengono rilevati i viaggi
+          - type: markdown
+            content: >
+              📡 Il viaggio parte quando l'**odometro aumenta** e si chiude dopo
+              **~20 minuti senza movimenti** — cioè quando **spegni l'auto** e i
+              sensori Renault si aggiornano (il cloud Renault ha un ritardo di qualche minuto).
+
+              ⏱ **La durata registrata va dall'inizio all'ultimo movimento rilevato**:
+              il tempo di sosta post-viaggio NON viene contato.
+
+              ✅ **Doppia verifica all'arrivo**:
+              1. Se colleghi la carica, il viaggio si **chiude subito** (spina = arrivo certo);
+              2. A chiusura vengono salvate le **coordinate GPS reali** del tracker
+              (`gps_arrivo`) — utili perché la posizione si aggiorna nel punto esatto
+              anche se non corrisponde a una zona di Home Assistant.
+
+              Ogni viaggio mostra il campo `verifica`: "ok" se il GPS si è aggiornato,
+              altrimenti "gps non aggiornato (cloud in ritardo)".
+          - type: markdown
+            content: >
+              {% set s7 = state_attr('sensor.renault_statistiche_viaggi','ultimi_7_giorni') or {} %}
+              {% set s30 = state_attr('sensor.renault_statistiche_viaggi','ultimi_30_giorni') or {} %}
+              {% set s90 = state_attr('sensor.renault_statistiche_viaggi','ultimi_90_giorni') or {} %}
+              | Periodo | Viaggi | Km | kWh | kWh/100km | Tempo |
+              | --- | --- | --- | --- | --- | --- |
+              | **7 giorni** | {{ s7.get('n_trip',0) }} | {{ s7.get('km_totali',0) }} | {{ s7.get('kwh_totali',0) }} | {{ s7.get('kwh_per_100km',0) }} | {{ (s7.get('durata_totale_min',0) / 60) | round(1) }} h |
+              | **30 giorni** | {{ s30.get('n_trip',0) }} | {{ s30.get('km_totali',0) }} | {{ s30.get('kwh_totali',0) }} | {{ s30.get('kwh_per_100km',0) }} | {{ (s30.get('durata_totale_min',0) / 60) | round(1) }} h |
+              | **90 giorni** | {{ s90.get('n_trip',0) }} | {{ s90.get('km_totali',0) }} | {{ s90.get('kwh_totali',0) }} | {{ s90.get('kwh_per_100km',0) }} | {{ (s90.get('durata_totale_min',0) / 60) | round(1) }} h |
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Storico viaggi (Anno → Mese → Giorno)
+          - type: markdown
+            content: >
+              {% set trips = state_attr('sensor.renault_archivio_viaggi', 'trips') or [] %}
+              {% if trips %}
+                {% set albero = {} %}
+                {% for t in trips %}
+                  {% set a = t.data[:4] %}{% set m = t.data[:7] %}
+                  {% if a not in albero %}{% set _ = albero.update({a: {}}) %}{% endif %}
+                  {% if m not in albero[a] %}{% set _ = albero[a].update({m: []}) %}{% endif %}
+                  {% set _ = albero[a][m].append(t) %}
+                {% endfor %}
+                {% for a in albero.keys() | sort | reverse %}
+                  {% set ta = albero[a].values() | sum(start=[]) %}
+                  {% set km_a = ta | map(attribute='km') | sum | round(1) %}
+                  {% set kwh_a = ta | map(attribute='kwh_consumati') | sum %}
+                  {% set eff_a = (kwh_a / km_a * 100) | round(1) if km_a > 0 else 0 %}
+                  **▼ {{ a }}** — {{ ta | length }} viaggi · **{{ km_a }} km** · `{{ eff_a }} kWh/100km`
+
+                  {% for m in albero[a].keys() | sort | reverse %}
+                    {% set tm = albero[a][m] %}
+                    {% set km_m = tm | map(attribute='km') | sum | round(1) %}
+                    {% set kwh_m = tm | map(attribute='kwh_consumati') | sum %}
+                    {% set eff_m = (kwh_m / km_m * 100) | round(1) if km_m > 0 else 0 %}
+                    &nbsp;&nbsp;**▼ {{ m }}** — {{ tm | length }} viaggi · **{{ km_m }} km** · `{{ eff_m }} kWh/100km`
+
+                    {% for g, tg in (tm | groupby('data') | list | reverse) %}
+                      {% set km_g = tg | map(attribute='km') | sum | round(1) %}
+                      {% set kwh_g = tg | map(attribute='kwh_consumati') | sum %}
+                      {% set eff_g = (kwh_g / km_g * 100) | round(1) if km_g > 0 else 0 %}
+                      &nbsp;&nbsp;&nbsp;&nbsp;• **{{ g }}** — {{ tg | length }} trip · {{ km_g }} km · `{{ eff_g }} kWh/100km`
+
+                    {% endfor %}
+                  {% endfor %}
+                {% endfor %}
+              {% else %}
+                Nessun viaggio registrato.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Dettaglio ultimi viaggi
+          - type: markdown
+            content: >
+              {% set trips = state_attr('sensor.renault_viaggi_recenti', 'trips') or [] %}
+              {% if trips %}
+                | Data | Ora | Durata | Km | Batteria | kWh | kWh/100km | Spesa | Ricarica prima |
+                | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+                {% for t in trips %}
+                | {{ t.data }} | {{ t.ora_inizio }}–{{ t.ora_fine }} | {{ t.durata_min }}′ | **{{ t.km }}** | {{ t.batteria_delta }}% | {{ t.kwh_consumati }} | {{ t.kwh_per_100km }} | {{ '%.2f'|format(t.costo_stimato | default(0)) }} € | {{ t.carica_precedente | default('—') }} |
+                {% endfor %}
+              {% else %}
+                Nessun viaggio registrato.
+              {% endif %}
+          - type: markdown
+            content: >
+              💡 **Spesa** = kWh del viaggio × costo energia casa (number "Costo Energia Casa").
+              **Ricarica prima** = fonte (Casa/Fotovoltaico/Pubblica) dell'ultima ricarica
+              completata prima della partenza.

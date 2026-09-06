@@ -1,0 +1,96 @@
+close_trip:
+  name: Chiudi viaggio ora
+  description: Forza la chiusura del viaggio in corso e lo salva nello storico.
+reset_counters:
+  name: Reset contatori
+  description: Azzera i contatori scelti (km, energia, costi, viaggi, ricariche o tutto).
+  fields:
+    scope:
+      name: Ambito
+      description: Quale contatore azzerare.
+      example: km
+export_trips_csv:
+  name: Esporta viaggi CSV
+  description: Scrive i CSV dei viaggi in config/renault_ev_center_export/.
+add_manual_charge:
+  name: Aggiungi ricarica manuale
+  description: Registra a mano una ricarica (utile per colonnine DC).
+  fields:
+    kwh:
+      name: kWh caricati
+      example: 22.5
+    costo:
+      name: Costo €
+      example: 11.25
+    tipo:
+      name: Tipo
+      example: Pubblica
+    quando:
+      name: Data/ora
+      description: Formato ISO opzionale (2026-08-22T14:30:00).
+delete_trip:
+  name: Elimina viaggio
+  description: Cancella un viaggio dallo storico per ID.
+  fields:
+    trip_id:
+      name: ID viaggio
+      example: 1755864000
+add_maintenance:
+  name: Aggiungi tagliando
+  description: Registra un tagliando o una manutenzione effettuata sull'auto.
+  fields:
+    data:
+      name: Data
+      example: "2026-08-20"
+    km:
+      name: Km all'auto
+      example: 68718
+    costo:
+      name: Costo €
+      example: 85.0
+    tipo:
+      name: Tipo
+      example: Tagliando annuale
+    note:
+      name: Note
+      example: Gomme incluse
+delete_maintenance:
+  name: Elimina tagliando
+  description: Cancella una manutenzione dal registro per ID.
+  fields:
+    maintenance_id:
+      name: ID manutenzione
+      example: 1755864000
+renew_insurance:
+  name: Rinnova assicurazione
+  description: Imposta la nuova scadenza dell'assicurazione (6 o 12 mesi da oggi, oppure data precisa).
+  fields:
+    mesi:
+      name: Mesi
+      description: 6 o 12 mesi da oggi (ignorato se compili "data").
+      example: 12
+    data:
+      name: Data
+      description: Scadenza precisa in formato YYYY-MM-DD (opzionale).
+      example: "2027-08-24"
+set_scadenza:
+  name: Imposta scadenza
+  description: Imposta manualmente una scadenza (assicurazione, bollo, revisione o tagliando_data).
+  fields:
+    nome:
+      name: Nome
+      example: bollo
+    data:
+      name: Data
+      example: "2026-10-12"
+set_tagliando:
+  name: Imposta tagliando
+  description: Scegli se il prossimo tagliando scade per km (valore = km assoluti) o per data.
+  fields:
+    mode:
+      name: Modalità
+      example: km
+    valore:
+      name: Valore
+      description: km assoluti (mode=km) oppure data YYYY-MM-DD (mode=data).
+      example: "71218"

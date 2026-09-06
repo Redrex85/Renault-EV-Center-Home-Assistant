@@ -1,0 +1,216 @@
+# ============================================================
+#  RENAULT EV CENTER — RICARICHE
+# ============================================================
+# Usa i due selettori "Filtro Tipo Ricarica" e "Filtro Periodo Ricariche"
+# per filtrare la lista: i totali (kWh e €) si aggiornano da soli.
+# ============================================================
+title: Renault EV Center
+views:
+  - title: Storico ricariche
+    path: ricariche
+    icon: mdi:ev-station
+    max_columns: 2
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Filtri
+          - type: entities
+            entities:
+              - entity: select.renault_filtro_tipo_ricarica
+                name: Tipo
+              - entity: select.renault_filtro_periodo_ricariche
+                name: Periodo
+              - entity: select.renault_filtro_anno_ricariche
+                name: Anno
+          - type: markdown
+            content: >
+              {% set n = states('sensor.renault_lista_ricariche') | int(0) %}
+              {% set kwh = state_attr('sensor.renault_lista_ricariche', 'totale_kwh') or 0 %}
+              {% set costo = state_attr('sensor.renault_lista_ricariche', 'totale_costo') or 0 %}
+              {% set tipo = state_attr('sensor.renault_lista_ricariche', 'tipo') %}
+              {% set periodo = state_attr('sensor.renault_lista_ricariche', 'periodo') %}
+              {% set anno = state_attr('sensor.renault_lista_ricariche', 'anno') %}
+              {% set items = state_attr('sensor.renault_lista_ricariche', 'items') or [] %}
+              {% set minuti = items | map(attribute='durata_min') | sum %}
+              {% set media_kw = (kwh / (minuti / 60.0)) | round(2) if minuti > 0 else 0 %}
+              ### 🧾 {{ n }} ricariche — {{ tipo }} / {{ periodo }} / {{ anno }}
+
+              ⚡ **{{ kwh }} kWh** · 💰 **{{ costo }} €**
+              {% if kwh > 0 %}
+              · 📊 **{{ (costo / kwh) | round(3) }} €/kWh** medio
+              {% endif %}
+              {% if minuti > 0 %}
+              · ⏱ **{{ (minuti / 60) | round(1) }} h** · Ø **{{ media_kw }} kW**
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Lista filtrata
+          - type: markdown
+            content: >
+              {% set items = state_attr('sensor.renault_lista_ricariche', 'items') or [] %}
+              {% if items %}
+                | Data | Tipo | Durata | Δ SoC | kWh | Ø kW | €/kWh | Costo |
+                | --- | --- | --- | --- | --- | --- | --- | --- |
+                {% for c in items %}
+                {% set dpct = c.soc_end - c.soc_start %}
+                | {{ c.data }} {{ c.ora_inizio }} | {{ c.tipo }} | {{ c.durata_min }}′ | **+{{ dpct if dpct > 0 else 0 }}%** | **{{ c.kwh }}** | {{ c.potenza_media_kw | default(0) }} | {{ '%.3f'|format((c.costo / c.kwh) if c.kwh > 0 else 0) }} | **{{ c.costo }} €** |
+                {% endfor %}
+              {% else %}
+                Nessuna ricarica nel periodo/tipo/anno selezionato.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Energie caricate
+          - type: entities
+            entities:
+              - {entity: sensor.renault_energia_caricata_giornaliera, name: Oggi}
+              - {entity: sensor.renault_energia_caricata_settimanale, name: Settimana}
+              - {entity: sensor.renault_energia_caricata_mensile, name: Mese}
+              - {entity: sensor.renault_energia_caricata_annuale, name: Anno}
+              - {entity: sensor.renault_energia_caricata_totale, name: Totale storico}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Spese ricariche
+          - type: entities
+            entities:
+              - {entity: sensor.renault_costo_ricarica_giornaliero, name: Oggi}
+              - {entity: sensor.renault_costo_ricarica_settimanale, name: Settimana}
+              - {entity: sensor.renault_costo_ricarica_mensile, name: Mese}
+              - {entity: sensor.renault_costo_ricarica_annuale, name: Anno}
+              - {entity: sensor.renault_costo_ricarica_totale, name: Totale storico}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Ultima sessione
+          - type: markdown
+            content: >
+              {% set r_data = state_attr('sensor.renault_ultima_ricarica', 'data') %}
+              {% if r_data %}
+                📅 **{{ r_data }} · {{ state_attr('sensor.renault_ultima_ricarica','ora_inizio') }}–{{ state_attr('sensor.renault_ultima_ricarica','ora_fine') }}**
+
+                ⚡ Dalla rete (AC): **{{ states('sensor.renault_ultima_ricarica') }} kWh**
+
+                🔋 Entrata in batteria: **{{ states('sensor.renault_energia_batteria_ultima_ricarica') }} kWh**
+                ({{ state_attr('sensor.renault_ultima_ricarica','soc_start') }}% → {{ state_attr('sensor.renault_ultima_ricarica','soc_end') }}%)
+
+                🔥 Dispersa: **{{ state_attr('sensor.renault_perdite_ultima_ricarica','percentuale') }}%**
+                ({{ states('sensor.renault_perdite_ultima_ricarica') }} kWh)
+
+                ⏱ Durata: {{ state_attr('sensor.renault_ultima_ricarica','durata_min') }} min ·
+                ⚡ Media: {{ state_attr('sensor.renault_ultima_ricarica','potenza_media_kw') }} kW
+                {% if states('binary_sensor.renault_wallbox_in_carica') == 'on' %}
+                · 🔴 **In carica ora: {{ states('sensor.renault_wallbox_potenza') }} kW**
+                {% endif %}
+
+                🏷️ {{ state_attr('sensor.renault_ultima_ricarica','tipo') }} ·
+                💰 **{{ state_attr('sensor.renault_ultima_ricarica','costo') }} €**
+              {% else %}
+                Nessuna ricarica registrata.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Stato wallbox
+          - type: entities
+            entities:
+              - {entity: binary_sensor.renault_wallbox_in_carica, name: In carica}
+              - {entity: sensor.renault_wallbox_potenza, name: Potenza ora}
+              - {entity: sensor.renault_tempo_ricarica_stimato, name: Tempo residuo}
+              - {entity: sensor.renault_ora_completamento_ricarica, name: Completamento}
+              - {entity: sensor.renault_costo_ricarica_corrente_stimato, name: Costo corrente}
+          - type: custom:mini-graph-card
+            name: Potenza wallbox (24h)
+            entities:
+              - entity: sensor.renault_wallbox_potenza
+                name: kW
+            hours_to_show: 24
+            points_per_hour: 12
+            line_width: 3
+            show: {icon: false, extrema: true}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: "☀️ Report solare (da dove arriva la carica)"
+          - type: markdown
+            content: >
+              {% set anno = state_attr('sensor.renault_report_generale', 'anno') or now().year %}
+              {% set r = state_attr('sensor.renault_report_generale', 'solare') or [] %}
+              ### Anno **{{ anno }}** — kWh per fonte
+
+              | Mese | 🏠 Casa (rete) | ☀️ Fotovoltaico | ⚡ Colonnine | Tot |
+              | --- | --- | --- | --- | --- |
+              {% for riga in r %}
+              | **{{ riga.mese }}** | {{ riga.casa }} | {{ riga.fv }} | {{ riga.pubblica }} | **{{ riga.tot }}** |
+              {% endfor %}
+              | **TOTALE {{ anno }}** | **{{ (r | map(attribute='casa') | sum) | round(2) }}** | **{{ (r | map(attribute='fv') | sum) | round(2) }}** | **{{ (r | map(attribute='pubblica') | sum) | round(2) }}** | **{{ (r | map(attribute='tot') | sum) | round(2) }}** |
+
+              *Con il profilo Enterprise il bilanciamento solare massimizza la colonna ☀️.*
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Contatori batteria
+          - type: entities
+            entities:
+              - {entity: sensor.renault_batteria_caricata_oggi, name: "% caricata oggi"}
+              - {entity: sensor.renault_batteria_scaricata_oggi, name: "% scaricata oggi"}
+              - {entity: sensor.renault_energia_batteria_mensile, name: kWh usati mese}
+              - {entity: sensor.renault_energia_batteria_annuale, name: kWh usati anno}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Generale (wallbox)
+          - type: markdown
+            content: >
+              {% set r = state_attr('sensor.renault_report_generale', 'generale') or [] %}
+              | Periodo | Costo (€) | Ricaricati (kWh) | KM |
+              | --- | --- | --- | --- |
+              {% for riga in r %}
+              | **{{ riga.periodo }}** | {{ riga.costo }} € | {{ riga.kwh }} kWh | {{ riga.km }} km |
+              {% endfor %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Settimanale (wallbox)
+          - type: markdown
+            content: >
+              {% set r = state_attr('sensor.renault_report_generale', 'settimanale') or [] %}
+              | Giorno | Costo | Ricaricati | KM |
+              | --- | --- | --- | --- |
+              {% for riga in r %}
+              | **{{ riga.giorno }}** | {{ riga.costo }} € | {{ riga.kwh }} kWh | {{ riga.km }} km |
+              {% endfor %}
+              | **TOTALE** | **{{ (r | map(attribute='costo') | sum) | round(2) }} €** | **{{ (r | map(attribute='kwh') | sum) | round(2) }} kWh** | **{{ (r | map(attribute='km') | sum) | round(0) }} km** |
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: "Mensile (wallbox)"
+          - type: markdown
+            content: >
+              {% set anno = state_attr('sensor.renault_report_generale', 'anno') or now().year %}
+              {% set r = state_attr('sensor.renault_report_generale', 'mensile') or [] %}
+              ### 📅 Anno **{{ anno }}**
+
+              💡 Cambia il **Filtro Anno** qui sopra per vedere un altro anno
+              (2025, 2026, e gli anni successivi).
+
+              | Mese | Costo | Ricaricati | KM |
+              | --- | --- | --- | --- |
+              {% for riga in r %}
+              | **{{ riga.mese }}** | {{ riga.costo }} € | {{ riga.kwh }} kWh | {{ riga.km }} km |
+              {% endfor %}
+              | **TOTALE {{ anno }}** | **{{ (r | map(attribute='costo') | sum) | round(2) }} €** | **{{ (r | map(attribute='kwh') | sum) | round(2) }} kWh** | **{{ (r | map(attribute='km') | sum) | round(0) }} km** |

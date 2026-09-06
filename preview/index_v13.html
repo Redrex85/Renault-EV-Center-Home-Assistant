@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Renault EV Center — Anteprima v1.0.0</title>
+<style>
+  /* Palette Renault: Blu Megane, Giallo R5, Verde R4, Grigio Aviation */
+  body[data-theme="blu"]{
+    --bg:#0d1522; --panel:#14202f; --panel2:#101b2c; --line:#1e2d40;
+    --txt:#e8eef6; --muted:#8296ad; --accent:#4d8dff; --accent-soft:rgba(77,141,255,.15);
+    --good:#4ade80; --warn:#fbbf24; --bad:#f87171;}
+  body[data-theme="giallo"]{
+    --bg:#141414; --panel:#1d1d1d; --panel2:#181818; --line:#2a2a2a;
+    --txt:#f2f2f2; --muted:#9e9e9e; --accent:#F5CB39; --accent-soft:rgba(245,203,57,.14);
+    --good:#7ed957; --warn:#ff9f43; --bad:#ff5252;}
+  body[data-theme="verde"]{
+    --bg:#0f1613; --panel:#16211c; --panel2:#121a16; --line:#22322a;
+    --txt:#e9f2ec; --muted:#87a094; --accent:#57b98a; --accent-soft:rgba(87,185,138,.15);
+    --good:#57b98a; --warn:#fbbf24; --bad:#f87171;}
+  body[data-theme="aviation"]{
+    --bg:#16181c; --panel:#20242b; --panel2:#1a1d23; --line:#2e333c;
+    --txt:#eef1f5; --muted:#9aa4b1; --accent:#c9d4e2; --accent-soft:rgba(201,212,226,.13);
+    --good:#7ed957; --warn:#fbbf24; --bad:#ff6b6b;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;display:flex;min-height:100vh;transition:background .25s,color .25s}
+  .sidebar{width:248px;background:var(--panel2);border-right:1px solid var(--line);padding:18px 12px;flex-shrink:0}
+  .logo{display:flex;align-items:center;gap:12px;padding:6px 10px 14px}
+  .logo img{height:42px}
+  body[data-theme="luce"] .logo img{filter:invert(1)}
+  .logo b{display:block;font-size:15px;line-height:1.15}
+  .ver{display:inline-block;font-size:10.5px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:1px 7px;margin-top:4px;letter-spacing:.05em}
+  .logo small{color:var(--muted);font-size:11px;display:block;margin-top:3px}
+  .nav{display:flex;flex-direction:column;gap:3px;margin-top:10px}
+  .nav button{display:flex;align-items:center;gap:10px;background:none;border:none;color:var(--muted);padding:9px 14px;border-radius:10px;font-size:13.5px;cursor:pointer;text-align:left;width:100%}
+  .nav button:hover{background:var(--accent-soft);color:var(--txt)}
+  .nav button.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .nav .em{width:20px;text-align:center}
+  .themes{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+  .themes p{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:0 10px 8px}
+  .themes button{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;color:var(--muted);padding:6px 10px;border-radius:8px;font-size:13px;cursor:pointer;text-align:left}
+  .themes button.active{color:var(--txt);background:var(--accent-soft)}
+  .sw{width:14px;height:14px;border-radius:4px;border:1px solid var(--line)}
+  .main{flex:1;padding:24px 32px;max-width:1500px}
+  h1{font-size:26px;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:13.5px;margin-bottom:22px}
+  .page{display:none}.page.active{display:block}
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:1100px){.g3{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:700px){.g3,.g2{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-weight:600}
+  .big{font-size:44px;font-weight:800;line-height:1}
+  .big small{font-size:18px;font-weight:600;color:var(--muted)}
+  .bar{height:9px;background:var(--line);border-radius:6px;margin-top:12px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:6px;background:var(--accent)}
+  .row{display:flex;justify-content:space-between;font-size:13.5px;padding:7px 0;border-bottom:1px solid var(--line);gap:10px}
+  .row:last-child{border-bottom:none}
+  .row span:first-child{color:var(--muted)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .chip{font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
+  .chip.ok{color:var(--good);border-color:var(--good)}
+  .chip.acc{color:var(--accent);border-color:var(--accent)}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+  @media(max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;gap:13px;align-items:center}
+  .tile .em{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;background:var(--accent-soft)}
+  .tile .v{font-size:24px;font-weight:800;line-height:1.05}
+  .tile .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+  .cmd{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 8px;text-align:center;font-size:12px;cursor:pointer}
+  .cmd .em{font-size:22px;display:block;margin-bottom:5px}
+  .cmd b{display:block;margin-top:2px;font-weight:600}
+  .cmd:hover{border-color:var(--accent)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{color:var(--muted);text-align:left;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:9px 10px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:none}
+  .badge{color:var(--accent);background:var(--accent-soft);border-radius:7px;padding:3px 8px;font-size:12px;font-weight:600}
+  .tree{font-size:14px}
+  .tree .anno{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:12px}
+  .tree .mese{margin:10px 0 4px 18px;font-weight:700}
+  .tree .giorno{margin:5px 0 5px 40px;color:var(--muted)}
+  .tree .giorno b{color:var(--txt)}
+  select{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;width:100%}
+  .inp{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;gap:10px}
+  .inp input{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:7px 10px;width:100px;text-align:right;font-size:14px}
+  .inp .u{color:var(--muted);font-size:12px;width:48px}
+  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 14px;font-size:13px;cursor:pointer;text-align:center;flex:1}
+  .btn:hover{border-color:var(--accent)}
+  .netto{background:linear-gradient(135deg,var(--accent-soft),transparent);border-color:var(--accent)}
+  .carbox{position:relative;border-radius:14px;overflow:hidden;border:1px dashed var(--accent);
+     background:radial-gradient(ellipse at 50% 115%, var(--accent-soft), transparent 60%), var(--panel);
+     display:flex;align-items:center;justify-content:center;min-height:210px;flex-direction:column;gap:8px}
+  .carbox .ph{font-size:52px}
+  .carbox small{color:var(--muted);font-size:11.5px}
+  .mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2)}
+  .profbtn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font-size:13px;cursor:pointer;text-align:center;flex:1}
+  .profbtn.active{border-color:var(--accent);background:var(--accent-soft);font-weight:700}
+  .inpmini{display:flex;gap:6px;align-items:center}
+  .inpmini input{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:7px;padding:6px 8px;width:64px;text-align:center;font-size:13px}
+  .switch{position:relative;width:46px;height:25px;flex-shrink:0;display:inline-block}
+  .switch input{opacity:0;width:0;height:0}
+  .switch span{position:absolute;inset:0;background:#39445a;border-radius:999px;transition:.25s;cursor:pointer}
+  .switch span::before{content:"";position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.25s}
+  .switch input:checked + span{background:var(--accent)}
+  .switch input:checked + span::before{transform:translateX(21px)}
+  .note{margin-top:26px;color:var(--muted);font-size:12.5px;border-top:1px dashed var(--line);padding-top:14px}
+  kbd{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:11.5px}
+</style>
+</head>
+<body data-theme="blu">
+<div class="sidebar">
+  <div class="logo">
+    <img src="logo_renault.png" alt="Renault">
+    <div><b>Renault EV<br>Center</b><span class="ver">v1.0.0</span><small>Megane E-Tech · anteprima</small></div>
+  </div>
+  <div class="nav">
+    <button class="active" data-p="p1"><span class="em">📊</span> Panoramica</button>
+    <button data-p="p2"><span class="em">🛣️</span> Viaggi</button>
+    <button data-p="p3"><span class="em">📈</span> Statistiche</button>
+    <button data-p="p4"><span class="em">🧾</span> Storico ricariche</button>
+    <button data-p="p4b" class="pro-only"><span class="em">🎛️</span> Gestione ricarica</button>
+    <button data-p="p5"><span class="em">💚</span> Salute batteria</button>
+    <button data-p="p6"><span class="em">🔧</span> Manutenzione</button>
+    <button data-p="p7"><span class="em">💰</span> Risparmi</button>
+    <button data-p="p8"><span class="em">⭐</span> Extra</button>
+    <button data-p="p9"><span class="em">🤖</span> Automazioni</button>
+    <button data-p="p10"><span class="em">⚙️</span> Impostazioni</button>
+  </div>
+  </div>
+<div class="main">
+
+<!-- ============ PANORAMICA (stile versione precedente + foto/tasti/mappa) ============ -->
+<section id="p1" class="page active">
+  <h1>Panoramica</h1>
+  <div class="sub">1 · La tua auto &nbsp;·&nbsp; 2 · Stato ricarica e comandi &nbsp;·&nbsp; 3 · Efficienza e ultima ricarica &nbsp;·&nbsp; 4 · Risparmi</div>
+
+  <div class="grid g3">
+    <!-- 1 · CARD DEDICATA (foto auto, batteria, odometro, km oggi) -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="position:relative;text-align:center;background:var(--panel)">
+        <div style="font-size:60px;padding:16px 0 4px">🚗</div>
+        <div style="position:absolute;top:10px;left:12px"><span class="chip">🔌 Non in carica</span></div>
+        <div style="position:absolute;top:10px;right:12px"><span class="chip acc">⚡ 270 km</span></div>
+        <small style="color:var(--muted);display:block;margin-bottom:8px">foto: /local/renault-ev-center/auto.png</small>
+      </div>
+      <div style="padding:14px 16px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:36px;font-weight:800;color:var(--accent)">74<span style="font-size:15px;color:var(--muted)">%</span></div>
+          <div style="flex:1">
+            <div style="height:9px;background:var(--line);border-radius:5px;overflow:hidden">
+              <div style="width:74%;height:100%;background:var(--accent)"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:600;margin-top:6px">
+              <span>🔋 44.4 kWh a bordo</span><span>🧭 68 718 km</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:4px">
+              <span>🔻 -17% consumata oggi</span><span>⚡ 10.20 kWh oggi</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--panel2);font-size:13px;display:flex;justify-content:space-between">
+          <span>Non in Carica</span><b>— kW</b>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px">
+          <div style="text-align:center;background:var(--panel2);border-radius:10px;padding:8px 4px"><b>6.08</b><div style="font-size:10px;color:var(--muted)">KM/KWH</div></div>
+          <div style="text-align:center;background:var(--panel2);border-radius:10px;padding:8px 4px"><b>16.4</b><div style="font-size:10px;color:var(--muted)">KWH/100KM</div></div>
+          <div style="text-align:center;background:var(--panel2);border-radius:10px;padding:8px 4px"><b>34</b><div style="font-size:10px;color:var(--muted)">KM OGGI</div></div>
+          <div style="text-align:center;background:var(--panel2);border-radius:10px;padding:8px 4px"><b>0.039€</b><div style="font-size:10px;color:var(--muted)">€/KM</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 · STATO RICARICA E COMANDI -->
+    <div class="card">
+      <h3>2 · Stato ricarica &amp; comandi Renault</h3>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div class="cmd"><span class="em">🔌</span>Carica<b>Non in carica</b></div>
+        <div class="cmd"><span class="em">📍</span>Zona<b>Non in Carica</b></div>
+        <div class="cmd"><span class="em">🔗</span>Presa<b>Scollegata</b></div>
+        <div class="cmd"><span class="em">🧊</span>Avvia A/C<b>Premi ▸</b></div>
+        <div class="cmd"><span class="em">⚡</span>Avvia carica<b>Premi ▸</b></div>
+        <div class="cmd"><span class="em">⏱</span>Fine ricarica<b>—</b></div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--panel2);font-size:13px;display:flex;justify-content:space-between">
+        <span>⚡ Wallbox ora</span><b>0 W</b>
+      </div>
+    </div>
+
+    <!-- 3 · EFFICIENZA -->
+    <div class="card">
+      <h3>3 · Efficienza</h3>
+      <div class="grid g2" style="gap:10px">
+        <div><div class="big" style="font-size:28px;color:var(--accent)">6.08</div><div style="color:var(--muted);font-size:11px">km/kWh</div></div>
+        <div><div class="big" style="font-size:28px">16.4</div><div style="color:var(--muted);font-size:11px">kWh/100km</div></div>
+        <div><div class="big" style="font-size:28px">0.039€</div><div style="color:var(--muted);font-size:11px">costo/km</div></div>
+        <div><div class="big" style="font-size:28px">3.91€</div><div style="color:var(--muted);font-size:11px">costo/100km</div></div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="row"><span>Viaggio in corso</span><b>Nessuno</b></div>
+        <div class="row"><span>% batteria /100km oggi</span><b>0</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:16px">
+    <!-- 3b · ULTIMA RICARICA -->
+    <div class="card">
+      <h3>3b · Ultima ricarica</h3>
+      <div class="row"><span>Data</span><b>Sab · 22:31–06:04</b></div>
+      <div class="row"><span>Energia</span><b style="color:var(--good)">+32.44 kWh</b></div>
+      <div class="row"><span>Batteria</span><b>21% → 78%</b></div>
+      <div class="row"><span>Media</span><b>Ø 4.12 kW</b></div>
+      <div class="row"><span>Costo · Eff.</span><b>7.72 € · 94.2%</b></div>
+    </div>
+
+    <!-- 3c · MAPPA -->
+    <div class="mapbox">
+      <svg viewBox="0 0 400 200" style="display:block;width:100%;height:auto">
+        <rect width="400" height="200" fill="var(--panel2)"/>
+        <g stroke="var(--line)" stroke-width="5" fill="none">
+          <path d="M0 70 L400 50"/><path d="M0 150 L400 170"/><path d="M90 0 L110 210"/><path d="M260 0 L240 210"/>
+        </g>
+        <path d="M60 170 L140 130 L210 140 L270 95 L340 65" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="2 7"/>
+        <circle cx="340" cy="65" r="8" fill="var(--accent)"/>
+        <text x="300" y="50" fill="var(--txt)" font-size="12" font-weight="700">📍 Casa</text>
+        <text x="12" y="24" fill="var(--muted)" font-size="12">Spostamenti 24h</text>
+      </svg>
+    </div>
+
+    <!-- 4 · RISPARMI -->
+    <div class="card netto">
+      <h3>4 · 💰 Risparmio netto</h3>
+      <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)">5 419 €</b></div>
+      <div class="row"><span>+ Tagliandi (1 800 − 340)</span><b>1 460 €</b></div>
+      <div class="row"><span>+ Bollo</span><b>1 330 €</b></div>
+      <div class="row" style="border-top:2px solid var(--accent)"><span><b>★ NETTO</b></span><b style="color:var(--accent);font-size:17px">8 209 €</b></div>
+      <div style="text-align:center;margin-top:10px"><span class="chip acc">📄 dettaglio completo → Risparmi</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Oggi a colpo d'occhio</h3>
+    <div class="grid g2">
+      <div>
+        <div class="row"><span>🔴 Consumata oggi</span><b>-17%</b></div>
+        <div class="row"><span>⚡ Ricaricati oggi</span><b>0.00 kWh · 0%</b></div>
+        <div class="row"><span>🔋 kWh usati oggi</span><b>10.20 kWh</b></div>
+        <div class="row"><span>🚗 Km oggi</span><b>61 km</b></div>
+      </div>
+      <div>
+        <div class="row"><span>💰 Ricariche oggi</span><b>0.0 €</b></div>
+        <div class="row"><span>💰 Ricariche mensili</span><b>16.25 €</b></div>
+        <div class="row pro-only"><span>⚡ Wallbox ora</span><b>0 W</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Km percorsi e media consumi (7 giorni)</h3>
+    <div style="display:flex;align-items:flex-end;gap:6px;height:110px;max-width:640px">
+      <div style="flex:1;background:var(--accent);opacity:.85;border-radius:4px 4px 0 0;height:88%"></div>
+      <div style="flex:1;background:var(--accent);opacity:.85;border-radius:4px 4px 0 0;height:91%"></div>
+      <div style="flex:1;background:var(--accent);opacity:.85;border-radius:4px 4px 0 0;height:88%"></div>
+      <div style="flex:1;background:var(--accent);opacity:.85;border-radius:4px 4px 0 0;height:48%"></div>
+      <div style="flex:1;background:var(--accent);opacity:.85;border-radius:4px 4px 0 0;height:86%"></div>
+      <div style="flex:1;background:var(--accent);opacity:.85;border-radius:4px 4px 0 0;height:51%"></div>
+      <div style="flex:1;background:var(--accent);opacity:.85;border-radius:4px 4px 0 0;height:2%"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VIAGGI ============ -->
+<section id="p2" class="page">
+  <h1>Viaggi</h1>
+  <div class="sub">Albero Anno → Mese → Giorno</div>
+  <div class="card">
+    <h3>📡 Come vengono rilevati i viaggi (doppia verifica)</h3>
+    <div style="font-size:13px;line-height:1.8">
+      Il viaggio parte quando l'<b>odometro aumenta</b> e si chiude dopo <b>~20 minuti
+      senza movimenti</b> — quando spegni l'auto e i sensori Renault si aggiornano.
+      La durata va dall'inizio all'<b>ultimo movimento</b> (la sosta non conta).<br>
+      ✅ <b>Verifica 1</b>: colleghi la carica → il viaggio si chiude subito (arrivo certo).<br>
+      ✅ <b>Verifica 2</b>: a chiusura vengono salvate le <b>coordinate GPS reali</b> —
+      il campo <i>verifica</i> ti dice se il cloud era aggiornato o in ritardo.
+    </div>
+  </div>
+  <div class="tiles">
+    <div class="tile"><div class="em">🚗</div><div><div class="v">1 284</div><div class="l">Km · 30 giorni</div></div></div>
+    <div class="tile"><div class="em">🏁</div><div><div class="v">46</div><div class="l">Viaggi · 30 giorni</div></div></div>
+    <div class="tile"><div class="em">⚡</div><div><div class="v">17.6</div><div class="l">kWh/100km media</div></div></div>
+    <div class="tile"><div class="em">💰</div><div><div class="v">56.4 €</div><div class="l">Spesa 30gg</div></div></div>
+  </div>
+  <div class="card tree">
+    <div class="anno">
+      <b style="font-size:17px">▼ 2026</b>
+      <span style="float:right;color:var(--muted)">53 viaggi · <b style="color:var(--txt)">923 km</b> · <span class="badge">17 kWh/100km</span></span>
+      <div class="mese">▼ Agosto 2026 <span style="float:right;color:var(--muted);font-weight:400">24 viaggi · 318 km · <span class="badge">16.5</span></span></div>
+      <div class="giorno">• <b>Sab 22</b> — 2 trip · <b>28 km</b> <span class="badge">16.5</span> · 2.02 € · prima: 🏠 Casa</div>
+      <div class="giorno">• <b>Ven 21</b> — 2 trip · <b>28 km</b> <span class="badge">17.1</span> · 2.10 € · prima: ⚡ Pubblica</div>
+      <div class="mese">▼ Luglio 2026 <span style="float:right;color:var(--muted);font-weight:400">29 viaggi · 605 km · <span class="badge">17.3</span></span></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Dettaglio viaggi recenti</h3>
+    <table>
+      <tr><th>Data</th><th>Ora</th><th>Durata</th><th>Km</th><th>Batteria</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th><th>Ricarica prima</th><th>Verifica</th></tr>
+      <tr><td>22/08</td><td>09:12–09:44</td><td>32′</td><td><b>18.0</b></td><td>−3%</td><td>3.13</td><td><span class="badge">17.4</span></td><td>1.37 €</td><td>🏠 Casa</td><td>✅</td></tr>
+      <tr><td>21/08</td><td>18:03–18:44</td><td>41′</td><td><b>27.0</b></td><td>−5%</td><td>4.56</td><td><span class="badge">16.9</span></td><td>2.00 €</td><td>⚡ Pubblica</td><td>✅</td></tr>
+      <tr><td>21/08</td><td>08:15–08:44</td><td>29′</td><td><b>17.0</b></td><td>−3%</td><td>3.03</td><td><span class="badge">17.8</span></td><td>1.33 €</td><td>☀️ FV</td><td>⚠️ gps in ritardo</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ STATISTICHE ============ -->
+<section id="p3" class="page">
+  <h1>Statistiche</h1>
+  <div class="sub">Stile LeapMotor + percorrenza e ricariche differenziate</div>
+  <div class="tiles">
+    <div class="tile"><div class="em">🏁</div><div><div class="v" style="color:var(--accent)">412</div><div class="l">Totale viaggi</div></div></div>
+    <div class="tile"><div class="em">🛣️</div><div><div class="v">68 718</div><div class="l">Totale distanza km</div></div></div>
+    <div class="tile"><div class="em">📊</div><div><div class="v">16.9</div><div class="l">Avg efficienza</div></div></div>
+    <div class="tile"><div class="em">🏆</div><div><div class="v" style="color:var(--accent)">14.9</div><div class="l">Best efficienza</div></div></div>
+    <div class="tile"><div class="em">⏱️</div><div><div class="v">612 h</div><div class="l">Tempo di guida</div></div></div>
+    <div class="tile"><div class="em">🔋</div><div><div class="v">11 302</div><div class="l">Energia usata kWh</div></div></div>
+    <div class="tile"><div class="em">🔌</div><div><div class="v">214</div><div class="l">Ricariche effettuate</div></div></div>
+    <div class="tile"><div class="em">⚡</div><div><div class="v">6 942</div><div class="l">Energia caricata kWh</div></div></div>
+  </div>
+  <div class="card">
+    <h3>Energia caricata differenziata</h3>
+    <div class="row"><span>🏠 Casa (wallbox)</span><b>5 462 kWh</b></div>
+    <div class="row"><span>☀️ Fotovoltaico (BEB)</span><b>318 kWh</b></div>
+    <div class="row"><span>⚡ Colonnine fuori casa</span><b>1 162 kWh</b></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Percorrenza</h3>
+    <table>
+      <tr><th>Periodo</th><th>% usata</th><th>Usati</th><th>Caricati</th><th>KM</th></tr>
+      <tr><td><b>OGGI</b></td><td>-0 %</td><td>0,00 kWh</td><td>0,00 kWh</td><td>0 km</td></tr>
+      <tr><td><b>IERI</b></td><td>-7 %</td><td>4,20 kWh</td><td>0 kWh</td><td>24 km</td></tr>
+      <tr><td><b>SETTIMANA</b></td><td>—</td><td>12,60 kWh</td><td>1,20 kWh</td><td>76 km</td></tr>
+      <tr><td><b>MESE</b></td><td>—</td><td>105,00 kWh</td><td>91,80 kWh</td><td>615 km</td></tr>
+      <tr><td><b>ANNO</b></td><td>—</td><td>2 040 kWh</td><td>2 027 kWh</td><td>11 477 km</td></tr>
+      <tr style="color:var(--muted)"><td>Mese prec.</td><td>—</td><td>290,4 kWh</td><td>288,6 kWh</td><td>1 609 km</td></tr>
+      <tr style="color:var(--muted)"><td>Anno prec.</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+    </table>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card" style="margin-top:16px">
+    <h3>Anno → Mese (2026)</h3>
+    <table>
+      <tr><th>Mese</th><th>Viaggi</th><th>Km</th><th>kWh</th><th>kWh/100km</th></tr>
+      <tr><td><b>Agosto</b></td><td>24</td><td><b>318</b></td><td>52.48</td><td><span class="badge">16.5</span></td></tr>
+      <tr><td><b>Luglio</b></td><td>29</td><td><b>605</b></td><td>104.67</td><td><span class="badge">17.3</span></td></tr>
+      <tr><td><b>Giugno</b></td><td>31</td><td><b>640</b></td><td>108.20</td><td><span class="badge">16.9</span></td></tr>
+    </table>
+    <div style="color:var(--muted);font-size:12px;margin-top:10px">
+      Sotto ogni mese, come in LeapMotor: grafici Km per viaggio · Trend efficienza · Energia per viaggio
+      (nella dashboard reale: card statistic a barre per giorno).</div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Km per giorno (30gg)</h3>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:80px">
+        <div style="flex:1;background:var(--accent);opacity:.8;height:70%;border-radius:3px 3px 0 0"></div>
+        <div style="flex:1;background:var(--accent);opacity:.8;height:90%;border-radius:3px 3px 0 0"></div>
+        <div style="flex:1;background:var(--accent);opacity:.8;height:45%;border-radius:3px 3px 0 0"></div>
+        <div style="flex:1;background:var(--accent);opacity:.8;height:85%;border-radius:3px 3px 0 0"></div>
+        <div style="flex:1;background:var(--accent);opacity:.8;height:50%;border-radius:3px 3px 0 0"></div>
+        <div style="flex:1;background:var(--accent);opacity:.8;height:5%;border-radius:3px 3px 0 0"></div>
+      </div></div>
+    <div class="card"><h3>Trend efficienza (30gg)</h3>
+      <svg viewBox="0 0 300 80" style="width:100%"><polyline points="0,40 30,38 60,42 90,36 120,40 150,35 180,39 210,34 240,38 270,36 300,38" fill="none" stroke="var(--warn)" stroke-width="3"/></svg></div>
+  </div>
+
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Rotte avanzate (consumo per zona)</h3>
+    <table>
+      <tr><th>Rotta</th><th>Viaggi</th><th>Km</th><th>Km/viaggio</th><th>kWh/100km</th><th>Spesa</th></tr>
+      <tr><td><b>casa → lavoro</b></td><td>86</td><td>1 462</td><td>17.0</td><td><span class="badge">16.2</span></td><td>24.20 €</td></tr>
+      <tr><td><b>lavoro → casa</b></td><td>84</td><td>1 428</td><td>17.0</td><td><span class="badge">15.8</span></td><td>22.60 €</td></tr>
+      <tr><td>casa → beb</td><td>12</td><td>96</td><td>8.0</td><td><span class="badge">18.9</span></td><td>1.80 €</td></tr>
+    </table>
+    <div class="row" style="margin-top:8px"><span>🏆 Più efficiente</span><b>lavoro → casa · 15.8 kWh/100km</b></div>
+    <div class="row"><span>🐢 Più vorace</span><b>casa → beb · 18.9 kWh/100km</b></div>
+  </div>
+  </section>
+
+<!-- ============ RICARICHE ============ -->
+<section id="p4" class="page">
+  <h1>Storico ricariche</h1>
+  <div class="sub">Filtri tipo / periodo / anno + tabelle wallbox</div>
+  <div class="tiles">
+    <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">OGGI</div><div class="v">0.0 kWh</div><div class="bar" style="width:100%"><i style="width:2%"></i></div><div style="color:var(--muted);font-size:12px;margin-top:6px">0.0 €</div></div>
+    <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">SETTIMANA</div><div class="v">64.2 kWh</div><div class="bar" style="width:100%"><i style="width:55%"></i></div><div style="color:var(--muted);font-size:12px;margin-top:6px">16.05 €</div></div>
+    <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">MESE</div><div class="v">68.29 kWh</div><div class="bar" style="width:100%"><i style="width:58%"></i></div><div style="color:var(--muted);font-size:12px;margin-top:6px">16.25 €</div></div>
+    <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">ANNO</div><div class="v">1757.5 kWh</div><div class="bar" style="width:100%"><i style="width:85%"></i></div><div style="color:var(--muted);font-size:12px;margin-top:6px">418.28 €</div></div>
+  </div>
+  <div class="grid g3">
+    <div class="card"><h3>Filtri</h3>
+      <div style="margin-bottom:10px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Tipo</div>
+        <select><option>Tutte</option><option selected>Casa</option><option>Fotovoltaico</option><option>Pubblica</option></select></div>
+      <div style="margin-bottom:10px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Periodo</div>
+        <select><option>Settimana</option><option>Mese</option><option selected>Anno</option><option>Tutto</option></select></div>
+      <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Anno</div>
+        <select><option>Tutti</option><option>2025</option><option selected>2026</option></select></div></div>
+    <div class="card"><h3>Totale selezione</h3>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;padding:6px 0">
+        <div style="text-align:center"><div class="big" style="font-size:22px;color:var(--accent)">1757.5</div><div style="color:var(--muted);font-size:11px">kWh</div></div>
+        <div style="text-align:center"><div class="big" style="font-size:22px">418 €</div><div style="color:var(--muted);font-size:11px">costo</div></div>
+        <div style="text-align:center"><div class="big" style="font-size:22px">78h12</div><div style="color:var(--muted);font-size:11px">Ø 5.2 kW</div></div>
+      </div></div>
+    <div class="card"><h3>Ultima sessione</h3>
+      <div class="row"><span>21 Ago 23:05 → 06:58</span><b>21% → 78%</b></div>
+      <div class="row"><span>Rete / batteria</span><b>32.44 / 30.56 kWh</b></div>
+      <div class="row"><span>Durata · Ø kW</span><b>7h53′ · 4.12</b></div>
+      <div class="row"><span>Costo</span><b>7.72 €</b></div></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Lista filtrata (42 · Casa · 2026)</h3>
+    <table>
+      <tr><th>Data</th><th>Tipo</th><th>Durata</th><th>Δ SoC</th><th>kWh</th><th>Ø kW</th><th>€/kWh</th><th>Costo</th></tr>
+      <tr><td>21/08 · 23:05</td><td>🏠 Casa</td><td>7h53′</td><td><b>+57%</b></td><td>32.44</td><td>4.12</td><td>0.238</td><td><b>7.72 €</b></td></tr>
+      <tr><td>17/08 · 23:05</td><td>🏠 Casa</td><td>6h44′</td><td><b>+48%</b></td><td>27.00</td><td>4.01</td><td>0.238</td><td><b>6.43 €</b></td></tr>
+      <tr style="color:var(--muted)"><td colspan="8">… altre 40 …</td></tr>
+    </table>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card pro-only"><h3>Generale (wallbox)</h3>
+      <table>
+        <tr><th>Periodo</th><th>Costo</th><th>Ricaricati</th><th>KM</th></tr>
+        <tr><td>Ieri</td><td>7.72 €</td><td>32.44 kWh</td><td>29 km</td></tr>
+        <tr><td>Oggi</td><td>0.0 €</td><td>0.0 kWh</td><td>0 km</td></tr>
+        <tr><td>Mese</td><td>16.25 €</td><td>68.29 kWh</td><td>515 km</td></tr>
+        <tr><td>Anno</td><td>418.28 €</td><td>1757.48 kWh</td><td>11 477 km</td></tr>
+      </table></div>
+    <div class="card pro-only"><h3>Settimanale (wallbox)</h3>
+      <table>
+        <tr><th>Giorno</th><th>Costo</th><th>Ricaricati</th><th>KM</th></tr>
+        <tr><td>Lunedì</td><td>0.50 €</td><td>2.12 kWh</td><td>50 km</td></tr>
+        <tr><td>Martedì</td><td>6.42 €</td><td>26.98 kWh</td><td>52 km</td></tr>
+        <tr><td>Sabato</td><td>7.72 €</td><td>32.44 kWh</td><td>29 km</td></tr>
+        <tr style="color:var(--muted)"><td>… tutti i 7 giorni nella dashboard</td><td></td><td></td><td></td></tr>
+      </table></div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Mensile — storico annuale</h3>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
+      <span style="font-size:12px;color:var(--muted)">Anno da visualizzare</span>
+      <select id="annoMensile" style="width:130px" onchange="renderMesi()">
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+        <option value="2027">2027</option>
+      </select>
+      <span style="font-size:11px;color:var(--muted)">costo · consumi · percorrenza per ogni mese</span>
+    </div>
+    <table>
+      <thead><tr><th>Mese</th><th>Costo</th><th>Ricaricati</th><th>KM</th></tr></thead>
+      <tbody id="mesiBody"></tbody>
+    </table>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px">In Home Assistant il menu è il selettore "Filtro Anno Ricariche" dell'integrazione.</div>
+  </div>
+  </div>
+  <div class="card ent-only" style="margin-top:16px">
+    <h3>☀️ Report solare — Anno <span style="color:var(--accent)">2026</span> (kWh per fonte)</h3>
+    <table>
+      <tr><th>Mese</th><th>🏠 Casa (rete)</th><th>☀️ FV</th><th>⚡ Colonnine</th><th>Tot</th></tr>
+      <tr><td>Gennaio</td><td>241.99</td><td>0</td><td>0</td><td><b>241.99</b></td></tr>
+      <tr><td>Luglio</td><td>180.58</td><td>88.00</td><td>0</td><td><b>268.58</b></td></tr>
+      <tr><td>Agosto</td><td>48.29</td><td>20.00</td><td>0</td><td><b>68.29</b></td></tr>
+      <tr style="border-top:2px solid var(--accent)"><td><b>TOTALE 2026</b></td><td><b style="color:var(--accent)">1 462</b></td><td><b style="color:var(--accent)">318</b></td><td><b style="color:var(--accent)">—</b></td><td><b style="color:var(--accent)">1 780</b></td></tr>
+    </table>
+    <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Con il profilo Enterprise il bilanciamento solare massimizza la colonna ☀️</div>
+  </div>
+  </section>
+
+<!-- ============ SALUTE ============ -->
+<section id="p5" class="page">
+  <h1>Salute batteria</h1>
+  <div class="sub">SOH modificabile inline, rete / batteria / dispersa</div>
+  <div class="grid g3">
+    <div class="card">
+      <h3>SOH Ufficiale ✏️</h3>
+      <div class="inp" style="border:none"><input value="97.5" style="width:120px;font-size:26px;font-weight:800"><span class="u" style="font-size:16px">%</span></div>
+      <div style="color:var(--muted);font-size:12px">impostalo qui o in Impostazioni</div>
+    </div>
+    <div class="card"><h3>SOH Stimato</h3>
+      <div class="big" style="font-size:34px;color:var(--accent)">96.8<small>%</small></div>
+      <div style="color:var(--muted);font-size:12px;margin-top:8px">dalle ricariche a casa</div></div>
+    <div class="card"><h3>kWh per 1%</h3>
+      <div class="big" style="font-size:34px;color:var(--accent)">0.585 <small>kWh</small></div>
+      <div style="color:var(--muted);font-size:12px;margin-top:8px">= 60 × 97.5% ÷ 100</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Dove finisce l'energia</h3>
+      <div style="display:flex;height:26px;border-radius:8px;overflow:hidden;margin-bottom:10px">
+        <div style="width:94.2%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0d1522">in batteria 94.2%</div>
+        <div style="width:5.8%;background:var(--bad);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">5.8%</div>
+      </div>
+      <div class="row"><span>Dalla rete (AC)</span><b>32.44 kWh</b></div>
+      <div class="row"><span>In batteria</span><b>30.56 kWh</b></div>
+      <div class="row"><span>Dispersa</span><b>1.88 kWh</b></div></div>
+    <div class="card"><h3>Sessioni analizzate</h3>
+      <table>
+        <tr><th>Data</th><th>Δ SoC</th><th>Rete</th><th>Batteria</th><th>Eff.</th></tr>
+        <tr><td>21/08</td><td>+57%</td><td>32.44</td><td>30.56</td><td><span class="badge">94.2%</span></td></tr>
+        <tr><td>17/08</td><td>+48%</td><td>27.00</td><td>25.14</td><td><span class="badge">93.1%</span></td></tr>
+      </table></div>
+  </div>
+</section>
+
+<section id="p4b" class="page pro-only">
+  <h1>Gestione ricarica</h1>
+  <div class="sub">Profilo Pro / Enterprise — controllo completo wallbox e solare</div>
+  <div class="grid g3">
+    <div class="card">
+      <h3>Controllo wallbox</h3>
+      <div class="row"><span>Stato</span><b>🔌 In attesa</b></div>
+      <div class="row"><span>Potenza ora</span><b>0.0 kW</b></div>
+      <div class="row"><span>Tempo residuo</span><b>—</b></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <div class="btn" style="color:var(--good)">▶ Avvia</div>
+        <div class="btn" style="color:var(--bad)">⏹ Ferma</div>
+      </div>
+      <div style="color:var(--muted);font-size:11px;margin-top:8px">switch/button della tua wallbox (da configurazione)</div>
+    </div>
+    <div class="card">
+      <h3>Parametri di carica</h3>
+      <div class="inp"><span>🎯 Obiettivo Ricarica (ferma)</span><input value="80"><span class="u">%</span></div>
+      <div class="inp"><span>⚡ Ampere wallbox</span><input value="16"><span class="u">A</span></div>
+      <div class="row"><span>Consumo istantaneo</span><b>0 W</b></div>
+    </div>
+    <div class="card pro-only">
+      <h3>⏰ Carica programmata</h3>
+      <div class="inp"><span>% avvio (sotto)</span><input value="30"><span class="u">%</span></div>
+      <div class="inp"><span>% stop (sopra)</span><input value="80"><span class="u">%</span></div>
+      <div class="inp"><span>Orario avvio</span><input value="23:30"></div>
+      <div class="inp"><span>Orario stop</span><input value="07:00"></div>
+    </div>
+  </div>
+  <div class="card netto" style="margin-top:16px">
+    <h3>☀️ Bilanciamento solare dinamico</h3>
+    <div class="row"><span>Stato</span><b class="chip ok">ATTIVO</b></div>
+    <div class="inp"><span>🏠 Priorità batteria casa (SoC min prima dell'auto)</span><input value="80"><span class="u">%</span></div>
+    <div class="inp"><span>Ampere minimi / massimi</span><input value="6"><input value="16"><span class="u">A</span></div>
+    <div class="row"><span>Surplus attuale</span><b>+1 240 W</b></div>
+    <div class="row"><span>Prelievo rete</span><b style="color:var(--good)">-30 W (≈0)</b></div>
+    <div class="row"><span>Ampere wallbox</span><b>10 → 12 A</b></div>
+    <div class="row"><span>Sensore batteria (potenza)</span><b>opzionale — per usare anche il surplus dalla batteria</b></div>
+    <div class="row"><span>Sensore batteria (SoC)</span><b>per la priorità: sotto l'80% carica prima la casa</b></div>
+  </div>
+</section>
+
+
+<!-- ============ MANUTENZIONE ============ -->
+<section id="p6" class="page">
+  <h1>Manutenzione</h1>
+  <div class="sub">Tagliandi e Assicurazione — sezioni separate</div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>🔧 Tagliandi</h3>
+      <div class="row"><span>Prossimo (modalità km)</span><b>71 218 km · 🟢 2 500 km</b></div>
+      <div class="row"><span>Speso finora</span><b>340 € (4 interventi)</b></div>
+      <table style="margin-top:10px">
+        <tr><th>Data</th><th>Km</th><th>Tipo</th><th>€</th></tr>
+        <tr><td>20/08/2026</td><td>56 218</td><td>Tagliando annuale</td><td>85</td></tr>
+        <tr><td>12/02/2026</td><td>41 500</td><td>Gomme + freni</td><td>140</td></tr>
+      </table>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <div class="btn">Modalità: KM</div><div class="btn">Modalità: DATA</div>
+      </div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:8px">🔔 Notifica Telegram: notify.michele · 30 gg prima (da configurazione)</div>
+    </div>
+    <div class="card">
+      <h3>🛡️ Assicurazione</h3>
+      <div class="row"><span>Scadenza attuale</span><b>24/02/2027 · 186 gg</b></div>
+      <div class="inp" style="border:none"><span>Costo annuo</span><input value="400"><span class="u">€/anno</span></div>
+      <h3 style="margin-top:14px">Rinnovo</h3>
+      <div style="display:flex;gap:8px">
+        <div class="btn">Rinnova +6 mesi</div>
+        <div class="btn">Rinnova +1 anno</div>
+        <div class="btn">Data precisa 📅</div>
+      </div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:10px">🔔 Stessa notifica Telegram delle scadenze</div>
+    </div>
+  </div>
+  <div class="card netto" style="margin-top:16px">
+    <h3>🏆 Risparmio manutenzione</h3>
+    <div class="row"><span>Termica teorica (4 tagliandi × 450 €)</span><b>1 800 €</b></div>
+    <div class="row"><span>Spesa reale EV</span><b>340 €</b></div>
+    <div class="row" style="border-top:2px solid var(--accent)"><span><b>RISPARMIO</b></span><b style="color:var(--accent);font-size:18px">1 460 €</b></div>
+  </div>
+</section>
+
+<!-- ============ RISPARMI ============ -->
+<section id="p7" class="page">
+  <h1>Risparmi</h1>
+  <div class="sub">Il quadro completo — riassunto breve anche in Panoramica</div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>💶 Carburante</h3>
+      <div class="row"><span>Risparmiato effettivo TOTALE</span><b style="color:var(--accent)">5 419 €</b></div>
+      <div class="row"><span>Spesa teorica termica</span><b>7 369 €</b></div>
+      <div class="row"><span>Costo totale ricariche</span><b>1 950 €</b></div>
+      <div class="row"><span>Risparmiato MESE</span><b>65.90 €</b></div>
+      <div class="row"><span>Risparmiato ANNO</span><b>897 €</b></div>
+    </div>
+    <div class="card">
+      <h3>🔧📄 Manutenzione + Bollo</h3>
+      <div class="row"><span>Risparmio tagliandi (1 800 − 340)</span><b>1 460 €</b></div>
+      <div class="row"><span>Risparmio bollo</span><b>1 330 €</b></div>
+      <div class="row"><span>Spesa reale tagliandi EV</span><b>340 €</b></div>
+    </div>
+  </div>
+  <div class="card netto" style="margin-top:16px">
+    <h3>🏆 Risultato netto</h3>
+    <table>
+      <tr><th>Voce</th><th>Euro</th></tr>
+      <tr><td>Carburante evitato</td><td>5 419 €</td></tr>
+      <tr><td>+ Tagliandi</td><td>1 460 €</td></tr>
+      <tr><td>+ Bollo</td><td>1 330 €</td></tr>
+      <tr><td><b>★ RISPARMIO NETTO TOTALE</b></td><td><b style="color:var(--accent);font-size:17px">8 209 €</b></td></tr>
+    </table>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>☀️ Fotovoltaico</h3>
+      <div class="row"><span>Ricaricato FV questo mese</span><b>24.60 kWh</b></div>
+      <div class="row"><span>Energia casa totale</span><b>5 462 kWh</b></div></div>
+    <div class="card"><h3>ℹ️ Come si calcola</h3>
+      <div style="color:var(--muted);font-size:12.5px;line-height:1.7">
+      Carburante: km × consumo × prezzo (live o fisso) − costi pagati.<br>
+      Tagliandi: (km ÷ intervallo) × <b>450 €</b> media termica − spesa reale EV.<br>
+      Bollo: anni stimati × differenza bollo. Il FV costa 0 €.</div></div>
+  </div>
+</section>
+
+<!-- ============ EXTRA ============ -->
+<section id="p8" class="page">
+  <h1>Extra</h1>
+  <div class="sub">Vampire drain, rotte, meteo, CO2, scadenze, top &amp; stop</div>
+  <div class="grid g3">
+    <div class="card"><h3>🔋 Vampire drain</h3><div class="big" style="font-size:32px;color:var(--accent)">0.8<small>%</small></div><div style="color:var(--muted);font-size:12px;margin-top:6px">≈ 0.47 kWh · tipico 0.5–1.5%/gg</div></div>
+    <div class="card"><h3>🌍 CO2</h3><div class="big" style="font-size:32px;color:var(--good)">6 942 <small>kg</small></div><div style="color:var(--muted);font-size:12px;margin-top:6px">Anno: 1 024 kg</div></div>
+    <div class="card"><h3>📅 Scadenze</h3><div class="row"><span>Revisione</span><b>37 gg</b></div><div class="row"><span>Bollo</span><b>50 gg</b></div><div class="row"><span>Assicurazione</span><b>186 gg</b></div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Consumo per zona</h3>
+      <table><tr><th>Rotta</th><th>Viaggi</th><th>Km</th><th>kWh/100km</th></tr>
+      <tr><td><b>casa → lavoro</b></td><td>86</td><td>1 462</td><td><span class="badge">16.2</span></td></tr>
+      <tr><td><b>lavoro → casa</b></td><td>84</td><td>1 428</td><td><span class="badge">15.8</span></td></tr></table></div>
+    <div class="card"><h3>Meteo vs consumi</h3>
+      <table><tr><th>Data</th><th>Temp.</th><th>kWh/100km</th></tr>
+      <tr><td>22/08</td><td>34.5 °C</td><td><span class="badge">17.4</span></td></tr>
+      <tr><td>14/01</td><td>6.2 °C</td><td><span class="badge">22.8</span></td></tr></table></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>🏆 Top &amp; Stop · Energy</h3>
+    <div class="row"><span>Migliore / Peggiore</span><b>14.9 / 21.3 kWh/100km</b></div>
+    <div class="row"><span>Energia casa (Energy Dashboard)</span><b>5 462 kWh</b></div></div>
+</section>
+
+<!-- ============ IMPOSTAZIONI ============ -->
+<section id="p10" class="page">
+  <h1>Impostazioni</h1>
+  <div class="card" style="margin-bottom:16px">
+    <h3>📦 Profilo installazione</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div class="profbtn" data-prof="minimal" onclick="setProfile('minimal')">🚗 Minimal<br><small style="color:var(--muted)">solo auto (colonnine)</small></div>
+      <div class="profbtn active" data-prof="pro" onclick="setProfile('pro')">🚗🔌 Pro<br><small style="color:var(--muted)">auto + wallbox</small></div>
+      <div class="profbtn" data-prof="enterprise" onclick="setProfile('enterprise')">🚗🔌☀️ Enterprise<br><small style="color:var(--muted)">+ fotovoltaico</small></div>
+    </div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:8px">Nel preview nasconde/mostra le sezioni; in Home Assistant il profilo si sceglie al wizard e la dashboard nasce già filtrata.</div>
+  </div>
+  <div class="sub">Prezzi, batteria, notifiche, palette e reset</div>
+  <div class="grid g3">
+    <div class="card"><h3>Prezzi energia</h3>
+      <div class="inp"><span>Costo casa</span><input value="0.238"><span class="u">€/kWh</span></div>
+      <div class="inp"><span>Costo colonnina</span><input value="0.450"><span class="u">€/kWh</span></div>
+      <div class="inp"><span>Costo fotovoltaico</span><input value="0.000"><span class="u">€/kWh</span></div>
+      <div class="inp"><span>Prezzo diesel (o sensore live)</span><input value="1.72"><span class="u">€/l</span></div></div>
+    <div class="card"><h3>Batteria</h3>
+      <div class="inp"><span>Obiettivo Ricarica</span><input value="80"><span class="u">%</span></div>
+      <div class="inp"><span>Capacità</span><input value="60"><span class="u">kWh</span></div>
+      <div class="inp"><span>SOH ufficiale</span><input value="97.5"><span class="u">%</span></div>
+      <div class="inp"><span>Costo assicurazione</span><input value="400"><span class="u">€/anno</span></div>
+      <div class="inp"><span>🏠 Priorità batteria casa</span><input value="80"><span class="u">%</span></div></div>
+    <div class="card">
+      <h3>🎨 Palette (colori Renault)</h3>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="btn" onclick="setTheme('blu')">🔵 Blu Megane</div>
+        <div class="btn" onclick="setTheme('giallo')">🟡 Giallo R5</div>
+        <div class="btn" onclick="setTheme('verde')">🟢 Verde R4</div>
+        <div class="btn" onclick="setTheme('aviation')">⚪ Grigio Aviation</div>
+      </div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:10px">
+        Temi HA equivalenti in /themes: renault-blu, renault-giallo, renault-verde, renault-aviation</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>🔔 Notifiche &amp; Reset</h3>
+    <div class="inp"><span>Servizio notify</span><input value="notify.michele" style="width:150px"></div>
+    <div class="inp"><span>Giorni preavviso scadenze</span><input value="30"><span class="u">gg</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+      <div class="btn">🔄 Km</div><div class="btn">🔄 Energia</div>
+      <div class="btn">🔄 Costi</div><div class="btn">🏁 Viaggio</div><div class="btn">📥 CSV</div>
+    </div></div>
+</section>
+
+<section id="p9" class="page">
+  <h1>Automazioni</h1>
+  <div class="sub">Notifiche e carica programmata integrate — attivabili da qui</div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Notifiche</h3>
+      <div class="row"><span>⚡ Avvio ricarica</span><label class="switch"><input type="checkbox" checked><span></span></label></div>
+      <div class="row"><span>🔋 Fine ricarica (kWh, SoC, costo)</span><label class="switch"><input type="checkbox" checked><span></span></label></div>
+      <div class="row"><span>⚠️ Batteria bassa a casa — attiva</span><label class="switch"><input type="checkbox" checked><span></span></label></div>
+      <div class="row"><span>↳ % minima</span><span class="inpmini"><input value="25"></span></div>
+      <div class="row"><span>↳ Fascia oraria</span><span class="inpmini"><input value="18:00">→<input value="22:00"></span></div>
+      <div class="row"><span>📨 Servizio notifiche</span><b>notify.michele</b></div>
+    </div>
+    <div class="card">
+      <h3>⏰ Carica programmata</h3>
+      <div class="row"><span>Stato</span><label class="switch"><input type="checkbox"><span></span></label></div>
+      <div class="row"><span>Modalità</span><b>orario / percentuale</b></div>
+      <div class="row"><span>↳ Orario avvio</span><span class="inpmini"><input value="23:30"></span></div>
+      <div class="row"><span>↳ % avvio (modalità %)</span><span class="inpmini"><input value="30"></span></div>
+      <div class="row"><span>↳ Orario stop</span><span class="inpmini"><input value="07:00"></span></div>
+      <div class="row"><span>↳ % stop (modalità %)</span><span class="inpmini"><input value="80"></span></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>Come si cambiano i parametri</h3>
+    <div style="color:var(--muted);font-size:13px;line-height:1.8">
+      Tutto in <b>Impostazioni → Integrazioni → Renault EV Center → Configura</b>:
+      servizio notify, % minima e fascia oraria del promemoria, modalità programmazione
+      (orario o %), orari e % di avvio/stop, pulsante di avvio carica e number target
+      per lo stop. Gli interruttori si trovano anche tra i dispositivi
+      ("Renault EV Center" → switch).</div>
+  </div>
+</section>
+
+<div class="note">
+  ⚠️ Anteprima statica con dati fittizi — <b>10 viste</b> incluse in <kbd>/dashboards</kbd>.
+  Palette Renault selezionabile in <b>Impostazioni</b>. Marchio Renault dei rispettivi titolari.
+</div>
+</div>
+<script>
+document.querySelectorAll('.nav button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById(b.dataset.p).classList.add('active');
+  });
+});
+function setTheme(t){document.body.dataset.theme=t;}
+function setProfile(p){
+  document.querySelectorAll('.profbtn').forEach(x=>x.classList.toggle('active', x.dataset.prof===p));
+  document.querySelectorAll('.pro-only').forEach(x=>x.style.display = (p==='minimal') ? 'none' : '');
+  document.querySelectorAll('.ent-only').forEach(x=>x.style.display = (p==='enterprise') ? '' : 'none');
+  const nav = document.querySelector('[data-p="p4b"]');
+  if (nav) nav.style.display = (p==='minimal') ? 'none' : 'flex';
+}
+</script>
+
+<script>
+const DATI_MESI = {
+  "2025": [
+    ["Gennaio", 38.40, 168.20, 1120], ["Febbraio", 35.10, 152.00, 1044],
+    ["Marzo", 44.80, 196.30, 1189], ["Aprile", 47.20, 205.40, 1332],
+    ["Maggio", 51.60, 226.80, 1470], ["Giugno", 49.90, 219.10, 1588],
+    ["Luglio", 54.30, 238.60, 1521], ["Agosto", 40.10, 176.40, 990],
+    ["Settembre", 46.70, 204.90, 1402], ["Ottobre", 43.20, 189.70, 1255],
+    ["Novembre", 39.80, 174.30, 1108], ["Dicembre", 42.60, 186.90, 1233]
+  ],
+  "2026": [
+    ["Gennaio", 55.66, 241.99, 1591], ["Febbraio", 42.85, 180.03, 1221],
+    ["Marzo", 55.96, 235.11, 1276], ["Aprile", 56.68, 238.16, 1457],
+    ["Maggio", 62.86, 264.12, 1792], ["Giugno", 60.10, 252.54, 2016],
+    ["Luglio", 63.92, 268.58, 1609], ["Agosto", 16.25, 68.29, 676],
+    ["Settembre", 0, 0, 0], ["Ottobre", 0, 0, 0],
+    ["Novembre", 0, 0, 0], ["Dicembre", 0, 0, 0]
+  ],
+  "2027": []
+};
+function renderMesi(){
+  const y = document.getElementById("annoMensile").value;
+  const rows = DATI_MESI[y] || [];
+  let tot = [0, 0, 0];
+  let html = rows.map(r => {
+    tot[0] += r[1]; tot[1] += r[2]; tot[2] += r[3];
+    return "<tr><td><b>" + r[0] + "</b></td><td>" + r[1].toFixed(2) + " €</td><td>" +
+           r[2].toFixed(2) + " kWh</td><td>" + r[3] + " km</td></tr>";
+  }).join("");
+  html += "<tr style=\"border-top:2px solid var(--accent)\"><td><b>TOTALE " + y +
+          "</b></td><td><b style=\"color:var(--accent)\">" + tot[0].toFixed(2) +
+          " €</b></td><td><b style=\"color:var(--accent)\">" + tot[1].toFixed(2) +
+          " kWh</b></td><td><b style=\"color:var(--accent)\">" + tot[2] + " km</b></td></tr>";
+  document.getElementById("mesiBody").innerHTML = html;
+}
+renderMesi();
+</script>
+</body>
+</html>

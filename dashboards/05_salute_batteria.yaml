@@ -1,0 +1,99 @@
+# ============================================================
+#  RENAULT EV CENTER — SALUTE BATTERIA
+# ============================================================
+# Efficienza di carica (mai >100%), energia dispersa e SOH.
+# "SOH Ufficiale" è il valore che ti dà la concessionaria: usalo
+# come riferimento reale — serve anche a calcolare l'efficienza.
+# ============================================================
+title: Renault EV Center
+views:
+  - title: Salute batteria
+    path: salute-batteria
+    icon: mdi:heart-pulse
+    max_columns: 2
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: State of Health
+          - square: true
+            columns: 2
+            type: grid
+            cards:
+              - type: tile
+                entity: number.renault_soh_ufficiale
+                name: SOH Ufficiale
+                icon: mdi:heart-pulse
+                vertical: true
+              - type: tile
+                entity: sensor.renault_soh_stimato
+                name: SOH Stimato
+                icon: mdi:heart-pulse-outline
+                vertical: true
+          - type: markdown
+            content: >
+              🔬 **SOH Stimato** = calcolato dall'integrazione sulle ricariche a casa
+              misurate dalla wallbox (energia AC ÷ % caricata, corretta per il rendimento).
+
+              🏥 **SOH Ufficiale** = il valore dichiarato dalla concessionaria:
+              **modificalo qui sopra** (o in Impostazioni) — è il riferimento reale usato nei calcoli.
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Impostazioni salute
+          - type: entities
+            entities:
+              - {entity: number.renault_soh_ufficiale, name: SOH reale concessionaria (%)}
+              - {entity: number.renault_capacita_batteria, name: Capacità utile (kWh)}
+          - type: markdown
+            content: >
+              🔬 **kWh per 1% di batteria: {{ states('sensor.renault_kwh_per_1_batteria') }} kWh**
+
+              *= capacità × SOH ufficiale ÷ 100. È il valore usato per trasformare
+              le variazioni di % in energia (logica del tuo vecchio `megane_km.yaml`).*
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Efficienza di ricarica
+          - type: horizontal-stack
+            cards:
+              - type: metric
+                entity: sensor.renault_efficienza_ricarica
+                icon: mdi:battery-charging-medium
+                name: Efficienza
+              - type: metric
+                entity: sensor.renault_perdite_ultima_ricarica
+                icon: mdi:lightning-bolt-circle
+                name: Dispersa
+          - type: markdown
+            content: >
+              ⚡ **Dalla rete (AC):** {{ states('sensor.renault_ultima_ricarica') }} kWh
+
+              🔋 **Entrata in batteria:** {{ states('sensor.renault_energia_batteria_ultima_ricarica') }} kWh
+
+              🔥 **Dispersa:** {{ states('sensor.renault_perdite_ultima_ricarica') }} kWh
+              ({{ state_attr('sensor.renault_perdite_ultima_ricarica','percentuale') }}%)
+
+              L'efficienza confronta l'energia teorica entrata in batteria
+              (Δ% × kWh per 1%) con quella **misurata dalla wallbox**: non supera mai il 100%.
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Ultime sessioni analizzate
+          - type: markdown
+            content: >
+              {% set sessions = state_attr('sensor.renault_soh_stimato', 'sessions') or [] %}
+              {% if sessions %}
+                | Data | Δ SoC | kWh | Efficienza | Perdite |
+                | --- | --- | --- | --- | --- |
+                {% for s in sessions | reverse %}
+                | {{ s.data }} | {{ s.delta_pct }}% | {{ s.kwh }} | {{ s.eff }}% | {{ s.perdite_kwh }} kWh |
+                {% endfor %}
+              {% else %}
+                Nessuna sessione analizzata: serve almeno una ricarica a casa
+                completata con la wallbox collegata.
+              {% endif %}

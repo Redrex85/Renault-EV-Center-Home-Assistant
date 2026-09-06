@@ -1,0 +1,125 @@
+# ============================================================
+#  RENAULT EV CENTER — MANUTENZIONE (tagliandi + assicurazione)
+# ============================================================
+title: Renault EV Center
+views:
+  - title: Manutenzione
+    path: manutenzione
+    icon: mdi:wrench
+    max_columns: 2
+    type: sections
+    sections:
+      # ------------------------------- TAGLIANDI -------------------------------
+      - type: grid
+        cards:
+          - type: heading
+            heading: 🔧 Tagliandi
+          - type: horizontal-stack
+            cards:
+              - type: metric
+                entity: sensor.renault_tagliandi
+                icon: mdi:cash-wrench
+                name: Speso finora
+              - type: metric
+                entity: sensor.mileage
+                icon: mdi:counter
+                name: Km attuali
+          - type: markdown
+            content: >
+              {% set scad = state_attr('sensor.renault_prossima_scadenza', 'scadenze') or [] %}
+              {% set tag = scad | selectattr('nome','equalto','Tagliando') | list | first %}
+              {% set km = states('sensor.mileage') | float(0) %}
+              {% if tag %}
+                {% if tag.km is defined %}
+                  🔧 Prossimo tagliando a **{{ tag.data }}** — mancanti: **{{ tag.km }} km**
+                  (≈ {{ tag.giorni }} gg)
+                  {% set mancanti = tag.km %}
+                  {% if mancanti <= 0 %}🚨 **DA FARE ORA**{% elif mancanti < 1500 %}🟡 Prendi appuntamento{% else %}🟢 Ok{% endif %}
+                {% else %}
+                  📅 Prossimo tagliando (per data): **{{ tag.data }}** — tra **{{ tag.giorni }} gg**
+                {% endif %}
+              {% else %}
+                Nessun tagliando programmato.
+              {% endif %}
+
+          - type: markdown
+            content: >
+              **Cambia modalità tagliando** (Impostazioni → Dispositivi e servizi → Azioni):
+
+              ```yaml
+              # per km (valore = km assoluti del prossimo tagliando)
+              action: renault_ev_center.set_tagliando
+              data: {mode: km, valore: "71218"}
+
+              # per data
+              action: renault_ev_center.set_tagliando
+              data: {mode: data, valore: "2027-03-01"}
+              ```
+
+              🔔 Notifica Telegram prima della scadenza: configura **servizio notify**
+              e **giorni di preavviso** nella configurazione dell'integrazione
+              (es. `notify.michele`).
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Storico tagliandi
+          - type: markdown
+            content: >
+              {% set items = state_attr('sensor.renault_tagliandi', 'items') or [] %}
+              {% if items %}
+                | Data | Km | Tipo | Costo | Note |
+                | --- | --- | --- | --- | --- |
+                {% for t in items | reverse %}
+                | {{ t.data }} | {{ t.km }} | {{ t.tipo }} | {{ t.costo }} € | {{ t.note }} |
+                {% endfor %}
+                | **TOTALE** | | | **{{ states('sensor.renault_tagliandi') }} €** | |
+              {% else %}
+                Aggiungi con `renault_ev_center.add_maintenance` (data, km, costo, tipo, note).
+              {% endif %}
+
+      # ----------------------------- ASSICURAZIONE -----------------------------
+      - type: grid
+        cards:
+          - type: heading
+            heading: 🛡️ Assicurazione
+          - type: entities
+            entities:
+              - {entity: sensor.renault_assicurazione, name: Scadenza (giorni)}
+              - {entity: number.renault_costo_assicurazione, name: Costo annuo}
+          - type: markdown
+            content: >
+              📅 Scadenza attuale: **{{ state_attr('sensor.renault_assicurazione','data') or 'non impostata' }}**
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Rinnovo
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: "+6 mesi"
+                icon: mdi:calendar-plus
+                tap_action:
+                  action: call-service
+                  service: renault_ev_center.renew_insurance
+                  data: {mesi: 6}
+              - type: button
+                name: "+1 anno"
+                icon: mdi:calendar-plus
+                tap_action:
+                  action: call-service
+                  service: renault_ev_center.renew_insurance
+                  data: {mesi: 12}
+          - type: markdown
+            content: >
+              **Rinnovo a data precisa** (Azioni):
+
+              ```yaml
+              action: renault_ev_center.renew_insurance
+              data: {data: "2027-08-24"}
+              ```
+
+              **Notifica scadenza su Telegram**: imposta il servizio (es. `notify.michele`)
+              e i giorni di preavviso nella configurazione dell'integrazione →
+              ricevi un messaggio al giorno fino alla scadenza.

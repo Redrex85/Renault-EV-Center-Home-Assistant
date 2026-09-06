@@ -1,0 +1,16 @@
+# Tema "Renault Grigio Aviation" — grafite chiaro
+renault-aviation:
+  primary-color: "#c9d4e2"
+  accent-color: "#c9d4e2"
+  primary-background-color: "#16181c"
+  secondary-background-color: "#1a1d23"
+  card-background-color: "#20242b"
+  app-header-background-color: "#121418"
+  sidebar-background-color: "#1a1d23"
+  sidebar-selected-icon-color: "#c9d4e2"
+  primary-text-color: "#eef1f5"
+  secondary-text-color: "#9aa4b1"
+  divider-color: "#2e333c"
+  state-icon-active-color: "#c9d4e2"
+  paper-item-active-color: "#c9d4e2"
+  switch-checked-color: "#c9d4e2"

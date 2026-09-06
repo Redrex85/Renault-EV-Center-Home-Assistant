@@ -1,0 +1,72 @@
+# ============================================================
+#  RENAULT EV CENTER — GESTIONE RICARICA (wallbox)
+# ============================================================
+# Vista disponibile con profilo Pro (auto+wallbox) ed Enterprise
+# (auto+wallbox+FV). Profilo Minimal: questa vista non viene creata.
+# Sostituisci gli entity segnaposto della TUA wallbox dove indicato.
+# ============================================================
+title: Renault EV Center
+views:
+  - title: Gestione ricarica
+    path: gestione-ricarica
+    icon: mdi:ev-station
+    max_columns: 2
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Controllo wallbox
+          - type: entities
+            entities:
+              - {entity: binary_sensor.renault_wallbox_in_carica, name: In carica}
+              - {entity: sensor.renault_wallbox_potenza, name: Potenza ora}
+              - {entity: sensor.renault_tempo_ricarica_stimato, name: Tempo residuo}
+              - {entity: sensor.renault_ora_completamento_ricarica, name: Completamento previsto}
+              # ⚠️ sostituisci con l'entità start/stop della TUA wallbox:
+              # - switch.wallbox_charging        (oppure button.wallbox_start)
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Parametri di carica
+          - type: entities
+            entities:
+              - {entity: number.renault_obiettivo_ricarica, name: "% obiettivo (ferma la carica)"}
+              # ⚠️ sostituisci con il number della TUA wallbox (ampere di carica):
+              # - number.wallbox_max_charging_current
+          - type: markdown
+            content: >
+              ⚡ **Consumo istantaneo wallbox:**
+              {{ (states('sensor.renault_wallbox_potenza') | float(0) * 1000) | round(0) }} W
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: ☀️ Bilanciamento solare
+          - type: entities
+            entities:
+              - {entity: switch.renault_bilanciamento_solare, name: Attivo}
+              - {entity: number.renault_bilanciamento_ampere_minimi, name: Ampere minimi}
+              - {entity: number.renault_bilanciamento_ampere_massimi, name: Ampere massimi}
+              - {entity: number.renault_priorita_batteria_casa, name: "Priorità batteria casa (SoC min)"}
+          - type: markdown
+            content: >
+              {% set b = state_attr('sensor.renault_wallbox_potenza', 'surplus_w') %}
+              Con il bilanciamento attivo la wallbox alza/abbassa gli ampere ogni ciclo
+              per caricare **solo con il surplus solare** (prelievo da rete ~0).
+
+              Configurazione (sensori rete/batteria, W per ampere) nella
+              *configurazione dell'integrazione → Wallbox*.
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Carica programmata
+          - type: entities
+            entities:
+              - {entity: switch.renault_carica_programmata, name: Attiva}
+              - {entity: number.renault_carica_avvio_sotto, name: "% avvio"}
+              - {entity: number.renault_carica_ferma_sopra, name: "% stop"}
+              - {entity: time.renault_carica_orario_avvio, name: Orario avvio}
+              - {entity: time.renault_carica_orario_stop, name: Orario stop}

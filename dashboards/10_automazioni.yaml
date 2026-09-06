@@ -1,0 +1,94 @@
+# ============================================================
+#  RENAULT EV CENTER — AUTOMAZIONI
+# ============================================================
+# Tutto regolabile da qui: interruttori on/off, % e orari
+# (number e time dell'integrazione). Nessun YAML necessario.
+# ============================================================
+title: Renault EV Center
+views:
+  - title: Automazioni
+    path: automazioni
+    icon: mdi:robot
+    max_columns: 2
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: ⚡ Notifica avvio ricarica
+          - type: entities
+            entities:
+              - entity: switch.renault_notifica_avvio_ricarica
+                name: Attiva
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: 🔋 Notifica fine ricarica
+          - type: entities
+            entities:
+              - entity: switch.renault_notifica_fine_ricarica
+                name: "Attiva (kWh, SoC iniziale→finale, costo)"
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: ⚠️ Promemoria batteria bassa (a casa)
+          - type: entities
+            entities:
+              - entity: switch.renault_promemoria_batteria_bassa
+                name: Attiva
+              - entity: number.renault_batteria_minima_promemoria
+                name: "% minima"
+              - entity: time.renault_promemoria_inizio
+                name: Fascia oraria — inizio
+              - entity: time.renault_promemoria_fine
+                name: Fascia oraria — fine
+          - type: markdown
+            content: >
+              📨 Arriva sul **servizio notify scelto in configurazione**
+              (es. `notify.michele`), una volta al giorno mentre sei a casa
+              nella fascia oraria con la batteria sotto la % minima.
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: ⏰ Carica programmata (wallbox)
+          - type: entities
+            entities:
+              - entity: switch.renault_carica_programmata
+                name: Attiva
+              - entity: number.renault_carica_avvio_sotto
+                name: "% avvio (carica se batteria sotto)"
+              - entity: number.renault_carica_ferma_sopra
+                name: "% stop (ferma se batteria sopra)"
+              - entity: time.renault_carica_orario_avvio
+                name: Orario avvio (modalità orario)
+              - entity: time.renault_carica_orario_stop
+                name: Orario stop (modalità orario)
+          - type: markdown
+            content: >
+              ⚙️ **Modalità (orario / percentuale)** si sceglie in
+              *Impostazioni → Integrazioni → Renault EV Center → Configura →
+              Carica programmata*.
+
+              - **Modalità orario**: avvia all'orario di avvio, ferma all'orario di stop
+              - **Modalità percentuale**: avvia sotto la % di avvio, ferma sopra la % di stop
+
+              📌 Usa l'entità **avvio/stop della WALLBOX** che hai mappato in
+              configurazione (switch o button); se manca usa il target Renault come fallback.
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: 📨 Servizio di notifica
+          - type: entities
+            entities:
+              - entity: number.renault_costo_assicurazione
+                name: "(ricorda: scadenze → giorni preavviso in configurazione)"
+          - type: markdown
+            content: >
+              Il **servizio notify** (es. `notify.michele`), i **giorni di preavviso**
+              delle scadenze e la **modalità** della carica programmata si cambiano in
+              *Impostazioni → Integrazioni → Renault EV Center → Configura*.
+              Dopo il salvataggio l'integrazione si ricarica da sola.

@@ -1,0 +1,205 @@
+{
+  "title": "Renault EV Center",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Renault EV Center — Votre voiture",
+        "description": "Sélectionnez vos entités Renault (intégration officielle). Choisissez un nom court (ex. Mégane) : il devient le préfixe de toutes les nouvelles entités. Le modèle définit l'image de la voiture et un tableau de bord peut être créé automatiquement.",
+        "data": {
+          "name": "Nom de la voiture",
+          "model": "Modèle de voiture (définit l'image)",
+          "create_dashboard": "Créer automatiquement le tableau de bord",
+          "odometer_entity": "Capteur odomètre",
+          "battery_level_entity": "Capteur niveau batterie (%)",
+          "range_entity": "Capteur autonomie restante",
+          "charging_entity": "Capteur en charge",
+          "plug_entity": "Statut prise (optionnel)",
+          "location_entity": "Traqueur GPS (optionnel)"
+        }
+      },
+      "wallbox": {
+        "title": "Renault EV Center — Wallbox",
+        "description": "Associez vos capteurs wallbox (Wallbox, go-e, Easee, OCPP…). Laissez vide ce que vous n'avez pas.",
+        "data": {
+          "wallbox_enabled": "J'ai une wallbox dans Home Assistant",
+          "wallbox_power_entity": "Puissance de charge instantanée (W ou kW)",
+          "wallbox_state_entity": "État wallbox (ex. charging)",
+          "wallbox_session_energy_entity": "Compteur énergie session (kWh)",
+          "wallbox_total_energy_entity": "Compteur énergie total (kWh) — utilisé sans compteur session",
+          "wallbox_max_current_entity": "Nombre courant max (optionnel)"
+        }
+      },
+      "settings": {
+        "title": "Renault EV Center — Paramètres",
+        "description": "Capacité batterie, tarifs énergie et préférences. Tout est modifiable ensuite dans Options.",
+        "data": {
+          "battery_capacity": "Capacité batterie utilisable",
+          "target_soc": "Objectif de charge (%, pour estimations)",
+          "price_home": "Tarif domicile",
+          "price_public": "Tarif bornes publiques",
+          "price_solar": "Tarif solaire/PV (0 = gratuit)",
+          "charging_efficiency": "Rendement charge AC→batterie",
+          "solar_zone": "Nom zone solaire/BEB (vide = aucun)",
+          "poll_interval": "Intervalle de mise à jour",
+          "trip_timeout": "Minutes d'odomètre immobile avant clôture trajet",
+          "fuel_comparison": "Comparer économies vs voiture thermique",
+          "fuel_label": "Nom carburant (Diesel, Essence…)",
+          "fuel_consumption": "Consommation voiture thermique",
+          "fuel_price": "Prix carburant",
+          "diesel_price_entity": "Capteur prix carburant en direct (optionnel)",
+          "maint_comparison": "Comparaison entretien + taxe",
+          "service_cost_thermal": "Coût moyen entretien thermique",
+          "service_cost_ev": "Coût entretien EV estimé",
+          "road_tax_thermal": "Taxe routière thermique/an",
+          "road_tax_ev": "Taxe routière EV/an",
+          "service_interval_km": "Intervalle service (km)",
+          "notify_service": "Service de notification (ex. notify.mobile_app_x)",
+          "notify_days": "Jours de préavis pour échéances",
+          "tagliando_mode": "Échéance service : km ou date",
+          "tagliando_data": "Date service (si mode date)",
+          "assicurazione_costo": "Coût assurance annuel",
+          "assicurazione_data": "Échéance assurance (AAAA-MM-JJ)",
+          "notify_charge_start": "Notifier début de charge",
+          "notify_charge_end": "Notifier fin de charge",
+          "low_soc_enabled": "Rappel batterie faible (à domicile)",
+          "low_soc_threshold": "Seuil batterie faible (%)",
+          "low_soc_start": "Fenêtre rappel — début",
+          "low_soc_end": "Fenêtre rappel — fin",
+          "charge_sched_enabled": "Charge programmée",
+          "charge_sched_mode": "Mode programmation (heure ou pourcentage)",
+          "charge_start_time": "Heure début charge",
+          "charge_stop_time": "Heure fin charge",
+          "charge_start_soc": "Démarrer charge sous (%)",
+          "charge_stop_soc": "Arrêter charge au-dessus (%)",
+          "wb_charge_switch": "Entité start/stop wallbox (switch ou button)",
+          "charge_target_number": "Nombre cible de charge (repli arrêt)"
+        }
+      }
+    },
+    "options": {
+      "step": {
+        "init": {
+          "title": "Renault EV Center — Options",
+          "description": "Modifier les entités et paramètres."
+        }
+      }
+    },
+    "services": {
+      "close_trip": {
+        "name": "Clôturer trajet maintenant",
+        "description": "Forcer la clôture du trajet en cours."
+      },
+      "reset_counters": {
+        "name": "Réinitialiser compteurs",
+        "description": "Réinitialiser les compteurs choisis.",
+        "fields": {
+          "scope": {
+            "name": "Portée",
+            "description": "km, energia, costi, viaggi, ricariche ou all"
+          }
+        }
+      },
+      "export_trips_csv": {
+        "name": "Exporter trajets CSV",
+        "description": "Écrit les CSV des trajets dans config/renault_ev_center_export."
+      },
+      "add_manual_charge": {
+        "name": "Ajouter charge manuelle",
+        "description": "Enregistrer une charge manuellement (utile pour chargeurs DC).",
+        "fields": {
+          "kwh": {
+            "name": "kWh chargés"
+          },
+          "costo": {
+            "name": "Coût €"
+          },
+          "tipo": {
+            "name": "Type"
+          },
+          "quando": {
+            "name": "Date/heure (ISO, optionnel)"
+          }
+        }
+      },
+      "delete_trip": {
+        "name": "Supprimer trajet",
+        "description": "Supprimer un trajet de l'historique par ID.",
+        "fields": {
+          "trip_id": {
+            "name": "ID trajet"
+          }
+        }
+      },
+      "add_maintenance": {
+        "name": "Ajouter entretien",
+        "description": "Enregistrer une intervention d'entretien.",
+        "fields": {
+          "data": {
+            "name": "Date"
+          },
+          "km": {
+            "name": "Kilométrage"
+          },
+          "costo": {
+            "name": "Coût €"
+          },
+          "tipo": {
+            "name": "Type"
+          },
+          "note": {
+            "name": "Notes"
+          }
+        }
+      },
+      "delete_maintenance": {
+        "name": "Supprimer entretien",
+        "description": "Supprimer un entretien par ID.",
+        "fields": {
+          "maintenance_id": {
+            "name": "ID entretien"
+          }
+        }
+      },
+      "renew_insurance": {
+        "name": "Renouveler assurance",
+        "description": "Définir la nouvelle échéance assurance (6/12 mois ou date exacte).",
+        "fields": {
+          "mesi": {
+            "name": "Mois"
+          },
+          "data": {
+            "name": "Date"
+          }
+        }
+      },
+      "set_scadenza": {
+        "name": "Définir échéance",
+        "description": "Définir manuellement une échéance.",
+        "fields": {
+          "nome": {
+            "name": "Nom"
+          },
+          "data": {
+            "name": "Date"
+          }
+        }
+      },
+      "set_tagliando": {
+        "name": "Définir prochain service",
+        "description": "Choisir si le prochain service est dû au km ou à la date.",
+        "fields": {
+          "mode": {
+            "name": "Mode"
+          },
+          "valore": {
+            "name": "Valeur"
+          }
+        }
+      },
+      "create_dashboard": {
+        "name": "Créer tableau de bord",
+        "description": "Créer/mettre à jour le tableau de bord latéral avec toutes les vues."
+      }
+    }
+  }
+}

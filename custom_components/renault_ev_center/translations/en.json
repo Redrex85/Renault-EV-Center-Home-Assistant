@@ -1,0 +1,168 @@
+{
+  "title": "Renault EV Center",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Renault EV Center — Your car",
+        "description": "Select your Renault EV entities (official Renault integration). Pick a short name (e.g. Megane): it becomes the prefix of all new entities. The model sets the car picture, and a dashboard can be created automatically in the sidebar.",
+        "data": {
+          "name": "Car name",
+          "model": "Car model (sets the picture)",
+          "create_dashboard": "Create the dashboard automatically in the sidebar",
+          "odometer_entity": "Odometer sensor",
+          "battery_level_entity": "Battery level sensor (%)",
+          "range_entity": "Remaining range sensor",
+          "charging_entity": "Charging binary sensor/sensor",
+          "plug_entity": "Plug status (optional)",
+          "location_entity": "GPS tracker (optional)"
+        }
+      },
+      "wallbox": {
+        "title": "Renault EV Center — Wallbox",
+        "description": "Map your wallbox sensors (Wallbox, go-e, Easee, OCPP…). Leave empty what you don't have.",
+        "data": {
+          "wallbox_enabled": "I have a wallbox in Home Assistant",
+          "wallbox_power_entity": "Instant charging power (W or kW)",
+          "wallbox_state_entity": "Wallbox state (e.g. charging)",
+          "wallbox_session_energy_entity": "Session energy counter (kWh)",
+          "wallbox_total_energy_entity": "Total energy counter (kWh) — used if no session counter",
+          "wallbox_max_current_entity": "Max charging current number (optional)"
+        }
+      },
+      "settings": {
+        "title": "Renault EV Center — Settings",
+        "description": "Battery capacity, energy prices and preferences. Everything can be changed later in Options.",
+        "data": {
+          "battery_capacity": "Usable battery capacity",
+          "target_soc": "Charge target (Obiettivo Ricarica, % for estimates)",
+          "price_home": "Home energy price",
+          "price_public": "Public charger price",
+          "price_solar": "Solar/PV charging price (0 = free)",
+          "charging_efficiency": "AC→battery charging efficiency",
+          "solar_zone": "Solar/BEB zone name (empty = none)",
+          "poll_interval": "Update interval",
+          "trip_timeout": "Minutes of idle odometer before closing a trip",
+          "fuel_comparison": "Compare savings vs a combustion car",
+          "fuel_label": "Fuel name (Diesel, Petrol…)",
+          "fuel_consumption": "Combustion car consumption",
+          "fuel_price": "Fuel price",
+          "diesel_price_entity": "Live fuel price sensor (optional)",
+          "maint_comparison": "Maintenance + road tax comparison",
+          "service_cost_thermal": "Average combustion car service cost",
+          "service_cost_ev": "Estimated EV service cost",
+          "road_tax_thermal": "Combustion car road tax/year",
+          "road_tax_ev": "EV road tax/year",
+          "service_interval_km": "Service interval (km)",
+          "notify_service": "Notification service (e.g. notify.mobile_app_x)",
+          "notify_days": "Deadline reminder days in advance",
+          "tagliando_mode": "Service due by: km or date",
+          "tagliando_data": "Service date (if date mode)",
+          "assicurazione_costo": "Yearly insurance cost",
+          "assicurazione_data": "Insurance expiry (YYYY-MM-DD)",
+          "notify_charge_start": "Notify on charge start",
+          "notify_charge_end": "Notify on charge complete",
+          "low_soc_enabled": "Low battery reminder (at home)",
+          "low_soc_threshold": "Low battery threshold (%)",
+          "low_soc_start": "Reminder window — start",
+          "low_soc_end": "Reminder window — end",
+          "charge_sched_enabled": "Scheduled charging",
+          "charge_sched_mode": "Schedule mode (time or percentage)",
+          "charge_start_time": "Charge start time",
+          "charge_stop_time": "Charge stop time",
+          "charge_start_soc": "Start charge below (%)",
+          "charge_stop_soc": "Stop charge above (%)",
+          "wb_charge_switch": "Wallbox start/stop entity (switch or button)",
+          "charge_target_number": "Charge target number (fallback stop)"
+        }
+      }
+    },
+    "options": {
+      "step": {
+        "init": {
+          "title": "Renault EV Center — Options",
+          "description": "Change mapped entities and settings."
+        }
+      }
+    },
+    "services": {
+      "close_trip": {
+        "name": "Close trip now",
+        "description": "Force-close the ongoing trip."
+      },
+      "reset_counters": {
+        "name": "Reset counters",
+        "description": "Reset the chosen counters.",
+        "fields": {
+          "scope": {"name": "Scope", "description": "km, energia, costi, viaggi, ricariche or all"}
+        }
+      },
+      "export_trips_csv": {
+        "name": "Export trips CSV",
+        "description": "Writes trip CSVs to config/renault_ev_center_export."
+      },
+      "add_manual_charge": {
+        "name": "Add manual charge",
+        "description": "Log a charge manually (useful for DC chargers).",
+        "fields": {
+          "kwh": {"name": "kWh charged"},
+          "costo": {"name": "Cost €"},
+          "tipo": {"name": "Type"},
+          "quando": {"name": "Date/time (ISO, optional)"}
+        }
+      },
+      "delete_trip": {
+        "name": "Delete trip",
+        "description": "Remove a trip from history by ID.",
+        "fields": {
+          "trip_id": {"name": "Trip ID"}
+        }
+      },
+      "add_maintenance": {
+        "name": "Add service record",
+        "description": "Log a service/maintenance intervention.",
+        "fields": {
+          "data": {"name": "Date"},
+          "km": {"name": "Odometer km"},
+          "costo": {"name": "Cost €"},
+          "tipo": {"name": "Type"},
+          "note": {"name": "Notes"}
+        }
+      },
+      "delete_maintenance": {
+        "name": "Delete service record",
+        "description": "Remove a maintenance record by ID.",
+        "fields": {
+          "maintenance_id": {"name": "Record ID"}
+        }
+      },
+      "renew_insurance": {
+        "name": "Renew insurance",
+        "description": "Set the new insurance expiry (6/12 months from today or an exact date).",
+        "fields": {
+          "mesi": {"name": "Months"},
+          "data": {"name": "Date"}
+        }
+      },
+      "set_scadenza": {
+        "name": "Set deadline",
+        "description": "Manually set a deadline (assicurazione, bollo, revisione, tagliando_data).",
+        "fields": {
+          "nome": {"name": "Name"},
+          "data": {"name": "Date"}
+        }
+      },
+      "set_tagliando": {
+        "name": "Set next service",
+        "description": "Choose whether the next service is due by km or by date.",
+        "fields": {
+          "mode": {"name": "Mode"},
+          "valore": {"name": "Value"}
+        }
+      },
+      "create_dashboard": {
+        "name": "Create dashboard",
+        "description": "Create/update the sidebar dashboard with all bundled views."
+      }
+    }
+  }
+}

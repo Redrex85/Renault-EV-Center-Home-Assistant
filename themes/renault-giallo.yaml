@@ -1,0 +1,30 @@
+﻿# Tema "Renault Jaune" â€” grafite + giallo Renault (F1 style)
+# Installazione: cartella themes/ in /config/themes + HACS Themes o
+# themes: in configuration.yaml. Poi Profilo â†’ Tema â†’ "renault-jaune".
+renault-giallo:
+  primary-color: "#F5CB39"
+  accent-color: "#F5CB39"
+  primary-background-color: "#121212"
+  secondary-background-color: "#181818"
+  card-background-color: "#1d1d1d"
+  app-header-background-color: "#0d0d0d"
+  sidebar-background-color: "#161616"
+  sidebar-selected-icon-color: "#F5CB39"
+  sidebar-selected-background-color: "rgba(245, 203, 57, 0.12)"
+  primary-text-color: "#f2f2f2"
+  secondary-text-color: "#9e9e9e"
+  text-primary-color: "#121212"
+  divider-color: "#2a2a2a"
+  paper-card-background-color: "#1d1d1d"
+  state-icon-color: "#F5CB39"
+  state-icon-active-color: "#F5CB39"
+  paper-item-icon-color: "#9e9e9e"
+  paper-item-icon-active-color: "#F5CB39"
+  label-badge-background-color: "#262626"
+  label-badge-text-color: "#f2f2f2"
+  ha-card-border-width: 0
+  input-fill-color: "#242424"
+  switch-checked-color: "#F5CB39"
+  slider-bar-color: "#2a2a2a"
+  data-table-selected-row-background-color: "rgba(245, 203, 57, 0.08)"
+

@@ -1,0 +1,292 @@
+# ============================================================
+#  RENAULT EV CENTER — STATISTICHE (stile LeapMotor)
+# ============================================================
+title: Renault EV Center
+views:
+  - title: Statistiche
+    path: statistiche
+    icon: mdi:chart-box
+    max_columns: 2
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Da sempre (tutti i viaggi registrati)
+          - square: false
+            columns: 2
+            type: grid
+            cards:
+              - type: tile
+                entity: sensor.renault_statistiche_viaggi
+                name: Viaggi totali
+                icon: mdi:flag-checkered
+                state_content:
+                  - attribute: totale_viaggi
+                vertical: true
+              - type: tile
+                entity: sensor.mileage
+                name: Distanza totale
+                icon: mdi:map-marker-distance
+                vertical: true
+              - type: tile
+                entity: sensor.renault_statistiche_viaggi
+                name: Efficienza media
+                icon: mdi:speedometer
+                state_content:
+                  - attribute: efficienza_media
+                vertical: true
+              - type: tile
+                entity: sensor.renault_statistiche_viaggi
+                name: Migliore efficienza
+                icon: mdi:trophy
+                state_content:
+                  - attribute: migliore_efficienza
+                vertical: true
+              - type: tile
+                entity: sensor.renault_statistiche_viaggi
+                name: Tempo di guida
+                icon: mdi:timer-outline
+                state_content:
+                  - attribute: ore_guida_totali
+                vertical: true
+              - type: tile
+                entity: sensor.renault_energia_batteria_annuale
+                name: Energia usata (anno)
+                icon: mdi:battery-negative
+                vertical: true
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Energia caricata (differenziata)
+          - type: entities
+            entities:
+              - entity: sensor.renault_statistiche_viaggi
+                name: "🏠 Casa"
+                state_content:
+                  - attribute: caricata_casa
+              - entity: sensor.renault_statistiche_viaggi
+                name: "☀️ Fotovoltaico"
+                state_content:
+                  - attribute: caricata_fotovoltaico
+              - entity: sensor.renault_statistiche_viaggi
+                name: "⚡ Colonnine fuori casa"
+                state_content:
+                  - attribute: caricata_pubblica
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Percorrenza
+          - type: markdown
+            content: >
+              {% set righe = state_attr('sensor.renault_percorrenza', 'righe') or [] %}
+              | Periodo | % usata | Usati | Caricati | KM |
+              | --- | --- | --- | --- | --- |
+              {% for r in righe %}
+              | **{{ r.nome }}** | {{ ('-' ~ r.pct ~ ' %') if r.pct is defined and r.pct else '—' }} | {{ r.usati }} kWh | {{ r.caricati }} kWh | {{ r.km }} km |
+              {% endfor %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Questo mese
+          - square: false
+            columns: 2
+            type: grid
+            cards:
+              - type: tile
+                entity: sensor.renault_km_mensili
+                name: Km percorsi
+                icon: mdi:map-marker-distance
+                vertical: true
+              - type: tile
+                entity: sensor.renault_energia_batteria_mensile
+                name: kWh usati
+                icon: mdi:battery-negative
+                vertical: true
+              - type: tile
+                entity: sensor.renault_energia_caricata_mensile
+                name: kWh caricati
+                icon: mdi:ev-station
+                vertical: true
+              - type: tile
+                entity: sensor.renault_costo_ricarica_mensile
+                name: Spesa ricariche
+                icon: mdi:currency-eur
+                vertical: true
+              - type: tile
+                entity: sensor.renault_ricariche_mese
+                name: Sessioni ricarica
+                icon: mdi:counter
+                vertical: true
+              - type: tile
+                entity: sensor.renault_risparmio_mese_vs_diesel
+                name: Risparmio mese
+                icon: mdi:currency-eur-off
+                vertical: true
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Rotte avanzate (consumo per zona)
+          - type: markdown
+            content: >
+              {% set rotte = state_attr('sensor.renault_consumo_per_zona', 'rotte') or [] %}
+              {% if rotte %}
+                | Rotta | Viaggi | Km | Km/viaggio | kWh | kWh/100km | Spesa |
+                | --- | --- | --- | --- | --- | --- | --- |
+                {% for z in rotte %}
+                | **{{ z.rotta }}** | {{ z.n }} | {{ z.km }} | {{ z.km_medio }} | {{ z.kwh }} | {{ z.eff }} | {{ z.costo }} € |
+                {% endfor %}
+                {% set b = state_attr('sensor.renault_consumo_per_zona','migliore_rotta') %}
+                {% set w = state_attr('sensor.renault_consumo_per_zona','peggior_rotta') %}
+                {% if b %}
+                🏆 **Rotta più efficiente:** {{ b.rotta }} — {{ b.eff }} kWh/100km
+
+                🐢 **Rotta più vorace:** {{ w.rotta }} — {{ w.eff }} kWh/100km
+                {% endif %}
+              {% else %}
+                Serve il tracker GPS: le rotte compaiono dopo i primi viaggi.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Trend 30 giorni
+          - type: statistic
+            entity: sensor.renault_km_giornalieri
+            chart_type: bar
+            stat_type: sum
+            period:
+              calendar: {period: day, offset: -30, duration: {days: 30}}
+          - type: statistic
+            entity: sensor.renault_kwh_per_100km
+            chart_type: line
+            stat_type: mean
+            period:
+              calendar: {period: day, offset: -30, duration: {days: 30}}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Trend 12 mesi
+          - type: statistic
+            entity: sensor.renault_km_mensili
+            chart_type: bar
+            stat_type: sum
+            period:
+              calendar: {period: month, offset: -12, duration: {months: 12}}
+          - type: statistic
+            entity: sensor.renault_costo_ricarica_mensile
+            chart_type: bar
+            stat_type: sum
+            period:
+              calendar: {period: month, offset: -12, duration: {months: 12}}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: "Anno → Mese (2026)"
+          - type: markdown
+            content: >
+              {% set days = state_attr('sensor.renault_storico_giornaliero', 'days') or [] %}
+              {% set anno = now().year | string %}
+              {% set ns = namespace(res={}) %}
+              {% for d in days %}
+                {% if d.data[:4] == anno %}
+                  {% set m = d.data[:7] %}
+                  {% set acc = ns.res.get(m, {'km': 0, 'kwh': 0, 'gg': 0}) %}
+                  {% set ns.res = ns.res | combine({m: {
+                      'km': acc.km + d.km,
+                      'kwh': acc.kwh + d.kwh,
+                      'gg': acc.gg + (1 if d.km > 0.5 else 0)}}) %}
+                {% endif %}
+              {% endfor %}
+              {% set mesi = {'01':'Gennaio','02':'Febbraio','03':'Marzo','04':'Aprile','05':'Maggio','06':'Giugno','07':'Luglio','08':'Agosto','09':'Settembre','10':'Ottobre','11':'Novembre','12':'Dicembre'} %}
+              | Mese | Giornate | Km | kWh | kWh/100km |
+              | --- | --- | --- | --- | --- |
+              {% for m in ns.res.keys() | sort | reverse %}
+              {% set r = ns.res[m] %}
+              | **{{ mesi.get(m[5:6] ~ m[6:7], m) }}** | {{ r.gg }} | **{{ r.km | round(1) }}** | {{ r.kwh | round(2) }} | {{ ((r.kwh / r.km * 100) if r.km > 0 else 0) | round(1) }} |
+              {% endfor %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Km per giorno (30 giorni)
+          - type: statistic
+            entity: sensor.renault_km_giornalieri
+            chart_type: bar
+            stat_type: sum
+            period:
+              calendar: {period: day, offset: -30, duration: {days: 30}}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Trend efficienza (30 giorni)
+          - type: statistic
+            entity: sensor.renault_kwh_per_100km
+            chart_type: line
+            stat_type: mean
+            period:
+              calendar: {period: day, offset: -30, duration: {days: 30}}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Energia usata per giorno (30 giorni)
+          - type: statistic
+            entity: sensor.renault_energia_batteria_giornaliera
+            chart_type: bar
+            stat_type: sum
+            period:
+              calendar: {period: day, offset: -30, duration: {days: 30}}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Risparmi
+          - type: entities
+            entities:
+              - {entity: sensor.renault_risparmio_totale_vs_diesel, name: Carburante (totale)}
+              - {entity: sensor.renault_risparmio_anno_vs_diesel, name: Carburante (anno)}
+              - entity: sensor.renault_risparmio_tagliandi_vs_diesel
+                name: Tagliandi evitati
+              - entity: sensor.renault_risparmio_bollo_vs_diesel
+                name: Bollo risparmiato
+              - entity: sensor.renault_risparmio_netto_vs_diesel
+                name: "★ Risparmio NETTO"
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Report mensile (storico)
+          - type: markdown
+            content: >
+              {% set days = state_attr('sensor.renault_storico_giornaliero', 'days') or [] %}
+              {% set mese_corrente = now().strftime('%Y-%m') %}
+              {% set ns = namespace(km=0, kwh=0, giorni=0, best=None) %}
+              {% for d in days %}
+                {% if d.data[:7] == mese_corrente %}
+                  {% set ns.km = ns.km + d.km %}
+                  {% set ns.kwh = ns.kwh + d.kwh %}
+                  {% set ns.giorni = ns.giorni + 1 %}
+                  {% if ns.best is none or d.km > ns.best.km %}{% set ns.best = d %}{% endif %}
+                {% endif %}
+              {% endfor %}
+              {% if ns.giorni > 0 %}
+                **{{ now().strftime('%B %Y') | capitalize }}**
+
+                🚗 Km: **{{ ns.km | round(1) }}** · ⚡ Consumati: **{{ ns.kwh | round(2) }} kWh**
+
+                📊 Media: **{{ ((ns.kwh / ns.km * 100) if ns.km > 0 else 0) | round(2) }} kWh/100km**
+
+                🏆 Miglior giorno: {{ ns.best.data }} — {{ ns.best.km }} km
+
+                📅 Guidato {{ ns.giorni }} giorni su {{ now().day }}
+              {% else %}
+                Nessun dato per questo mese.
+              {% endif %}

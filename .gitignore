@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.hass/
+*.egg-info/
+.vscode/
+.idea/
+.DS_Store

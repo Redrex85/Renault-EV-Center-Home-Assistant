@@ -1,0 +1,99 @@
+# ============================================================
+#  RENAULT EV CENTER — MOBILE
+# ============================================================
+# Vista compatta pensata per il telefono: una colonna, solo
+# l'essenziale. Le altre viste si adattano comunque allo schermo
+# (le sezioni collassano in una colonna), questa è la "rapida".
+# ============================================================
+title: Renault EV Center
+views:
+  - title: Mobile
+    path: mobile
+    icon: mdi:cellphone
+    type: sections
+    max_columns: 1
+    sections:
+      - type: grid
+        cards:
+          - type: gauge
+            entity: sensor.battery_level
+            name: Batteria
+            unit: "%"
+            min: 0
+            max: 100
+            severity:
+              green: 60
+              yellow: 25
+              red: 0
+          - type: horizontal-stack
+            cards:
+              - type: metric
+                entity: sensor.battery_autonomy
+                icon: mdi:road-variant
+                name: Autonomia
+              - type: metric
+                entity: sensor.mileage
+                icon: mdi:counter
+                name: Km totali
+          - type: tile
+            entity: binary_sensor.renault_in_carica
+            name: Stato carica
+            vertical: false
+          - type: tile
+            entity: sensor.renault_tipo_ricarica_attuale
+            name: Zona ricarica
+            vertical: false
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Ricarica
+          - type: entities
+            entities:
+              - {entity: sensor.renault_tempo_ricarica_stimato, name: Tempo residuo}
+              - {entity: sensor.renault_ora_completamento_ricarica, name: Completamento}
+              - {entity: sensor.renault_costo_ricarica_corrente_stimato, name: Costo stimato}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Oggi
+          - type: horizontal-stack
+            cards:
+              - type: metric
+                entity: sensor.renault_km_giornalieri
+                icon: mdi:map-marker-distance
+                name: Km
+              - type: metric
+                entity: sensor.renault_km_per_kwh
+                icon: mdi:speedometer
+                name: km/kWh
+              - type: metric
+                entity: sensor.renault_costo_per_km
+                icon: mdi:currency-eur
+                name: €/km
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Ultimo viaggio
+          - type: markdown
+            content: >
+              {% set t = state_attr('sensor.renault_ultimo_trip', 'data') %}
+              {% if t %}
+                🚗 {{ t }} · {{ state_attr('sensor.renault_ultimo_trip','km') }} km ·
+                {{ state_attr('sensor.renault_ultimo_trip','kwh_per_100km') }} kWh/100km ·
+                {{ state_attr('sensor.renault_ultimo_trip','costo_stimato') }} €
+              {% else %}
+                Nessun viaggio.
+              {% endif %}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Posizione
+          - type: map
+            entities:
+              - device_tracker.location
+            hours_to_show: 24
+            default_zoom: 13

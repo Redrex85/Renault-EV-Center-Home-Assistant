@@ -1,0 +1,87 @@
+# ============================================================
+#  RENAULT EV CENTER — IMPOSTAZIONI
+# ============================================================
+# Tutto modificabile da qui, senza passare dal config flow:
+# i number hanno la precedenza sui valori della configurazione.
+# ============================================================
+title: Renault EV Center
+views:
+  - title: Impostazioni
+    path: impostazioni
+    icon: mdi:cog
+    max_columns: 2
+    type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Prezzi energia
+          - type: entities
+            entities:
+              - {entity: number.renault_costo_energia_casa, name: Costo ricarica a casa (€/kWh)}
+              - {entity: number.renault_costo_colonnina, name: Costo medio colonnina (€/kWh)}
+              - {entity: number.renault_costo_fotovoltaico, name: Costo fotovoltaico/BEB (€/kWh)}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Batteria
+          - type: entities
+            entities:
+              - {entity: number.renault_capacita_batteria, name: Capacità utile (kWh)}
+              - {entity: number.renault_obiettivo_ricarica, name: "% obiettivo stime"}
+              - {entity: number.renault_soh_ufficiale, name: SOH ufficiale concessionaria (%)}
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Reset e strumenti
+          - type: horizontal-stack
+            cards:
+              - type: button
+                entity: button.renault_reset_contatori_km
+                name: Reset Km
+                icon: mdi:restart
+              - type: button
+                entity: button.renault_reset_contatori_energia
+                name: Reset Energia
+                icon: mdi:restart
+              - type: button
+                entity: button.renault_reset_contatori_costi
+                name: Reset Costi
+                icon: mdi:restart
+          - type: horizontal-stack
+            cards:
+              - type: button
+                entity: button.renault_chiudi_viaggio_ora
+                name: Chiudi viaggio
+                icon: mdi:flag-checkered
+              - type: button
+                entity: button.renault_esporta_viaggi_csv
+                name: Esporta CSV
+                icon: mdi:file-delimited
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Servizi utili
+          - type: markdown
+            content: >
+              **Registra una ricarica pubblica a mano** (Impostazioni → Dispositivi e servizi → Azioni):
+
+              ```yaml
+              action: renault_ev_center.add_manual_charge
+              data:
+                kwh: 24.8
+                costo: 11.90
+                tipo: Pubblica
+              ```
+
+              **Azzera tutto**:
+
+              ```yaml
+              action: renault_ev_center.reset_counters
+              data: {scope: all}
+              ```
+
+              I CSV esportati finiscono in `config/renault_ev_center_export/`.

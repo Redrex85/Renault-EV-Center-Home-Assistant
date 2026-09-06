@@ -1,0 +1,16 @@
+# Tema "Renault Verde R4" — verde bosco
+renault-verde:
+  primary-color: "#57b98a"
+  accent-color: "#57b98a"
+  primary-background-color: "#0f1613"
+  secondary-background-color: "#121a16"
+  card-background-color: "#16211c"
+  app-header-background-color: "#0b110e"
+  sidebar-background-color: "#121a16"
+  sidebar-selected-icon-color: "#57b98a"
+  primary-text-color: "#e9f2ec"
+  secondary-text-color: "#87a094"
+  divider-color: "#22322a"
+  state-icon-active-color: "#57b98a"
+  paper-item-icon-active-color: "#57b98a"
+  switch-checked-color: "#57b98a"
