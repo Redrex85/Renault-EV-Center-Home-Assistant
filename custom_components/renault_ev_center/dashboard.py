@@ -25,25 +25,41 @@ def _pkg_dir(*parts: str) -> str:
     return os.path.join(os.path.dirname(__file__), *parts)
 
 
-def _adjust_prefix(text: str, name: str) -> str:
-    slug = slugify(name)
-    for dom in ("sensor", "binary_sensor", "number", "select", "button", "switch"):
-        text = text.replace(f"{dom}.renault_", f"{dom}.{slug}_")
-    return text
-
-
 def setup_card_js(hass: HomeAssistant) -> None:
-    """Copia la card Lovelace dedicata in /config/www (risorsa: /local/...)."""
-    src = _pkg_dir("www", "renault-ev-center-card.js")
+    """Copia le card Lovelace in /config/www (risorsa: /local/...)."""
     dest_dir = hass.config.path("www", WWW_DIR)
-    dest = os.path.join(dest_dir, "renault-ev-center-card.js")
     try:
         os.makedirs(dest_dir, exist_ok=True)
-        if os.path.isfile(src):
-            shutil.copyfile(src, dest)
-            _LOGGER.info("Card Lovelace copiata in /local/%s/", WWW_DIR)
+        for fn in ("renault-ev-center-card.js", "renault-ev-center-panel.js"):
+            src = _pkg_dir("www", fn)
+            if os.path.isfile(src):
+                shutil.copyfile(src, os.path.join(dest_dir, fn))
+        _LOGGER.info("Card Lovelace copiate in /local/%s/", WWW_DIR)
     except Exception as err:  # noqa: BLE001
-        _LOGGER.warning("Impossibile copiare la card: %s", err)
+        _LOGGER.warning("Impossibile copiare le card: %s", err)
+
+
+async def register_card_resource(hass: HomeAssistant) -> None:
+    """Registra le card come risorse Lovelace (idempotente)."""
+    lovelace = hass.data.get("lovelace")
+    resources = getattr(lovelace, "resources", None)
+    if resources is None or not hasattr(resources, "async_create_item"):
+        _LOGGER.warning(
+            "Registro risorse Lovelace non trovato: registra le card a mano "
+            "(Impostazioni → Dashboard → ⋮ → Risorse → /local/%s/renault-ev-center-card.js "
+            "e /local/%s/renault-ev-center-panel.js)",
+            WWW_DIR, WWW_DIR,
+        )
+        return
+    for fn in ("renault-ev-center-card.js", "renault-ev-center-panel.js"):
+        url = f"/local/{WWW_DIR}/{fn}"
+        try:
+            if any(item.get("url") == url for item in resources.async_items()):
+                continue  # già registrata
+            await resources.async_create_item({"res_type": "js", "url": url})
+            _LOGGER.info("Risorsa card registrata: %s", url)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Registrazione risorsa %s fallita: %s", url, err)
 
 
 def setup_car_image(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
@@ -69,42 +85,18 @@ def setup_car_image(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
         return None
 
 
-# parole chiave per nascondere sezioni in base al profilo
-MINIMAL_DROP = ("wallbox", "gestione ricarica", "carica programmata", "bilanciamento")
-
-
-def _section_heading(section: dict[str, Any]) -> str:
-    for card in section.get("cards", []) or []:
-        h = str(card.get("heading", "")).lower()
-        if h:
-            return h
-    return str(section.get("title", "")).lower()
-
-
-def _load_bundled_views(name: str, wallbox: bool = True) -> list[dict[str, Any]]:
-    """Carica le viste incluse, filtrando per profilo:
-    minimal (niente wallbox) → senza sezioni wallbox/gestione."""
-    import yaml
-
-    views: list[dict[str, Any]] = []
-    d_dir = _pkg_dir("dashboards")
-    for fn in sorted(os.listdir(d_dir)):
-        if not fn.endswith(".yaml"):
-            continue
-        if not wallbox and "12_gestione" in fn:
-            continue  # vista Gestione ricarica solo con wallbox
-        with open(os.path.join(d_dir, fn), encoding="utf-8") as fh:
-            raw = yaml.safe_load(fh) or {}
-        for view in raw.get("views", []):
-            if not wallbox:
-                sezioni = view.get("sections", []) or []
-                view["sections"] = [
-                    s for s in sezioni
-                    if not any(k in _section_heading(s) for k in MINIMAL_DROP)
-                ]
-            dumped = yaml.safe_dump(view, allow_unicode=True, sort_keys=False)
-            views.append(yaml.safe_load(_adjust_prefix(dumped, name)))
-    return views
+def _panel_view(name: str, image: str | None) -> dict[str, Any]:
+    """Vista unica tipo panel: una sola card custom full-width."""
+    card: dict[str, Any] = {
+        "type": "custom:renault-ev-center-panel",
+        "name": name,
+        "car": slugify(name),
+        "image": f"/local/{WWW_DIR}/auto.png",
+    }
+    if image:
+        card["image"] = image
+    return {"title": f"{name} EV Center", "path": "ev-center", "type": "panel",
+            "cards": [card]}
 
 
 def _export_yaml_fallback(hass: HomeAssistant, name: str, views: list[dict[str, Any]]) -> str:
@@ -187,14 +179,10 @@ async def _create_new_api(hass: HomeAssistant, dashboards: dict, url_path: str, 
 
 
 async def async_setup_dashboard(hass: HomeAssistant, entry: ConfigEntry, name: str) -> None:
-    """Crea (una sola volta) la dashboard laterale con tutte le viste incluse."""
+    """Crea (una sola volta) la dashboard laterale con la vista panel."""
     url_path = f"renault-ev-center-{slugify(name)}"
     title = f"{name} EV Center"
-    wb = bool(entry.data.get("wallbox_enabled", entry.options.get("wallbox_enabled", False)))
-    views = await hass.async_add_executor_job(_load_bundled_views, name, wb)
-    if not views:
-        _LOGGER.warning("Nessuna vista inclusa trovata")
-        return
+    views = [_panel_view(name, None)]
 
     async def piano_b() -> None:
         path = await hass.async_add_executor_job(_export_yaml_fallback, hass, name, views)

@@ -19,6 +19,7 @@ from .coordinator import RenaultMateCoordinator
 from .dashboard import (
     async_remove_dashboard,
     async_setup_dashboard,
+    register_card_resource,
     setup_card_js,
     setup_car_image,
     slugify,
@@ -68,8 +69,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.warning("Immagine auto non copiata: %s", err)
     try:
         await hass.async_add_executor_job(setup_card_js, hass)
+        await register_card_resource(hass)
     except Exception as err:  # noqa: BLE001
-        _LOGGER.warning("Card non copiata: %s", err)
+        _LOGGER.warning("Card non copiata/registrata: %s", err)
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
