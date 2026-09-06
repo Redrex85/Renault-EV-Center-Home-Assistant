@@ -1480,6 +1480,73 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.persist(force=True)
         return mode
 
+    async def service_create_automations(self) -> list[str]:
+        """Crea (o aggiorna) le 3 automazioni consigliate nello store di HA."""
+        from homeassistant.helpers.storage import Store
+
+        from .dashboard import slugify
+
+        n = slugify(str(self.opts.get(CONF_NAME, "Renault")))
+        batt = str(self.opts.get("battery_level_entity") or f"sensor.{n}_batteria")
+        range_e = str(self.opts.get("range_entity") or f"sensor.{n}_autonomia_della_batteria")
+        charging = str(self.opts.get("charging_entity") or f"binary_sensor.{n}_in_carica")
+        loc = str(self.opts.get("location_entity") or "")
+        notify = self.notify_service or "persistent_notification"
+        target = notify if "." in notify else f"notify.{notify}"
+
+        def _pn(notif_id: str, title: str, msg: str) -> dict:
+            if target.startswith("notify."):
+                return {"service": target, "data": {"title": title, "message": msg}}
+            return {"service": "persistent_notification.create",
+                    "data": {"notification_id": notif_id, "title": title, "message": msg}}
+
+        autos: dict[str, dict] = {
+            f"renault_ev_center_{n}_ricarica_completata": {
+                "alias": f"Renault EV Center — Ricarica completata ({n})",
+                "triggers": [{"trigger": "state", "entity_id": charging,
+                              "from": "on", "to": "off", "for": {"minutes": 3}}],
+                "conditions": [{"condition": "template",
+                                "value_template": "{{ state_attr('sensor." + n + "_ultima_ricarica', 'data') == now().strftime('%Y-%m-%d') }}"}],
+                "actions": [_pn(f"rec_ric_{n}", "🔋 Ricarica completata",
+                                "⚡ {{ states('sensor." + n + "_ultima_ricarica') }} kWh · "
+                                "🔋 {{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_end') }}% · "
+                                "💰 {{ state_attr('sensor." + n + "_ultima_ricarica', 'costo') }} €")],
+                "mode": "single",
+            },
+            f"renault_ev_center_{n}_batteria_bassa": {
+                "alias": f"Renault EV Center — Batteria bassa fuori casa ({n})",
+                "triggers": [{"trigger": "numeric_state", "entity_id": batt, "below": 25}],
+                "conditions": ([{"condition": "not", "conditions": [
+                    {"condition": "state", "entity_id": loc, "state": "home"}]}] if loc else [])
+                    + [{"condition": "time", "after": "07:00:00", "before": "22:00:00"}],
+                "actions": [_pn(f"rec_low_{n}", "🚗 Batteria bassa",
+                                "Batteria al {{ states('" + batt + "') }}% "
+                                "({{ states('" + range_e + "') }} km). Ricorda di caricare!")],
+                "mode": "single", "max_exceeded": "silent",
+            },
+            f"renault_ev_center_{n}_riassunto_giornaliero": {
+                "alias": f"Renault EV Center — Riassunto giornaliero ({n})",
+                "triggers": [{"trigger": "time", "at": "21:30:00"}],
+                "conditions": [{"condition": "numeric_state",
+                                "entity_id": f"sensor.{n}_km_giornalieri", "above": 0.5}],
+                "actions": [_pn(f"rec_sum_{n}", "📊 Oggi con la tua Renault",
+                                "🚗 {{ states('sensor." + n + "_km_giornalieri') }} km · "
+                                "📈 {{ states('sensor." + n + "_kwh_per_100km') }} kWh/100km · "
+                                "💸 {{ states('sensor." + n + "_costo_per_km') }} €/km")],
+                "mode": "single",
+            },
+        }
+
+        store = Store(self.hass, 1, "automation", delayed_write=True)
+        items = await store.async_load() or {"items": {}}
+        if not isinstance(items, dict) or not isinstance(items.get("items"), dict):
+            items = {"items": {}}
+        for aid, cfg in autos.items():
+            items["items"][aid] = {"id": aid, "isolated": False, "config": cfg}
+        await store.async_save(items)
+        await self.hass.services.async_call("automation", "reload", {}, blocking=True)
+        return list(autos)
+
     async def _check_notifications(self, scadenze: list[dict], oggi) -> None:
         """Invia una notifica al giorno se una scadenza rientra nel preavviso."""
         if not self.notify_service or not scadenze:
@@ -1504,11 +1571,17 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         service = self.notify_service.split(".", 1)[-1] if "." in self.notify_service else self.notify_service
         try:
             await self.hass.services.async_call(
-                "notify", service, {"title": title, "message": message}, blocking=False,
+                "notify", service, {"title": title, "message": message}, blocking=True,
             )
             _LOGGER.info("Notifica inviata via %s", self.notify_service)
         except Exception as err:  # noqa: BLE001
-            _LOGGER.warning("Notifica fallita (%s): %s", self.notify_service, err)
+            _LOGGER.warning("Notifica fallita (%s): %s — ritento senza title", self.notify_service, err)
+            try:
+                await self.hass.services.async_call(
+                    "notify", service, {"message": f"{title}\n{message}"}, blocking=False,
+                )
+            except Exception as err2:  # noqa: BLE001
+                _LOGGER.warning("Notifica fallback fallita (%s): %s", self.notify_service, err2)
 
     def _switch_on(self, key: str) -> bool:
         entity_id = self.setting_ids.get(f"switch.{key}")

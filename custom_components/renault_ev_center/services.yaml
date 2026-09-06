@@ -94,3 +94,8 @@ set_tagliando:
       name: Valore
       description: km assoluti (mode=km) oppure data YYYY-MM-DD (mode=data).
       example: "71218"
+
+create_automations:
+  name: Crea automazioni consigliate
+  description: Crea o aggiorna in Home Assistant le 3 automazioni consigliate
+    (ricarica completata, batteria bassa fuori casa, riassunto giornaliero).

@@ -245,7 +245,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.1</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.3.5</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -290,6 +290,15 @@ class RenaultEvCenterPanel extends HTMLElement {
     });
     // switch/number live-bind: popola data-ent al primo update
     this.shadowRoot.querySelectorAll("[data-sw]").forEach((el) => { el.dataset.ent = this._field(el.dataset.sw); });
+    // toggle switch stile v13: input dentro label → change, non click
+    this.shadowRoot.querySelectorAll("input[data-sw]").forEach((inp) => {
+      inp.dataset.ent = this._field(inp.dataset.sw);
+      inp.addEventListener("change", () => {
+        const eid = inp.dataset.ent;
+        if (!eid) return;
+        this._call("homeassistant", inp.checked ? "turn_on" : "turn_off", { entity_id: eid });
+      });
+    });
     this.shadowRoot.querySelectorAll("input[data-n]").forEach((inp) => { inp.dataset.ent = this._field(inp.dataset.n); });
     // input locali (localStorage): prezzo diesel, consumo equivalente, notify, preavviso
     this.shadowRoot.querySelectorAll("input[data-ls]").forEach((inp) => {
@@ -331,6 +340,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       case "close_trip": this._call(D, "close_trip", {}, "🏁 Viaggio chiuso"); break;
       case "csv": this._call(D, "export_trips_csv", {}, "📥 CSV esportato"); break;
+      case "create_automations": this._call(D, "create_automations", {}, "✨ Automazioni create"); break;
       case "reset_km": this._call(D, "reset_counters", { scope: "km" }, "🔄 Km azzerati"); break;
       case "reset_energia": this._call(D, "reset_counters", { scope: "energia" }, "🔄 Energia azzerata"); break;
       case "reset_costi": this._call(D, "reset_counters", { scope: "costi" }, "🔄 Costi azzerati"); break;
@@ -357,10 +367,14 @@ class RenaultEvCenterPanel extends HTMLElement {
       bar.style.background = b === null ? "var(--line)" : b < 20 ? "var(--bad)" : b < 45 ? "var(--warn)" : "var(--accent)";
     }
     root.querySelectorAll("[data-f]").forEach((el) => {
+      if (el.tagName === "INPUT") return; // gli input data-ls si inizializzano in _build
       const k = el.dataset.f;
       const v = this._f(k);
       if (typeof v === "object") el.textContent = v.state ?? "—";
       else el.textContent = String(v);
+    });
+    root.querySelectorAll("[data-sw]").forEach((el) => {
+      if (el.tagName === "INPUT") { const s = this._hass.states[el.dataset.ent]; el.checked = !!s && s.state === "on"; }
     });
     // chips stato
     const chipLoc = root.querySelector('[data-c="loc"]');
@@ -606,6 +620,13 @@ h1{font-size:26px;margin-bottom:4px}
 @media(max-width:1100px){.g3{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.g3,.g2{grid-template-columns:1fr}.sidebar{display:none}.main{margin-left:0}}
 .mobilenav{display:none}
+.note{margin-top:26px;color:var(--muted);font-size:12.5px;border-top:1px dashed var(--line);padding-top:14px}
+.switch{position:relative;width:46px;height:25px;flex-shrink:0;display:inline-block}
+.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;background:#39445a;border-radius:999px;transition:.25s;cursor:pointer}
+.switch span::before{content:"";position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.25s}
+.switch input:checked + span{background:var(--accent)}
+.switch input:checked + span::before{transform:translateX(21px)}
 @media(max-width:700px){
   .mobilenav{display:flex;gap:6px;overflow-x:auto;padding:10px 0 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .mobilenav::-webkit-scrollbar{display:none}
@@ -826,18 +847,25 @@ const PAGES = {
       <div class="row"><span>Migliore / Peggiore</span><b data-f="topstop">—</b></div>
       <div class="row"><span>Energia casa (totale)</span><b><span data-f="energia_casa">—</span> kWh</b></div></div></div>`,
 
-  p9: `<h1>Automazioni</h1><div class="sub">Interruttori dell'integrazione — tocca per cambiare</div>
+  p9: `<h1>Automazioni</h1><div class="sub">Notifiche e carica programmata integrate — attivabili da qui</div>
   <div class="grid g2">
     <div class="card"><h3>Notifiche</h3>
-      <div class="row"><span>⚡ Avvio ricarica</span><b class="chip" data-cmd="switch" data-sw="sw_start">—</b></div>
-      <div class="row"><span>🔋 Fine ricarica</span><b class="chip" data-cmd="switch" data-sw="sw_end">—</b></div>
-      <div class="row"><span>⚠️ Batteria bassa</span><b class="chip" data-cmd="switch" data-sw="sw_low">—</b></div>
+      <div class="row"><span>⚡ Avvio ricarica</span><label class="switch"><input type="checkbox" data-sw="sw_start"><span></span></label></div>
+      <div class="row"><span>🔋 Fine ricarica (kWh, SoC, costo)</span><label class="switch"><input type="checkbox" data-sw="sw_end"><span></span></label></div>
+      <div class="row"><span>⚠️ Batteria bassa a casa</span><label class="switch"><input type="checkbox" data-sw="sw_low"><span></span></label></div>
       <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div></div>
     <div class="card"><h3>⏰ Carica programmata</h3>
-      <div class="row"><span>Stato</span><b class="chip" data-cmd="switch" data-sw="sw_sched">—</b></div>
-      <div class="row"><span>Avvio (orario)</span><b data-f="t_start">—</b></div>
-      <div class="row"><span>Stop (orario)</span><b data-f="t_stop">—</b></div>
-      <div class="row"><span>Promemoria fascia</span><b><span data-f="t_low_start">—</span> → <span data-f="t_low_end">—</span></b></div></div></div>`,
+      <div class="row"><span>Stato</span><label class="switch"><input type="checkbox" data-sw="sw_sched"><span></span></label></div>
+      <div class="row"><span>↳ Orario avvio</span><b data-f="t_start">—</b></div>
+      <div class="row"><span>↳ Orario stop</span><b data-f="t_stop">—</b></div>
+      <div class="row"><span>↳ Fascia promemoria</span><b><span data-f="t_low_start">—</span> → <span data-f="t_low_end">—</span></b></div></div></div>
+  <div class="card" style="margin-top:16px"><h3>Come si cambiano i parametri</h3>
+    <div style="color:var(--muted);font-size:13px;line-height:1.8">
+      Tutto in <b>Impostazioni → Integrazioni → Renault EV Center → Configura</b>:
+      servizio notify, % minima e fascia oraria del promemoria, modalità programmazione
+      (orario o %), orari e % di avvio/stop, pulsante di avvio carica e number target
+      per lo stop. Gli interruttori si trovano anche tra i dispositivi
+      ("Renault EV Center" → switch).</div></div>`,
 
   p10: `<h1>Impostazioni</h1><div class="sub">Prezzi, batteria, notifiche, palette e reset — salvati nell'integrazione</div>
   <div class="grid g3">
@@ -861,7 +889,13 @@ const PAGES = {
         <div class="btn" data-cmd="csv">📥 Esporta viaggi CSV</div></div></div></div>
   <div class="card" style="margin-top:16px"><h3>🔔 Notifiche</h3>
     <div class="inp"><span>Servizio notify (es. notify.michele)</span><input data-ls="rec_notify" data-f="notify" style="width:170px"><span class="u"></span></div>
-    <div class="inp"><span>Giorni preavviso scadenze</span><input data-ls="rec_preavviso" value="30"><span class="u">gg</span></div></div>`,
+    <div class="inp"><span>Giorni preavviso scadenze</span><input data-ls="rec_preavviso" value="30"><span class="u">gg</span></div></div>
+  <div class="card" style="margin-top:16px"><h3>🤖 Automazioni</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="btn" data-cmd="create_automations">✨ Crea automazioni consigliate</div></div>
+    <div class="note">Crea in Home Assistant 3 automazioni pronte: <b>ricarica completata</b> (kWh, SoC, costo),
+      <b>batteria bassa fuori casa</b>, <b>riassunto giornaliero</b> alle 21:30. Sono modificabili da
+      Impostazioni → Automazioni. Notifiche via persistent_notification se nessun servizio notify configurato.</div></div>`,
 };
 
 customElements.define("renault-ev-center-panel", RenaultEvCenterPanel);

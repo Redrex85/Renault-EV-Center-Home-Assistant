@@ -38,6 +38,7 @@ SERVICE_RENEW_INSURANCE = "renew_insurance"
 SERVICE_SET_SCADENZA = "set_scadenza"
 SERVICE_SET_TAGLIANDO = "set_tagliando"
 SERVICE_CREATE_DASHBOARD = "create_dashboard"
+SERVICE_CREATE_AUTOMATIONS = "create_automations"
 
 RESET_SCOPES = ["km", "energia", "costi", "viaggi", "ricariche", "all"]
 
@@ -88,12 +89,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for coord in _all_coordinators(hass):
             coord.service_reset_counters(scope)
 
-    async def handle_export_csv(call: ServiceCall) -> dict:
+    async def handle_export_csv(call: ServiceCall) -> dict | None:
         paths = []
         for coord in _all_coordinators(hass):
             paths.append(await coord.service_export_csv())
         _LOGGER.info("Export CSV completato: %s", ", ".join(paths))
-        return {"paths": paths}
+        return {"paths": paths} if call.return_response else None
 
     async def handle_add_charge(call: ServiceCall) -> None:
         kwh = float(call.data["kwh"])
@@ -147,6 +148,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for coord in _all_coordinators(hass):
             await async_setup_dashboard(hass, coord.entry, str(coord.opts.get(CONF_NAME, "Renault")))
 
+    async def handle_create_automations(call: ServiceCall) -> None:
+        for coord in _all_coordinators(hass):
+            created = await coord.service_create_automations()
+            _LOGGER.info("Automazioni Renault EV Center create: %s", created)
+
     def _register(name, handler, schema=None, supports_response=None):
         if hass.services.has_service(DOMAIN, name):
             return
@@ -197,6 +203,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                   vol.Required("valore"): str,
               }))
     _register(SERVICE_CREATE_DASHBOARD, handle_create_dashboard)
+    _register(SERVICE_CREATE_AUTOMATIONS, handle_create_automations)
 
     return True
 
@@ -220,6 +227,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 SERVICE_ADD_CHARGE, SERVICE_DELETE_TRIP, SERVICE_ADD_MAINTENANCE,
                 SERVICE_DELETE_MAINTENANCE, SERVICE_RENEW_INSURANCE,
                 SERVICE_SET_SCADENZA, SERVICE_SET_TAGLIANDO, SERVICE_CREATE_DASHBOARD,
+                SERVICE_CREATE_AUTOMATIONS,
             ):
                 hass.services.async_remove(DOMAIN, name)
     return unload_ok
