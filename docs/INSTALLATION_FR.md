@@ -10,7 +10,7 @@ De l'installation au tableau de bord opérationnel en **~10 minutes**.
 
 ## 1. Installation
 
-**HACS :** HACS → ⋮ → Dépôts personnalisés → ajouter `https://github.com/Redrex/renault-ev-center` (catégorie : Intégration) → télécharger → redémarrer HA.
+**HACS :** HACS → ⋮ → Dépôts personnalisés → ajouter `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant` (catégorie : Intégration) → télécharger → redémarrer HA.
 
 **Manuel :** copiez `custom_components/renault_ev_center/` dans `<config>/custom_components/`, redémarrez HA.
 

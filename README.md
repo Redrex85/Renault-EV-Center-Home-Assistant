@@ -5,7 +5,7 @@
 # Renault EV Center
 
 <p align="left">
-  <a href="https://github.com/Redrex/renault-ev-center/releases"><img src="https://img.shields.io/github/v/release/Redrex/renault-ev-center" alt="Release"></a>
+  <a href="https://github.com/Redrex85/Renault-EV-Center-Home-Assistant/releases"><img src="https://img.shields.io/github/v/release/Redrex85/Renault-EV-Center-Home-Assistant" alt="Release"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2025.11%2B-41BDF5?logo=homeassistant" alt="HA">
 </p>
 
@@ -71,7 +71,7 @@ Apri **[`preview/index.html`](preview/index.html)** nel browser per vedere come 
 ### Via HACS (consigliato)
 
 1. **HACS** → ⋮ → **Repository personalizzati**
-2. Incolla `https://github.com/Redrex/renault-ev-center`
+2. Incolla `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant`
 3. Categoria: **Integrazione** → Aggiungi
 4. Apri **Renault EV Center** → Scarica
 5. **Riavvia Home Assistant**
@@ -244,7 +244,7 @@ Renault EV Center is free and open-source, developed in spare time. If you find 
 
 ### Install
 
-1. HACS → Custom repositories → `https://github.com/Redrex/renault-ev-center` (category: Integration) → Download → restart HA
+1. HACS → Custom repositories → `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant` (category: Integration) → Download → restart HA
 2. Settings → Devices & Services → Add Integration → **Renault EV Center**
 3. Pick your Renault entities (odometer, battery %, range, charging, GPS) and wallbox entities (power, state, energy counter)
 4. Import the dashboards from [`dashboards/`](dashboards/)
@@ -307,7 +307,7 @@ Ouvrez **[`preview/index.html`](preview/index.html)** dans le navigateur pour vo
 ### Via HACS (recommandé)
 
 1. **HACS** → ⋮ → **Dépôts personnalisés**
-2. Collez `https://github.com/Redrex/renault-ev-center`
+2. Collez `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant`
 3. Catégorie : **Intégration** → Ajouter
 4. Ouvrez **Renault EV Center** → Télécharger
 5. **Redémarrez Home Assistant**

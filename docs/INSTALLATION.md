@@ -10,7 +10,7 @@ From install to a fully working dashboard in **~10 minutes**.
 
 ## 1. Install
 
-**HACS:** HACS → ⋮ → Custom repositories → add `https://github.com/Redrex/renault-ev-center` (category: Integration) → download → restart HA.
+**HACS:** HACS → ⋮ → Custom repositories → add `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant` (category: Integration) → download → restart HA.
 
 **Manual:** copy `custom_components/renault_ev_center/` into `<config>/custom_components/`, restart HA.
 

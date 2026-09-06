@@ -22,7 +22,7 @@ Tempo richiesto: **~10 minuti**.
 2. In basso a destra: **⋮ → Repository personalizzati**
 3. Inserisci:
    ```
-   https://github.com/Redrex/renault-ev-center
+   https://github.com/Redrex85/Renault-EV-Center-Home-Assistant
    ```
 4. Categoria: **Integrazione** → **Aggiungi**
 5. Cerca "Renault EV Center" → **Scarica**
