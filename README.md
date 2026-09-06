@@ -13,6 +13,8 @@
 
 Un *companion* per **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Tech, Renault 5 e Renault 4 **, costruito sopra l'integrazione **Renault ufficiale di Home Assistant**: nessun account extra, nessun cloud, nessuna riga di codice. Installi da HACS, scegli le entità dalla lista, e via.
 
+☕ Sostieni il progetto
+
 Renault EV Center è gratuito e open-source, sviluppato nel tempo libero. Se ti è utile, puoi sostenerne lo sviluppo con un caffè — grazie! ☕
 
 <p align="left">
@@ -220,6 +222,8 @@ Licenza: **MIT** — vedi [LICENSE](LICENSE).
 
 A companion for **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Tech, Renault 5 and Renault 4**, built on top of the official **Home Assistant Renault integration**. No extra accounts, no cloud, no code: install from HACS, pick your entities from dropdowns, done.
 
+☕ Support
+
 Renault EV Center is free and open-source, developed in spare time. If you find it useful, you can support its development with a coffee — thank you! ☕
 
 <p align="left">
@@ -254,6 +258,9 @@ See the Italian section above for the full entity reference, services and FAQ �
 **Trajets, consommation, coûts et recharges de vos Renault électriques — entièrement dans Home Assistant.**
 
 Un compagnon pour **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Tech, Renault 5 et Renault 4**, construit au-dessus de l'intégration **Renault officielle de Home Assistant**. Aucun compte supplémentaire, aucun cloud, aucun code : installez depuis HACS, choisissez vos entités dans des listes, c'est tout.
+
+
+☕ Soutien
 
 Renault EV Center est gratuit et open-source, développé pendant mon temps libre. S'il vous est utile, vous pouvez soutenir son développement avec un café — merci ! ☕
 
