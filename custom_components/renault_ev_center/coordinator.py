@@ -285,7 +285,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             name=str(self.opts.get("name", "Renault EV")),
             manufacturer=MANUFACTURER,
             model="Renault E-Tech elettrica",
-            icon="mdi:car-electric",
         )
 
     # ------------------------------------------------------------------- store
