@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.1 — Correzioni bug
+
+- **Import mancanti**: aggiunti `DOMAIN` e `CONF_WB_MAX_CURRENT` in `coordinator.py`;
+  costanti notifiche/manutenzione in `config_flow.py` (evitati `NameError` in caricamento,
+  config flow e bilanciamento solare).
+- **Number collegati ai calcoli**: prezzi casa/colonnina/FV, capacità, obiettivo % e costo
+  assicurazione ora letti dalle entità number della dashboard (fallback ai valori config).
+- **Early-exit**: il controllo "niente è cambiato" include ora switch/time/select/number,
+  quindi le automazioni partono subito dopo la modifica delle impostazioni.
+- **Carica programmata**: corretta la finestra notturna (es. 23:30 → 07:00) con helper
+  `_in_window()`; start/stop ora usano la stessa finestra.
+- **Switch**: la variazione richiede subito un refresh del coordinator.
+- **Number `balance_max_amps`**: corretta la chiave iniziale (`balance_max_amps`).
+- Rimossi import duplicati; aggiunto file `VERSION`; checker versione aggiornato.
+
 ## 1.0.0 — Prima release pubblica
 
 Prima versione completa di **Renault EV Center**, integrazione HACS per le Renault elettriche.
