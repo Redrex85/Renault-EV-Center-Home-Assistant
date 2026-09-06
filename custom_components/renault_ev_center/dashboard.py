@@ -152,14 +152,26 @@ async def _create_new_api(hass: HomeAssistant, dashboards: dict, url_path: str, 
     try:
         coll = DashboardsCollection(hass)
         await coll.async_load()
-        item = await coll.async_create_item(
-            {
-                "title": title,
-                "icon": "mdi:car-electric",
-                "url_path": url_path,
-                "show_in_sidebar": True,
-            }
+        item = next(
+            (it for it in coll.async_items() if it.get("url_path") == url_path),
+            None,
         )
+        if item is None:
+            if frontend.async_panel_exists(hass, url_path):
+                # pannello orfano di un tentativo precedente senza item salvato:
+                # async_create_item alzerebbe "url_already_exists" → rimuovilo
+                try:
+                    frontend.async_remove_panel(hass, url_path)
+                except TypeError:  # signature senza warn_if_unknown
+                    frontend.async_remove_panel(hass, url_path)
+            item = await coll.async_create_item(
+                {
+                    "title": title,
+                    "icon": "mdi:car-electric",
+                    "url_path": url_path,
+                    "show_in_sidebar": True,
+                }
+            )
         store = LovelaceStorage(hass, dict(item))
         if not frontend.async_panel_exists(hass, url_path):
             frontend.async_register_built_in_panel(
