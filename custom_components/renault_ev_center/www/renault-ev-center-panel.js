@@ -76,7 +76,7 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
   _list(...cands) {
     const s = this._st(...cands);
-    const v = s ? this._attrAny(s, ["list", "items", "viaggi", "ricariche", "data", "rows"]) : null;
+    const v = s ? this._attrAny(s, ["list", "items", "viaggi", "ricariche", "data", "rows", "righe", "rotte"]) : null;
     return Array.isArray(v) ? v : [];
   }
   _fmt(v, dec = 1) {
@@ -115,17 +115,18 @@ class RenaultEvCenterPanel extends HTMLElement {
     const S = this;
     switch (k) {
       // Panoramica
-      case "batt": return S._ov("battery") ? S._num(S._ov("battery")) : S._num(S._car("sensor", "battery"), S._car("sensor", "battery_level"));
-      case "range": return S._ov("range") ? S._num(S._ov("range")) : S._num(S._car("sensor", "range_electric"), S._car("sensor", "battery_autonomy"));
-      case "odo": return S._ov("odometer") ? S._num(S._ov("odometer")) : S._num(S._car("sensor", "odometer"));
+      case "batt": return S._ov("battery") ? S._num(S._ov("battery")) : S._num(S._car("sensor", "battery"), S._car("sensor", "battery_level"), S._sid("batteria"));
+      case "range": return S._ov("range") ? S._num(S._ov("range")) : S._num(S._car("sensor", "range_electric"), S._car("sensor", "battery_autonomy"), S._sid("autonomia_della_batteria"));
+      case "odo": return S._ov("odometer") ? S._num(S._ov("odometer")) : S._num(S._car("sensor", "odometer"), S._sid("chilometraggio"));
       case "loc": {
-        const s = S._ov("location") ? S._hass.states[S._ov("location")] : S._hass.states[S._car("device_tracker", "location")];
+        const s = S._ov("location") ? S._hass.states[S._ov("location")] : (S._hass.states[S._car("device_tracker", "location")] || S._hass.states[S._sid("posizione")]);
         return s ? (s.attributes.friendly_name || s.state) : null;
       }
-      case "charging": return (S._ov("charging") ? S._hass.states[S._ov("charging")] : S._hass.states[S._bid("in_carica")]);
-      case "plug": return S._hass.states[S._car("binary_sensor", "plug_status")] || S._hass.states[S._car("binary_sensor", "plugged_in")];
+      case "charging": return (S._ov("charging") ? S._hass.states[S._ov("charging")] : (S._hass.states[S._bid("in_carica")] || S._hass.states[S._sid("stato_di_carica")]));
+      case "plug": return S._hass.states[S._car("binary_sensor", "plug_status")] || S._hass.states[S._car("binary_sensor", "plugged_in")] || S._hass.states[S._sid("stato_della_spina")];
       case "batt_kwh": return S._num(S._sid("batteria_kwh_disponibili"));
       case "km_oggi": return S._num(S._sid("km_giornalieri"), S._sid("km_oggi_trip"));
+      case "kwh_oggi_k": { const km = S._num(S._sid("km_giornalieri")); const e = S._num(S._sid("kwh_per_100km")); return (km === null || e === null) ? null : km * e / 100; }
       case "km_per_kwh": return S._num(S._sid("km_per_kwh"));
       case "kwh_100": return S._num(S._sid("kwh_per_100km"));
       case "kwh_tot": return S._num(S._sid("kwh_totali_consumati"));
@@ -135,6 +136,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "trip_attivo": return S._st(S._sid("trip_attivo"));
       // Ultima ricarica / ricariche
       case "ultima": return S._st(S._sid("ultima_ricarica"));
+      case "ultima_data": { const rs = S._list(S._sid("lista_ricariche")); const r = rs[0]; return r ? `${r.data ?? "—"}${r.ora_inizio ? " · " + r.ora_inizio : ""}` : null; }
       case "kwh_oggi_wb": return S._num(S._sid("energia_caricata_giornaliera"), S._sid("wb_energy_oggi"), S._sid("ricariche_oggi"));
       case "kwh_sett_wb": return S._num(S._sid("energia_caricata_settimanale"), S._sid("wb_energy_settimana"), S._sid("ricariche_settimana"));
       case "kwh_mese_wb": return S._num(S._sid("energia_caricata_mensile"), S._sid("wb_energy_mese"), S._sid("ricariche_mese"));
@@ -163,13 +165,15 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "eff_ric": return S._num(S._sid("efficienza_ricarica"));
       case "perdite": return S._st(S._sid("perdite_ultima_ricarica"));
       case "batt_ult": return S._num(S._sid("energia_batteria_ultima_ricarica"));
-      case "rete_ult": return S._num(S._sid("energia_rete_ultima_ricarica"), S._sid("kwh_ultima_ricarica"), S._sid("ultima_ricarica"));
+      case "rete_ult": { const s = S._st(S._sid("energia_batteria_ultima_ricarica")); const v = s ? S._attrAny(s, ["dalla_rete_kwh"]) : null; return v === null ? S._num(S._sid("ultima_ricarica")) : parseFloat(v); }
+      case "dispersa_ult": { const s = S._st(S._sid("energia_batteria_ultima_ricarica")); const v = s ? S._attrAny(s, ["dispersa_kwh"]) : null; return v === null ? null : parseFloat(v); }
       // Manutenzione
       case "tagliandi": return S._st(S._sid("tagliandi"));
       case "assic": return S._st(S._sid("assicurazione"));
       case "scadenze": return S._st(S._sid("prossima_scadenza"));
-      case "risp_tagliandi": return S._num(S._sid("risparmio_tagliandi"));
-      case "risp_bollo": return S._num(S._sid("risparmio_bollo"));
+      case "teo_tagliandi": { const km = S._num(S._sid("chilometraggio"), S._ov("odometer"), S._car("sensor", "odometer")); const st = S._st(S._sid("tagliandi")); const iv = st ? (S._attrAny(st, ["intervallo_km"]) || 15000) : 15000; return km === null ? null : Math.floor(km / iv) * 450; }
+      case "risp_tagliandi": { const km = S._num(S._sid("chilometraggio"), S._ov("odometer"), S._car("sensor", "odometer")); const iv = S._num(S._sid("tagliandi")) === null ? null : (S._attrAny(S._st(S._sid("tagliandi")), ["intervallo_km"]) || 15000); const sp = S._num(S._sid("tagliandi")); return (km === null || iv === null || sp === null || iv <= 0) ? null : Math.floor(km / iv) * 450 - sp; }
+      case "risp_bollo": return S._ov("bollo_termico") ? S._num(S._ov("bollo_termico")) : null;
       case "assic_costo": return S._num(S._nid("assic_costo"), S._nid("costo_assicurazione"));
       // Risparmi carburante (calcolati client: le entità risparmio_* non esistono nell'integrazione)
       case "risp_mese": return S._rispKm(S._num(S._sid("km_mensili")), S._num(S._sid("costo_ricarica_mensile"), S._sid("costo_ricarica_mese")));
@@ -178,6 +182,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "costo_ric_tot": return S._num(S._sid("costo_ricarica_totale"), S._ov("costo_ric_tot"));
       // Extra
       case "drain": return S._num(S._sid("batteria_persa_da_fermo_oggi"));
+      case "temp_est": return S._num(S._sid("temperatura_esterna"));
       case "co2": return S._st(S._sid("co2_risparmiata"));
       case "zona": return S._list(S._sid("consumo_per_zona"));
       case "topstop": return S._st(S._sid("viaggio_top_stop_del_mese"), S._sid("viaggio_top_stop"));
@@ -214,6 +219,26 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
   _f(k) { const v = this._field(k); return v === null || v === undefined ? "—" : v; }
   _on(k) { const s = this._field(k); return s && s.state === "on"; }
+  /** plug: binary_sensor on|off oppure sensor testuale (plugged/unplugged, collegata/scollegata) */
+  _plugOn() {
+    const s = this._field("plug");
+    if (!s) return false;
+    const v = this._slug(s.state);
+    return s.state === "on" || (/(plug|connect|collegat|conness|inserit)/.test(v) && !/(unplug|disconn|scollegat|non_)/.test(v));
+  }
+  /** carica: binary_sensor on|off oppure sensor testuale (charging/not_charging, in_carica/non_in_carica) */
+  _chargeOn() {
+    const s = this._field("charging");
+    if (!s) return false;
+    const v = this._slug(s.state);
+    return s.state === "on" || (/(charg|carica)/.test(v) && !/(not|no_|non_|end|finit|terminat|stop)/.test(v));
+  }
+  /** zona del device tracker dell'auto (attributo in_zones) */
+  _zoneName() {
+    const s = this._st(this._sid("posizione"), this._car("device_tracker", "location"), this._ov("location"));
+    const z = s && Array.isArray(s.attributes.in_zones) ? s.attributes.in_zones[0] : null;
+    return z ? z.replace(/^zone\./, "").replace(/_/g, " ").replace(/^\w/, (m) => m.toUpperCase()) : null;
+  }
   /** prezzo diesel €/l: overrides.diesel_price (sensore live) → localStorage rec_diesel → default */
   _dieselPrice() {
     const s = this._ov("diesel_price") ? this._hass.states[this._ov("diesel_price")] : null;
@@ -245,7 +270,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.3.5</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.4</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -300,6 +325,14 @@ class RenaultEvCenterPanel extends HTMLElement {
       });
     });
     this.shadowRoot.querySelectorAll("input[data-n]").forEach((inp) => { inp.dataset.ent = this._field(inp.dataset.n); });
+    // select filtri storico (entità select.* Renault)
+    this.shadowRoot.querySelectorAll("select[data-sel]").forEach((sel) => {
+      sel.dataset.ent = this._field(sel.dataset.sel);
+      sel.addEventListener("change", () => {
+        if (!sel.dataset.ent || !sel.value) return;
+        this._call("select", "select_option", { entity_id: sel.dataset.ent, option: sel.value });
+      });
+    });
     // input locali (localStorage): prezzo diesel, consumo equivalente, notify, preavviso
     this.shadowRoot.querySelectorAll("input[data-ls]").forEach((inp) => {
       const saved = localStorage.getItem(inp.dataset.ls);
@@ -327,13 +360,13 @@ class RenaultEvCenterPanel extends HTMLElement {
     const D = "renault_ev_center";
     switch (cmd) {
       case "ac": {
-        const cl = this._st(this._car("climate", ""), this._ov("climate"));
+        const cl = this._st(this._car("climate", ""), this._ov("climate"), this._sid("climatizzatore"));
         if (cl) this._call("climate", "set_temperature", { entity_id: cl.entity_id, temperature: 21 }, "❄️ A/C: 21 °C");
         else this._toast("⚠️ Nessun climate dell'auto trovato");
         break;
       }
       case "charge": {
-        const b = this._st(this._car("button", "start_charge"), this._ov("start_charge"));
+        const b = this._st(this._car("button", "start_charge"), this._ov("start_charge"), this._car("button", "avviare_la_ricarica"));
         if (b) this._call("button", "press", { entity_id: b.entity_id }, "⚡ Avvio carica");
         else this._toast("⚠️ Pulsante carica non trovato (configura overrides.start_charge)");
         break;
@@ -360,7 +393,7 @@ class RenaultEvCenterPanel extends HTMLElement {
   _update() {
     const root = this.shadowRoot;
     // barra batteria
-    const b = this._num(this._ov("battery"), this._car("sensor", "battery"), this._car("sensor", "battery_level"));
+    const b = this._field("batt");
     const bar = root.querySelector('[data-b="battbar"]');
     if (bar) {
       bar.style.width = `${b === null ? 0 : Math.min(100, Math.max(0, b))}%`;
@@ -381,16 +414,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (chipLoc) chipLoc.textContent = `📍 ${this._f("loc")}`;
     const chipCh = root.querySelector('[data-c="charging"]');
     if (chipCh) {
-      const on = this._on("charging");
+      const on = this._chargeOn();
       chipCh.textContent = on ? "🔌 In carica" : "🔓 Non in carica";
       chipCh.className = `chip ${on ? "ok" : ""}`;
     }
     const chipPlug = root.querySelector('[data-c="plug"]');
-    if (chipPlug) {
-      const p = this._field("plug");
-      const on = p && p.state === "on";
-      chipPlug.textContent = on ? "🔗 Collegata" : "🔗 Scollegata";
-    }
+    if (chipPlug) chipPlug.textContent = this._plugOn() ? "🔗 Collegata" : "🔗 Scollegata";
     // foto auto
     const img = root.querySelector('[data-c="carimg"]');
     if (img) {
@@ -400,9 +429,11 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     // comandi: valori
     const cmdCharge = root.querySelector('[data-v="cmd_charge"]');
-    if (cmdCharge) cmdCharge.textContent = this._on("charging") ? "In carica" : "Non in carica";
+    if (cmdCharge) cmdCharge.textContent = this._chargeOn() ? "In carica" : "Non in carica";
     const cmdPlug = root.querySelector('[data-v="cmd_plug"]');
-    if (cmdPlug) cmdPlug.textContent = this._field("plug") && this._field("plug").state === "on" ? "Collegata" : "Scollegata";
+    if (cmdPlug) cmdPlug.textContent = this._plugOn() ? "Collegata" : "Scollegata";
+    const cmdZona = root.querySelector('[data-v="cmd_zona"]');
+    if (cmdZona) cmdZona.textContent = this._zoneName() || "—";
     const cmdTipo = root.querySelector('[data-v="cmd_tipo"]');
     if (cmdTipo) cmdTipo.textContent = this._f("tipo_ric");
     const cmdTempo = root.querySelector('[data-v="cmd_tempo"]');
@@ -425,14 +456,68 @@ class RenaultEvCenterPanel extends HTMLElement {
       const s = this._hass.states[inp.dataset.ent];
       if (s) inp.value = s.state;
     });
+    // select filtri: opzioni + valore corrente
+    root.querySelectorAll("select[data-sel]").forEach((sel) => {
+      const s = this._hass.states[sel.dataset.ent];
+      const opts = (s && Array.isArray(s.attributes.options)) ? s.attributes.options : [];
+      const sig = opts.join("|");
+      if (sel.dataset.sig !== sig) {
+        sel.dataset.sig = sig;
+        sel.innerHTML = opts.map((o) => `<option>${o}</option>`).join("") || `<option>—</option>`;
+      }
+      if (s && s.state !== "unavailable") sel.value = s.state;
+    });
     // righe lista da attributo (consumo_per_zona ecc.)
     root.querySelectorAll("[data-attr-list]").forEach((tb) => {
       const rows = this._list(this._sid(tb.dataset.attrList));
       tb.innerHTML = rows.slice(0, 8).map((r) =>
-        `<tr><td>${r.zona ?? r.nome ?? r.rotta ?? "—"}</td><td>${r.viaggi ?? r.n ?? "—"}</td>
+        `<tr><td>${r.zona ?? r.nome ?? r.rotta ?? r.tipo ?? "—"}</td><td>${r.viaggi ?? r.n ?? "—"}</td>
         <td>${this._fmt(parseFloat(r.km ?? 0), 1)}</td>
-        <td><span class="badge">${this._fmt(parseFloat(r.kwh_100km ?? r.efficienza ?? 0), 1)}</span></td></tr>`).join("")
+        <td><span class="badge">${this._fmt(parseFloat(r.kwh_100km ?? r.efficienza ?? r.eff ?? 0), 1)}</span></td></tr>`).join("")
         || `<tr><td colspan="4" style="color:var(--muted)">Nessun dato</td></tr>`;
+    });
+    // tabella rotte avanzate (attributo rotte di consumo_per_zona)
+    const tbRot = root.querySelector('[data-c="tab-rotte"]');
+    if (tbRot) {
+      const rs = this._list(this._sid("consumo_per_zona"));
+      tbRot.innerHTML = rs.slice(0, 8).map((r) =>
+        `<tr><td>${r.rotta ?? "—"}</td><td>${r.n ?? "—"}</td><td>${this._fmt(parseFloat(r.km ?? 0), 0)}</td>
+        <td>${this._fmt(parseFloat(r.km_medio ?? 0), 1)}</td><td><span class="badge">${this._fmt(parseFloat(r.eff ?? 0), 1)}</span></td>
+        <td>${this._fmt(parseFloat(r.costo ?? 0), 2)} €</td></tr>`).join("")
+        || `<tr><td colspan="6" style="color:var(--muted)">Nessuna rotta</td></tr>`;
+    }
+    // tabella scadenze (attributo scadenze di prossima_scadenza)
+    const tbSc = root.querySelector('[data-c="tab-scadenze"]');
+    if (tbSc) {
+      const s = this._st(this._sid("prossima_scadenza"));
+      const rs = (s && Array.isArray(s.attributes.scadenze) ? s.attributes.scadenze : []);
+      tbSc.innerHTML = rs.slice(0, 6).map((r) =>
+        `<tr><td>${r.tipo ?? r.nome ?? "—"}</td><td><b>${r.giorni ?? r.gg ?? "—"}</b> gg</td></tr>`).join("")
+        || `<tr><td colspan="2" style="color:var(--muted)">Nessuna scadenza</td></tr>`;
+    }
+    // celle percorrenza: [data-per="oggi|usati"] → riga attributo `righe`
+    root.querySelectorAll("[data-per]").forEach((el) => {
+      const [per, key] = el.dataset.per.split("|");
+      const rows = this._list(this._sid("percorrenza"));
+      const r = rows.find((x) => this._slug(String(x.nome ?? "")) === per);
+      const v = r ? parseFloat(r[key]) : NaN;
+      el.textContent = isNaN(v) ? "—" : (key === "km" ? this._i(v) : this._fmt(v, 2));
+    });
+    // tabella storico tagliandi
+    const tbTag = root.querySelector('[data-c="tab-tagliandi"]');
+    if (tbTag) {
+      const rows = this._list(this._sid("tagliandi"));
+      tbTag.innerHTML = rows.slice(0, 6).map((r) =>
+        `<tr><td>${r.data ?? "—"}</td><td>${this._i(parseFloat(r.km) || 0)}</td><td>${r.tipo ?? "—"}</td><td><b>${this._fmt(parseFloat(r.costo ?? r.euro ?? 0), 0)} €</b></td></tr>`).join("")
+        || `<tr><td colspan="4" style="color:var(--muted)">Nessun intervento registrato</td></tr>`;
+    }
+    // righe top/stop da attributi oggetto: [data-topstop="migliore|kwh_per_100km"]
+    root.querySelectorAll("[data-topstop]").forEach((el) => {
+      const [key, sub] = el.dataset.topstop.split("|");
+      const s = this._st(this._sid("viaggio_top_stop_del_mese"));
+      const o = s ? s.attributes[key] : null;
+      const v = o ? o[sub] : null;
+      el.textContent = v === undefined || v === null ? "—" : this._fmt(parseFloat(v), 1);
     });
     // grafico 7 giorni
     this._drawBars(root.querySelector('[data-c="bars7"]'), this._last7());
@@ -480,13 +565,14 @@ class RenaultEvCenterPanel extends HTMLElement {
     const tb = root.querySelector('[data-c="tab-viaggi"]');
     if (!tb) return;
     tb.innerHTML = rows.slice(0, 8).map((r) => {
-      const eff = r.efficienza ?? r.kwh_100km ?? r.eff;
+      const eff = r.kwh_per_100km ?? r.efficienza ?? r.eff;
+      const d = r.batteria_delta ?? r.delta_soc;
       return `<tr><td>${r.data ?? "—"}</td><td>${r.ora_inizio ?? "—"}${r.ora_fine ? "–" + r.ora_fine : ""}</td>
         <td><b>${this._fmt(parseFloat(r.km ?? r.chilometri ?? 0), 1)}</b></td>
-        <td>${r.delta_soc ?? "—"}</td><td>${this._fmt(parseFloat(r.kwh ?? 0), 2)}</td>
+        <td>${d !== undefined && d !== null ? d + "%" : "—"}</td><td>${this._fmt(parseFloat(r.kwh_consumati ?? r.kwh ?? 0), 2)}</td>
         <td><span class="badge">${this._fmt(parseFloat(eff ?? 0), 1)}</span></td>
-        <td>${this._fmt(parseFloat(r.costo ?? 0), 2)} €</td>
-        <td>${r.ricarica_precedente ?? r.prima ?? "—"}</td></tr>`;
+        <td>${this._fmt(parseFloat(r.costo_stimato ?? r.costo ?? 0), 2)} €</td>
+        <td>${r.zona_partenza ?? r.ricarica_precedente ?? "—"}</td></tr>`;
     }).join("") || `<tr><td colspan="8" style="color:var(--muted)">Nessun viaggio registrato</td></tr>`;
   }
   _tableRicariche(root) {
@@ -494,13 +580,15 @@ class RenaultEvCenterPanel extends HTMLElement {
     const tb = root.querySelector('[data-c="tab-ricariche"]');
     if (!tb) return;
     tb.innerHTML = rows.slice(0, 8).map((r) => {
-      const dur = r.durata ?? r.durata_h ?? "—";
+      const dm = parseFloat(r.durata_min ?? r.durata ?? 0);
+      const dur = dm > 0 ? this._fmt(dm / 60, 1) + " h" : "—";
+      const dsoc = (r.soc_end !== undefined && r.soc_start !== undefined) ? "+" + Math.round(r.soc_end - r.soc_start) + "%" : "—";
       return `<tr><td>${r.data ?? "—"}${r.ora_inizio ? " · " + r.ora_inizio : ""}</td>
         <td>${r.tipo ?? "—"}</td><td>${dur}</td>
-        <td><b>${r.delta_soc ? "+" + r.delta_soc + "%" : "—"}</b></td>
+        <td><b>${dsoc}</b></td>
         <td>${this._fmt(parseFloat(r.kwh ?? r.energia ?? 0), 2)}</td>
-        <td>${this._fmt(parseFloat(r.kw_medio ?? r.media ?? 0), 2)}</td>
-        <td>${this._fmt(parseFloat(r.costo_kwh ?? 0), 3)}</td>
+        <td>${this._fmt(parseFloat(r.potenza_media_kw ?? r.kw_medio ?? 0), 2)}</td>
+        <td>${this._fmt(parseFloat(r.kwh > 0 ? r.costo / r.kwh : NaN), 3)}</td>
         <td><b>${this._fmt(parseFloat(r.costo ?? 0), 2)} €</b></td></tr>`;
     }).join("") || `<tr><td colspan="8" style="color:var(--muted)">Nessuna ricarica registrata</td></tr>`;
   }
@@ -509,10 +597,11 @@ class RenaultEvCenterPanel extends HTMLElement {
     const tb = root.querySelector('[data-c="tab-salute"]');
     if (!tb) return;
     tb.innerHTML = rows.slice(0, 6).map((r) => {
-      const rete = parseFloat(r.kwh ?? r.energia ?? 0);
-      const batt = parseFloat(r.kwh_batteria ?? r.kwh_netto ?? rete * 0.94);
-      const eff = rete > 0 ? (batt / rete) * 100 : 0;
-      return `<tr><td>${r.data ?? "—"}</td><td>${r.delta_soc ? "+" + r.delta_soc + "%" : "—"}</td>
+      const rete = parseFloat(r.rete_kwh ?? r.kwh ?? 0);
+      const batt = parseFloat(r.batteria_kwh ?? 0) || (rete > 0 ? NaN : 0);
+      const eff = r.efficienza !== undefined ? parseFloat(r.efficienza) : (rete > 0 && !isNaN(batt) ? batt / rete * 100 : NaN);
+      const dsoc = (r.soc_end !== undefined && r.soc_start !== undefined) ? "+" + Math.round(r.soc_end - r.soc_start) + "%" : "—";
+      return `<tr><td>${r.data ?? "—"}</td><td>${dsoc}</td>
         <td>${this._fmt(rete, 2)}</td><td>${this._fmt(batt, 2)}</td>
         <td><span class="badge">${this._fmt(eff, 1)}%</span></td></tr>`;
     }).join("") || `<tr><td colspan="5" style="color:var(--muted)">Nessuna sessione</td></tr>`;
@@ -545,26 +634,38 @@ class RenaultEvCenterPanel extends HTMLElement {
   _tileStats(root) {
     const s = this._st(this._sid("statistiche_viaggi"));
     if (!s) return;
-    const g = (keys) => this._attrAny(s, keys);
+    const g = (keys) => {
+      let v = this._attrAny(s, keys);
+      if (v === null) {
+        for (const p of ["ultimi_90_giorni", "ultimi_30_giorni", "ultimi_7_giorni"]) {
+          const o = s.attributes[p];
+          if (o) { const x = this._attrAny({ attributes: o }, keys); if (x !== null) { v = x; break; } }
+        }
+      }
+      return v;
+    };
     const set = (id, v, dec) => { const el = root.querySelector(`[data-t="${id}"]`); if (el) el.textContent = v; };
-    set("tot_viaggi", this._i(parseFloat(g(["viaggi", "totale_viaggi", "n_viaggi"])) || 0));
-    set("tot_km", this._i(parseFloat(g(["km", "km_totali", "distanza"])) || 0));
-    set("eff_media", this._fmt(parseFloat(g(["efficienza_media", "kwh_100km", "media"])) || 0, 1));
+    set("tot_viaggi", this._i(parseFloat(g(["totale_viaggi", "n_trip", "viaggi"])) || 0));
+    set("tot_km", this._i(parseFloat(g(["km_totali", "km"])) || 0));
+    set("eff_media", this._fmt(parseFloat(g(["kwh_per_100km", "efficienza_media", "kwh_100km"])) || 0, 1));
     set("eff_best", this._fmt(parseFloat(g(["efficienza_best", "best", "record"])) || 0, 1));
-    set("tempo", this._fmt(parseFloat(g(["tempo_guida", "ore_guida"])) || 0, 0) + " h");
-    set("energia", this._i(parseFloat(g(["energia_usata", "kwh_totali"])) || 0));
-    set("n_ricariche", this._i(parseFloat(g(["ricariche", "n_ricariche"])) || 0));
-    set("energia_caricata", this._i(parseFloat(g(["energia_caricata", "kwh_caricati"])) || 0));
+    const min = parseFloat(g(["durata_totale_min", "tempo_guida"])) || 0;
+    set("tempo", this._fmt(min / 60, 0) + " h");
+    set("energia", this._i(parseFloat(g(["kwh_totali", "energia_usata", "kwh_totali_viaggi"])) || 0));
+    const lr = this._st(this._sid("lista_ricariche"));
+    set("n_ricariche", this._i(lr ? parseFloat(this._attrAny(lr, ["total"])) : null));
+    set("energia_caricata", this._i(this._num(this._sid("energia_caricata_totale"))));
   }
   _rowsAttr(root) {
     // righe generiche: [data-attr="entityKey|attrKeys"] → testo
     root.querySelectorAll("[data-attr]").forEach((el) => {
       const [src, ...keys] = el.dataset.attr.split("|");
-      let s = this._field(src);
-      if (!(s && s.entity_id)) s = this._st(this._sid(src));
+      let f = this._field(src);
+      let s = typeof f === "string" ? this._st(f) : (f && f.entity_id ? f : null);
+      if (!s) s = this._st(this._sid(src));
       let v = s ? this._attrAny(s, keys.length ? keys : [src]) : null;
       if (v === null) v = s ? s.state : "—";
-      if (typeof v === "object") v = v.value ?? v.testo ?? JSON.stringify(v);
+      if (typeof v === "object") v = v.rotta ? `${v.rotta} · ${this._fmt(parseFloat(v.eff ?? 0), 1)} kWh/100km` : (v.value ?? v.testo ?? JSON.stringify(v));
       el.textContent = String(v);
     });
   }
@@ -697,6 +798,8 @@ const PAGES = {
         <div class="row"><span>Odometro</span><b><span data-f="odo">—</span> km</b></div>
         <div class="row"><span>Energia a bordo</span><b><span data-f="batt_kwh">—</span> kWh</b></div>
         <div class="row"><span>Km oggi</span><b><span data-f="km_oggi">—</span> km</b></div>
+        <div class="row"><span>Consumata oggi</span><b><span data-f="drain">—</span>%</b></div>
+        <div class="row"><span>kWh oggi</span><b><span data-f="kwh_oggi_k">—</span> kWh</b></div>
         <div class="row"><span>Risparmio netto</span><b style="color:var(--good)"><span data-f="risp_tot">—</span> €</b></div></div></div>
     <div class="card"><h3>Efficienza</h3>
       <div class="grid g2" style="gap:10px">
@@ -708,22 +811,23 @@ const PAGES = {
         <div class="row"><span>Viaggio in corso</span><b data-f="trip_attivo">Nessuno</b></div>
         <div class="row"><span>Carica programmata</span><b data-f="t_start">—</b></div></div></div>
     <div class="card"><h3>Ultima ricarica</h3>
-      <div class="row"><span>Data</span><b data-f="ultima">—</b></div>
+      <div class="row"><span>Data</span><b data-f="ultima_data">—</b></div>
       <div class="row"><span>Energia rete</span><b><span data-f="rete_ult">—</span> kWh</b></div>
       <div class="row"><span>In batteria</span><b><span data-f="batt_ult">—</span> kWh</b></div>
       <div class="row"><span>Efficienza</span><b><span data-f="eff_ric">—</span>%</b></div>
-      <div class="row"><span>Perdite</span><b data-f="perdite">—</b></div>
+      <div class="row"><span>Perdite</span><b><span data-f="perdite">—</span> kWh (<span data-attr="perdite_ultima_ricarica|percentuale">—</span>%)</b></div>
       <div class="row"><span>Costo stimato</span><b><span data-f="costo_corr">—</span> €</b></div></div></div>
   <div class="grid g3" style="margin-top:16px">
     <div class="carbox" data-c="carimg"><div class="ph">🚗</div><b data-f="name">—</b></div>
-    <div class="card"><h3>Stato ricarica &amp; comandi</h3>
+    <div class="card"><h3>Stato ricarica &amp; comandi Renault</h3>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
         <div class="cmd"><span class="em">🔌</span>Carica<b data-v="cmd_charge">—</b></div>
+        <div class="cmd"><span class="em">📍</span>Zona<b data-v="cmd_zona">—</b></div>
         <div class="cmd"><span class="em">🔗</span>Presa<b data-v="cmd_plug">—</b></div>
-        <div class="cmd"><span class="em">⚡</span>Tipo<b data-v="cmd_tipo">—</b></div>
         <div class="cmd" data-cmd="ac"><span class="em">🧊</span>Avvia A/C<b>Premi ▸</b></div>
-        <div class="cmd" data-cmd="charge"><span class="em">🔋</span>Avvia carica<b>Premi ▸</b></div>
-        <div class="cmd"><span class="em">⏱</span>Fine stimata<b data-v="cmd_ora">—</b></div></div></div>
+        <div class="cmd" data-cmd="charge"><span class="em">⚡</span>Avvia carica<b>Premi ▸</b></div>
+        <div class="cmd"><span class="em">⏱</span>Fine ricarica<b data-v="cmd_ora">—</b></div>
+        <div class="cmd"><span class="em">🔌</span>Wallbox ora<b data-v="cmd_wb">—</b></div></div></div>
     <div class="mapbox">
       <svg viewBox="0 0 400 210" style="display:block;width:100%;height:auto">
         <rect width="400" height="210" fill="var(--panel2)"/>
@@ -759,11 +863,16 @@ const PAGES = {
       <div class="row"><span>⚡ Colonnine fuori casa</span><b data-attr="statistiche_viaggi|energia_colonnine|colonnine">—</b></div></div>
     <div class="card"><h3>Percorrenza</h3>
       <table><tr><th>Periodo</th><th>Usati</th><th>Caricati</th><th>KM</th></tr>
-        <tr><td><b>OGGI</b></td><td data-attr="percorrenza|oggi_usati">—</td><td data-attr="percorrenza|oggi_caricati">—</td><td data-attr="percorrenza|oggi_km">—</td></tr>
-        <tr><td><b>IERI</b></td><td data-attr="percorrenza|ieri_usati">—</td><td data-attr="percorrenza|ieri_caricati">—</td><td data-attr="percorrenza|ieri_km">—</td></tr>
-        <tr><td><b>SETTIMANA</b></td><td data-attr="percorrenza|settimana_usati">—</td><td data-attr="percorrenza|settimana_caricati">—</td><td data-attr="percorrenza|settimana_km">—</td></tr>
-        <tr><td><b>MESE</b></td><td data-attr="percorrenza|mese_usati">—</td><td data-attr="percorrenza|mese_caricati">—</td><td data-attr="percorrenza|mese_km">—</td></tr>
-        <tr><td><b>ANNO</b></td><td data-attr="percorrenza|anno_usati">—</td><td data-attr="percorrenza|anno_caricati">—</td><td data-attr="percorrenza|anno_km">—</td></tr></table></div></div>`,
+        <tr><td><b>OGGI</b></td><td data-per="oggi|usati">—</td><td data-per="oggi|caricati">—</td><td data-per="oggi|km">—</td></tr>
+        <tr><td><b>IERI</b></td><td data-per="ieri|usati">—</td><td data-per="ieri|caricati">—</td><td data-per="ieri|km">—</td></tr>
+        <tr><td><b>SETTIMANA</b></td><td data-per="settimana|usati">—</td><td data-per="settimana|caricati">—</td><td data-per="settimana|km">—</td></tr>
+        <tr><td><b>MESE</b></td><td data-per="mese|usati">—</td><td data-per="mese|caricati">—</td><td data-per="mese|km">—</td></tr>
+        <tr><td><b>ANNO</b></td><td data-per="anno|usati">—</td><td data-per="anno|caricati">—</td><td data-per="anno|km">—</td></tr></table></div></div>
+  <div class="card" style="margin-top:16px"><h3>Rotte avanzate (consumo per zona)</h3>
+    <table><tr><th>Rotta</th><th>Viaggi</th><th>Km</th><th>Km/viaggio</th><th>kWh/100km</th><th>Spesa</th></tr>
+    <tbody data-c="tab-rotte"></tbody></table>
+    <div class="row"><span>🏆 Più efficiente</span><b data-attr="consumo_per_zona|migliore_rotta">—</b></div>
+    <div class="row"><span>🐢 Più vorace</span><b data-attr="consumo_per_zona|peggior_rotta">—</b></div></div>`,
 
   p4: `<h1>Ricariche</h1><div class="sub">Filtri da integrazione + storico</div>
   <div class="tiles">
@@ -771,6 +880,11 @@ const PAGES = {
     <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett">—</span> €</div></div>
     <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">MESE</div><div class="v"><span data-f="kwh_mese_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_mese">—</span> €</div></div>
     <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">ANNO</div><div class="v"><span data-f="kwh_anno_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_anno">—</span> €</div></div></div>
+  <div class="card"><h3>Filtri</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <select data-sel="sel_tipo"></select>
+      <select data-sel="sel_periodo"></select>
+      <select data-sel="sel_anno"></select></div></div>
   <div class="card"><h3>Storico ricariche</h3>
     <table><tr><th>Data</th><th>Tipo</th><th>Durata</th><th>Δ SoC</th><th>kWh</th><th>Ø kW</th><th>€/kWh</th><th>Costo</th></tr>
     <tbody data-c="tab-ricariche"></tbody></table></div>`,
@@ -785,9 +899,10 @@ const PAGES = {
     <div class="card"><h3>kWh per 1%</h3><div class="big" style="font-size:34px;color:var(--accent)"><span data-f="kwh_1pct">—</span> <small>kWh</small></div>
       <div style="color:var(--muted);font-size:12px;margin-top:8px">= capacità × SOH ÷ 100</div></div></div>
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>Ultima sessione</h3>
+    <div class="card"><h3>Dove finisce l'energia</h3>
       <div class="row"><span>Dalla rete (AC)</span><b><span data-f="rete_ult">—</span> kWh</b></div>
       <div class="row"><span>In batteria</span><b><span data-f="batt_ult">—</span> kWh</b></div>
+      <div class="row"><span>Dispersa</span><b><span data-f="dispersa_ult">—</span> kWh</b></div>
       <div class="row"><span>Efficienza</span><b><span data-f="eff_ric">—</span>%</b></div></div>
     <div class="card"><h3>Sessioni analizzate</h3>
       <table><tr><th>Data</th><th>Δ SoC</th><th>Rete</th><th>Batteria</th><th>Eff.</th></tr>
@@ -796,19 +911,20 @@ const PAGES = {
   p6: `<h1>Manutenzione</h1><div class="sub">Tagliandi e Assicurazione</div>
   <div class="grid g2">
     <div class="card"><h3>🔧 Tagliandi</h3>
-      <div class="row"><span>Prossimo</span><b data-attr="tagliandi|prossimo|next">—</b></div>
-      <div class="row"><span>Modalità</span><b data-attr="tagliandi|modalita|mode">—</b></div>
-      <div class="row"><span>Speso finora</span><b data-attr="tagliandi|speso|totale">—</b></div>
-      <div class="row"><span>Interventi</span><b data-attr="tagliandi|interventi|n">—</b></div></div>
+      <div class="row"><span>Prossimo (modalità km)</span><b><span data-attr="tagliandi|prossimo_km">—</span> km</b></div>
+      <div class="row"><span>Speso finora</span><b><span data-f="tagliandi">—</span> € (<span data-attr="tagliandi|n">—</span> interventi)</b></div>
+      <table style="margin-top:8px"><tr><th>Data</th><th>Km</th><th>Tipo</th><th>€</th></tr>
+      <tbody data-c="tab-tagliandi"></tbody></table></div>
     <div class="card"><h3>🛡️ Assicurazione</h3>
-      <div class="row"><span>Scadenza</span><b data-attr="assicurazione|scadenza|data">—</b></div>
-      <div class="row"><span>Giorni rimasti</span><b data-attr="assicurazione|giorni|gg_rimasti">—</b></div>
+      <div class="row"><span>Scadenza</span><b><span data-attr="assicurazione|data">—</span> · <span data-f="assic">—</span> gg</b></div>
       <div class="inp"><span>Costo annuo</span><input data-n="n_assic"><span class="u">€/anno</span></div>
       <div style="display:flex;gap:8px;margin-top:14px">
         <div class="btn" data-cmd="ass_plus6">Rinnova +6 mesi</div>
         <div class="btn" data-cmd="ass_plus12">Rinnova +1 anno</div></div></div></div>
   <div class="card netto" style="margin-top:16px"><h3>🏆 Risparmio manutenzione</h3>
-    <div class="row"><span>Risparmio tagliandi vs termica</span><b><span data-f="risp_tagliandi">—</span> €</b></div>
+    <div class="row"><span>Termica teorica (450 € × tagliandi)</span><b><span data-f="teo_tagliandi">—</span> €</b></div>
+    <div class="row"><span>Spesa reale EV</span><b><span data-f="tagliandi">—</span> €</b></div>
+    <div class="row"><span>Risparmio tagliandi</span><b style="color:var(--good)"><span data-f="risp_tagliandi">—</span> €</b></div>
     <div class="row"><span>Risparmio bollo</span><b><span data-f="risp_bollo">—</span> €</b></div></div>`,
 
   p7: `<h1>Risparmi</h1><div class="sub">Il quadro completo</div>
@@ -832,20 +948,29 @@ const PAGES = {
       <div class="row"><span>Ricaricato FV questo mese</span><b><span data-f="fv_mese">—</span> kWh</b></div>
       <div class="row"><span>Energia FV totale</span><b><span data-f="fv_tot">—</span> kWh</b></div></div>
     <div class="card"><h3>ℹ️ Come si calcola</h3>
-      <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Carburante: km × consumo × prezzo − costi pagati.<br>Tagliandi: (km ÷ intervallo) × 450 € − spesa reale EV.<br>Bollo: anni × differenza. Il FV costa 0 €.</div></div></div>`,
+      <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Carburante: km × consumo × prezzo − costi pagati.<br>Tagliandi: (km ÷ intervallo) × 450 € − spesa reale EV.<br>Bollo: imposta il bollo termico con <code>overrides.bollo_termico</code>. Il FV costa 0 €.</div></div></div>`,
 
   p8: `<h1>Extra</h1><div class="sub">Vampire drain, CO2, scadenze, rotte, top &amp; stop</div>
   <div class="grid g3">
-    <div class="card"><h3>🔋 Vampire drain oggi</h3><div class="big" style="font-size:32px;color:var(--accent)"><span data-f="drain">—</span><small>%</small></div></div>
-    <div class="card"><h3>🌍 CO2</h3><div class="big" style="font-size:32px;color:var(--good)" data-f="co2">—</div></div>
-    <div class="card"><h3>📅 Scadenze</h3><div class="row"><span>Prossima</span><b data-attr="scadenze|prossima|tipo">—</b></div>
-      <div class="row"><span>Giorni</span><b data-attr="scadenze|giorni|gg">—</b></div></div></div>
+    <div class="card"><h3>🔋 Vampire drain oggi</h3><div class="big" style="font-size:32px;color:var(--accent)"><span data-f="drain">—</span><small>%</small></div>
+      <div style="color:var(--muted);font-size:12px;margin-top:6px">≈ <span data-attr="batteria_persa_da_fermo_oggi|equivalente_kwh">—</span> kWh</div></div>
+    <div class="card"><h3>🌍 CO2</h3><div class="big" style="font-size:32px;color:var(--good)"><span data-f="co2">—</span> <small>kg</small></div>
+      <div style="color:var(--muted);font-size:12px;margin-top:6px">Anno: <span data-attr="co2_risparmiata|quest_anno">—</span> kg</div></div>
+    <div class="card"><h3>📅 Scadenze</h3>
+      <table><tr><th>Tipo</th><th>Giorni</th></tr><tbody data-c="tab-scadenze"></tbody></table></div></div>
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>Consumo per zona</h3>
       <table><tr><th>Rotta</th><th>Viaggi</th><th>Km</th><th>kWh/100km</th></tr><tbody data-attr-list="consumo_per_zona"></tbody></table></div>
+    <div class="card"><h3>🌦️ Meteo vs consumi</h3>
+      <div class="row"><span>Temperatura esterna</span><b><span data-f="temp_est">—</span> °C</b></div>
+      <div class="row"><span>Consumo attuale</span><b><span data-f="kwh_100">—</span> kWh/100km</b></div></div></div>
+  <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>🏆 Top &amp; Stop · mese</h3>
-      <div class="row"><span>Migliore / Peggiore</span><b data-f="topstop">—</b></div>
-      <div class="row"><span>Energia casa (totale)</span><b><span data-f="energia_casa">—</span> kWh</b></div></div></div>`,
+      <div class="row"><span>Migliore</span><b><span data-topstop="migliore|kwh_per_100km">—</span> kWh/100km</b></div>
+      <div class="row"><span>Peggiore</span><b><span data-topstop="peggiore|kwh_per_100km">—</span> kWh/100km</b></div>
+      <div class="row"><span>Energia casa (totale)</span><b><span data-f="energia_casa">—</span> kWh</b></div></div>
+    <div class="card"><h3>ℹ️ Note</h3>
+      <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2: risparmiata vs termica, da sensore integrazione.<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div></div>`,
 
   p9: `<h1>Automazioni</h1><div class="sub">Notifiche e carica programmata integrate — attivabili da qui</div>
   <div class="grid g2">
