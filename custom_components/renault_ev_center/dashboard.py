@@ -1,6 +1,7 @@
 """Creazione automatica della dashboard laterale e della foto dell'auto."""
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -25,6 +26,14 @@ def _pkg_dir(*parts: str) -> str:
     return os.path.join(os.path.dirname(__file__), *parts)
 
 
+def _version() -> str:
+    try:
+        with open(_pkg_dir("manifest.json"), encoding="utf-8") as fh:
+            return str(json.load(fh).get("version", "dev"))
+    except Exception:  # noqa: BLE001
+        return "dev"
+
+
 def setup_card_js(hass: HomeAssistant) -> None:
     """Copia le card Lovelace in /config/www (risorsa: /local/...)."""
     dest_dir = hass.config.path("www", WWW_DIR)
@@ -40,7 +49,7 @@ def setup_card_js(hass: HomeAssistant) -> None:
 
 
 async def register_card_resource(hass: HomeAssistant) -> None:
-    """Registra le card come risorse Lovelace (idempotente)."""
+    """Registra le card come risorse Lovelace, con cache-busting e pulizia vecchie URL."""
     lovelace = hass.data.get("lovelace")
     resources = getattr(lovelace, "resources", None)
     if resources is None or not hasattr(resources, "async_create_item"):
@@ -51,13 +60,21 @@ async def register_card_resource(hass: HomeAssistant) -> None:
             WWW_DIR, WWW_DIR,
         )
         return
+    ver = _version()
     for fn in ("renault-ev-center-card.js", "renault-ev-center-panel.js"):
-        url = f"/local/{WWW_DIR}/{fn}"
+        base = f"/local/{WWW_DIR}/{fn}"
+        url = f"{base}?v={ver}"
         try:
-            if any(item.get("url") == url for item in resources.async_items()):
-                continue  # già registrata
-            await resources.async_create_item({"res_type": "js", "url": url})
-            _LOGGER.info("Risorsa card registrata: %s", url)
+            items = list(resources.async_items())
+            for item in items:
+                old = item.get("url")
+                if old == base or (old and old.startswith(f"{base}?v=") and old != url):
+                    item_id = item.get("id")
+                    if item_id and hasattr(resources, "async_delete_item"):
+                        await resources.async_delete_item(item_id)
+            if not any(item.get("url") == url for item in resources.async_items()):
+                await resources.async_create_item({"res_type": "js", "url": url})
+                _LOGGER.info("Risorsa card registrata: %s", url)
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Registrazione risorsa %s fallita: %s", url, err)
 
