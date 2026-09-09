@@ -84,6 +84,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     return v.toLocaleString("it-IT", { minimumFractionDigits: dec, maximumFractionDigits: dec });
   }
   _i(v) { return v === null || v === undefined || isNaN(v) ? "—" : Math.round(v).toLocaleString("it-IT"); }
+  _d(iso) { const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}-${m[2]}-${m[1]}` : (iso || "—"); }
 
   /** id entità integrazione: sensor.<slug>_<rest> */
   _sid(rest) { return `sensor.${this._slug(this._cfg.name)}_${rest}`; }
@@ -172,7 +173,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "ultima_data": {
         const rs = S._list(S._sid("lista_ricariche"));
         const r = rs[0];
-        if (r) return `${r.data ?? "—"}${r.ora_inizio ? " · " + r.ora_inizio : ""}`;
+        if (r) return `${this._d(r.data ?? r.giorno)}${r.ora_inizio ? " · " + r.ora_inizio : ""}`;
         const s = S._st(S._sid("ultima_data_ricarica"), "sensor.ultima_data_ricarica_megane", "sensor.ultima_ricarica");
         return s ? S._txt(s) : null;
       }
@@ -259,6 +260,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "sw_sched": return S._swid("carica_programmata");
       case "sw_bal": return S._swid("bilanciamento_solare");
       case "t_start": return S._tid("carica_orario_avvio");
+      case "t_start_v": { const s = S._st(S._tid("carica_orario_avvio")); return s && typeof s.state === "string" ? s.state.slice(0, 5) : null; }
       case "t_stop": return S._tid("carica_orario_stop");
       case "t_low_start": return S._tid("promemoria_inizio");
       case "t_low_end": return S._tid("promemoria_fine");
@@ -392,6 +394,16 @@ class RenaultEvCenterPanel extends HTMLElement {
         this._call("select", "select_option", { entity_id: sel.dataset.ent, option: sel.value });
       });
     });
+    // time: orari carica programmata / promemoria
+    this.shadowRoot.querySelectorAll("input[data-time]").forEach((inp) => {
+      inp.dataset.ent = this._field(inp.dataset.time);
+      inp.addEventListener("change", () => {
+        const eid = inp.dataset.ent;
+        if (!eid || !inp.value) return;
+        const [hh, mm] = inp.value.split(":");
+        this._call("time", "set_value", { entity_id: eid, time: `${hh}:${mm}:00` });
+      });
+    });
     // input locali (localStorage): prezzo diesel, consumo equivalente, notify, preavviso
     this.shadowRoot.querySelectorAll("input[data-ls]").forEach((inp) => {
       const saved = localStorage.getItem(inp.dataset.ls);
@@ -508,6 +520,14 @@ class RenaultEvCenterPanel extends HTMLElement {
       if (document.activeElement === inp) return;
       const s = this._hass.states[inp.dataset.ent];
       if (s) inp.value = s.state;
+    });
+    root.querySelectorAll("input[data-time]").forEach((inp) => {
+      if (document.activeElement === inp) return;
+      const s = this._hass.states[inp.dataset.ent];
+      if (s && typeof s.state === "string") {
+        const [hh, mm] = s.state.split(":");
+        inp.value = hh ? `${hh}:${mm ?? "00"}` : "";
+      }
     });
     // select filtri: opzioni + valore corrente
     root.querySelectorAll("select[data-sel]").forEach((sel) => {
@@ -639,7 +659,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     tb.innerHTML = rows.slice(0, 8).map((r) => {
       const eff = r.kwh_per_100km ?? r.efficienza ?? r.eff;
       const d = r.batteria_delta ?? r.delta_soc;
-      return `<tr><td>${r.data ?? "—"}</td><td>${r.ora_inizio ?? "—"}${r.ora_fine ? "–" + r.ora_fine : ""}</td>
+      return `<tr><td>${this._d(r.data)}</td><td>${r.ora_inizio ?? "—"}${r.ora_fine ? "–" + r.ora_fine : ""}</td>
         <td><b>${this._fmt(parseFloat(r.km ?? r.chilometri ?? 0), 1)}</b></td>
         <td>${d !== undefined && d !== null ? d + "%" : "—"}</td><td>${this._fmt(parseFloat(r.kwh_consumati ?? r.kwh ?? 0), 2)}</td>
         <td><span class="badge">${this._fmt(parseFloat(eff ?? 0), 1)}</span></td>
@@ -655,7 +675,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const dm = parseFloat(r.durata_min ?? r.durata ?? 0);
       const dur = dm > 0 ? this._fmt(dm / 60, 1) + " h" : "—";
       const dsoc = (r.soc_end !== undefined && r.soc_start !== undefined) ? "+" + Math.round(r.soc_end - r.soc_start) + "%" : "—";
-      return `<tr><td>${r.data ?? "—"}${r.ora_inizio ? " · " + r.ora_inizio : ""}</td>
+      return `<tr><td>${this._d(r.data)}${r.ora_inizio ? " · " + r.ora_inizio : ""}</td>
         <td>${r.tipo ?? "—"}</td><td>${dur}</td>
         <td><b>${dsoc}</b></td>
         <td>${this._fmt(parseFloat(r.kwh ?? r.energia ?? 0), 2)}</td>
@@ -673,7 +693,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const batt = parseFloat(r.batteria_kwh ?? 0) || (rete > 0 ? NaN : 0);
       const eff = r.efficienza !== undefined ? parseFloat(r.efficienza) : (rete > 0 && !isNaN(batt) ? batt / rete * 100 : NaN);
       const dsoc = (r.soc_end !== undefined && r.soc_start !== undefined) ? "+" + Math.round(r.soc_end - r.soc_start) + "%" : "—";
-      return `<tr><td>${r.data ?? "—"}</td><td>${dsoc}</td>
+      return `<tr><td>${this._d(r.data)}</td><td>${dsoc}</td>
         <td>${this._fmt(rete, 2)}</td><td>${this._fmt(batt, 2)}</td>
         <td><span class="badge">${this._fmt(eff, 1)}%</span></td></tr>`;
     }).join("") || `<tr><td colspan="5" style="color:var(--muted)">Nessuna sessione</td></tr>`;
@@ -704,7 +724,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         ${Object.entries(mesi).sort().reverse().map(([m, rs]) => {
           const kmM = rs.reduce((a, r) => a + (parseFloat(r.km) || 0), 0);
           return `<div class="mese">▼ ${NOMI_MESI[parseInt(m, 10) - 1] || m} <span style="float:right;color:var(--muted);font-weight:400">${rs.length} viaggi · ${this._i(kmM)} km</span></div>
-            ${rs.slice(0, 4).map((r) => `<div class="giorno">• <b>${r.data ?? ""}</b> — ${this._fmt(parseFloat(r.km) || 0, 1)} km <span class="badge">${this._fmt(parseFloat(r.efficienza ?? 0), 1)}</span> · ${this._fmt(parseFloat(r.costo ?? 0), 2)} €</div>`).join("")}`;
+            ${rs.slice(0, 4).map((r) => `<div class="giorno">• <b>${this._d(r.data)}</b> — ${this._fmt(parseFloat(r.km) || 0, 1)} km <span class="badge">${this._fmt(parseFloat(r.efficienza ?? 0), 1)}</span> · ${this._fmt(parseFloat(r.costo ?? 0), 2)} €</div>`).join("")}`;
         }).join("")}</div>`;
     }).join("");
   }
@@ -860,7 +880,7 @@ select,input{background:var(--panel2);color:var(--txt);border:1px solid var(--li
 `;
 
 const PAGES = {
-  p1: `<h1>Panoramica</h1><div class="sub">1 · Auto &nbsp;·&nbsp; 2 · Stato ricarica &amp; comandi &nbsp;·&nbsp; 3 · Efficienza e ultima ricarica &nbsp;·&nbsp; 4 · Risparmi</div>
+  p1: `<h1>Panoramica</h1>
   <div class="grid g3">
     <div class="card" style="padding:0;overflow:hidden">
       <div class="carbox" style="min-height:170px;border:none;border-radius:0;background:var(--panel);position:relative;padding:18px 16px">
@@ -906,7 +926,7 @@ const PAGES = {
       </div>
       <div style="margin-top:10px">
         <div class="row"><span>Viaggio in corso</span><b data-f="trip_attivo">—</b></div>
-        <div class="row"><span>Carica programmata</span><b data-f="t_start">—</b></div>
+        <div class="row"><span>Carica programmata</span><b data-f="t_start_v">—</b></div>
       </div>
     </div>
   </div>
@@ -1099,9 +1119,10 @@ const PAGES = {
       <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div></div>
     <div class="card"><h3>⏰ Carica programmata</h3>
       <div class="row"><span>Stato</span><label class="switch"><input type="checkbox" data-sw="sw_sched"><span></span></label></div>
-      <div class="row"><span>↳ Orario avvio</span><b data-f="t_start">—</b></div>
-      <div class="row"><span>↳ Orario stop</span><b data-f="t_stop">—</b></div>
-      <div class="row"><span>↳ Fascia promemoria</span><b><span data-f="t_low_start">—</span> → <span data-f="t_low_end">—</span></b></div></div></div>
+      <div class="row"><span>↳ Orario avvio</span><input type="time" data-time="t_start"></div>
+      <div class="row"><span>↳ Orario stop</span><input type="time" data-time="t_stop"></div>
+      <div class="row"><span>↳ Promemoria da</span><input type="time" data-time="t_low_start"></div>
+      <div class="row"><span>↳ Promemoria a</span><input type="time" data-time="t_low_end"></div></div></div>
   <div class="card" style="margin-top:16px"><h3>Come si cambiano i parametri</h3>
     <div style="color:var(--muted);font-size:13px;line-height:1.8">
       Tutto in <b>Impostazioni → Integrazioni → Renault EV Center → Configura</b>:

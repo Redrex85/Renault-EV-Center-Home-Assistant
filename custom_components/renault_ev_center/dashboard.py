@@ -60,7 +60,7 @@ async def register_card_resource(hass: HomeAssistant) -> None:
             WWW_DIR, WWW_DIR,
         )
         return
-    ver = _version()
+    ver = await hass.async_add_executor_job(_version)
     for fn in ("renault-ev-center-card.js", "renault-ev-center-panel.js"):
         base = f"/local/{WWW_DIR}/{fn}"
         url = f"{base}?v={ver}"
