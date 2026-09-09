@@ -1,0 +1,20 @@
+# Auto-update Renault EV Center
+# Importa in HA: Impostazioni -> Automazioni -> ⋮ -> "Crea nuova" -> modalità YAML
+# oppure incollalo sotto "automation:" nel tuo automation.yaml.
+# Requisito: webhook_id deve combaciare con l'URL del secret HA_WEBHOOK_URL nel workflow GitHub.
+#   HA_WEBHOOK_URL = http://192.168.1.70/api/webhook/renault_ev_center_release
+automation:
+  - alias: "Renault EV Center — auto update"
+    id: renault_ev_center_auto_update
+    mode: single
+    trigger:
+      - platform: webhook
+        webhook_id: renault_ev_center_release
+    action:
+      - service: homeassistant.update_entity
+        target:
+          entity_id: update.renault_ev_center_update
+      - delay: "00:00:15"
+      - service: update.install
+        target:
+          entity_id: update.renault_ev_center_update

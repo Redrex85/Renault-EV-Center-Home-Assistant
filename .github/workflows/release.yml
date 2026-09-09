@@ -1,0 +1,19 @@
+name: Notifica HA alla release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  trigger-auto-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chiama webhook HA per refresh + install
+        env:
+          HA_WEBHOOK_URL: ${{ secrets.HA_WEBHOOK_URL }}
+        run: |
+          if [ -z "$HA_WEBHOOK_URL" ]; then
+            echo "HA_WEBHOOK_URL non impostato, salto."
+            exit 0
+          fi
+          curl -sS -X POST "$HA_WEBHOOK_URL" || true

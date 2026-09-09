@@ -160,4 +160,4 @@ try {
   /* ambiente non-HA (demo): ignora */
 }
 
-console.info("%c RENAULT EV CENTER CARD %c v1.0.4 ", "background:#4d8dff;color:#fff", "background:#333;color:#fff");
+console.info("%c RENAULT EV CENTER CARD %c v1.0.5 ", "background:#4d8dff;color:#fff", "background:#333;color:#fff");

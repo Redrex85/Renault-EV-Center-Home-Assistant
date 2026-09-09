@@ -1538,7 +1538,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             },
         }
 
-        store = Store(self.hass, 1, "automation", delayed_write=True)
+        store = Store(self.hass, 1, "automation")
         items = await store.async_load() or {"items": {}}
         if not isinstance(items, dict) or not isinstance(items.get("items"), dict):
             items = {"items": {}}
