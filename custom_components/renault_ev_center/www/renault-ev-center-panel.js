@@ -76,7 +76,7 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
   _list(...cands) {
     const s = this._st(...cands);
-    const v = s ? this._attrAny(s, ["list", "items", "viaggi", "ricariche", "data", "rows", "righe", "rotte"]) : null;
+    const v = s ? this._attrAny(s, ["list", "items", "trips", "days", "viaggi", "ricariche", "data", "rows", "righe", "rotte"]) : null;
     return Array.isArray(v) ? v : [];
   }
   _fmt(v, dec = 1) {
@@ -624,7 +624,16 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
   _tableViaggi(root) {
     const s = this._st(this._sid("viaggi_recenti"));
-    const rows = this._list(s ? s.entity_id : "");
+    let rows = this._list(s ? s.entity_id : "");
+    if (!rows.length) {
+      // fallback: core Renault espone sensor.<car>_trip_history.attributes.days
+      const th = this._st(this._sid("trip_history"), "sensor.megane_trip_history");
+      const days = th && Array.isArray(th.attributes.days) ? th.attributes.days : [];
+      rows = days.map((d) => ({
+        data: d.date, ora_inizio: null, km: d.km, batteria_delta: d.battery_pct,
+        kwh: d.kwh, kwh_per_100km: d.kwh_100, costo_stimato: NaN, zona_partenza: null,
+      }));
+    }
     const tb = root.querySelector('[data-c="tab-viaggi"]');
     if (!tb) return;
     tb.innerHTML = rows.slice(0, 8).map((r) => {
@@ -673,7 +682,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     const box = root.querySelector('[data-c="tree"]');
     if (!box) return;
     const arch = this._st(this._sid("archivio_viaggi"), this._sid("storico_giornaliero"));
-    const rows = this._list(arch ? arch.entity_id : "");
+    let rows = this._list(arch ? arch.entity_id : "");
+    if (!rows.length) {
+      const th = this._st(this._sid("trip_history"), "sensor.megane_trip_history");
+      const days = th && Array.isArray(th.attributes.days) ? th.attributes.days : [];
+      rows = days.map((d) => ({ data: d.date, km: d.km, efficienza: d.kwh_100, costo: NaN }));
+    }
     if (!rows.length) { box.innerHTML = `<div style="color:var(--muted)">Archivio viaggi vuoto</div>`; return; }
     // raggruppa per anno → mese
     const tree = {};
