@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Renault EV Center — Anteprima v1.0.5</title>
+<title>Renault EV Center — Anteprima v1.0.5.2</title>
 <style>
   /* Palette Renault: Blu Megane, Giallo R5, Verde R4, Grigio Aviation */
   body[data-theme="blu"]{
@@ -50,12 +50,13 @@
   .g2{grid-template-columns:repeat(2,1fr)}
   @media(max-width:1100px){.g3{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:700px){.g3,.g2{grid-template-columns:1fr}}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 -14px 30px rgba(0,0,0,.42),0 16px 36px rgba(0,0,0,.32)}
+  .card::before{content:"";position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(135deg,var(--accent),transparent 42%,rgba(255,255,255,.04));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
   .card h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-weight:600}
   .big{font-size:44px;font-weight:800;line-height:1}
   .big small{font-size:18px;font-weight:600;color:var(--muted)}
-  .bar{height:9px;background:var(--line);border-radius:6px;margin-top:12px;overflow:hidden}
-  .bar i{display:block;height:100%;border-radius:6px;background:var(--accent)}
+  .bar{height:10px;background:rgba(0,0,0,.35);border-radius:99px;margin-top:12px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
+  .bar i{display:block;height:100%;border-radius:99px;background:var(--accent);box-shadow:0 0 12px var(--accent)}
   .row{display:flex;justify-content:space-between;font-size:13.5px;padding:7px 0;border-bottom:1px solid var(--line);gap:10px}
   .row:last-child{border-bottom:none}
   .row span:first-child{color:var(--muted)}
@@ -65,11 +66,11 @@
   .chip.acc{color:var(--accent);border-color:var(--accent)}
   .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
   @media(max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}}
-  .tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;gap:13px;align-items:center}
+  .tile{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:15px;padding:16px;display:flex;gap:13px;align-items:center;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 -12px 26px rgba(0,0,0,.38),0 14px 30px rgba(0,0,0,.3)}
   .tile .em{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;background:var(--accent-soft)}
   .tile .v{font-size:24px;font-weight:800;line-height:1.05}
   .tile .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
-  .cmd{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 8px;text-align:center;font-size:12px;cursor:pointer}
+  .cmd{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:13px 8px;text-align:center;font-size:12px;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 -10px 22px rgba(0,0,0,.35),0 12px 26px rgba(0,0,0,.3)}
   .cmd .em{font-size:22px;display:block;margin-bottom:5px}
   .cmd b{display:block;margin-top:2px;font-weight:600}
   .cmd:hover{border-color:var(--accent)}
@@ -87,8 +88,8 @@
   .inp{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;gap:10px}
   .inp input{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:7px 10px;width:100px;text-align:right;font-size:14px}
   .inp .u{color:var(--muted);font-size:12px;width:48px}
-  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 14px;font-size:13px;cursor:pointer;text-align:center;flex:1}
-  .btn:hover{border-color:var(--accent)}
+  .btn{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);color:var(--txt);border-radius:11px;padding:11px 14px;font-size:13px;cursor:pointer;text-align:center;flex:1;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 10px 22px rgba(0,0,0,.3)}
+  .btn:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft),0 1px 0 rgba(255,255,255,.05) inset,0 12px 24px rgba(0,0,0,.35)}
   .netto{background:linear-gradient(135deg,var(--accent-soft),transparent);border-color:var(--accent)}
   .carbox{position:relative;border-radius:14px;overflow:hidden;border:1px dashed var(--accent);
      background:radial-gradient(ellipse at 50% 115%, var(--accent-soft), transparent 60%), var(--panel);
@@ -104,7 +105,7 @@
 <div class="sidebar">
   <div class="logo">
     <img src="logo_renault.png" alt="Renault">
-    <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5</span><small>Megane E-Tech · anteprima</small></div>
+    <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.2</span><small>Megane E-Tech · anteprima</small></div>
   </div>
   <div class="nav">
     <button class="active" data-p="p1"><span class="em">📊</span> Panoramica</button>

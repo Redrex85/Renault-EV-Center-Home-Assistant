@@ -256,6 +256,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             min_km=TRIP_MIN_KM,
             min_minutes=TRIP_MIN_MINUTES,
             capacity_kwh=self.capacity,
+            tz=dt_util.DEFAULT_TIME_ZONE,
         )
 
         # --- stato sessione di ricarica ------------------------------------------
@@ -1027,7 +1028,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 "battery_delta": round(max(self.trip.battery_start - self.trip.battery_now, 0), 1),
                 "durata_min": int((time.time() - self.trip.ts_start) / 60) if self.trip.active else 0,
                 "zona_partenza": self.trip.zone_start,
-                "ts_inizio": datetime.fromtimestamp(self.trip.ts_start).isoformat()
+                "ts_inizio": datetime.fromtimestamp(self.trip.ts_start, self.trip.tz).isoformat()
                 if self.trip.active
                 else "",
             },

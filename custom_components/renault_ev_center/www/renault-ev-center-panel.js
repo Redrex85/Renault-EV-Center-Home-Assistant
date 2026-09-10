@@ -234,7 +234,17 @@ class RenaultEvCenterPanel extends HTMLElement {
         const v = S._num(S._sid("batteria_persa_da_fermo_oggi"), S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge");
         return v === null ? null : Math.abs(v);
       }
-      case "temp_est": return S._num(S._sid("temperatura_esterna"));
+      case "temp_est": {
+        const v = S._num(S._sid("temperatura_esterna"), S._sid("temp_esterna"));
+        if (v !== null) return v;
+        // fallback: temperatura attuale del meteo HA (weather.*)
+        for (const id in S._hass.states) {
+          if (!id.startsWith("weather.")) continue;
+          const t = S._hass.states[id] && S._hass.states[id].attributes && S._hass.states[id].attributes.temperature;
+          if (t !== null && t !== undefined && !isNaN(t)) return t;
+        }
+        return null;
+      }
       case "co2": return S._st(S._sid("co2_risparmiata"));
       case "zona": return S._list(S._sid("consumo_per_zona"));
       case "topstop": return S._st(S._sid("viaggio_top_stop_del_mese"), S._sid("viaggio_top_stop"));
@@ -279,6 +289,37 @@ class RenaultEvCenterPanel extends HTMLElement {
     return String(v);
   }
   _f(k) { return this._txt(this._field(k)); }
+  /** primo entity_id live per un campo KPI cliccabile */
+  _ent(k) {
+    const S = this;
+    const cands = {
+      batt: [S._ov("battery"), S._car("sensor", "battery"), S._car("sensor", "battery_level"), S._sid("batteria")],
+      range: [S._ov("range"), S._car("sensor", "range_electric"), S._sid("autonomia_della_batteria")],
+      odo: [S._ov("odometer"), S._car("sensor", "odometer"), S._sid("chilometraggio")],
+      batt_kwh: [S._sid("batteria_kwh_disponibili"), "sensor.megane_battery_available_energy_2"],
+      km_oggi: [S._sid("km_giornalieri"), "sensor.km_giornalieri"],
+      kwh_oggi_k: [S._sid("batteria_scaricata_oggi"), "sensor.megane_battery_energy_daily_discharge"],
+      drain: [S._sid("batteria_persa_da_fermo_oggi"), "sensor.megane_battery_perc_giorno_discharge"],
+      km_per_kwh: [S._sid("km_per_kwh"), "sensor.megane_km_per_kwh"],
+      kwh_100: [S._sid("kwh_per_100km"), "sensor.megane_kwh_per_100_km"],
+      costo_km: [S._sid("costo_per_km"), "sensor.costo_per_km_megane"],
+      costo_100: [S._sid("costo_per_100_km"), "sensor.costo_per_100_km_megane"],
+      kwh_tot: [S._sid("kwh_totali_consumati"), "sensor.megane_kwh_totali"],
+      wb_potenza: [S._sid("wallbox_potenza"), "sensor.wallbox_instant_power", S._car("sensor", "battery_charger_power")],
+      temp_est: [S._sid("temperatura_esterna"), S._sid("temp_esterna")],
+      media_ult: [S._sid("potenza_media_ultima_ricarica")],
+      eff_ric: [S._sid("efficienza_ricarica"), "sensor.megane_efficienza"],
+    };
+    for (const id of (cands[k] || [])) {
+      if (id && this._hass.states[id]) return id;
+    }
+    return null;
+  }
+  _moreInfo(entityId) {
+    const ev = new Event("hass-more-info", { bubbles: true, composed: true });
+    ev.detail = { entityId };
+    this.dispatchEvent(ev);
+  }
   _on(k) { const s = this._field(k); return s && s.state === "on"; }
   /** plug: binary_sensor on|off oppure sensor testuale (plugged/unplugged, collegata/scollegata) */
   _plugOn() {
@@ -335,7 +376,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.2</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -362,6 +403,13 @@ class RenaultEvCenterPanel extends HTMLElement {
     // comandi / bottoni
     this.shadowRoot.querySelectorAll("[data-cmd]").forEach((el) => {
       el.addEventListener("click", () => this._cmd(el.dataset.cmd, el));
+    });
+    // click sui sensori KPI → apre il more-info di HA
+    this.shadowRoot.addEventListener("click", (ev) => {
+      const el = ev.target && ev.target.closest ? ev.target.closest("[data-f]") : null;
+      if (!el) return;
+      const eid = this._ent(el.dataset.f);
+      if (eid) this._moreInfo(eid);
     });
     // input number: risolvi entità dal mapping PRIMA di attaccare i listener
     this.shadowRoot.querySelectorAll("input[data-n]").forEach((inp) => { if (!inp.dataset.ent) inp.dataset.ent = this._field(inp.dataset.n); });
@@ -474,7 +522,14 @@ class RenaultEvCenterPanel extends HTMLElement {
     root.querySelectorAll("[data-f]").forEach((el) => {
       if (el.tagName === "INPUT") return; // gli input data-ls si inizializzano in _build
       el.textContent = this._f(el.dataset.f);
+      el.classList.toggle("clk", !!this._ent(el.dataset.f));
     });
+    const map = root.querySelector("#evmap");
+    if (map) {
+      map.hass = this._hass;
+      map.entities = [this._car("device_tracker", "posizione") || "device_tracker.megane_posizione"];
+      map.darkMode = true;
+    }
     root.querySelectorAll("[data-sw]").forEach((el) => {
       if (el.tagName === "INPUT") { const s = this._hass.states[el.dataset.ent]; el.checked = !!s && s.state === "on"; }
     });
@@ -829,26 +884,29 @@ h1{font-size:26px;margin-bottom:4px}
   .mobilenav button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
   .main{padding:14px 14px}
 }
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 -14px 30px rgba(0,0,0,.42),0 16px 36px rgba(0,0,0,.32)}
+.card::before{content:"";position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(135deg,var(--accent),transparent 42%,rgba(255,255,255,.04));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
 .card h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-weight:600}
 .big{font-size:44px;font-weight:800;line-height:1}
 .big small{font-size:18px;font-weight:600;color:var(--muted)}
-.bar{height:9px;background:var(--line);border-radius:6px;margin-top:12px;overflow:hidden}
-.bar i{display:block;height:100%;border-radius:6px;background:var(--accent)}
+.bar{height:10px;background:rgba(0,0,0,.35);border-radius:99px;margin-top:12px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--accent);box-shadow:0 0 12px var(--accent)}
 .row{display:flex;justify-content:space-between;font-size:13.5px;padding:7px 0;border-bottom:1px solid var(--line);gap:10px}
 .row:last-child{border-bottom:none}
 .row span:first-child{color:var(--muted)}
+.clk{cursor:pointer}
+.clk:hover{color:var(--accent)}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .chip{font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
 .chip.ok{color:var(--good);border-color:var(--good)}
 .chip.acc{color:var(--accent);border-color:var(--accent)}
 .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
 @media(max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}}
-.tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;gap:13px;align-items:center}
+.tile{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:15px;padding:16px;display:flex;gap:13px;align-items:center;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 -12px 26px rgba(0,0,0,.38),0 14px 30px rgba(0,0,0,.3)}
 .tile .em{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;background:var(--accent-soft)}
 .tile .v{font-size:24px;font-weight:800;line-height:1.05}
 .tile .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
-.cmd{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 8px;text-align:center;font-size:12px;cursor:pointer}
+.cmd{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:13px 8px;text-align:center;font-size:12px;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 -10px 22px rgba(0,0,0,.35),0 12px 26px rgba(0,0,0,.3)}
 .cmd .em{font-size:22px;display:block;margin-bottom:5px}
 .cmd b{display:block;margin-top:2px;font-weight:600}
 .cmd:hover{border-color:var(--accent)}
@@ -866,15 +924,16 @@ select,input{background:var(--panel2);color:var(--txt);border:1px solid var(--li
 .inp{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;gap:10px}
 .inp input{width:110px;text-align:right}
 .inp .u{color:var(--muted);font-size:12px;width:52px}
-.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 14px;font-size:13px;cursor:pointer;text-align:center;flex:1}
-.btn:hover{border-color:var(--accent)}
-.btn.active{border-color:var(--accent);background:var(--accent-soft);color:var(--txt);font-weight:600}
+.btn{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);color:var(--txt);border-radius:11px;padding:11px 14px;font-size:13px;cursor:pointer;text-align:center;flex:1;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 10px 22px rgba(0,0,0,.3)}
+.btn:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft),0 1px 0 rgba(255,255,255,.05) inset,0 12px 24px rgba(0,0,0,.35)}
+.btn.active{border-color:var(--accent);background:var(--accent-soft);color:var(--txt);font-weight:600;box-shadow:0 0 0 1px var(--accent)}
 .palette .btn{flex:0 0 auto;min-width:150px;display:flex;align-items:center;gap:8px;justify-content:flex-start}
 .netto{background:linear-gradient(135deg,var(--accent-soft),transparent);border-color:var(--accent)}
 .carbox{position:relative;border-radius:14px;overflow:hidden;border:1px dashed var(--accent);background:radial-gradient(ellipse at 50% 115%,var(--accent-soft),transparent 60%),var(--panel);display:flex;align-items:center;justify-content:center;min-height:210px;flex-direction:column;gap:8px}
 .carbox .ph{font-size:52px}
 .carbox img{max-height:190px;max-width:90%;object-fit:contain}
-.mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2)}
+.mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);height:220px}
+.mapbox ha-map{width:100%;height:100%}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel);color:var(--txt);border:1px solid var(--accent);border-radius:12px;padding:12px 20px;font-size:14px;opacity:0;transition:.3s;z-index:999}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 `;
@@ -939,16 +998,7 @@ const PAGES = {
       <div class="row"><span>Media</span><b><span data-f="media_ult">—</span> kW</b></div>
       <div class="row"><span>Costo · Eff.</span><b><span data-f="costo_corr">—</span> € · <span data-f="eff_ric">—</span>%</b></div>
     </div>
-    <div class="mapbox">
-      <svg viewBox="0 0 400 200" style="display:block;width:100%;height:auto">
-        <rect width="400" height="200" fill="var(--panel2)"/>
-        <g stroke="var(--line)" stroke-width="5" fill="none"><path d="M0 70 L400 50"/><path d="M0 150 L400 170"/><path d="M90 0 L110 210"/><path d="M260 0 L240 210"/></g>
-        <path d="M60 170 L140 130 L210 140 L270 95 L340 65" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="2 7"/>
-        <circle cx="340" cy="65" r="8" fill="var(--accent)"/>
-        <text x="300" y="50" fill="var(--txt)" font-size="12" font-weight="700">📍 <tspan data-f="loc">—</tspan></text>
-        <text x="12" y="24" fill="var(--muted)" font-size="12">Spostamenti 24h</text>
-      </svg>
-    </div>
+    <div class="mapbox"><ha-map id="evmap"></ha-map></div>
     <div class="card netto"><h3>4 · 💰 Risparmio netto</h3>
       <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)"><span data-f="risp_tot">—</span> €</b></div>
       <div class="row"><span>+ Tagliandi</span><b><span data-f="risp_tagliandi">—</span> €</b></div>
@@ -978,13 +1028,13 @@ const PAGES = {
     <div style="display:flex;align-items:flex-end;gap:6px;height:110px;max-width:640px" data-c="bars7"></div>
   </div>`,
 
-  p2: `<h1>Viaggi</h1><div class="sub">Albero Anno → Mese → Giorno, da archivio integrazione</div>
+  p2: `<h1>Viaggi</h1>
   <div class="card tree"><h3>Archivio</h3><div data-c="tree">—</div></div>
   <div class="card" style="margin-top:16px"><h3>Dettaglio viaggi recenti</h3>
     <table><tr><th>Data</th><th>Ora</th><th>Km</th><th>SoC</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th><th>Prima</th></tr>
     <tbody data-c="tab-viaggi"></tbody></table></div>`,
 
-  p3: `<h1>Statistiche</h1><div class="sub">Stile LeapMotor — totali e percorrenza</div>
+  p3: `<h1>Statistiche</h1>
   <div class="tiles">
     <div class="tile"><div class="em">🏁</div><div><div class="v" style="color:var(--accent)" data-t="tot_viaggi">—</div><div class="l">Totale viaggi</div></div></div>
     <div class="tile"><div class="em">🛣️</div><div><div class="v" data-t="tot_km">—</div><div class="l">Distanza km</div></div></div>
@@ -1012,7 +1062,7 @@ const PAGES = {
     <div class="row"><span>🏆 Più efficiente</span><b data-attr="consumo_per_zona|migliore_rotta">—</b></div>
     <div class="row"><span>🐢 Più vorace</span><b data-attr="consumo_per_zona|peggior_rotta">—</b></div></div>`,
 
-  p4: `<h1>Ricariche</h1><div class="sub">Filtri da integrazione + storico</div>
+  p4: `<h1>Ricariche</h1>
   <div class="tiles">
     <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">OGGI</div><div class="v"><span data-f="kwh_oggi_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_oggi">—</span> €</div></div>
     <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett">—</span> €</div></div>
@@ -1027,7 +1077,7 @@ const PAGES = {
     <table><tr><th>Data</th><th>Tipo</th><th>Durata</th><th>Δ SoC</th><th>kWh</th><th>Ø kW</th><th>€/kWh</th><th>Costo</th></tr>
     <tbody data-c="tab-ricariche"></tbody></table></div>`,
 
-  p5: `<h1>Salute batteria</h1><div class="sub">SOH, efficienza ricarica, perdite</div>
+  p5: `<h1>Salute batteria</h1>
   <div class="grid g3">
     <div class="card"><h3>SOH Ufficiale ✏️</h3>
       <div class="inp" style="border:none"><input data-n="n_soh" style="width:120px;font-size:26px;font-weight:800"><span class="u" style="font-size:16px">%</span></div>
@@ -1046,7 +1096,7 @@ const PAGES = {
       <table><tr><th>Data</th><th>Δ SoC</th><th>Rete</th><th>Batteria</th><th>Eff.</th></tr>
       <tbody data-c="tab-salute"></tbody></table></div></div>`,
 
-  p6: `<h1>Manutenzione</h1><div class="sub">Tagliandi e Assicurazione</div>
+  p6: `<h1>Manutenzione</h1>
   <div class="grid g2">
     <div class="card"><h3>🔧 Tagliandi</h3>
       <div class="row"><span>Prossimo (modalità km)</span><b><span data-attr="tagliandi|prossimo_km">—</span> km</b></div>
@@ -1065,7 +1115,7 @@ const PAGES = {
     <div class="row"><span>Risparmio tagliandi</span><b style="color:var(--good)"><span data-f="risp_tagliandi">—</span> €</b></div>
     <div class="row"><span>Risparmio bollo</span><b><span data-f="risp_bollo">—</span> €</b></div></div>`,
 
-  p7: `<h1>Risparmi</h1><div class="sub">Il quadro completo</div>
+  p7: `<h1>Risparmi</h1>
   <div class="grid g2">
     <div class="card"><h3>💶 Carburante</h3>
       <div class="row"><span>Risparmiato TOTALE</span><b style="color:var(--accent)"><span data-f="risp_tot">—</span> €</b></div>
@@ -1088,7 +1138,7 @@ const PAGES = {
     <div class="card"><h3>ℹ️ Come si calcola</h3>
       <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Carburante: km × consumo × prezzo − costi pagati.<br>Tagliandi: (km ÷ intervallo) × 450 € − spesa reale EV.<br>Bollo: imposta il bollo termico con <code>overrides.bollo_termico</code>. Il FV costa 0 €.</div></div></div>`,
 
-  p8: `<h1>Extra</h1><div class="sub">Vampire drain, CO2, scadenze, rotte, top &amp; stop</div>
+  p8: `<h1>Extra</h1>
   <div class="grid g3">
     <div class="card"><h3>🔋 Vampire drain oggi</h3><div class="big" style="font-size:32px;color:var(--accent)"><span data-f="drain">—</span><small>%</small></div>
       <div style="color:var(--muted);font-size:12px;margin-top:6px">≈ <span data-attr="batteria_persa_da_fermo_oggi|equivalente_kwh">—</span> kWh</div></div>
@@ -1110,7 +1160,7 @@ const PAGES = {
     <div class="card"><h3>ℹ️ Note</h3>
       <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2: risparmiata vs termica, da sensore integrazione.<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div></div>`,
 
-  p9: `<h1>Automazioni</h1><div class="sub">Notifiche e carica programmata integrate — attivabili da qui</div>
+  p9: `<h1>Automazioni</h1>
   <div class="grid g2">
     <div class="card"><h3>Notifiche</h3>
       <div class="row"><span>⚡ Avvio ricarica</span><label class="switch"><input type="checkbox" data-sw="sw_start"><span></span></label></div>
@@ -1131,7 +1181,7 @@ const PAGES = {
       per lo stop. Gli interruttori si trovano anche tra i dispositivi
       ("Renault EV Center" → switch).</div></div>`,
 
-  p10: `<h1>Impostazioni</h1><div class="sub">Prezzi, batteria, notifiche, palette e reset — salvati nell'integrazione</div>
+  p10: `<h1>Impostazioni</h1>
   <div class="grid g3">
     <div class="card"><h3>Prezzi energia</h3>
       <div class="inp"><span>Costo casa</span><input data-n="n_price_home"><span class="u">€/kWh</span></div>

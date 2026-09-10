@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Renault EV Center — Anteprima 3 stili</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:#0a0e16; color:#e8eef6; padding:32px; }
+  h1 { font-size:22px; margin-bottom:6px; }
+  .sub { color:#8296ad; font-size:13px; margin-bottom:28px; }
+  .stage { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  @media (max-width:1100px){ .stage{grid-template-columns:1fr;} }
+  .stage > div { border-radius:18px; padding:18px; }
+  .tag { font-weight:700; letter-spacing:.05em; margin-bottom:14px; font-size:14px; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--accent,#4d8dff); margin-right:8px; }
+
+  .mock { height: 430px; display:flex; flex-direction:column; gap:12px; }
+  .top { display:flex; align-items:center; gap:10px; }
+  .logo { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--accent,#4d8dff); color:#0d1522; font-size:18px; }
+  .top b { font-size:13px; display:block; line-height:1.2; }
+  .top small { color:var(--muted,#8296ad); font-size:10px; }
+  .hero { padding:16px; border-radius:16px; }
+  .hero .pct { font-size:38px; font-weight:800; }
+  .hero .pct small { font-size:14px; opacity:.6; }
+  .bar { height:9px; border-radius:99px; margin-top:10px; overflow:hidden; }
+  .bar i { display:block; height:100%; width:64%; background:var(--accent,#4d8dff); }
+  .hero .subrow { display:flex; justify-content:space-between; font-size:11px; opacity:.7; margin-top:10px; }
+  .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .tile { border-radius:12px; padding:10px 8px; text-align:center; }
+  .tile b { display:block; font-size:16px; }
+  .tile span { font-size:9px; opacity:.6; letter-spacing:.04em; }
+  .cmd { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .cmd div { border-radius:12px; padding:10px; text-align:center; font-size:11px; }
+
+  /* ---------------- V1 · Vetro (glassmorphism) ---------------- */
+  .v1 { background: radial-gradient(1200px 600px at 20% -10%, #16324d 0%, transparent 45%), linear-gradient(160deg,#0e1726,#0a0f1a); }
+  .v1 .hero, .v1 .tile, .v1 .cmd div { background: rgba(255,255,255,.06); backdrop-filter: blur(14px); border:1px solid rgba(255,255,255,.10); box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  .v1 .hero { background: linear-gradient(135deg, rgba(77,141,255,.22), rgba(255,255,255,.04)); }
+  .v1 .bar { background:rgba(255,255,255,.10); }
+
+  /* ---------------- V2 · Soft 3D (neumorphism) ---------------- */
+  .v2 { background:#141c2b; }
+  .v2 .hero, .v2 .tile, .v2 .cmd div { background:#182234; box-shadow: 6px 6px 14px #0b111c, -6px -6px 14px #1f2b42; border:none; }
+  .v2 .hero { box-shadow: inset 4px 4px 9px #0d1420, inset -4px -4px 9px #22304c; }
+  .v2 .bar { background:#0e1522; box-shadow:inset 2px 2px 5px #0a101a, inset -2px -2px 5px #22304c; }
+  .v2 .bar i { border-radius:99px; box-shadow:0 0 8px rgba(77,141,255,.7); }
+
+  /* ---------------- V3 · Deep 3D (lucido/gradiente) ---------------- */
+  .v3 { background: radial-gradient(1000px 500px at 80% -10%, #26385c 0%, transparent 50%), linear-gradient(180deg,#0b1120,#080c14); }
+  .v3 .hero, .v3 .tile, .v3 .cmd div { background:linear-gradient(180deg,#182438,#121a29); border-radius:14px; position:relative; }
+  .v3 .hero, .v3 .tile, .v3 .cmd div { box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, 0 -14px 30px rgba(0,0,0,.45), 0 18px 40px rgba(0,0,0,.35); }
+  .v3 .hero::after { content:""; position:absolute; inset:0; border-radius:14px; padding:1px; background:linear-gradient(135deg, rgba(120,170,255,.55), transparent 40%, rgba(255,255,255,.06)); -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
+  .v3 .hero { background:linear-gradient(135deg,#20334f,#131c2b); }
+  .v3 .bar { background:rgba(255,255,255,.08); box-shadow:inset 0 1px 2px rgba(0,0,0,.6); }
+  .v3 .bar i { background:linear-gradient(90deg,#4d8dff,#7fb4ff); box-shadow:0 0 12px rgba(77,141,255,.8); }
+</style>
+</head>
+<body>
+  <h1>Renault EV Center — anteprima 3 stili</h1>
+  <div class="sub">Aprimi nel browser. Scegli la versione più bella e te la porto nel pannello vero.</div>
+  <div class="stage">
+
+    <div class="v1">
+      <div class="tag"><span class="dot"></span>V1 · Vetro (glassmorphism)</div>
+      <div class="mock">
+        <div class="top"><div class="logo">🚗</div><div><b>Renault EV Center</b><small>Megane · live</small></div></div>
+        <div class="hero"><div class="pct">64<small>%</small></div>
+          <div class="bar"><i></i></div>
+          <div class="subrow"><span>🔋 38,6 kWh a bordo</span><span>🧭 18.420 km</span></div></div>
+        <div class="tiles">
+          <div class="tile"><b>5,4</b><span>KM/KWH</span></div>
+          <div class="tile"><b>18,5</b><span>KWH/100</span></div>
+          <div class="tile"><b>52</b><span>KM OGGI</span></div>
+          <div class="tile"><b>0,04</b><span>€/KM</span></div>
+        </div>
+        <div class="cmd">
+          <div>🔌 Carica<br><b>Non in carica</b></div>
+          <div>📍 Zona<br><b>Casa</b></div>
+          <div>⚡ Wallbox<br><b>7,2 kW</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="v2">
+      <div class="tag"><span class="dot"></span>V2 · Soft 3D (neumorphism)</div>
+      <div class="mock">
+        <div class="top"><div class="logo">🚗</div><div><b>Renault EV Center</b><small>Megane · live</small></div></div>
+        <div class="hero"><div class="pct">64<small>%</small></div>
+          <div class="bar"><i></i></div>
+          <div class="subrow"><span>🔋 38,6 kWh a bordo</span><span>🧭 18.420 km</span></div></div>
+        <div class="tiles">
+          <div class="tile"><b>5,4</b><span>KM/KWH</span></div>
+          <div class="tile"><b>18,5</b><span>KWH/100</span></div>
+          <div class="tile"><b>52</b><span>KM OGGI</span></div>
+          <div class="tile"><b>0,04</b><span>€/KM</span></div>
+        </div>
+        <div class="cmd">
+          <div>🔌 Carica<br><b>Non in carica</b></div>
+          <div>📍 Zona<br><b>Casa</b></div>
+          <div>⚡ Wallbox<br><b>7,2 kW</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="v3">
+      <div class="tag"><span class="dot"></span>V3 · Deep 3D (lucido/gradiente)</div>
+      <div class="mock">
+        <div class="top"><div class="logo">🚗</div><div><b>Renault EV Center</b><small>Megane · live</small></div></div>
+        <div class="hero"><div class="pct">64<small>%</small></div>
+          <div class="bar"><i></i></div>
+          <div class="subrow"><span>🔋 38,6 kWh a bordo</span><span>🧭 18.420 km</span></div></div>
+        <div class="tiles">
+          <div class="tile"><b>5,4</b><span>KM/KWH</span></div>
+          <div class="tile"><b>18,5</b><span>KWH/100</span></div>
+          <div class="tile"><b>52</b><span>KM OGGI</span></div>
+          <div class="tile"><b>0,04</b><span>€/KM</span></div>
+        </div>
+        <div class="cmd">
+          <div>🔌 Carica<br><b>Non in carica</b></div>
+          <div>📍 Zona<br><b>Casa</b></div>
+          <div>⚡ Wallbox<br><b>7,2 kW</b></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -61,11 +61,12 @@ class TripEngine:
     """Stato del viaggio in corso + chiusura per timeout."""
 
     def __init__(self, timeout_minuti: int = 20, min_km: float = 0.5,
-                 min_minutes: int = 2, capacity_kwh: float = 60.0) -> None:
+                 min_minutes: int = 2, capacity_kwh: float = 60.0, tz=None) -> None:
         self.timeout_minuti = timeout_minuti
         self.min_km = min_km
         self.min_minutes = min_minutes
         self.capacity_kwh = capacity_kwh
+        self.tz = tz
         self.active = False
         self.mileage_start = 0.0
         self.battery_start = 0.0
@@ -136,7 +137,7 @@ class TripEngine:
         self.battery_now = battery_pct
         # timeout solo su movimento reale (Renault: odometro solo a spegnimento,
         # batteria ogni 5-6'): mantiene il viaggio vivo anche mentre l'odometro è fermo
-        if abs(odometer - prev_mileage) > 0.05 or abs(battery_pct - prev_battery) >= 0.3:
+        if abs(odometer - prev_mileage) > 0.05 or (prev_battery - battery_pct) >= 0.3:
             self.ts_last_change = now_wall
             self.mono_last_change = now_mono
         return opened, closed
@@ -172,8 +173,8 @@ class TripEngine:
             kwh_consumati = 0.0
             kwh_per_100 = 0.0
 
-        ts_inizio = datetime.fromtimestamp(self.ts_start)
-        ts_fine = datetime.fromtimestamp(now)
+        ts_inizio = datetime.fromtimestamp(self.ts_start, self.tz) if self.tz else datetime.fromtimestamp(self.ts_start)
+        ts_fine = datetime.fromtimestamp(now, self.tz) if self.tz else datetime.fromtimestamp(now)
         return {
             "id": int(self.ts_start),
             "data": ts_inizio.strftime("%Y-%m-%d"),
