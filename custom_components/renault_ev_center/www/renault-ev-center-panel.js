@@ -126,11 +126,11 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "charging": return S._ov("charging") ? S._hass.states[S._ov("charging")] : S._st(S._bid("in_carica"), S._sid("stato_di_carica"), S._sid("stato_ricarica_attuale"), S._car("sensor", "battery_state"), S._car("sensor", "charging_mode"), `binary_sensor.wallbox_${c}`);
       case "plug": return S._st(S._car("binary_sensor", "plug_status"), S._car("binary_sensor", "plugged_in"), S._sid("stato_della_spina"), `binary_sensor.wallbox_${c}`);
       case "batt_kwh": return S._num(S._sid("batteria_kwh_disponibili"), "sensor.megane_battery_available_energy_2", S._car("sensor", "battery_remaining_capacity"));
-      case "km_oggi": return S._num(S._sid("km_giornalieri"), S._sid("km_oggi_trip"), "sensor.km_giornalieri");
+      case "km_oggi": return S._num("sensor.km_giornalieri", S._sid("km_giornalieri"), S._sid("km_oggi_trip"));
       case "kwh_oggi_k": {
-        const v = S._num(S._sid("kwh_usati_giorno"), S._sid("kwh_oggi"), "sensor.megane_battery_energy_daily_discharge");
+        const v = S._num(S._sid("battery_energy_daily_discharge"), "sensor.megane_battery_energy_daily_discharge", S._sid("kwh_usati_giorno"), S._sid("kwh_oggi"));
         if (v !== null) return Math.abs(v);
-        const km = S._num(S._sid("km_giornalieri"), "sensor.km_giornalieri");
+        const km = S._num("sensor.km_giornalieri", S._sid("km_giornalieri"));
         const e = S._num(S._sid("kwh_per_100km"), "sensor.megane_kwh_per_100_km");
         return (km === null || e === null) ? null : km * e / 100;
       }
@@ -186,7 +186,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         const delta = S._num(S._sid("ultima_ricarica_delta_batteria"), "sensor.ultima_ricarica_delta_batteria");
         return (start === null || delta === null) ? null : `${start}% → ${Math.min(100, start + Math.abs(delta))}%`;
       }
-      case "kwh_oggi_wb": return S._num(S._sid("energia_caricata_giornaliera"), S._sid("wb_energy_oggi"), S._sid("ricariche_oggi"), "sensor.megane_battery_energy_daily_charge");
+      case "kwh_oggi_wb": return S._num("sensor.megane_battery_energy_daily_charge", S._sid("battery_energy_daily_charge"), S._sid("energia_caricata_giornaliera"), S._sid("wb_energy_oggi"), S._sid("ricariche_oggi"));
       case "kwh_sett_wb": return S._num(S._sid("energia_caricata_settimanale"), S._sid("wb_energy_settimana"), S._sid("ricariche_settimana"), "sensor.megane_battery_energy_weekly_charge");
       case "kwh_mese_wb": return S._num(S._sid("energia_caricata_mensile"), S._sid("wb_energy_mese"), S._sid("ricariche_mese"), "sensor.megane_battery_energy_monthly_charge");
       case "kwh_anno_wb": return S._num(S._sid("energia_caricata_annuale"), S._sid("wb_energy_anno"), S._sid("ricariche_anno"), "sensor.megane_battery_energy_yearly_charge");
@@ -231,7 +231,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "costo_ric_tot": return S._num(S._sid("costo_ricarica_totale"), S._ov("costo_ric_tot"));
       // Extra
       case "drain": {
-        const v = S._num(S._sid("batteria_persa_da_fermo_oggi"), S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge");
+        const v = S._num(S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge", S._sid("batteria_persa_da_fermo_oggi"));
         return v === null ? null : Math.abs(v);
       }
       case "temp_est": {
@@ -377,7 +377,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.2</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.4</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -526,12 +526,13 @@ class RenaultEvCenterPanel extends HTMLElement {
       el.textContent = this._f(el.dataset.f);
       el.classList.toggle("clk", !!this._ent(el.dataset.f));
     });
-    const gps = root.querySelector('[data-gps="latlon"]');
-    const dt = this._hass.states[this._car("device_tracker", "posizione") || "device_tracker.megane_posizione"];
-    if (gps && dt) {
-      const la = typeof dt.attributes.latitude === "number" ? dt.attributes.latitude.toFixed(4) : "—";
-      const lo = typeof dt.attributes.longitude === "number" ? dt.attributes.longitude.toFixed(4) : "—";
-      gps.textContent = `${la}, ${lo}`;
+    const map = root.querySelector("#evmap");
+    if (map) {
+      const loc = this._ov("location") || this._car("device_tracker", "posizione") || "device_tracker.megane_posizione";
+      map.hass = this._hass;
+      map.entities = [{ entity: loc }];
+      map.hoursToShow = 96;
+      map.darkMode = true;
     }
     root.querySelectorAll("[data-sw]").forEach((el) => {
       if (el.tagName === "INPUT") { const s = this._hass.states[el.dataset.ent]; el.checked = !!s && s.state === "on"; }
@@ -935,8 +936,8 @@ select,input{background:var(--panel2);color:var(--txt);border:1px solid var(--li
 .carbox{position:relative;border-radius:14px;overflow:hidden;border:1px dashed var(--accent);background:radial-gradient(ellipse at 50% 115%,var(--accent-soft),transparent 60%),var(--panel);display:flex;align-items:center;justify-content:center;min-height:210px;flex-direction:column;gap:8px}
 .carbox .ph{font-size:52px}
 .carbox img{max-height:190px;max-width:90%;object-fit:contain}
-.mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);height:220px}
-.maploc{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:14px}
+.mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);height:260px}
+.mapbox ha-map{display:block;width:100%;height:100%}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel);color:var(--txt);border:1px solid var(--accent);border-radius:12px;padding:12px 20px;font-size:14px;opacity:0;transition:.3s;z-index:999}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 `;
@@ -1001,14 +1002,7 @@ const PAGES = {
       <div class="row"><span>Media</span><b><span data-f="media_ult">—</span> kW</b></div>
       <div class="row"><span>Costo · Eff.</span><b><span data-f="costo_corr">—</span> € · <span data-f="eff_ric">—</span>%</b></div>
     </div>
-    <div class="mapbox">
-      <div class="maploc">
-        <div style="font-size:40px">📍</div>
-        <div style="font-size:16px;font-weight:700;margin-top:4px"><span data-f="loc">—</span></div>
-        <div style="color:var(--muted);font-size:12px;margin-top:6px" data-gps="latlon">—, —</div>
-        <div class="btn" data-cmd="openmap" style="margin-top:14px">🗺 Apri mappa Home Assistant</div>
-      </div>
-    </div>
+    <div class="mapbox"><ha-map id="evmap"></ha-map></div>
     <div class="card netto"><h3>💰 Risparmio netto</h3>
       <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)"><span data-f="risp_tot">—</span> €</b></div>
       <div class="row"><span>+ Tagliandi</span><b><span data-f="risp_tagliandi">—</span> €</b></div>

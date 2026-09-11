@@ -355,6 +355,14 @@ Regole del progetto:
 - Report tabelle in `coordinator._build_report` → sensore `renault_report_generale`.
 - Salute batteria in `coordinator._finalize_charge` (solo ricariche Casa misurate da wallbox).
 - Ogni modifica a sensor.py → aggiornare anche la lista attesa in tools/check_status.py.
+- **Versioning (OBBLIGATORIO ad ogni modifica)**: bump del **patch** `1.0.5.x` (4° numero)
+  a ogni commit di modifica. Il **3° numero** (1.0.5 → 1.0.6) lo alza SOLO l'utente quando
+  decide. Aggiornare SEMPRE e TUTTI insieme:
+  `VERSION`, `custom_components/renault_ev_center/manifest.json` (`"version"`),
+  badge in `custom_components/renault_ev_center/www/renault-ev-center-panel.js` (`.ver`),
+  console in `custom_components/renault_ev_center/www/renault-ev-center-card.js`,
+  e `preview/index.html` (title + badge). Verifica finale: `py tools\check_status.py`
+  deve dare `manifest version = VERSION`.
 
 ## 5. Scelte fatte (per coerenza futura)
 
