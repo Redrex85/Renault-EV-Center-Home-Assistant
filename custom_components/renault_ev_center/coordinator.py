@@ -1506,6 +1506,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         autos: dict[str, dict] = {
             f"renault_ev_center_{n}_ricarica_completata": {
                 "alias": f"Renault EV Center — Ricarica completata ({n})",
+                "labels": ["Renault EV Center"],
                 "trigger": [{"trigger": "state", "entity_id": charging,
                               "from": "on", "to": "off", "for": {"minutes": 3}}],
                 "condition": [{"condition": "template",
@@ -1518,6 +1519,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             },
             f"renault_ev_center_{n}_batteria_bassa": {
                 "alias": f"Renault EV Center — Batteria bassa fuori casa ({n})",
+                "labels": ["Renault EV Center"],
                 "trigger": [{"trigger": "numeric_state", "entity_id": batt, "below": 25}],
                 "condition": ([{"condition": "not", "conditions": [
                     {"condition": "state", "entity_id": loc, "state": "home"}]}] if loc else [])
@@ -1529,6 +1531,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             },
             f"renault_ev_center_{n}_riassunto_giornaliero": {
                 "alias": f"Renault EV Center — Riassunto giornaliero ({n})",
+                "labels": ["Renault EV Center"],
                 "trigger": [{"trigger": "time", "at": "21:30:00"}],
                 "condition": [{"condition": "numeric_state",
                                 "entity_id": f"sensor.{n}_km_giornalieri", "above": 0.5}],

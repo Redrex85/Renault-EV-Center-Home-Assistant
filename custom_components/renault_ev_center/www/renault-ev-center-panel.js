@@ -362,7 +362,8 @@ class RenaultEvCenterPanel extends HTMLElement {
   /** risparmio = spesa teorica su quei km − costo ricarica periodo */
   _rispKm(km, costo) {
     if (km === null || km === undefined || costo === null || costo === undefined) return null;
-    return this._spesaTeo(km) - costo;
+    const v = this._spesaTeo(km) - costo;
+    return Math.round((v + Number.EPSILON) * 100) / 100;
   }
 
   // ------------------------------------------------------------- costruzione DOM
@@ -492,6 +493,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         break;
       }
       case "close_trip": this._call(D, "close_trip", {}, "🏁 Viaggio chiuso"); break;
+      case "openmap": this._moreInfo(this._car("device_tracker", "posizione") || "device_tracker.megane_posizione"); break;
       case "csv": this._call(D, "export_trips_csv", {}, "📥 CSV esportato"); break;
       case "create_automations": this._call(D, "create_automations", {}, "✨ Automazioni create"); break;
       case "reset_km": this._call(D, "reset_counters", { scope: "km" }, "🔄 Km azzerati"); break;
@@ -524,11 +526,12 @@ class RenaultEvCenterPanel extends HTMLElement {
       el.textContent = this._f(el.dataset.f);
       el.classList.toggle("clk", !!this._ent(el.dataset.f));
     });
-    const map = root.querySelector("#evmap");
-    if (map) {
-      map.hass = this._hass;
-      map.entities = [this._car("device_tracker", "posizione") || "device_tracker.megane_posizione"];
-      map.darkMode = true;
+    const gps = root.querySelector('[data-gps="latlon"]');
+    const dt = this._hass.states[this._car("device_tracker", "posizione") || "device_tracker.megane_posizione"];
+    if (gps && dt) {
+      const la = typeof dt.attributes.latitude === "number" ? dt.attributes.latitude.toFixed(4) : "—";
+      const lo = typeof dt.attributes.longitude === "number" ? dt.attributes.longitude.toFixed(4) : "—";
+      gps.textContent = `${la}, ${lo}`;
     }
     root.querySelectorAll("[data-sw]").forEach((el) => {
       if (el.tagName === "INPUT") { const s = this._hass.states[el.dataset.ent]; el.checked = !!s && s.state === "on"; }
@@ -868,7 +871,7 @@ h1{font-size:26px;margin-bottom:4px}
 .g2{grid-template-columns:repeat(2,1fr)}
 @media(max-width:1100px){.g3{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.g3,.g2{grid-template-columns:1fr}.sidebar{display:none}.main{margin-left:0}}
-.mobilenav{display:none}
+.mobilenav{display:none;position:sticky;top:0;z-index:30;background:var(--panel2)}
 .note{margin-top:26px;color:var(--muted);font-size:12.5px;border-top:1px dashed var(--line);padding-top:14px}
 .switch{position:relative;width:46px;height:25px;flex-shrink:0;display:inline-block}
 .switch input{opacity:0;width:0;height:0}
@@ -933,7 +936,7 @@ select,input{background:var(--panel2);color:var(--txt);border:1px solid var(--li
 .carbox .ph{font-size:52px}
 .carbox img{max-height:190px;max-width:90%;object-fit:contain}
 .mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);height:220px}
-.mapbox ha-map{width:100%;height:100%}
+.maploc{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:14px}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel);color:var(--txt);border:1px solid var(--accent);border-radius:12px;padding:12px 20px;font-size:14px;opacity:0;transition:.3s;z-index:999}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 `;
@@ -965,7 +968,7 @@ const PAGES = {
         </div>
       </div>
     </div>
-    <div class="card"><h3>2 · Stato ricarica &amp; comandi Renault</h3>
+    <div class="card"><h3>Stato ricarica &amp; comandi Renault</h3>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
         <div class="cmd"><span class="em">🔌</span>Carica<b data-v="cmd_charge">—</b></div>
         <div class="cmd"><span class="em">📍</span>Zona<b data-v="cmd_zona">—</b></div>
@@ -976,7 +979,7 @@ const PAGES = {
       </div>
       <div style="margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--panel2);font-size:13px;display:flex;justify-content:space-between"><span>⚡ Wallbox ora</span><b data-v="cmd_wb">—</b></div>
     </div>
-    <div class="card"><h3>3 · Efficienza</h3>
+    <div class="card"><h3>Efficienza</h3>
       <div class="grid g2" style="gap:10px">
         <div><div class="big" style="font-size:28px;color:var(--accent)" data-f="km_per_kwh">—</div><div style="color:var(--muted);font-size:11px">km/kWh</div></div>
         <div><div class="big" style="font-size:28px" data-f="kwh_100">—</div><div style="color:var(--muted);font-size:11px">kWh/100km</div></div>
@@ -991,15 +994,22 @@ const PAGES = {
   </div>
 
   <div class="grid g3" style="margin-top:16px">
-    <div class="card"><h3>3b · Ultima ricarica</h3>
+    <div class="card"><h3>Ultima ricarica</h3>
       <div class="row"><span>Data</span><b data-f="ultima_data">—</b></div>
       <div class="row"><span>Energia</span><b><span data-f="batt_ult">—</span> kWh</b></div>
       <div class="row"><span>Batteria</span><b data-f="batt_ult_pct">—</b></div>
       <div class="row"><span>Media</span><b><span data-f="media_ult">—</span> kW</b></div>
       <div class="row"><span>Costo · Eff.</span><b><span data-f="costo_corr">—</span> € · <span data-f="eff_ric">—</span>%</b></div>
     </div>
-    <div class="mapbox"><ha-map id="evmap"></ha-map></div>
-    <div class="card netto"><h3>4 · 💰 Risparmio netto</h3>
+    <div class="mapbox">
+      <div class="maploc">
+        <div style="font-size:40px">📍</div>
+        <div style="font-size:16px;font-weight:700;margin-top:4px"><span data-f="loc">—</span></div>
+        <div style="color:var(--muted);font-size:12px;margin-top:6px" data-gps="latlon">—, —</div>
+        <div class="btn" data-cmd="openmap" style="margin-top:14px">🗺 Apri mappa Home Assistant</div>
+      </div>
+    </div>
+    <div class="card netto"><h3>💰 Risparmio netto</h3>
       <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)"><span data-f="risp_tot">—</span> €</b></div>
       <div class="row"><span>+ Tagliandi</span><b><span data-f="risp_tagliandi">—</span> €</b></div>
       <div class="row"><span>+ Bollo</span><b><span data-f="risp_bollo">—</span> €</b></div>
