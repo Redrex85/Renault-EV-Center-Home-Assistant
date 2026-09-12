@@ -293,7 +293,11 @@ class RenaultEvCenterPanel extends HTMLElement {
   _ent(k) {
     const S = this;
     const cands = {
-      batt: [S._ov("battery"), S._car("sensor", "battery"), S._car("sensor", "battery_level"), S._sid("batteria")],
+      charging: [S._car("binary_sensor", "in_carica"), S._sid("in_carica")],
+      plug: [S._car("binary_sensor", "spina"), S._sid("stato_della_spina")],
+      loc: [S._car("device_tracker", "posizione"), S._sid("posizione")],
+      ora_compl: [S._sid("ora_completamento_ricarica"), S._car("sensor", "remaining_charge_time")],
+      batt: [S._ov("battery"), S._car("sensor", "batteria"), S._car("sensor", "battery_level"), S._sid("batteria")],
       range: [S._ov("range"), S._car("sensor", "range_electric"), S._sid("autonomia_della_batteria")],
       odo: [S._ov("odometer"), S._car("sensor", "odometer"), S._sid("chilometraggio")],
       batt_kwh: [S._sid("batteria_kwh_disponibili"), "sensor.megane_battery_available_energy_2"],
@@ -377,7 +381,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.6</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.7</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -407,9 +411,10 @@ class RenaultEvCenterPanel extends HTMLElement {
     });
     // click sui sensori KPI → apre il more-info di HA
     this.shadowRoot.addEventListener("click", (ev) => {
-      const el = ev.target && ev.target.closest ? ev.target.closest("[data-f]") : null;
-      if (!el) return;
-      const eid = this._ent(el.dataset.f);
+      const target = ev.target && ev.target.closest ? ev.target.closest("[data-more], [data-f]") : null;
+      if (!target) return;
+      const key = target.dataset.more || target.dataset.f;
+      const eid = this._ent(key);
       if (eid) this._moreInfo(eid);
     });
     // input number: risolvi entità dal mapping PRIMA di attaccare i listener
@@ -481,13 +486,23 @@ class RenaultEvCenterPanel extends HTMLElement {
     const D = "renault_ev_center";
     switch (cmd) {
       case "ac": {
-        const cl = this._st(this._car("climate", ""), this._ov("climate"), this._sid("climatizzatore"));
-        if (cl) this._call("climate", "set_temperature", { entity_id: cl.entity_id, temperature: 21 }, "❄️ A/C: 21 °C");
-        else this._toast("⚠️ Nessun climate dell'auto trovato");
+        const cl = this._st(
+          this._ov("climate"),
+          this._car("climate", ""),
+          this._car("button", "avviare_il_condizionatore_d_aria"),
+          this._sid("climatizzatore"),
+        );
+        if (cl && cl.entity_id.startsWith("climate.")) this._call("climate", "set_temperature", { entity_id: cl.entity_id, temperature: 21 }, "❄️ A/C: 21 °C");
+        else if (cl && cl.entity_id.startsWith("button.")) this._call("button", "press", { entity_id: cl.entity_id }, "❄️ A/C avviata");
+        else this._toast("⚠️ Nessun comando A/C dell'auto trovato");
         break;
       }
       case "charge": {
-        const b = this._st(this._car("button", "start_charge"), this._ov("start_charge"), this._car("button", "avviare_la_ricarica"));
+        const b = this._st(
+          this._ov("start_charge"),
+          this._car("button", "avviare_la_ricarica"),
+          this._car("button", "start_charge"),
+        );
         if (b) this._call("button", "press", { entity_id: b.entity_id }, "⚡ Avvio carica");
         else this._toast("⚠️ Pulsante carica non trovato (configura overrides.start_charge)");
         break;
@@ -659,6 +674,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._tableSalute(root);
     this._treeViaggi(root);
     this._tileStats(root);
+    this._drawSeasons(root);
     this._rowsAttr(root);
   }
   _wb_state_txt() {
@@ -837,6 +853,27 @@ class RenaultEvCenterPanel extends HTMLElement {
     set("n_ricariche", this._i(lr ? parseFloat(this._attrAny(lr, ["total"])) : null));
     set("energia_caricata", this._i(this._num(this._sid("energia_caricata_totale"))));
   }
+  _drawSeasons(root) {
+    // media kWh/100km per stagione dallo storico giornaliero (merged)
+    const box = root.querySelector('[data-c="stagioni"]');
+    if (!box) return;
+    const hist = this._list(this._sid("storico_giornaliero"));
+    const seasonOf = (m) => (m === 12 || m <= 2 ? "Inverno" : m <= 5 ? "Primavera" : m <= 8 ? "Estate" : "Autunno");
+    const acc = { Inverno: { km: 0, kwh: 0 }, Primavera: { km: 0, kwh: 0 }, Estate: { km: 0, kwh: 0 }, Autunno: { km: 0, kwh: 0 } };
+    hist.forEach((d) => {
+      const m = parseInt(String(d.data || "").slice(5, 7), 10);
+      if (!m) return;
+      const km = parseFloat(d.km || 0) || 0;
+      const kwh = parseFloat(d.kwh || 0) || 0;
+      acc[seasonOf(m)].km += km;
+      acc[seasonOf(m)].kwh += kwh;
+    });
+    const icons = { Inverno: "❄️", Primavera: "🌸", Estate: "☀️", Autunno: "🍂" };
+    box.innerHTML = ["Inverno", "Primavera", "Estate", "Autunno"].map((s) => {
+      const eff = acc[s].km > 0 ? acc[s].kwh / acc[s].km * 100 : NaN;
+      return `<div class="row"><span>${icons[s]} ${s}</span><b>${isNaN(eff) ? "—" : this._fmt(eff, 1) + " kWh/100km"}</b></div>`;
+    }).join("") || `<div style="color:var(--muted)">Nessun dato stagionale</div>`;
+  }
   _rowsAttr(root) {
     // righe generiche: [data-attr="entityKey|attrKeys"] → testo
     root.querySelectorAll("[data-attr]").forEach((el) => {
@@ -1003,12 +1040,12 @@ const PAGES = {
     </div>
     <div class="card"><h3>Stato ricarica &amp; comandi Renault</h3>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        <div class="cmd"><span class="em">🔌</span>Carica<b data-v="cmd_charge">—</b></div>
-        <div class="cmd"><span class="em">📍</span>Zona<b data-v="cmd_zona">—</b></div>
-        <div class="cmd"><span class="em">🔗</span>Presa<b data-v="cmd_plug">—</b></div>
+        <div class="cmd" data-more="charging"><span class="em">🔌</span>Carica<b data-v="cmd_charge">—</b></div>
+        <div class="cmd" data-more="loc"><span class="em">📍</span>Zona<b data-v="cmd_zona">—</b></div>
+        <div class="cmd" data-more="plug"><span class="em">🔗</span>Presa<b data-v="cmd_plug">—</b></div>
         <div class="cmd" data-cmd="ac"><span class="em">🧊</span>Avvia A/C<b>Premi ▸</b></div>
         <div class="cmd" data-cmd="charge"><span class="em">⚡</span>Avvia carica<b>Premi ▸</b></div>
-        <div class="cmd"><span class="em">⏱</span>Fine ricarica<b data-v="cmd_ora">—</b></div>
+        <div class="cmd" data-more="ora_compl"><span class="em">⏱</span>Fine ricarica<b data-v="cmd_ora">—</b></div>
       </div>
       <div style="margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--panel2);font-size:13px;display:flex;justify-content:space-between"><span>⚡ Wallbox ora</span><b data-v="cmd_wb">—</b></div>
     </div>
@@ -1187,7 +1224,11 @@ const PAGES = {
       <table><tr><th>Rotta</th><th>Viaggi</th><th>Km</th><th>kWh/100km</th></tr><tbody data-attr-list="consumo_per_zona"></tbody></table></div>
     <div class="card"><h3>🌦️ Meteo vs consumi</h3>
       <div class="row"><span>Temperatura esterna</span><b><span data-f="temp_est">—</span> °C</b></div>
-      <div class="row"><span>Consumo attuale</span><b><span data-f="kwh_100">—</span> kWh/100km</b></div></div></div>
+      <div class="row"><span>Consumo attuale</span><b><span data-f="kwh_100">—</span> kWh/100km</b></div>
+      <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+        <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Media per stagione</div>
+        <div data-c="stagioni"></div>
+      </div></div></div>
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>🏆 Top &amp; Stop · mese</h3>
       <div class="row"><span>Migliore</span><b><span data-topstop="migliore|kwh_per_100km">—</span> kWh/100km</b></div>

@@ -1565,12 +1565,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
         store = Store(self.hass, 1, "automations")
         data = await store.async_load()
-        items = (data.get("items") if isinstance(data, dict) else None) or {}
+        items = data.get("items") if isinstance(data, dict) else None
+        if not isinstance(items, list):
+            items = []
+        existing = {it.get("id") for it in items if isinstance(it, dict)}
         created: list[str] = []
         for aid, cfg in autos.items():
-            if aid in items:
+            if aid in existing:
                 continue  # idempotente: non sovrascrive ciò che l'utente ha modificato
-            items[aid] = {"id": aid, **cfg}
+            items.append({"id": aid, **cfg})
             created.append(aid)
         await store.async_save({"items": items})
         await self.hass.services.async_call("automation", "reload", {}, blocking=True)
