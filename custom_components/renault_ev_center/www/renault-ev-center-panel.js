@@ -377,7 +377,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.4</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.6</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -730,7 +730,8 @@ class RenaultEvCenterPanel extends HTMLElement {
     const rows = this._list(this._sid("lista_ricariche"));
     const tb = root.querySelector('[data-c="tab-ricariche"]');
     if (!tb) return;
-    tb.innerHTML = rows.slice(0, 8).map((r) => {
+    const vis = rows.slice(0, 8);
+    const cells = vis.map((r) => {
       const dm = parseFloat(r.durata_min ?? r.durata ?? 0);
       const dur = dm > 0 ? this._fmt(dm / 60, 1) + " h" : "—";
       const dsoc = (r.soc_end !== undefined && r.soc_start !== undefined) ? "+" + Math.round(r.soc_end - r.soc_start) + "%" : "—";
@@ -741,7 +742,13 @@ class RenaultEvCenterPanel extends HTMLElement {
         <td>${this._fmt(parseFloat(r.potenza_media_kw ?? r.kw_medio ?? 0), 2)}</td>
         <td>${this._fmt(parseFloat(r.kwh > 0 ? r.costo / r.kwh : NaN), 3)}</td>
         <td><b>${this._fmt(parseFloat(r.costo ?? 0), 2)} €</b></td></tr>`;
-    }).join("") || `<tr><td colspan="8" style="color:var(--muted)">Nessuna ricarica registrata</td></tr>`;
+    });
+    if (vis.length) {
+      const totKwh = vis.reduce((a, r) => a + (parseFloat(r.kwh ?? r.energia ?? 0) || 0), 0);
+      const totCost = vis.reduce((a, r) => a + (parseFloat(r.costo ?? 0) || 0), 0);
+      cells.push(`<tr class="totrow"><td colspan="4" style="color:var(--muted);font-weight:700">TOTALE (${vis.length})</td><td><b>${this._fmt(totKwh, 2)}</b></td><td></td><td></td><td><b>${this._fmt(totCost, 2)} €</b></td></tr>`);
+    }
+    tb.innerHTML = cells.join("") || `<tr><td colspan="8" style="color:var(--muted)">Nessuna ricarica registrata</td></tr>`;
   }
   _tableSalute(root) {
     const rows = this._list(this._sid("lista_ricariche"));
@@ -765,26 +772,44 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (!rows.length) {
       const th = this._st(this._sid("trip_history"), "sensor.megane_trip_history");
       const days = th && Array.isArray(th.attributes.days) ? th.attributes.days : [];
-      rows = days.map((d) => ({ data: d.date, km: d.km, efficienza: d.kwh_100, costo: NaN }));
+      rows = days.map((d) => ({ data: d.date, km: d.km, kwh_per_100km: d.kwh_100, costo_stimato: null }));
     }
     if (!rows.length) { box.innerHTML = `<div style="color:var(--muted)">Archivio viaggi vuoto</div>`; return; }
-    // raggruppa per anno → mese
-    const tree = {};
+    // aggrega per giorno
+    const byDay = {};
     rows.forEach((r) => {
       const d = String(r.data || "");
+      if (!d) return;
+      const g = byDay[d] = byDay[d] || { data: d, km: 0, kwh: 0, peso_eff: 0, n_eff: 0, costo: 0 };
+      g.km += parseFloat(r.km || 0) || 0;
+      g.kwh += parseFloat(r.kwh_consumati ?? r.kwh ?? 0) || 0;
+      const c = parseFloat(r.costo_stimato ?? r.costo ?? 0);
+      if (!isNaN(c)) g.costo += c;
+      const e = parseFloat(r.kwh_per_100km ?? r.efficienza ?? 0);
+      if (!isNaN(e) && e > 0) { g.peso_eff += e; g.n_eff += 1; }
+    });
+    const days = Object.values(byDay).sort((a, b) => String(b.data).localeCompare(String(a.data)));
+    const tree = {};
+    days.forEach((r) => {
+      const d = String(r.data);
       const y = d.slice(0, 4) || "—", m = d.slice(5, 7) || "—";
       (tree[y] = tree[y] || {})[m] = (tree[y][m] || []).concat(r);
     });
-    box.innerHTML = Object.entries(tree).sort().reverse().slice(0, 1).map(([y, mesi]) => {
+    const effOf = (day) => day.n_eff ? (day.peso_eff / day.n_eff) : NaN;
+    box.innerHTML = Object.entries(tree).sort((a, b) => b[0].localeCompare(a[0])).map(([y, mesi]) => {
       const tot = Object.values(mesi).flat();
-      const km = tot.reduce((a, r) => a + (parseFloat(r.km) || 0), 0);
-      return `<div class="anno"><b style="font-size:17px">▼ ${y}</b>
-        <span style="float:right;color:var(--muted)">${tot.length} viaggi · <b style="color:var(--txt)">${this._i(km)} km</b></span>
-        ${Object.entries(mesi).sort().reverse().map(([m, rs]) => {
-          const kmM = rs.reduce((a, r) => a + (parseFloat(r.km) || 0), 0);
-          return `<div class="mese">▼ ${NOMI_MESI[parseInt(m, 10) - 1] || m} <span style="float:right;color:var(--muted);font-weight:400">${rs.length} viaggi · ${this._i(kmM)} km</span></div>
-            ${rs.slice(0, 4).map((r) => `<div class="giorno">• <b>${this._d(r.data)}</b> — ${this._fmt(parseFloat(r.km) || 0, 1)} km <span class="badge">${this._fmt(parseFloat(r.efficienza ?? 0), 1)}</span> · ${this._fmt(parseFloat(r.costo ?? 0), 2)} €</div>`).join("")}`;
-        }).join("")}</div>`;
+      const km = tot.reduce((a, r) => a + r.km, 0);
+      return `<details class="anno" open>
+        <summary>▼ ${y} <span class="tr">${tot.length} giorni · <b>${this._i(km)} km</b></span></summary>
+        ${Object.entries(mesi).sort((a, b) => b[0].localeCompare(a[0])).map(([m, rs]) => {
+          const kmM = rs.reduce((a, r) => a + r.km, 0);
+          const nm = NOMI_MESI[parseInt(m, 10) - 1] || m;
+          return `<details class="mese" open>
+            <summary>▼ ${nm} <span class="tr">${rs.length} giorni · <b>${this._i(kmM)} km</b></span></summary>
+            ${rs.map((r) => `<div class="giorno">• <b>${this._d(r.data)}</b> — ${this._fmt(r.km, 1)} km <span class="badge">${this._fmt(effOf(r), 1)}</span> · ${this._fmt(r.costo, 2)} €</div>`).join("")}
+          </details>`;
+        }).join("")}
+      </details>`;
     }).join("");
   }
   _tileStats(root) {
@@ -871,7 +896,7 @@ h1{font-size:26px;margin-bottom:4px}
 .g3{grid-template-columns:repeat(3,1fr)}
 .g2{grid-template-columns:repeat(2,1fr)}
 @media(max-width:1100px){.g3{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:700px){.g3,.g2{grid-template-columns:1fr}.sidebar{display:none}.main{margin-left:0}}
+@media(max-width:700px){.g3,.g2{grid-template-columns:1fr}.sidebar{display:none}.app{flex-direction:column;min-height:0}.main{margin-left:0;width:100%}}
 .mobilenav{display:none;position:sticky;top:0;z-index:30;background:var(--panel2)}
 .note{margin-top:26px;color:var(--muted);font-size:12.5px;border-top:1px dashed var(--line);padding-top:14px}
 .switch{position:relative;width:46px;height:25px;flex-shrink:0;display:inline-block}
@@ -924,6 +949,13 @@ tr:last-child td{border-bottom:none}
 .tree .mese{margin:10px 0 4px 18px;font-weight:700}
 .tree .giorno{margin:5px 0 5px 40px;color:var(--muted)}
 .tree .giorno b{color:var(--txt)}
+.tree summary{cursor:pointer;list-style:none;user-select:none;display:flex;align-items:center;gap:8px}
+.tree summary::-webkit-details-marker{display:none}
+.tree .anno summary{font-weight:700}
+.tree .mese summary{font-weight:600}
+.tree .tr{margin-left:auto;color:var(--muted);font-weight:400;font-size:12px}
+.tree .tr b{color:var(--txt)}
+.totrow td{border-top:2px solid var(--accent);font-weight:700}
 select,input{background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px}
 .inp{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;gap:10px}
 .inp input{width:110px;text-align:right}

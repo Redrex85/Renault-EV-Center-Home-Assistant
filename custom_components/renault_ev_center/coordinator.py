@@ -121,6 +121,26 @@ def _f(value: Any, default: float = 0.0) -> float:
         return default
 
 
+def _merge_history(history: list[dict], days_grouped: list[dict]) -> list[dict]:
+    """Unisce giornate da metri (kwh/pct) e da viaggi (km/eff) per lo storico."""
+    hist_map: dict[str, dict] = {}
+    for d in history:
+        key = d.get("data")
+        if key:
+            hist_map.setdefault(key, {}).update(d)
+    for dg in days_grouped:
+        key = dg.get("data")
+        if not key:
+            continue
+        row = hist_map.setdefault(key, {"data": key})
+        row["km"] = dg.get("km", row.get("km", 0.0))
+        row["kwh"] = dg.get("kwh", row.get("kwh", 0.0))
+        if dg.get("kwh_per_100km") is not None:
+            row["kwh_per_100km"] = dg["kwh_per_100km"]
+        row["n_trip"] = dg.get("n_trip", 0)
+    return sorted(hist_map.values(), key=lambda r: r.get("data") or "")[-365:]
+
+
 def _in_window(hhmm: str, start: str, stop: str) -> bool:
     if start <= stop:
         return start <= hhmm < stop
@@ -1049,7 +1069,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "stats_30d": aggregate(t30),
             "stats_90d": aggregate(t90),
             "days_grouped": group_by_day(sorted(t30, key=lambda t: t.get("data")))[-31:],
-            "history_days": history[-365:],
+            "history_days": _merge_history(history, group_by_day(sorted(t30, key=lambda t: t.get("data")))[-31:]),
             "trips_oggi": len(trips_oggi_list),
             "km_oggi_trip": round(sum(_f(t.get("km")) for t in trips_oggi_list), 1),
             "charges_oggi": len(charges_oggi),
