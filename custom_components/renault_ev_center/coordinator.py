@@ -13,7 +13,7 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -566,16 +566,25 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> dict[str, Any]:
         try:
-            return await self._async_update_data_inner()
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.warning("Update fallito, uso dati precedenti: %s", err, exc_info=True)
-            if self.data:
-                return self.data
+            data = await self._async_update_data_inner()
+        except UpdateFailed:
             raise
+        except Exception as err:  # noqa: BLE001
+            if self.data:
+                _LOGGER.warning("Update fallito, uso dati precedenti: %s", err, exc_info=True)
+                return self.data
+            raise UpdateFailed(f"Aggiornamento Renault EV Center fallito: {err}") from err
+        # eco polling: intervallo breve se auto attiva (viaggio/ricarica), lungo se ferma
+        self.update_interval = timedelta(seconds=self._eco_interval(data))
+        return data
+
+    def _eco_interval(self, data: dict[str, Any]) -> int:
+        """Polling intelligente: rapido quando attiva, lento quando ferma."""
+        base = int(_f(self.opts.get(CONF_POLL_INTERVAL), 30)) or 30
+        active = bool((data.get("trip") or {}).get("active")) or self.charge_session is not None
+        return max(base, 15) if active else max(base * 4, 120)
 
     async def _async_update_data_inner(self) -> dict[str, Any]:
-        from homeassistant.helpers.update_coordinator import UpdateFailed as _UpdateFailed  # noqa: F401
-
         hass = self.hass
         now = dt_util.now()
         keys = period_keys(now)

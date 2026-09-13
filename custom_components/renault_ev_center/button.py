@@ -60,3 +60,4 @@ class MateButton(CoordinatorEntity[RenaultMateCoordinator], ButtonEntity):
             await self._coro(self.coordinator)
         elif self._sync_action is not None:
             self._sync_action(self.coordinator)
+        await self.coordinator.async_request_refresh()
