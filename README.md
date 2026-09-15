@@ -22,7 +22,7 @@ Renault EV Center è gratuito e open-source, sviluppato nel tempo libero. Se ti 
   <a href="https://www.buymeacoffee.com/redrex72v"><img src="https://img.shields.io/badge/Offrimi%20un%20caffè-BuyMeACoffee-FFDD00?logo=buy-me-a-coffee" alt="BuyMeACoffee"></a>
 </p>
 
-> 🇬🇧 [English below](#-english)
+> 🇬🇧 [English below](#-english) · 🇫🇷 [Français](#-français)
 
 ---
 
@@ -205,6 +205,8 @@ data: { mode: km, valore: "71218" }
 ## ❓ FAQ
 
 **Come viene calcolato il tempo di viaggio?** Il viaggio si apre quando l'odometro aumenta e si chiude **dopo ~20 minuti senza movimenti** — in pratica quando **spegni l'auto** e odometro/posizione si aggiornano (il cloud Renault ha qualche minuto di ritardo). La durata registrata va dall'inizio all'**ultimo movimento rilevato**: la sosta post-viaggio non viene conteggiata. Finché l'auto è accesa il viaggio appare come "Trip Attivo" con dati provvisori.
+
+**Le zone di Home Assistant compaiono nei viaggi?** Sì. Se in HA hai definito le **zone** (Casa, Lavoro, ecc.) e hai configurato il tracker GPS dell'auto, ogni viaggio registra **zona di partenza e di arrivo** e le **percorrenze/statistiche** riportano i km per zona.
 
 **I sensori Renault restano "non disponibili" a volte.** È normale: il cloud Renault aggiorna lentamente. Mate tollera i buchi e riprende quando i dati tornano. Se vuoi un aiuto in più, esiste l'automazione classica di ricarica dell'integrazione Renault ogni ora.
 

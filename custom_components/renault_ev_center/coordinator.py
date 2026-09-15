@@ -1567,7 +1567,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         autos: dict[str, dict] = {
             f"renault_ev_center_{n}_ricarica_completata": {
                 "alias": f"Renault EV Center — Ricarica completata ({n})",
-                "labels": ["Renault EV Center"],
                 "trigger": [{"trigger": "state", "entity_id": charging,
                               "from": "on", "to": "off", "for": {"minutes": 3}}],
                 "condition": [{"condition": "template",
@@ -1580,7 +1579,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             },
             f"renault_ev_center_{n}_batteria_bassa": {
                 "alias": f"Renault EV Center — Batteria bassa fuori casa ({n})",
-                "labels": ["Renault EV Center"],
                 "trigger": [{"trigger": "numeric_state", "entity_id": batt, "below": 25}],
                 "condition": ([{"condition": "not", "conditions": [
                     {"condition": "state", "entity_id": loc, "state": "home"}]}] if loc else [])
@@ -1592,7 +1590,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             },
             f"renault_ev_center_{n}_riassunto_giornaliero": {
                 "alias": f"Renault EV Center — Riassunto giornaliero ({n})",
-                "labels": ["Renault EV Center"],
                 "trigger": [{"trigger": "time", "at": "21:30:00"}],
                 "condition": [{"condition": "numeric_state",
                                 "entity_id": f"sensor.{n}_km_giornalieri", "above": 0.5}],
@@ -1618,12 +1615,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 data = None
             if not isinstance(data, list):
                 data = []
-            have = {d.get("id") for d in data if isinstance(d, dict)}
+            byid = {d.get("id"): i for i, d in enumerate(data) if isinstance(d, dict) and d.get("id")}
             made: list[str] = []
             for aid, cfg in autos.items():
-                if aid in have:
-                    continue  # idempotente: non sovrascrive ciò che l'utente ha modificato
-                data.append({"id": aid, **cfg})
+                entry = {"id": aid, **cfg}
+                if aid in byid:
+                    data[byid[aid]] = entry  # aggiorna/ripara le nostre automazioni
+                else:
+                    data.append(entry)
                 made.append(aid)
             if made:
                 write_utf8_file_atomic(path, _yaml_dump(data))

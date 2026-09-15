@@ -160,7 +160,11 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       case "ricarica_oggi_pct": return S._num(S._sid("battery_perc_giorno_charge"), "sensor.megane_battery_perc_giorno_charge");
       case "risp_tot": { const t = S._spesaTeo(S._num(S._ov("odometer"), S._car("sensor", "odometer"))); const c = S._num(S._sid("costo_ricarica_totale")); return (t === null || c === null) ? null : t - c; }
-      case "trip_attivo": return S._st(S._sid("trip_attivo"));
+      case "trip_attivo": {
+        const s = S._st(S._sid("trip_attivo"));
+        if (!s) return null;
+        return s.state === "on" ? "🚗 Auto in movimento" : "🅿️ Auto parcheggiata";
+      }
       // Ultima ricarica / ricariche
       case "media_ult": {
         const r = S._list(S._sid("lista_ricariche"))[0];
@@ -386,7 +390,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.16</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.18</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -555,6 +559,9 @@ class RenaultEvCenterPanel extends HTMLElement {
     const map = root.querySelector("#evmap");
     if (map) {
       const loc = this._ov("location") || this._car("device_tracker", "posizione") || "device_tracker.megane_posizione";
+      if (!customElements.get("ha-map") && customElements.whenDefined) {
+        customElements.whenDefined("ha-map").then(() => this._update()).catch(() => {});
+      }
       map.hass = this._hass;
       map.entities = [{ entity: loc }];
       map.hoursToShow = 96;
@@ -1132,7 +1139,7 @@ const PAGES = {
     <div class="card"><h3>Energia caricata differenziata</h3>
       <div class="row"><span>🏠 Casa (wallbox)</span><b><span data-f="energia_casa">—</span> kWh</b></div>
       <div class="row"><span>☀️ Fotovoltaico</span><b><span data-f="fv_tot">—</span> kWh</b></div>
-      <div class="row"><span>⚡ Colonnine fuori casa</span><b data-attr="statistiche_viaggi|energia_colonnine|colonnine">—</b></div></div>
+      <div class="row"><span>⚡ Colonnine fuori casa</span><b data-attr="statistiche_viaggi|caricata_pubblica">—</b></div></div>
     <div class="card"><h3>Percorrenza</h3>
       <table><tr><th>Periodo</th><th>Usati</th><th>Caricati</th><th>KM</th></tr>
         <tr><td><b>OGGI</b></td><td data-per="oggi|usati">—</td><td data-per="oggi|caricati">—</td><td data-per="oggi|km">—</td></tr>
