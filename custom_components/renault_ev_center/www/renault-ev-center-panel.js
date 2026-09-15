@@ -126,7 +126,13 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "charging": return S._ov("charging") ? S._hass.states[S._ov("charging")] : S._st(S._bid("in_carica"), S._sid("stato_di_carica"), S._sid("stato_ricarica_attuale"), S._car("sensor", "battery_state"), S._car("sensor", "charging_mode"), `binary_sensor.wallbox_${c}`);
       case "plug": return S._st(S._car("binary_sensor", "plug_status"), S._car("binary_sensor", "plugged_in"), S._sid("stato_della_spina"), `binary_sensor.wallbox_${c}`);
       case "batt_kwh": return S._num(S._sid("batteria_kwh_disponibili"), "sensor.megane_battery_available_energy_2", S._car("sensor", "battery_remaining_capacity"));
-      case "km_oggi": return S._num("sensor.km_giornalieri", S._sid("km_giornalieri"), S._sid("km_oggi_trip"));
+      case "km_oggi": {
+        const v = S._num("sensor.km_giornalieri", S._sid("km_giornalieri"), S._sid("km_oggi_trip"));
+        if (v !== null && v > 0) return v;
+        const rows = S._list(S._sid("percorrenza"));
+        const r = rows.find((x) => S._slug(String(x.nome ?? "")) === "oggi");
+        return r ? (parseFloat(r.km) || 0) : v;
+      }
       case "kwh_oggi_k": {
         const v = S._num(S._sid("battery_energy_daily_discharge"), "sensor.megane_battery_energy_daily_discharge", S._sid("kwh_usati_giorno"), S._sid("kwh_oggi"));
         if (v !== null) return Math.abs(v);
@@ -390,7 +396,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.18</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.20</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -498,6 +504,8 @@ class RenaultEvCenterPanel extends HTMLElement {
         const cl = this._st(
           this._ov("climate"),
           this._car("climate", ""),
+          "button.start_air_conditioner",
+          this._car("button", "start_air_conditioner"),
           this._car("button", "avviare_il_condizionatore_d_aria"),
           this._sid("climatizzatore"),
         );
@@ -509,8 +517,9 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "charge": {
         const b = this._st(
           this._ov("start_charge"),
-          this._car("button", "avviare_la_ricarica"),
+          "button.start_charge",
           this._car("button", "start_charge"),
+          this._car("button", "avviare_la_ricarica"),
         );
         if (b) this._call("button", "press", { entity_id: b.entity_id }, "⚡ Avvio carica");
         else this._toast("⚠️ Pulsante carica non trovato (configura overrides.start_charge)");
