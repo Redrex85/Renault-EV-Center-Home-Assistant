@@ -72,14 +72,18 @@ class DeltaMeter:
                 "value": self.value, "last": self.last, "dir": self.direction}
 
     @classmethod
-    def from_dict(cls, data: dict | None) -> "DeltaMeter":
-        obj = cls(data.get("dir", "up") if data else "up")
+    def from_dict(cls, data: dict | None, direction: str = "up") -> "DeltaMeter":
+        obj = cls(direction)
         if data:
             obj.key = data.get("key", "")
             ref = data.get("ref_last")
             obj.ref_last = float(ref) if ref is not None else None
             obj.value = float(data.get("value", 0))
             obj.last = float(data.get("last", 0))
+            # se la direzione salvata è diversa, i valori accumulati sono errati → azzera
+            if data.get("dir") and data.get("dir") != direction:
+                obj.value = 0.0
+                obj.last = 0.0
         return obj
 
     def tick(self, key_now: str, value_now: float | None,

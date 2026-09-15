@@ -231,9 +231,14 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "costo_ric_tot": return S._num(S._sid("costo_ricarica_totale"), S._ov("costo_ric_tot"));
       // Extra
       case "drain": {
-        const v = S._num(S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge", S._sid("batteria_persa_da_fermo_oggi"));
-        return v === null ? null : Math.abs(v);
+        const v = S._num(S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge", S._sid("batteria_scaricata_oggi"));
+        if (v !== null && v > 0.05) return Math.round(Math.abs(v) * 10) / 10;
+        const kwh = S._field("kwh_oggi_k");
+        const cap = parseFloat(S._cfg.capacity) || 60;
+        if (typeof kwh === "number" && kwh > 0) return Math.round(kwh / cap * 1000) / 10;
+        return v === 0 ? 0 : null;
       }
+      case "vampire": return S._num(S._sid("batteria_persa_da_fermo_oggi"));
       case "temp_est": {
         const v = S._num(S._sid("temperatura_esterna"), S._sid("temp_esterna"));
         if (v !== null) return v;
@@ -302,8 +307,8 @@ class RenaultEvCenterPanel extends HTMLElement {
       odo: [S._ov("odometer"), S._car("sensor", "odometer"), S._sid("chilometraggio")],
       batt_kwh: [S._sid("batteria_kwh_disponibili"), "sensor.megane_battery_available_energy_2"],
       km_oggi: [S._sid("km_giornalieri"), "sensor.km_giornalieri"],
-      kwh_oggi_k: [S._sid("batteria_scaricata_oggi"), "sensor.megane_battery_energy_daily_discharge"],
-      drain: [S._sid("batteria_persa_da_fermo_oggi"), "sensor.megane_battery_perc_giorno_discharge"],
+      kwh_oggi_k: [S._sid("battery_energy_daily_discharge"), "sensor.megane_battery_energy_daily_discharge", S._sid("energia_batteria_giornaliero"), S._sid("batteria_scaricata_oggi")],
+      drain: [S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge", S._sid("batteria_scaricata_oggi")],
       km_per_kwh: [S._sid("km_per_kwh"), "sensor.megane_km_per_kwh"],
       kwh_100: [S._sid("kwh_per_100km"), "sensor.megane_kwh_per_100_km"],
       costo_km: [S._sid("costo_per_km"), "sensor.costo_per_km_megane"],
@@ -381,7 +386,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.8</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.10</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -538,7 +543,13 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     root.querySelectorAll("[data-f]").forEach((el) => {
       if (el.tagName === "INPUT") return; // gli input data-ls si inizializzano in _build
-      el.textContent = this._f(el.dataset.f);
+      if (el.dataset.dec) {
+        const raw = this._field(el.dataset.f);
+        const num = typeof raw === "number" ? raw : parseFloat(raw);
+        el.textContent = (num === null || num === undefined || isNaN(num)) ? "—" : this._fmt(num, parseInt(el.dataset.dec, 10));
+      } else {
+        el.textContent = this._f(el.dataset.f);
+      }
       el.classList.toggle("clk", !!this._ent(el.dataset.f));
     });
     const map = root.querySelector("#evmap");
@@ -1026,7 +1037,7 @@ const PAGES = {
           <div style="flex:1">
             <div class="bar" style="margin-top:0"><i data-b="battbar" style="width:0%"></i></div>
             <div style="display:flex;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:600;margin-top:6px"><span>🔋 <span data-f="batt_kwh">—</span> kWh a bordo</span><span>🧭 <span data-f="odo">—</span> km</span></div>
-            <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:4px"><span>🔻 <span data-f="drain">—</span>% consumata oggi</span><span>⚡ <span data-f="kwh_oggi_k">—</span> kWh oggi</span></div>
+            <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:4px"><span>🔻 <span data-f="drain" data-dec="1">—</span>% consumata oggi</span><span>⚡ <span data-f="kwh_oggi_k" data-dec="2">—</span> kWh oggi</span></div>
           </div>
         </div>
         <div style="margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--panel2);font-size:13px;display:flex;justify-content:space-between"><span data-c="chargestatus">Non in carica</span><b><span data-f="wb_potenza">—</span> kW</b></div>
@@ -1084,9 +1095,9 @@ const PAGES = {
   <div class="card" style="margin-top:16px"><h3>Oggi a colpo d'occhio</h3>
     <div class="grid g2">
       <div>
-        <div class="row"><span>🔴 Consumata oggi</span><b><span data-f="drain">—</span>%</b></div>
-        <div class="row"><span>⚡ Ricaricati oggi</span><b><span data-f="kwh_oggi_wb">—</span> kWh · <span data-f="ricarica_oggi_pct">—</span>%</b></div>
-        <div class="row"><span>🔋 kWh usati oggi</span><b><span data-f="kwh_oggi_k">—</span> kWh</b></div>
+        <div class="row"><span>🔴 Consumata oggi</span><b><span data-f="drain" data-dec="1">—</span>%</b></div>
+        <div class="row"><span>⚡ Ricaricati oggi</span><b><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh · <span data-f="ricarica_oggi_pct" data-dec="0">—</span>%</b></div>
+        <div class="row"><span>🔋 kWh usati oggi</span><b><span data-f="kwh_oggi_k" data-dec="2">—</span> kWh</b></div>
         <div class="row"><span>🚗 Km oggi</span><b><span data-f="km_oggi">—</span> km</b></div>
       </div>
       <div>
@@ -1137,7 +1148,7 @@ const PAGES = {
 
   p4: `<h1>Ricariche</h1>
   <div class="tiles">
-    <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">OGGI</div><div class="v"><span data-f="kwh_oggi_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_oggi">—</span> €</div></div>
+    <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">OGGI</div><div class="v"><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_oggi">—</span> €</div></div>
     <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett">—</span> €</div></div>
     <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">MESE</div><div class="v"><span data-f="kwh_mese_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_mese">—</span> €</div></div>
     <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">ANNO</div><div class="v"><span data-f="kwh_anno_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_anno">—</span> €</div></div></div>
@@ -1213,7 +1224,7 @@ const PAGES = {
 
   p8: `<h1>Extra</h1>
   <div class="grid g3">
-    <div class="card"><h3>🔋 Vampire drain oggi</h3><div class="big" style="font-size:32px;color:var(--accent)"><span data-f="drain">—</span><small>%</small></div>
+    <div class="card"><h3>🔋 Vampire drain oggi</h3><div class="big" style="font-size:32px;color:var(--accent)"><span data-f="vampire" data-dec="1">—</span><small>%</small></div>
       <div style="color:var(--muted);font-size:12px;margin-top:6px">≈ <span data-attr="batteria_persa_da_fermo_oggi|equivalente_kwh">—</span> kWh</div></div>
     <div class="card"><h3>🌍 CO2</h3><div class="big" style="font-size:32px;color:var(--good)"><span data-f="co2">—</span> <small>kg</small></div>
       <div style="color:var(--muted);font-size:12px;margin-top:6px">Anno: <span data-attr="co2_risparmiata|quest_anno">—</span> kg</div></div>

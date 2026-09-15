@@ -331,21 +331,21 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         )
         for p in PERIODS:
             self.km_meters[p] = PeriodMeter.from_dict(counters.get(f"km_{p}"))
-            self.wb_meters[p] = DeltaMeter.from_dict(counters.get(f"wb_{p}"))
+            self.wb_meters[p] = DeltaMeter.from_dict(counters.get(f"wb_{p}"), "up")
             cm = counters.get(f"cost_{p}")
             m = _new_cost_meter()
             if isinstance(cm, dict):
                 m.update({k: cm.get(k, v) for k, v in m.items()})
             self.cost_meters[p] = m
             self.kwh_meters[p] = {
-                "up": DeltaMeter.from_dict(counters.get(f"kwh_{p}_up")),
-                "down": DeltaMeter.from_dict(counters.get(f"kwh_{p}_down")),
+                "up": DeltaMeter.from_dict(counters.get(f"kwh_{p}_up"), "up"),
+                "down": DeltaMeter.from_dict(counters.get(f"kwh_{p}_down"), "down"),
             }
         self.pct_daily = {
-            "up": DeltaMeter.from_dict(counters.get("pct_up")),
-            "down": DeltaMeter.from_dict(counters.get("pct_down")),
+            "up": DeltaMeter.from_dict(counters.get("pct_up"), "up"),
+            "down": DeltaMeter.from_dict(counters.get("pct_down"), "down"),
         }
-        self.drain_meter = DeltaMeter.from_dict(counters.get("drain_down"))
+        self.drain_meter = DeltaMeter.from_dict(counters.get("drain_down"), "down")
         self.cost_total = _f(counters.get("cost_total"), 0.0)
         if isinstance(counters.get("trip"), dict):
             self.trip.restore(counters["trip"])
@@ -985,31 +985,47 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             if c.get("tipo") == "Fotovoltaico" and str(c.get("data", ""))[:7] == keys["monthly"]
         ), 2)
 
+        def _uso(p: str, prev: bool = False) -> float:
+            # kWh usati nel periodo: dal DeltaMeter, altrimenti derivati da km × efficienza
+            m = _f(self.kwh_meters[p]["down"].last if prev else self.kwh_meters[p]["down"].value)
+            if m > 0.05:
+                return round(m, 2)
+            km = _f(self.km_meters[p].last if prev else self.km_meters[p].value)
+            if eff_kwh_100 and eff_kwh_100 > 0 and km > 0:
+                return round(km * eff_kwh_100 / 100.0, 2)
+            return round(m, 2)
+
+        def _pct_periodo(prev: bool = False) -> float:
+            m = _f(self.pct_daily["down"].last if prev else self.pct_daily["down"].value)
+            if m > 0.05:
+                return round(m, 1)
+            kwh = _uso("daily", prev)
+            cap = self.capacity or 60.0
+            return round(kwh / cap * 100.0, 1) if kwh > 0 else round(m, 1)
+
         percorrenza = [
-            {"nome": "Oggi", "pct": round(_f(self.pct_daily["down"].value), 1),
-             "usati": round(_f(self.kwh_meters["daily"]["down"].value), 2),
+            {"nome": "Oggi", "pct": _pct_periodo(), "usati": _uso("daily"),
              "caricati": round(_f(self.wb_meters["daily"].value), 2),
              "km": round(_f(self.km_meters["daily"].value), 0)},
-            {"nome": "Ieri", "pct": round(_f(self.pct_daily["down"].last), 1),
-             "usati": round(_f(self.kwh_meters["daily"]["down"].last), 2),
+            {"nome": "Ieri", "pct": _pct_periodo(True), "usati": _uso("daily", True),
              "caricati": round(_f(self.wb_meters["daily"].last), 2),
              "km": round(_f(self.km_meters["daily"].last), 0)},
-            {"nome": "Settimana", "usati": round(_f(self.kwh_meters["weekly"]["down"].value), 2),
+            {"nome": "Settimana", "usati": _uso("weekly"),
              "caricati": round(_f(self.wb_meters["weekly"].value), 2),
              "km": round(_f(self.km_meters["weekly"].value), 0)},
-            {"nome": "Settimana prec.", "usati": round(_f(self.kwh_meters["weekly"]["down"].last), 2),
+            {"nome": "Settimana prec.", "usati": _uso("weekly", True),
              "caricati": round(_f(self.wb_meters["weekly"].last), 2),
              "km": round(_f(self.km_meters["weekly"].last), 0)},
-            {"nome": "Mese", "usati": round(_f(self.kwh_meters["monthly"]["down"].value), 2),
+            {"nome": "Mese", "usati": _uso("monthly"),
              "caricati": round(_f(self.wb_meters["monthly"].value), 2),
              "km": round(_f(self.km_meters["monthly"].value), 0)},
-            {"nome": "Mese prec.", "usati": round(_f(self.kwh_meters["monthly"]["down"].last), 2),
+            {"nome": "Mese prec.", "usati": _uso("monthly", True),
              "caricati": round(_f(self.wb_meters["monthly"].last), 2),
              "km": round(_f(self.km_meters["monthly"].last), 0)},
-            {"nome": "Anno", "usati": round(_f(self.kwh_meters["yearly"]["down"].value), 2),
+            {"nome": "Anno", "usati": _uso("yearly"),
              "caricati": round(_f(self.wb_meters["yearly"].value), 2),
              "km": round(_f(self.km_meters["yearly"].value), 0)},
-            {"nome": "Anno prec.", "usati": round(_f(self.kwh_meters["yearly"]["down"].last), 2),
+            {"nome": "Anno prec.", "usati": _uso("yearly", True),
              "caricati": round(_f(self.wb_meters["yearly"].last), 2),
              "km": round(_f(self.km_meters["yearly"].last), 0)},
         ]
