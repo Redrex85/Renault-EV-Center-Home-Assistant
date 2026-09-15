@@ -163,6 +163,10 @@
       "create_dashboard": {
         "name": "Create dashboard",
         "description": "Create/update the sidebar dashboard with all bundled views."
+      },
+      "create_automations": {
+        "name": "Create recommended automations",
+        "description": "Create the 3 recommended automations in Home Assistant."
       }
     }
   }

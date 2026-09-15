@@ -39,4 +39,5 @@ Si vous avez coché **Créer le tableau de bord automatiquement**, il apparaît 
 Préfixe différent de `Renault` ? Faites Rechercher/Remplacer `sensor.renault_`.
 
 ## 4. Services, FAQ et dépannage
+Les automatisations recommandées peuvent être créées depuis la vue **Automazioni → « Crea automazioni consigliate »** (ou le service `renault_ev_center.create_automations`).
 Voir `docs/INSTALLATION.md` (EN) pour la référence complète.

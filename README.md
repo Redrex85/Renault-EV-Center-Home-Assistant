@@ -119,7 +119,7 @@ Tutto è modificabile dopo: ⚙️ **Integrazioni → Renault EV Center → Conf
 
 ## 📈 Cosa crea
 
-Oltre **40 entità** sul dispositivo *"Renault EV Center"* (prefisso = nome scelto):
+Oltre **90 entità** sul dispositivo *"Renault EV Center"* (prefisso = nome scelto):
 
 ```
 Sensori      Km G/S/M/A (+last_period) · Energia Caricata G/S/M/A/Tot · Costo Ricarica G/S/M/A/Tot
@@ -182,6 +182,24 @@ data: { kwh: 24.8, costo: 11.90, tipo: Pubblica }
 
 # Esporta tutti i viaggi in CSV (config/renault_ev_center_export/)
 service: renault_ev_center.export_trips_csv
+
+# (Ri)crea la dashboard laterale con tutte le viste
+service: renault_ev_center.create_dashboard
+
+# Crea in HA le 3 automazioni consigliate
+service: renault_ev_center.create_automations
+
+# Manutenzione e assicurazione
+service: renault_ev_center.add_maintenance
+data: { data: "2026-08-20", km: 68718, costo: 85, tipo: "Tagliando" }
+service: renault_ev_center.renew_insurance
+data: { mesi: 12 }
+
+# Scadenze e tagliando
+service: renault_ev_center.set_scadenza
+data: { nome: bollo, data: "2026-10-12" }
+service: renault_ev_center.set_tagliando
+data: { mode: km, valore: "71218" }
 ```
 
 ## ❓ FAQ
@@ -198,11 +216,13 @@ service: renault_ev_center.export_trips_csv
 
 ## 🗺️ Roadmap / idee
 
-- [ ] Salute batteria (SoH) stimata dalle ricariche piene
-- [ ] Consumo notturno da fermo ("vampire drain")
 - [ ] Invio dati ad **ABRP** (A Better Route Planner)
-- [ ] Integrazione con l'Energy Dashboard di HA (ricariche casa)
-- [ ] Card personalizzata dedicata
+- [ ] Export unificato dello storico (JSON/CSV completo)
+- [ ] Entità `device_tracker` / `climate` native (oggi delegate all'integrazione Renault)
+
+**Già disponibili** (ex roadmap): SoH stimato dalle ricariche, *vampire drain*, Energy Dashboard,
+**card e pannello custom** (tema 3D + palette Renault), **consumi per stagione**,
+**creazione automazioni** direttamente dalla dashboard.
 
 Hai un'idea? Apri una issue!
 
@@ -239,7 +259,7 @@ Renault EV Center is free and open-source, developed in spare time. If you find 
 - **Meters**: daily/weekly/monthly/yearly km & energy with `last_period` attribute (utility_meter style)
 - **Charging estimates**: time remaining, completion time, missing energy and estimated cost to your target SoC
 - **Fuel comparison**: how much you saved vs your old diesel/petrol car
-- **4 ready-made dashboards** (Overview, Trips, Statistics, Charging) — copy-paste YAML, core cards only
+- **11 auto-generated views** (sidebar dashboard) **+ custom 3D panel** with Renault color palettes — no manual YAML needed
 - Everything computed **locally** and persisted in `.storage`
 
 ### Install

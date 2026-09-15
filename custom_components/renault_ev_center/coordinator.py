@@ -13,6 +13,7 @@ from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -583,6 +584,23 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         base = int(_f(self.opts.get(CONF_POLL_INTERVAL), 30)) or 30
         active = bool((data.get("trip") or {}).get("active")) or self.charge_session is not None
         return max(base, 15) if active else max(base * 4, 120)
+
+    def start_source_listeners(self):
+        """Reattività: aggiorna subito al cambio di una entità sorgente."""
+        o = self.opts
+        ids = [
+            o.get(CONF_ODOMETER), o.get(CONF_BATTERY_LEVEL), o.get(CONF_RANGE),
+            o.get(CONF_CHARGING_ENTITY), o.get(CONF_PLUG_ENTITY), o.get(CONF_LOCATION_ENTITY),
+            o.get(CONF_WB_POWER), o.get(CONF_WB_STATE),
+        ]
+        ids = [i for i in ids if i]
+        if not ids:
+            return lambda: None
+        return async_track_state_change_event(self.hass, ids, self._on_source_change)
+
+    async def _on_source_change(self, event) -> None:  # noqa: ARG002
+        # debounced dal coordinator: evita raffiche di aggiornamenti
+        await self.async_request_refresh()
 
     async def _async_update_data_inner(self) -> dict[str, Any]:
         hass = self.hass
@@ -1528,9 +1546,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         return mode
 
     async def service_create_automations(self) -> list[str]:
-        """Crea (solo se assenti) le 3 automazioni consigliate nello store di HA."""
-        from homeassistant.helpers.storage import Store
-
+        """Crea (solo se assenti) le 3 automazioni consigliate in automations.yaml."""
         from .dashboard import slugify
 
         n = slugify(str(self.opts.get(CONF_NAME, "Renault")))
@@ -1588,20 +1604,34 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             },
         }
 
-        store = Store(self.hass, 1, "automations")
-        data = await store.async_load()
-        items = data.get("items") if isinstance(data, dict) else None
-        if not isinstance(items, list):
-            items = []
-        existing = {it.get("id") for it in items if isinstance(it, dict)}
-        created: list[str] = []
-        for aid, cfg in autos.items():
-            if aid in existing:
-                continue  # idempotente: non sovrascrive ciò che l'utente ha modificato
-            items.append({"id": aid, **cfg})
-            created.append(aid)
-        await store.async_save({"items": items})
-        await self.hass.services.async_call("automation", "reload", {}, blocking=True)
+        from homeassistant.config import AUTOMATION_CONFIG_PATH
+        from homeassistant.util.file import write_utf8_file_atomic
+        from homeassistant.util.yaml import dump as _yaml_dump
+        from homeassistant.util.yaml import load_yaml as _yaml_load
+
+        path = self.hass.config.path(AUTOMATION_CONFIG_PATH)
+
+        def _upsert() -> list[str]:
+            try:
+                data = _yaml_load(path)
+            except Exception:  # noqa: BLE001
+                data = None
+            if not isinstance(data, list):
+                data = []
+            have = {d.get("id") for d in data if isinstance(d, dict)}
+            made: list[str] = []
+            for aid, cfg in autos.items():
+                if aid in have:
+                    continue  # idempotente: non sovrascrive ciò che l'utente ha modificato
+                data.append({"id": aid, **cfg})
+                made.append(aid)
+            if made:
+                write_utf8_file_atomic(path, _yaml_dump(data))
+            return made
+
+        created = await self.hass.async_add_executor_job(_upsert)
+        if created:
+            await self.hass.services.async_call("automation", "reload", {}, blocking=True)
         return created
 
     async def _check_notifications(self, scadenze: list[dict], oggi) -> None:

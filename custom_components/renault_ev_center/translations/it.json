@@ -221,6 +221,45 @@
           "name": "ID viaggio"
         }
       }
+    },
+    "add_maintenance": {
+      "name": "Aggiungi tagliando",
+      "description": "Registra un tagliando o una manutenzione.",
+      "fields": {
+        "data": { "name": "Data" },
+        "km": { "name": "Km" },
+        "costo": { "name": "Costo €" },
+        "tipo": { "name": "Tipo" },
+        "note": { "name": "Note" }
+      }
+    },
+    "delete_maintenance": {
+      "name": "Elimina tagliando",
+      "description": "Cancella una manutenzione dal registro.",
+      "fields": { "maintenance_id": { "name": "ID manutenzione" } }
+    },
+    "renew_insurance": {
+      "name": "Rinnova assicurazione",
+      "description": "Imposta la nuova scadenza assicurazione (6/12 mesi o data precisa).",
+      "fields": { "mesi": { "name": "Mesi" }, "data": { "name": "Data" } }
+    },
+    "set_scadenza": {
+      "name": "Imposta scadenza",
+      "description": "Imposta manualmente una scadenza (assicurazione, bollo, revisione, tagliando_data).",
+      "fields": { "nome": { "name": "Nome" }, "data": { "name": "Data" } }
+    },
+    "set_tagliando": {
+      "name": "Imposta tagliando",
+      "description": "Scegli se il prossimo tagliando scade per km o per data.",
+      "fields": { "mode": { "name": "Modalità" }, "valore": { "name": "Valore" } }
+    },
+    "create_dashboard": {
+      "name": "Crea dashboard",
+      "description": "(Ri)crea la dashboard laterale con tutte le viste."
+    },
+    "create_automations": {
+      "name": "Crea automazioni consigliate",
+      "description": "Crea in Home Assistant le 3 automazioni consigliate."
     }
   }
 }

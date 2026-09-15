@@ -99,3 +99,6 @@ create_automations:
   name: Crea automazioni consigliate
   description: Crea o aggiorna in Home Assistant le 3 automazioni consigliate
     (ricarica completata, batteria bassa fuori casa, riassunto giornaliero).
+create_dashboard:
+  name: Crea dashboard
+  description: (Ri)crea la dashboard laterale "«Nome» EV Center" con tutte le viste.

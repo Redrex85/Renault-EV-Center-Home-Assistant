@@ -36,8 +36,8 @@ Everything can be changed later from the integration's Configure dialog.
 
 ## 3. Dashboards
 
-Import the four YAML files from [`dashboards/`](../dashboards/) as described in each file header:
-add a dashboard, open it, edit raw YAML configuration, paste.
+With "Create dashboard" enabled, the sidebar panel is created automatically (11 views + the custom 3D panel).
+To set it up manually, import the YAML files from [`dashboards/`](../dashboards/).
 If your car isn't named `Megane`, find & replace the `sensor.megane_` prefix.
 
 ## 4. Services
@@ -47,6 +47,12 @@ renault_ev_center.close_trip            # force-close the active trip
 renault_ev_center.reset_counters        # scope: km | energia | costi | viaggi | ricariche | all
 renault_ev_center.add_manual_charge     # kwh, costo, tipo
 renault_ev_center.export_trips_csv      # writes CSVs to config/renault_ev_center_export/
+renault_ev_center.create_dashboard      # (re)create the sidebar dashboard
+renault_ev_center.create_automations    # create the 3 recommended automations
+renault_ev_center.add_maintenance       # data, km, costo, tipo, note
+renault_ev_center.renew_insurance       # mesi (6|12) or data
+renault_ev_center.set_scadenza          # nome, data
+renault_ev_center.set_tagliando         # mode (km|data), valore
 ```
 
 ## 5. Troubleshooting
