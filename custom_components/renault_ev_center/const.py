@@ -3,7 +3,7 @@ from __future__ import annotations
 
 DOMAIN = "renault_ev_center"
 MANUFACTURER = "Renault EV Center"
-PLATFORMS: list[str] = ["sensor", "binary_sensor", "button", "number", "select", "switch", "time"]
+PLATFORMS: list[str] = ["sensor", "binary_sensor", "button", "number", "select", "switch", "time", "device_tracker", "climate"]
 
 # --- chiavi config flow -------------------------------------------------------
 CONF_NAME = "name"

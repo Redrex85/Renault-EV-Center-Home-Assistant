@@ -1,0 +1,41 @@
+name: Auto release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "VERSION"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: v
+        run: echo "ver=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Create tag + release if missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          V="${{ steps.v.outputs.ver }}"
+          echo "Versione: $V"
+          if gh release view "$V" >/dev/null 2>&1; then
+            echo "Release $V già esistente — niente da fare."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git rev-parse "$V" >/dev/null 2>&1; then
+            git tag "$V"
+            git push origin "$V"
+          fi
+          gh release create "$V" --title "$V" --generate-notes
