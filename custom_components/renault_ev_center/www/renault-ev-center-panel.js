@@ -375,7 +375,11 @@ class RenaultEvCenterPanel extends HTMLElement {
     for (const id of [this._sid("posizione"), this._car("device_tracker", "location"), this._car("device_tracker", ""), this._ov("location")]) {
       const s = id ? this._hass.states[id] : null;
       const z = s && Array.isArray(s.attributes.in_zones) ? s.attributes.in_zones[0] : null;
-      if (z) return z.replace(/^zone\./, "").replace(/_/g, " ").replace(/^\w/, (m) => m.toUpperCase());
+      if (z) {
+        const zn = this._hass.states[z];
+        return (zn && zn.attributes && zn.attributes.friendly_name)
+          || z.replace(/^zone\./, "").replace(/_/g, " ").replace(/^\w/, (m) => m.toUpperCase());
+      }
     }
     const z = this._st(this._sid("zona"), this._sid("zona_attuale"), "sensor.megane_zona_attuale");
     return z ? this._txt(z) : null;
@@ -412,7 +416,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.27</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.28</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -1067,7 +1071,7 @@ h1{font-size:26px;margin-bottom:4px}
 .big small{font-size:18px;font-weight:600;color:var(--muted)}
 .bar{height:10px;background:rgba(0,0,0,.35);border-radius:99px;margin-top:12px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
 .bar i{display:block;height:100%;border-radius:99px;background:var(--accent);box-shadow:0 0 12px var(--accent)}
-.row{display:flex;justify-content:space-between;font-size:13.5px;padding:7px 0;border-bottom:1px solid var(--line);gap:10px}
+.row{display:flex;justify-content:space-between;font-size:14.5px;padding:8px 0;border-bottom:1px solid var(--line);gap:10px}
 .row:last-child{border-bottom:none}
 .row span:first-child{color:var(--muted)}
 .clk{cursor:pointer}
@@ -1082,7 +1086,10 @@ h1{font-size:26px;margin-bottom:4px}
 .tile .em{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;background:var(--accent-soft)}
 .tile .v{font-size:24px;font-weight:800;line-height:1.05}
 .tile .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
-.cmd{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:13px 8px;text-align:center;font-size:12px;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 -10px 22px rgba(0,0,0,.35),0 12px 26px rgba(0,0,0,.3)}
+.cmd{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:15px 8px;text-align:center;font-size:13.5px;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 -10px 22px rgba(0,0,0,.35),0 12px 26px rgba(0,0,0,.3)}
+.kv{text-align:center;background:var(--panel2);border-radius:12px;padding:10px 4px}
+.kv b{display:block;font-size:22px;font-weight:800;line-height:1.1}
+.kv div{font-size:10.5px;letter-spacing:.04em;color:var(--muted);margin-top:2px}
 .cmd .em{font-size:22px;display:block;margin-bottom:5px}
 .cmd b{display:block;margin-top:2px;font-weight:600}
 .cmd:hover{border-color:var(--accent)}
@@ -1132,7 +1139,7 @@ const PAGES = {
       </div>
       <div style="padding:14px 16px">
         <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-size:36px;font-weight:800;color:var(--accent)"><span data-f="batt">—</span><span style="font-size:15px;color:var(--muted)">%</span></div>
+          <div style="font-size:42px;font-weight:800;color:var(--accent)"><span data-f="batt">—</span><span style="font-size:17px;color:var(--muted)">%</span></div>
           <div style="flex:1">
             <div class="bar" style="margin-top:0"><i data-b="battbar" style="width:0%"></i></div>
             <div style="display:flex;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:600;margin-top:6px"><span>🔋 <span data-f="batt_kwh">—</span> kWh a bordo</span><span>🧭 <span data-f="odo">—</span> km</span></div>
@@ -1140,11 +1147,11 @@ const PAGES = {
           </div>
         </div>
         <div style="margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--panel2);font-size:13px;display:flex;justify-content:space-between"><span data-c="chargestatus">Non in carica</span><b><span data-f="wb_potenza">—</span> kW</b></div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px">
-          <div style="text-align:center;background:var(--panel2);border-radius:10px;padding:8px 4px"><b data-f="km_per_kwh">—</b><div style="font-size:10px;color:var(--muted)">KM/KWH</div></div>
-          <div style="text-align:center;background:var(--panel2);border-radius:10px;padding:8px 4px"><b data-f="kwh_100">—</b><div style="font-size:10px;color:var(--muted)">KWH/100KM</div></div>
-          <div style="text-align:center;background:var(--panel2);border-radius:10px;padding:8px 4px"><b data-f="km_oggi">—</b><div style="font-size:10px;color:var(--muted)">KM OGGI</div></div>
-          <div style="text-align:center;background:var(--panel2);border-radius:10px;padding:8px 4px"><b data-f="costo_km">—</b><div style="font-size:10px;color:var(--muted)">€/KM</div></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px">
+          <div class="kv"><b data-f="km_per_kwh">—</b><div>KM/KWH</div></div>
+          <div class="kv"><b data-f="kwh_100">—</b><div>KWH/100KM</div></div>
+          <div class="kv"><b data-f="km_oggi">—</b><div>KM OGGI</div></div>
+          <div class="kv"><b data-f="costo_km">—</b><div>€/KM</div></div>
         </div>
       </div>
     </div>

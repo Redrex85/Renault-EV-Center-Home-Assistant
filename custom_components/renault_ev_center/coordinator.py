@@ -1262,8 +1262,25 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         return record
 
     # ------------------------------------------------------------- arricchimenti
+    def _zone_label(self, raw: str) -> str:
+        """Traduce lo stato del tracker (home/not_home/zona) nel nome leggibile della zona HA."""
+        z = str(raw or "").strip()
+        if not z:
+            return "—"
+        zone = self.hass.states.get(f"zone.{z}")
+        if zone is not None:
+            return str(zone.attributes.get("friendly_name") or z)
+        if z == "home":
+            home = self.hass.states.get("zone.home")
+            return str((home.attributes.get("friendly_name") if home else None) or "Casa")
+        if z in ("not_home", "unknown", "unavailable"):
+            return "Fuori"
+        return z.replace("_", " ").title()
+
     def _enrich_trip(self, record: dict[str, Any]) -> None:
         """Costo stimato, fonte ultima ricarica e DOPPIA VERIFICA con il GPS."""
+        record["zona_partenza"] = self._zone_label(record.get("zona_partenza", ""))
+        record["zona_arrivo"] = self._zone_label(record.get("zona_arrivo", ""))
         record["costo_stimato"] = round(_f(record.get("kwh_consumati")) * self.price_home, 2)
         # doppia verifica: coordinate reali del tracker all'arrivo + posizione aggiornata
         gps = {}
