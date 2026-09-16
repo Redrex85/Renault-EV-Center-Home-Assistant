@@ -412,7 +412,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.26</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.27</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -710,87 +710,35 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._tableViaggi(root);
     this._tableRicariche(root);
     this._tableSalute(root);
+    this._tableMesi(root);
     this._treeViaggi(root);
     this._tileStats(root);
     this._drawSeasons(root);
     this._rowsAttr(root);
   }
-  _ensureLeaflet() {
-    if (window.L) return Promise.resolve(true);
-    if (this._leafLoading) return this._leafLoading;
-    this._leafLoading = new Promise((resolve) => {
-      const css = document.createElement("link");
-      css.rel = "stylesheet";
-      css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      document.head.appendChild(css);
-      const js = document.createElement("script");
-      js.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      js.onload = () => resolve(!!window.L);
-      js.onerror = () => resolve(false);
-      document.head.appendChild(js);
-    });
-    return this._leafLoading;
-  }
   async _drawMap() {
     const box = this.shadowRoot && this.shadowRoot.querySelector("#evmap");
-    if (!box) return;
-    if (this._leafMap) { try { this._leafMap.invalidateSize(); } catch (e) { /* noop */ } return; }
+    if (!box || this._mapCard) return;
     const loc = this._ov("location") || this._car("device_tracker", "posizione") || "device_tracker.megane_posizione";
-    const pts = [];
-    const cur = this._hass.states[loc];
-    if (cur && typeof cur.attributes.latitude === "number") {
-      pts.push([cur.attributes.latitude, cur.attributes.longitude]);
-    }
+    if (typeof window.loadCardHelpers !== "function") return;
     try {
-      const start = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-      const res = await this._hass.callApi(
-        "GET",
-        `history/period/${start}?filter_entity_id=${loc}&minimal_response`,
-      );
-      const series = Array.isArray(res) && res[0] ? res[0] : [];
-      for (const s of series) {
-        const la = s.attributes && s.attributes.latitude;
-        const lo = s.attributes && s.attributes.longitude;
-        if (typeof la === "number" && typeof lo === "number") pts.push([la, lo]);
-      }
-    } catch (e) { /* cronologia non disponibile */ }
-    if (!box.offsetWidth) return;
-    const W = 400, H = 220, pad = 26;
-    if (!pts.length) {
-      box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Nessuna posizione GPS</div>`;
-      return;
+      const helpers = await window.loadCardHelpers();
+      const card = helpers.createCardElement({
+        type: "map",
+        entities: [{ entity: loc }],
+        hours_to_show: 96,
+        theme_mode: "dark",
+        auto_fit: true,
+      });
+      card.hass = this._hass;
+      card.style.display = "block";
+      card.style.height = "100%";
+      box.innerHTML = "";
+      box.appendChild(card);
+      this._mapCard = card;
+    } catch (e) {
+      box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Mappa non disponibile</div>`;
     }
-    const hasL = await this._ensureLeaflet();
-    if (hasL && window.L) {
-      try {
-        box.style.position = "relative";
-        box.innerHTML = "";
-        const div = document.createElement("div");
-        div.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
-        box.appendChild(div);
-        const map = window.L.map(div, { zoomControl: true, attributionControl: true, scrollWheelZoom: false });
-        window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(map);
-        const ll = pts.map((p) => [p[0], p[1]]);
-        window.L.polyline(ll, { color: "#4d8dff", weight: 3, opacity: 0.9 }).addTo(map);
-        window.L.circleMarker(ll[ll.length - 1],
-          { radius: 7, color: "#4d8dff", fillColor: "#4d8dff", fillOpacity: 1 }).addTo(map);
-        map.fitBounds(ll.length > 1 ? ll : [ll[0], ll[0]], { padding: [26, 26], maxZoom: 16 });
-        this._leafMap = map;
-        return;
-      } catch (e) { this._leafMap = null; }
-    }
-    const lats = pts.map((p) => p[0]), lons = pts.map((p) => p[1]);
-    const minLa = Math.min(...lats), maxLa = Math.max(...lats), minLo = Math.min(...lons), maxLo = Math.max(...lons);
-    const spanLa = Math.max(maxLa - minLa, 1e-4), spanLo = Math.max(maxLo - minLo, 1e-4);
-    const x = (lo) => pad + ((lo - minLo) / spanLo) * (W - 2 * pad);
-    const y = (la) => H - pad - ((la - minLa) / spanLa) * (H - 2 * pad);
-    const d = pts.map((p, i) => `${i ? "L" : "M"}${x(p[1]).toFixed(1)} ${y(p[0]).toFixed(1)}`).join(" ");
-    const last = pts[pts.length - 1];
-    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;height:100%"><rect width="${W}" height="${H}" fill="var(--panel2)"/>
-      <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>
-      <circle cx="${x(last[1]).toFixed(1)}" cy="${y(last[0]).toFixed(1)}" r="6" fill="var(--accent)"/>
-      <text x="12" y="18" fill="var(--muted)" font-size="11">Ultime 24h · ${pts.length} punti (mappa non disponibile)</text></svg>`;
   }
   _wb_state_txt() {
     const p = this._num(this._sid("wallbox_potenza"), "sensor.wallbox_instant_power", this._car("sensor", "battery_charger_power"));
@@ -816,21 +764,68 @@ class RenaultEvCenterPanel extends HTMLElement {
       const key = d.toISOString().slice(0, 10);
       const row = arr.find((r) => String(r.data || r.giorno || r.date || r.name || "").startsWith(key));
       const km = row ? parseFloat(row.km ?? row.km_percorsi ?? row.chilometri ?? 0) || 0 : 0;
-      out.push({ label: d.toLocaleDateString("it-IT", { weekday: "narrow" }), km });
+      const kwh = row ? parseFloat(row.kwh ?? row.kwh_consumati ?? 0) || 0 : 0;
+      const eff = row ? parseFloat(row.kwh_per_100km ?? row.efficienza ?? row.eff ?? 0) || 0 : 0;
+      const pct = row ? parseFloat(row.pct ?? row.batteria_pct ?? 0) || 0 : 0;
+      out.push({ label: d.toLocaleDateString("it-IT", { weekday: "narrow" }), km, kwh, eff, pct });
     }
     return out;
   }
   _drawBars(box, data) {
     if (!box) return;
     const max = Math.max(1, ...data.map((d) => d.km));
-    box.innerHTML = data.map((d) =>
-      `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px">
-        <div style="width:100%;background:var(--accent);opacity:.85;border-radius:4px 4px 0 0;height:${d.km > 0 ? Math.round((d.km / max) * 100) : 2}%"></div>
-        <span style="font-size:10px;color:var(--muted)">${d.label}</span></div>`).join("");
+    const totKwh = data.reduce((a, d) => a + d.kwh, 0);
+    const totKm = data.reduce((a, d) => a + d.km, 0);
+    const media = totKm > 0 && totKwh > 0 ? totKm / totKwh : 0;
+    box.parentElement.querySelectorAll("[data-c='bars7-head']").forEach((el) => el.remove());
+    const head = document.createElement("div");
+    head.dataset.c = "bars7-head";
+    head.style.cssText = "font-size:11.5px;color:var(--muted);margin-bottom:8px";
+    head.textContent = `7 giorni: ${this._i(totKm)} km · ${this._fmt(totKwh, 1)} kWh` +
+      (media > 0 ? ` · media ${this._fmt(media, 2)} km/kWh` : "");
+    box.parentElement.insertBefore(head, box);
+    box.innerHTML = data.map((d) => {
+      const h = d.km > 0 ? Math.round((d.km / max) * 100) : 2;
+      const tip = `${d.km} km · ${this._fmt(d.kwh, 2)} kWh · ${this._fmt(d.eff, 1)} kWh/100km${d.pct ? " · " + d.pct + "% usata" : ""}`;
+      return `<div title="${tip}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%">
+        <span style="font-size:10px;font-weight:700;color:var(--txt)">${d.km > 0 ? Math.round(d.km) : ""}</span>
+        <div style="width:100%;background:var(--accent);opacity:.85;border-radius:4px 4px 0 0;height:${h}%"></div>
+        <span style="font-size:10px;color:var(--muted)">${d.label}</span></div>`;
+    }).join("");
   }
   _rowsOf(state, keys) {
     const list = this._list(state ? state.entity_id : "");
     return list;
+  }
+  _tableMesi(root) {
+    const box = root.querySelector('[data-c="tab-mesi"]');
+    if (!box) return;
+    const st = this._st(this._sid("storico_giornaliero"));
+    const mesi = st && st.attributes ? st.attributes.mesi : null;
+    if (!mesi || !Object.keys(mesi).length) {
+      box.innerHTML = `<div style="color:var(--muted)">Nessuno storico mensile ancora</div>`;
+      return;
+    }
+    const now = new Date();
+    const curY = String(now.getFullYear());
+    const curM = String(now.getMonth() + 1).padStart(2, "0");
+    box.innerHTML = Object.keys(mesi).sort().reverse().map((y) => {
+      const mm = mesi[y] || {};
+      let tC = 0, tK = 0, tKm = 0;
+      const rows = NOMI_MESI.map((nome, i) => {
+        const m = String(i + 1).padStart(2, "0");
+        const r = mm[m];
+        const futuro = y > curY || (y === curY && m > curM);
+        const c = r ? r.costo : 0, k = r ? r.kwh : 0, km = r ? r.km : 0;
+        tC += c; tK += k; tKm += km;
+        return `<tr><td>${nome}</td><td>${r ? this._fmt(c, 2) + " €" : (futuro ? "" : "0,00 €")}</td>
+          <td>${r ? this._fmt(k, 1) + " kWh" : (futuro ? "" : "0,0 kWh")}</td>
+          <td>${r && km ? this._i(km) + " km" : (futuro ? "attesa" : "0 km")}</td></tr>`;
+      }).join("");
+      return `<details class="anno" open><summary>▼ ${y} <span class="tr">${this._fmt(tC, 2)} € · ${this._fmt(tK, 1)} kWh · ${this._i(tKm)} km</span></summary>
+        <table><tr><th>Mese</th><th>Costo</th><th>Ricaricati</th><th>KM</th></tr>${rows}
+        <tr class="totrow"><td>TOTALE</td><td>${this._fmt(tC, 2)} €</td><td>${this._fmt(tK, 1)} kWh</td><td>${this._i(tKm)} km</td></tr></table></details>`;
+    }).join("");
   }
   _tableViaggi(root) {
     const s = this._st(this._sid("viaggi_recenti"));
@@ -854,8 +849,8 @@ class RenaultEvCenterPanel extends HTMLElement {
         <td>${d !== undefined && d !== null ? d + "%" : "—"}</td><td>${this._fmt(parseFloat(r.kwh_consumati ?? r.kwh ?? 0), 2)}</td>
         <td><span class="badge">${this._fmt(parseFloat(eff ?? 0), 1)}</span></td>
         <td>${this._fmt(parseFloat(r.costo_stimato ?? r.costo ?? 0), 2)} €</td>
-        <td>${r.zona_partenza ?? r.ricarica_precedente ?? "—"}</td></tr>`;
-    }).join("") || `<tr><td colspan="8" style="color:var(--muted)">Nessun viaggio registrato</td></tr>`;
+        <td>${r.zona_partenza ?? r.ricarica_precedente ?? "—"}</td><td>${r.zona_arrivo ?? "—"}</td></tr>`;
+    }).join("") || `<tr><td colspan="9" style="color:var(--muted)">Nessun viaggio registrato</td></tr>`;
   }
   _tableRicariche(root) {
     const rows = this._list(this._sid("lista_ricariche"));
@@ -1219,7 +1214,7 @@ const PAGES = {
   p2: `<h1>Viaggi</h1>
   <div class="card tree"><h3>Archivio</h3><div data-c="tree">—</div></div>
   <div class="card" style="margin-top:16px"><h3>Dettaglio viaggi recenti</h3>
-    <table><tr><th>Data</th><th>Ora</th><th>Km</th><th>SoC</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th><th>Prima</th></tr>
+    <table><tr><th>Data</th><th>Ora</th><th>Km</th><th>SoC</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th><th>Partenza</th><th>Arrivo</th></tr>
     <tbody data-c="tab-viaggi"></tbody></table></div>`,
 
   p3: `<h1>Statistiche</h1>
@@ -1248,7 +1243,8 @@ const PAGES = {
     <table><tr><th>Rotta</th><th>Viaggi</th><th>Km</th><th>Km/viaggio</th><th>kWh/100km</th><th>Spesa</th></tr>
     <tbody data-c="tab-rotte"></tbody></table>
     <div class="row"><span>🏆 Più efficiente</span><b data-attr="consumo_per_zona|migliore_rotta">—</b></div>
-    <div class="row"><span>🐢 Più vorace</span><b data-attr="consumo_per_zona|peggior_rotta">—</b></div></div>`,
+    <div class="row"><span>🐢 Più vorace</span><b data-attr="consumo_per_zona|peggior_rotta">—</b></div></div>
+  <div class="card" style="margin-top:16px"><h3>Storico mensile (tutti gli anni)</h3><div data-c="tab-mesi"></div></div>`,
 
   p4: `<h1>Ricariche</h1>
   <div class="tiles">

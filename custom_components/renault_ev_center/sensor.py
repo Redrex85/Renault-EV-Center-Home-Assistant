@@ -593,7 +593,8 @@ class StoricoGiornaliero(MateSensor):
     @property
     def extra_state_attributes(self):
         # storico completo 365 giorni per annuale
-        return {"days": self.coordinator.data["history_days"]}
+        return {"days": self.coordinator.data["history_days"],
+                "mesi": self.coordinator.data.get("mesi_storico", {})}
 
 
 # --------------------------------------------------------------------- ricariche

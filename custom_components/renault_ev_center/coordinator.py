@@ -352,6 +352,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.cost_total = _f(counters.get("cost_total"), 0.0)
         if isinstance(counters.get("trip"), dict):
             self.trip.restore(counters["trip"])
+            # un viaggio non sopravvive al riavvio: evita "in movimento" fantasma
+            self.trip.active = False
         self.today_rec = counters.get("today_rec") or {}
 
     async def _async_save_on_stop(self, event) -> None:  # noqa: ARG002
@@ -1058,6 +1060,29 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
              "caricati": round(_f(self.wb_meters["yearly"].last), 2), "km": 0.0},
         ]
 
+        # --- storico mensile multi-anno (costo, ricaricati kWh, km) ---------------
+        mesi: dict[str, dict[str, dict[str, float]]] = {}
+        for c in charges:
+            d = str(c.get("data", ""))
+            if len(d) >= 7:
+                row = mesi.setdefault(d[:4], {}).setdefault(d[5:7], {"costo": 0.0, "kwh": 0.0, "km": 0.0})
+                row["costo"] += _f(c.get("costo"))
+                row["kwh"] += _f(c.get("kwh"))
+        for t in trips:
+            d = str(t.get("data", ""))
+            if len(d) >= 7:
+                row = mesi.setdefault(d[:4], {}).setdefault(d[5:7], {"costo": 0.0, "kwh": 0.0, "km": 0.0})
+                row["km"] += _f(t.get("km"))
+        for ym, km in self.store.data.get("monthly_km", {}).items():
+            ym = str(ym)
+            if len(ym) >= 7:
+                row = mesi.setdefault(ym[:4], {}).setdefault(ym[5:7], {"costo": 0.0, "kwh": 0.0, "km": 0.0})
+                row["km"] = max(row["km"], _f(km))
+        mesi_storico = {
+            y: {m: {k: round(v, 2) for k, v in row.items()} for m, row in mm.items()}
+            for y, mm in mesi.items()
+        }
+
         charges_filtered = self._filter_charges(charges, now)
         report = self._build_report(now, keys, today_key)
 
@@ -1130,6 +1155,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "last_charge": charges[-1] if charges else None,
             "savings": savings,
             "health": dict(self.store.data.get("health", {})),
+            "mesi_storico": mesi_storico,
             "charges_filtered": charges_filtered,
             "report": report,
             "temp_out": temp_out,
