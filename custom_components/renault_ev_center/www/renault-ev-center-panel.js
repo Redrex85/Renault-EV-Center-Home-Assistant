@@ -409,7 +409,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.24</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.25</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -579,16 +579,10 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       el.classList.toggle("clk", !!this._ent(el.dataset.f));
     });
-    const map = root.querySelector("#evmap");
-    if (map) {
-      const loc = this._ov("location") || this._car("device_tracker", "posizione") || "device_tracker.megane_posizione";
-      if (!customElements.get("ha-map") && customElements.whenDefined) {
-        customElements.whenDefined("ha-map").then(() => this._update()).catch(() => {});
-      }
-      map.hass = this._hass;
-      map.entities = [{ entity: loc }];
-      map.hoursToShow = 96;
-      map.darkMode = true;
+    const mapSvg = root.querySelector("#evmap");
+    if (mapSvg && (!this._mapTs || Date.now() - this._mapTs > 300000)) {
+      this._mapTs = Date.now();
+      this._drawMap();
     }
     root.querySelectorAll("[data-sw]").forEach((el) => {
       if (el.tagName === "INPUT") { const s = this._hass.states[el.dataset.ent]; el.checked = !!s && s.state === "on"; }
@@ -717,6 +711,48 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._tileStats(root);
     this._drawSeasons(root);
     this._rowsAttr(root);
+  }
+  async _drawMap() {
+    const root = this.shadowRoot;
+    const svg = root && root.querySelector("#evmap");
+    if (!svg) return;
+    const loc = this._ov("location") || this._car("device_tracker", "posizione") || "device_tracker.megane_posizione";
+    const pts = [];
+    const cur = this._hass.states[loc];
+    if (cur && typeof cur.attributes.latitude === "number") {
+      pts.push([cur.attributes.latitude, cur.attributes.longitude]);
+    }
+    try {
+      const start = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      const res = await this._hass.callApi(
+        "GET",
+        `history/period/${start}?filter_entity_id=${loc}&minimal_response`,
+      );
+      const series = Array.isArray(res) && res[0] ? res[0] : [];
+      for (const s of series) {
+        const la = s.attributes && s.attributes.latitude;
+        const lo = s.attributes && s.attributes.longitude;
+        if (typeof la === "number" && typeof lo === "number") pts.push([la, lo]);
+      }
+    } catch (e) { /* cronologia non disponibile */ }
+    const W = 400, H = 220, pad = 26;
+    if (!pts.length) {
+      svg.innerHTML = `<rect width="${W}" height="${H}" fill="var(--panel2)"/><text x="${W / 2}" y="${H / 2}" text-anchor="middle" fill="var(--muted)" font-size="12">Nessuna posizione GPS</text>`;
+      return;
+    }
+    const lats = pts.map((p) => p[0]);
+    const lons = pts.map((p) => p[1]);
+    const minLa = Math.min(...lats), maxLa = Math.max(...lats);
+    const minLo = Math.min(...lons), maxLo = Math.max(...lons);
+    const spanLa = Math.max(maxLa - minLa, 1e-4), spanLo = Math.max(maxLo - minLo, 1e-4);
+    const x = (lo) => pad + ((lo - minLo) / spanLo) * (W - 2 * pad);
+    const y = (la) => H - pad - ((la - minLa) / spanLa) * (H - 2 * pad);
+    const d = pts.map((p, i) => `${i ? "L" : "M"}${x(p[1]).toFixed(1)} ${y(p[0]).toFixed(1)}`).join(" ");
+    const last = pts[pts.length - 1];
+    svg.innerHTML = `<rect width="${W}" height="${H}" fill="var(--panel2)"/>
+      <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>
+      <circle cx="${x(last[1]).toFixed(1)}" cy="${y(last[0]).toFixed(1)}" r="6" fill="var(--accent)"/>
+      <text x="12" y="18" fill="var(--muted)" font-size="11">Ultime 24h · ${pts.length} punti</text>`;
   }
   _wb_state_txt() {
     const p = this._num(this._sid("wallbox_potenza"), "sensor.wallbox_instant_power", this._car("sensor", "battery_charger_power"));
@@ -1112,7 +1148,7 @@ const PAGES = {
       <div class="row"><span>Media</span><b><span data-f="media_ult">—</span> kW</b></div>
       <div class="row"><span>Costo · Eff.</span><b><span data-f="costo_corr">—</span> € · <span data-f="eff_ric">—</span>%</b></div>
     </div>
-    <div class="mapbox"><ha-map id="evmap"></ha-map></div>
+    <div class="mapbox"><svg id="evmap" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:100%"></svg></div>
     <div class="card netto"><h3>💰 Risparmio netto</h3>
       <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)"><span data-f="risp_tot">—</span> €</b></div>
       <div class="row"><span>+ Tagliandi</span><b><span data-f="risp_tagliandi">—</span> €</b></div>

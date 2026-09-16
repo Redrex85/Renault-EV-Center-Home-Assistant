@@ -130,8 +130,8 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-PERCENT_SENSOR = EntitySelectorConfig(domain="sensor")
-ENERGY_SENSOR = EntitySelectorConfig(domain="sensor")
+PERCENT_SENSOR = EntitySelectorConfig(domain="sensor", device_class="battery")
+ENERGY_SENSOR = EntitySelectorConfig(domain="sensor", device_class=["energy", "energy_storage"])
 
 
 def _car_schema(defaults: dict[str, Any]) -> vol.Schema:
@@ -139,13 +139,13 @@ def _car_schema(defaults: dict[str, Any]) -> vol.Schema:
         vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, DEFAULT_NAME)): str,
         vol.Required(
             CONF_ODOMETER, description={"suggested_value": defaults.get(CONF_ODOMETER)}
-        ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+        ): EntitySelector(EntitySelectorConfig(domain="sensor", device_class="distance")),
         vol.Required(
             CONF_BATTERY_LEVEL, description={"suggested_value": defaults.get(CONF_BATTERY_LEVEL)}
         ): EntitySelector(PERCENT_SENSOR),
         vol.Required(
             CONF_RANGE, description={"suggested_value": defaults.get(CONF_RANGE)}
-        ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+        ): EntitySelector(EntitySelectorConfig(domain="sensor", device_class="distance")),
         vol.Required(
             CONF_CHARGING_ENTITY, description={"suggested_value": defaults.get(CONF_CHARGING_ENTITY)}
         ): EntitySelector(EntitySelectorConfig(domain=["binary_sensor", "sensor"])),
