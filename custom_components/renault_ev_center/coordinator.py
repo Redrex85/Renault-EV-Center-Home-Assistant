@@ -222,6 +222,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
         # vampire drain: SoC persa da fermo (non in carica, odometro fermo)
         self.drain_meter = DeltaMeter("down")
+        self.drain_mesi = DeltaMeter("down")
         self._drain_odom_ref: float | None = None
 
         # notifiche / automazioni ricarica
@@ -347,6 +348,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "down": DeltaMeter.from_dict(counters.get("pct_down"), "down"),
         }
         self.drain_meter = DeltaMeter.from_dict(counters.get("drain_down"), "down")
+        self.drain_mesi = DeltaMeter.from_dict(counters.get("drain_month_down"), "down")
         self.cost_total = _f(counters.get("cost_total"), 0.0)
         if isinstance(counters.get("trip"), dict):
             self.trip.restore(counters["trip"])
@@ -366,6 +368,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             c["pct_up"] = self.pct_daily["up"].to_dict()
             c["pct_down"] = self.pct_daily["down"].to_dict()
             c["drain_down"] = self.drain_meter.to_dict()
+            c["drain_month_down"] = self.drain_mesi.to_dict()
             self.store.data["counters"] = c
             await self.store._store.async_save(c | {"trips": self.store.data["trips"][-2000:], "charges": self.store.data["charges"][-2000:], "daily": self.store.data["daily"][-365:], "health": self.store.data.get("health", {}), "maintenance": self.store.data.get("maintenance", [])[-200:], "monthly_km": self.store.data.get("monthly_km", {}), "scadenze": self.store.data.get("scadenze", {})})
         except Exception:  # noqa: BLE001
@@ -387,6 +390,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         c["pct_up"] = self.pct_daily["up"].to_dict()
         c["pct_down"] = self.pct_daily["down"].to_dict()
         c["drain_down"] = self.drain_meter.to_dict()
+        c["drain_month_down"] = self.drain_mesi.to_dict()
         self.store.data["counters"] = c
         self.store.save()
 
@@ -684,6 +688,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             self._drain_odom_ref = odometer
         self.drain_meter.tick(keys["daily"], battery if 0 <= battery <= 100 else None,
                               allow=fermo, max_delta=10.0)
+        self.drain_mesi.tick(keys["monthly"], battery if 0 <= battery <= 100 else None,
+                             allow=fermo, max_delta=10.0)
 
         # --- energia erogata in questo ciclo → accumula costi --------------------
         wb_delta = 0.0
@@ -1126,6 +1132,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "temp_out": temp_out,
             "drain_oggi_pct": round(self.drain_meter.value, 1),
             "drain_oggi_kwh": round(self.drain_meter.value * kwh_per_1pct, 2),
+            "drain_mese_pct": round(self.drain_mesi.value, 1),
+            "drain_mese_kwh": round(self.drain_mesi.value * kwh_per_1pct, 2),
             "co2": co2,
             "scadenze": scadenze,
             "zone_routes": zone_routes,

@@ -70,6 +70,7 @@ async def async_setup_entry(
         KwhPer1Pct(coordinator, name),
         Tagliandi(coordinator, name),
         DrainFermo(coordinator, name),
+        DrainMese(coordinator, name),
         ConsumoZona(coordinator, name),
         CO2Risparmiata(coordinator, name),
         Scadenze(coordinator, name),
@@ -1000,6 +1001,27 @@ class DrainFermo(MateSensor):
     def extra_state_attributes(self):
         d = self.coordinator.data
         return {"equivalente_kwh": d.get("drain_oggi_kwh")}
+
+
+class DrainMese(MateSensor):
+    """Vampire drain: SoC persa da fermo nel mese corrente (auto ferma, non in carica)."""
+
+    def __init__(self, coordinator, name):
+        super().__init__(coordinator, name)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_drain_mese"
+        self._attr_name = f"{name} Batteria Persa da Fermo Mese"
+        self._attr_native_unit_of_measurement = "%"
+        self._attr_state_class = SensorStateClass.TOTAL
+        self._attr_icon = "mdi:battery-clock-outline"
+
+    @property
+    def native_value(self):
+        return self.coordinator.data.get("drain_mese_pct", 0.0)
+
+    @property
+    def extra_state_attributes(self):
+        d = self.coordinator.data
+        return {"equivalente_kwh": d.get("drain_mese_kwh")}
 
 
 class ConsumoZona(MateSensor):

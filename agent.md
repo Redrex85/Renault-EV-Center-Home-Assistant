@@ -67,6 +67,26 @@ salute batteria (SOH), report tabelle, filtri ricariche. Nessun cloud: tutto loc
 
 ## 3. DA FARE / DA SISTEMARE ⚠️
 
+### 🧭 STATO COMPRESSO — v1.0.5.20 (leggi qui prima di tutto)
+Fix chiave già nel codice:
+- **DeltaMeter**: direzione "down" ripristinata + auto-heal (contatori usati/% non più a 0).
+- **Eco-polling** + **reattività** (`async_track_state_change_event` sulle entità sorgente).
+- **`_async_update_data`**: usa `UpdateFailed` reale.
+- **Automazioni**: scritte in **`automations.yaml`** (NON `.storage/automations`), lista per `id`, **riparanti**; **rimosso `labels`** (schema HA). Dopo deploy: ri-lanciare `create_automations` per correggere le esistenti.
+- **Brand/icona**: `custom_components/renault_ev_center/brand/icon.png` (+`@2x`) per HA; `brand/` root per HACS.
+- **Percorrenza**: derivata dai **viaggi** (Oggi/Ieri/Settimana/Mese/Anno) → non più a 0.
+- **Pulsanti Avvia carica/A-C**: provano nomi EN (`button.start_charge`, `button.start_air_conditioner`) **e** IT (`…avviare_la_ricarica`, `…avviare_il_condizionatore_d_aria`).
+- **Panel**: sottotitoli rimossi; sensori cliccabili (more-info); mappa `<ha-map>`; tema V3; date gg-mm-aaaa; temp esterna da `weather.*`.
+- **Fase 1** (doc): README (roadmap/servizi/90 entità/ancore IT-EN-FR + nota zone), `services.yaml`, `strings.json` + `translations/{it,en,fr}`.
+- **Fase 3**: `device_tracker.py` + `climate.py` nativi; `PLATFORMS` aggiornato.
+- **Fase 4**: reattività coordinator.
+- **Auto-release**: `.github/workflows/auto-release.yml` (push su `VERSION` → tag + release).
+
+Pendenti:
+- **Fase 2** (`has_entity_name` + `translation_key`): rinominerebbe le entità → serve migrazione, rimandata.
+- **Icona HACS store**: cache; se non appare → rimuovi/ri-aggiungi il repo custom.
+- **Wallbox**: i nomi dei button variano tra installazioni → mappare nella config.
+
 - [ ] **Test su HA reale** (l'utente può farlo sul suo HA di produzione: l'integrazione è
       additiva e non tocca i package esistenti): installare, configurare con i propri sensori
       (sensor.mileage, sensor.battery_level, sensor.battery_autonomy, binary_sensor.charging,

@@ -165,7 +165,13 @@ class RenaultEvCenterPanel extends HTMLElement {
         return vs.length ? vs.reduce((a, v) => a + v, 0) : null;
       }
       case "ricarica_oggi_pct": return S._num(S._sid("battery_perc_giorno_charge"), "sensor.megane_battery_perc_giorno_charge");
-      case "risp_tot": { const t = S._spesaTeo(S._num(S._ov("odometer"), S._car("sensor", "odometer"))); const c = S._num(S._sid("costo_ricarica_totale")); return (t === null || c === null) ? null : t - c; }
+      case "risp_tot": {
+        const rv = S._num(S._sid("risparmio_totale_vs_diesel"));
+        if (rv !== null) return rv;
+        const t = S._spesaTeo(S._field("odo"));
+        const c = S._num(S._sid("costo_ricarica_totale"));
+        return (t === null || c === null) ? null : t - c;
+      }
       case "trip_attivo": {
         const s = S._st(S._sid("trip_attivo"));
         if (!s) return null;
@@ -237,7 +243,13 @@ class RenaultEvCenterPanel extends HTMLElement {
       // Risparmi carburante (calcolati client: le entità risparmio_* non esistono nell'integrazione)
       case "risp_mese": return S._rispKm(S._num(S._sid("km_mensili")), S._num(S._sid("costo_ricarica_mensile"), S._sid("costo_ricarica_mese")));
       case "risp_anno": return S._rispKm(S._num(S._sid("km_annuali")), S._num(S._sid("costo_ricarica_annuale"), S._sid("costo_ricarica_anno")));
-      case "spesa_teorica": return S._ov("spesa_teorica") ? S._num(S._ov("spesa_teorica")) : S._spesaTeo(S._num(S._ov("odometer"), S._car("sensor", "odometer")));
+      case "spesa_teorica": {
+        if (S._ov("spesa_teorica")) return S._num(S._ov("spesa_teorica"));
+        const st = S._st(S._sid("risparmio_totale_vs_diesel"));
+        const tt = st ? S._attrAny(st, ["termica_totale"]) : null;
+        if (tt !== null) return tt;
+        return S._spesaTeo(S._field("odo"));
+      }
       case "costo_ric_tot": return S._num(S._sid("costo_ricarica_totale"), S._ov("costo_ric_tot"));
       // Extra
       case "drain": {
@@ -249,6 +261,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         return v === 0 ? 0 : null;
       }
       case "vampire": return S._num(S._sid("batteria_persa_da_fermo_oggi"));
+      case "drain_mese_pct": return S._num(S._sid("batteria_persa_da_fermo_mese"));
       case "temp_est": {
         const v = S._num(S._sid("temperatura_esterna"), S._sid("temp_esterna"));
         if (v !== null) return v;
@@ -396,7 +409,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.20</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.23</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -1240,10 +1253,12 @@ const PAGES = {
 
   p8: `<h1>Extra</h1>
   <div class="grid g3">
-    <div class="card"><h3>🔋 Vampire drain oggi</h3><div class="big" style="font-size:32px;color:var(--accent)"><span data-f="vampire" data-dec="1">—</span><small>%</small></div>
-      <div style="color:var(--muted);font-size:12px;margin-top:6px">≈ <span data-attr="batteria_persa_da_fermo_oggi|equivalente_kwh">—</span> kWh</div></div>
-    <div class="card"><h3>🌍 CO2</h3><div class="big" style="font-size:32px;color:var(--good)"><span data-f="co2">—</span> <small>kg</small></div>
-      <div style="color:var(--muted);font-size:12px;margin-top:6px">Anno: <span data-attr="co2_risparmiata|quest_anno">—</span> kg</div></div>
+    <div class="card"><h3>🔋 Vampire drain</h3><div class="big" style="font-size:32px;color:var(--accent)"><span data-f="vampire" data-dec="1">—</span><small>% oggi</small></div>
+      <div style="color:var(--muted);font-size:12px;margin-top:6px">≈ <span data-attr="batteria_persa_da_fermo_oggi|equivalente_kwh">—</span> kWh oggi</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px">Mese ferma: <b><span data-attr="batteria_persa_da_fermo_mese|equivalente_kwh">—</span> kWh</b> (<span data-f="drain_mese_pct" data-dec="1">—</span>%)</div></div>
+    <div class="card"><h3>🌍 CO2 evitata</h3><div class="big" style="font-size:32px;color:var(--good)"><span data-f="co2">—</span> <small>kg</small></div>
+      <div style="color:var(--muted);font-size:12px;margin-top:6px">Anno: <span data-attr="co2_risparmiata|quest_anno">—</span> kg</div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:4px">evitata = termica − rete</div></div>
     <div class="card"><h3>📅 Scadenze</h3>
       <table><tr><th>Tipo</th><th>Giorni</th></tr><tbody data-c="tab-scadenze"></tbody></table></div></div>
   <div class="grid g2" style="margin-top:16px">
@@ -1262,7 +1277,7 @@ const PAGES = {
       <div class="row"><span>Peggiore</span><b><span data-topstop="peggiore|kwh_per_100km">—</span> kWh/100km</b></div>
       <div class="row"><span>Energia casa (totale)</span><b><span data-f="energia_casa">—</span> kWh</b></div></div>
     <div class="card"><h3>ℹ️ Note</h3>
-      <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2: risparmiata vs termica, da sensore integrazione.<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div></div>`,
+      <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2 evitata vs termica (termica − rete).<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div></div>`,
 
   p9: `<h1>Automazioni</h1>
   <div class="grid g2">
