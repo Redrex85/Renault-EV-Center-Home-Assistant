@@ -427,7 +427,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.32</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.33</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -571,6 +571,9 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "create_automations": this._call(D, "create_automations", {}, "✨ Automazioni create"); break;
       case "schsave_ricarica": this._saveSchedule("ricarica"); break;
       case "schsave_clima": this._saveSchedule("clima"); break;
+      case "schsave_promemoria": this._saveSchedule("promemoria"); break;
+      case "maint_tagliando": this._saveMaint("tagliando"); break;
+      case "maint_gomme": this._saveMaint("gomme"); break;
       case "reset_km": this._call(D, "reset_counters", { scope: "km" }, "🔄 Km azzerati"); break;
       case "reset_energia": this._call(D, "reset_counters", { scope: "energia" }, "🔄 Energia azzerata"); break;
       case "reset_costi": this._call(D, "reset_counters", { scope: "costi" }, "🔄 Costi azzerati"); break;
@@ -711,7 +714,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const rows = this._list(this._sid("percorrenza"));
       const r = rows.find((x) => this._slug(String(x.nome ?? "")) === per);
       const v = r ? parseFloat(r[key]) : NaN;
-      el.textContent = isNaN(v) ? "—" : (key === "km" ? this._i(v) : this._fmt(v, 2));
+      el.textContent = isNaN(v) ? "—" : (key === "km" ? this._i(v) + " km" : this._fmt(v, 2) + " kWh");
     });
     // tabella storico tagliandi
     const tbTag = root.querySelector('[data-c="tab-tagliandi"]');
@@ -740,6 +743,16 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._tileStats(root);
     this._drawSeasons(root);
     this._rowsAttr(root);
+  }
+  _saveMaint(tipo) {
+    const root = this.shadowRoot;
+    const kmEl = root.querySelector(`input[data-mk="${tipo}"]:not([data-mdate])`);
+    const dEl = root.querySelector(`input[data-mk="${tipo}"][data-mdate]`);
+    const km = kmEl && kmEl.value ? parseFloat(kmEl.value) : undefined;
+    const data = dEl && dEl.value ? dEl.value : "";
+    const payload = { tipo, data };
+    if (km !== undefined && !isNaN(km)) payload.km = km;
+    this._call("renault_ev_center", "set_maintenance", payload, `💾 Scadenza ${tipo} salvata`);
   }
   _saveSchedule(tipo) {
     const root = this.shadowRoot;
@@ -913,11 +926,11 @@ class RenaultEvCenterPanel extends HTMLElement {
         : (d !== undefined && d !== null ? d + "%" : "—");
       return `<tr><td>${this._d(r.data)}</td><td>${r.ora_inizio ?? "—"}${r.ora_fine ? "–" + r.ora_fine : ""}</td>
         <td><b>${this._fmt(parseFloat(r.km ?? r.chilometri ?? 0), 1)}</b></td>
-        <td>${soc}</td><td>${this._fmt(parseFloat(r.kwh_consumati ?? r.kwh ?? 0), 2)}</td>
+        <td>${soc}</td><td>${d !== undefined && d !== null ? d + "%" : "—"}</td><td>${this._fmt(parseFloat(r.kwh_consumati ?? r.kwh ?? 0), 2)}</td>
         <td><span class="badge">${this._fmt(parseFloat(eff ?? 0), 1)}</span></td>
         <td>${this._fmt(parseFloat(r.costo_stimato ?? r.costo ?? 0), 2)} €</td>
         <td>${this._zn(r.zona_partenza ?? r.ricarica_precedente)}</td><td>${this._zn(r.zona_arrivo)}</td></tr>`;
-    }).join("") || `<tr><td colspan="9" style="color:var(--muted)">Nessun viaggio per il filtro scelto</td></tr>`;
+    }).join("") || `<tr><td colspan="10" style="color:var(--muted)">Nessun viaggio per il filtro scelto</td></tr>`;
   }
   _tableRicariche(root) {
     const rows = this._list(this._sid("lista_ricariche"));
@@ -1295,7 +1308,7 @@ const PAGES = {
       <select data-tf="year" style="width:auto"><option value="">Tutti gli anni</option></select>
       <select data-tfm="month" style="width:auto"><option value="">Tutti i mesi</option></select>
     </div>
-    <table><tr><th>Data</th><th>Ora</th><th>Km</th><th>SoC</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th><th>Partenza</th><th>Arrivo</th></tr>
+    <table><tr><th>Data</th><th>Ora</th><th>Km</th><th>SoC</th><th>Consumata</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th><th>Partenza</th><th>Arrivo</th></tr>
     <tbody data-c="tab-viaggi"></tbody></table></div>`,
 
   p3: `<h1>Statistiche</h1>
@@ -1363,17 +1376,25 @@ const PAGES = {
 
   p6: `<h1>Manutenzione</h1>
   <div class="grid g2">
-    <div class="card"><h3>🔧 Tagliandi</h3>
-      <div class="row"><span>Prossimo (modalità km)</span><b><span data-attr="tagliandi|prossimo_km">—</span> km</b></div>
+    <div class="card"><h3>🔧 Tagliando</h3>
+      <div class="row"><span>Prossimo (km)</span><b><span data-attr="tagliandi|prossimo_km">—</span> km</b></div>
       <div class="row"><span>Speso finora</span><b><span data-f="tagliandi">—</span> € (<span data-attr="tagliandi|n">—</span> interventi)</b></div>
-      <table style="margin-top:8px"><tr><th>Data</th><th>Km</th><th>Tipo</th><th>€</th></tr>
+      <div class="inp"><span>Scadenza a km</span><input type="number" data-mk="tagliando"><span class="u">km</span></div>
+      <div class="inp"><span>Scadenza a data</span><input type="date" data-mk="tagliando" data-mdate="1"><span class="u"></span></div>
+      <div class="btn" data-cmd="maint_tagliando" style="margin-top:8px">💾 Salva scadenza tagliando</div>
+      <table style="margin-top:10px"><tr><th>Data</th><th>Km</th><th>Tipo</th><th>€</th></tr>
       <tbody data-c="tab-tagliandi"></tbody></table></div>
     <div class="card"><h3>🛡️ Assicurazione</h3>
       <div class="row"><span>Scadenza</span><b><span data-attr="assicurazione|data">—</span> · <span data-f="assic">—</span> gg</b></div>
       <div class="inp"><span>Costo annuo</span><input data-n="n_assic"><span class="u">€/anno</span></div>
       <div style="display:flex;gap:8px;margin-top:14px">
         <div class="btn" data-cmd="ass_plus6">Rinnova +6 mesi</div>
-        <div class="btn" data-cmd="ass_plus12">Rinnova +1 anno</div></div></div></div>
+        <div class="btn" data-cmd="ass_plus12">Rinnova +1 anno</div></div></div>
+    <div class="card"><h3>🛞 Cambio gomme</h3>
+      <div class="inp"><span>Scadenza a km</span><input type="number" data-mk="gomme"><span class="u">km</span></div>
+      <div class="inp"><span>Scadenza a data</span><input type="date" data-mk="gomme" data-mdate="1"><span class="u"></span></div>
+      <div class="btn" data-cmd="maint_gomme" style="margin-top:8px">💾 Salva scadenza gomme</div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Ricordati che le notifiche scadenze coprono tagliando e gomme.</div></div></div>
   <div class="card netto" style="margin-top:16px"><h3>🏆 Risparmio manutenzione</h3>
     <div class="row"><span>Termica teorica (450 € × tagliandi)</span><b><span data-f="teo_tagliandi">—</span> €</b></div>
     <div class="row"><span>Spesa reale EV</span><b><span data-f="tagliandi">—</span> €</b></div>
@@ -1438,13 +1459,7 @@ const PAGES = {
       <div class="row"><span>🔋 Fine ricarica (kWh, SoC, costo)</span><label class="switch"><input type="checkbox" data-sw="sw_end"><span></span></label></div>
       <div class="row"><span>⚠️ Batteria bassa a casa</span><label class="switch"><input type="checkbox" data-sw="sw_low"><span></span></label></div>
       <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div></div>
-    <div class="card"><h3>⏰ Carica programmata</h3>
-      <div class="row"><span>Stato</span><label class="switch"><input type="checkbox" data-sw="sw_sched"><span></span></label></div>
-      <div class="row"><span>↳ Orario avvio</span><input type="time" data-time="t_start"></div>
-      <div class="row"><span>↳ Orario stop</span><input type="time" data-time="t_stop"></div>
-      <div class="row"><span>↳ Promemoria da</span><input type="time" data-time="t_low_start"></div>
-      <div class="row"><span>↳ Promemoria a</span><input type="time" data-time="t_low_end"></div></div></div>
-  <div class="grid g2" style="margin-top:16px">
+  <div class="grid g3" style="margin-top:16px">
     <div class="card"><h3>⏰ Programma ricarica</h3>
       <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="ricarica"><span></span></label></div>
       <div class="row"><span>Inizio</span><input type="time" data-sch="ricarica" data-k="inizio" value="23:30"></div>
@@ -1458,12 +1473,20 @@ const PAGES = {
     <div class="card"><h3>❄️ Programma clima</h3>
       <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="clima"><span></span></label></div>
       <div class="row"><span>Orario</span><input type="time" data-sch="clima" data-k="inizio" value="07:00"></div>
-      <div class="row"><span>Modo</span><select data-sch="clima" data-k="modo" style="width:auto"><option value="cool">Raffr. rapido</option><option value="heat">Risc. rapido</option><option value="vent">Ventilazione</option><option value="defrost">Sbrinamento</option><option value="auto">Auto</option></select></div>
-      <div class="row"><span>Temperatura °C</span><input type="number" data-sch="clima" data-k="temperatura" value="21" min="16" max="28" style="width:80px"></div>
       <div class="row" style="flex-wrap:wrap;gap:6px"><span>Giorni</span>
         <span><span class="chip dchip" data-schday="clima|mon">Lun</span><span class="chip dchip" data-schday="clima|tue">Mar</span><span class="chip dchip" data-schday="clima|wed">Mer</span><span class="chip dchip" data-schday="clima|thu">Gio</span><span class="chip dchip" data-schday="clima|fri">Ven</span><span class="chip dchip" data-schday="clima|sat">Sab</span><span class="chip dchip" data-schday="clima|sun">Dom</span></span>
       </div>
       <div class="btn" data-cmd="schsave_clima" style="margin-top:10px">💾 Salva programma clima</div>
+      <div style="color:var(--muted);font-size:11px;margin-top:6px">Premе il tasto Avvia A/C all'orario scelto (modo/temperatura non sono inviabili coi button Renault).</div>
+    </div>
+    <div class="card"><h3>🔔 Promemoria collegamento</h3>
+      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="promemoria"><span></span></label></div>
+      <div class="row"><span>Orario</span><input type="time" data-sch="promemoria" data-k="inizio" value="21:00"></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span>Giorni</span>
+        <span><span class="chip dchip" data-schday="promemoria|mon">Lun</span><span class="chip dchip" data-schday="promemoria|tue">Mar</span><span class="chip dchip" data-schday="promemoria|wed">Mer</span><span class="chip dchip" data-schday="promemoria|thu">Gio</span><span class="chip dchip" data-schday="promemoria|fri">Ven</span><span class="chip dchip" data-schday="promemoria|sat">Sab</span><span class="chip dchip" data-schday="promemoria|sun">Dom</span></span>
+      </div>
+      <div class="btn" data-cmd="schsave_promemoria" style="margin-top:10px">💾 Salva promemoria</div>
+      <div style="color:var(--muted);font-size:11px;margin-top:6px">Notifica di ricordarti di <b>collegare l'auto</b> alla ricarica.</div>
     </div>
   </div>
   <div style="color:var(--muted);font-size:11.5px;margin-top:8px">La schedulazione crea/aggiorna un'<b>automazione</b> in Home Assistant (orario + giorni) che preme il tasto di avvio.</div>

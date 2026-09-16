@@ -63,7 +63,7 @@ DEFAULT_ASSICURAZIONE_COSTO = 400.0
 # dashboard automatica e modello auto
 CONF_CREATE_DASHBOARD = "create_dashboard"
 CONF_MODEL = "model"
-MODELS = ["Megane E-Tech", "Scenic E-Tech", "Zoe", "Twingo E-Tech", "Alpine A290", "Custom"]
+MODELS = ["Megane E-Tech", "New Megane E-Tech", "Scenic E-Tech", "Renault 5", "Renault 4", "Zoe", "Twingo E-Tech", "Alpine A290", "Custom"]
 
 # notifiche e automazioni ricarica
 CONF_NOTIFY_CHARGE_START = "notify_charge_start"

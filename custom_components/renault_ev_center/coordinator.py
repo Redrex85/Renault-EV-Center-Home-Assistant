@@ -968,24 +968,33 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 scadenze.append({"nome": label, "data": prossima.isoformat(),
                                  "giorni": (prossima - oggi_d).days})
 
-            # tagliando: modalità km o data
-            t_mode = scad_cfg.get("tagliando_mode", "km")
+            # tagliando / cambio gomme: scadenza per km e/o data
             km_anno = max(_f(self.km_meters["yearly"].value), 1.0)
             km_giorno = km_anno / 365.0
-            if t_mode == "data" and scad_cfg.get("tagliando_data"):
-                try:
-                    t_data = _date.fromisoformat(str(scad_cfg["tagliando_data"]))
-                    scadenze.append({"nome": "Tagliando", "data": t_data.isoformat(),
-                                     "giorni": max((t_data - oggi_d).days, 0)})
-                except ValueError:
-                    pass
-            else:
-                ultimo_tag_km = max((_f(m.get("km")) for m in manutenzioni), default=0.0)
-                target_km = _f(scad_cfg.get("tagliando_km"), ultimo_tag_km + self.tagliando_intervallo)
-                mancanti = target_km - odometer
-                scadenze.append({"nome": "Tagliando", "km": round(mancanti, 0),
-                                 "data": f"{target_km:.0f} km",
-                                 "giorni": max(int(mancanti / km_giorno), 0)})
+            manutenzioni = self.store.data.get("maintenance", [])
+
+            def _due(label: str, key: str) -> None:
+                dv = str(scad_cfg.get(f"{key}_data") or "").strip()
+                if dv:
+                    try:
+                        td = _date.fromisoformat(dv)
+                        scadenze.append({"nome": label, "data": td.isoformat(),
+                                         "giorni": max((td - oggi_d).days, 0)})
+                    except ValueError:
+                        pass
+                kmv = scad_cfg.get(f"{key}_km")
+                if kmv is None and key == "tagliando":
+                    ultimo = max((_f(m.get("km")) for m in manutenzioni), default=0.0)
+                    kmv = (ultimo or odometer) + self.tagliando_intervallo
+                if kmv is not None:
+                    target = _f(kmv)
+                    mancanti = target - odometer
+                    scadenze.append({"nome": label, "km": round(mancanti, 0),
+                                     "data": f"{target:.0f} km",
+                                     "giorni": max(int(mancanti / km_giorno), 0)})
+
+            _due("Tagliando", "tagliando")
+            _due("Cambio gomme", "gomme")
             scadenze.sort(key=lambda s: s["giorni"])
             await self._check_notifications(scadenze, now)
 
@@ -1530,13 +1539,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.persist(force=True)
         return len(self.store.data["trips"]) < prima
 
-    def service_add_maintenance(self, data: str, km: float, costo: float,
-                                tipo: str, note: str = "") -> dict[str, Any]:
-        """Registra un tagliando/Manutenzione effettuato."""
+    def service_add_maintenance(self, data: str = "", km: float | None = None, costo: float = 0.0,
+                                tipo: str = "Tagliando", note: str = "") -> dict[str, Any]:
+        """Registra una manutenzione (data e/o km opzionali)."""
+        from datetime import date as _date
+
         record = {
             "id": int(time.time()),
-            "data": data,
-            "km": round(km, 0),
+            "data": data or _date.today().isoformat(),
+            "km": round(km, 0) if km else 0.0,
             "costo": round(costo, 2),
             "tipo": tipo or "Tagliando",
             "note": note or "",
@@ -1545,6 +1556,21 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.store.data["maintenance"].sort(key=lambda m: m.get("data", ""))
         self.persist(force=True)
         return record
+
+    def service_set_maintenance(self, tipo: str, km: float | None, data: str) -> dict[str, Any]:
+        """Imposta la prossima scadenza per un tipo (tagliando/gomme): km e/o data."""
+        scad = self.store.data.setdefault("scadenze", {})
+        key = "gomme" if tipo == "gomme" else "tagliando"
+        if km is not None:
+            scad[f"{key}_km"] = float(km)
+        else:
+            scad.pop(f"{key}_km", None)
+        if data:
+            scad[f"{key}_data"] = data
+        else:
+            scad.pop(f"{key}_data", None)
+        self.persist(force=True)
+        return {k: v for k, v in scad.items() if k.startswith(key)}
 
     def service_delete_maintenance(self, maint_id: int) -> bool:
         prima = len(self.store.data.get("maintenance", []))
@@ -1724,6 +1750,18 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             cfg = {"alias": f"Renault EV Center — Programma ricarica ({n})",
                    "trigger": [{"trigger": "time", "at": f"{inizio}:00"}],
                    "condition": cond, "action": actions, "mode": "single"}
+        elif tipo == "promemoria":
+            target = ""
+            if self.notify_service:
+                target = self.notify_service if "." in self.notify_service else f"notify.{self.notify_service}"
+            act = ({"action": target, "data": {"title": "🔌 Ricarica", "message": "Ricordati di collegare l'auto alla ricarica."}}
+                   if target else
+                   {"action": "persistent_notification.create",
+                    "data": {"notification_id": f"rec_plug_{n}", "title": "🔌 Ricarica",
+                             "message": "Ricordati di collegare l'auto alla ricarica."}})
+            cfg = {"alias": f"Renault EV Center — Promemoria collegamento ({n})",
+                   "trigger": [{"trigger": "time", "at": f"{inizio}:00"}],
+                   "condition": cond, "action": [act], "mode": "single"}
         else:
             btn = self.opts.get(CONF_AC_BUTTON)
             cfg = {"alias": f"Renault EV Center — Programma clima ({n})",

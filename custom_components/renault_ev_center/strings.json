@@ -267,6 +267,15 @@
       "name": "Crea automazioni consigliate",
       "description": "Crea in Home Assistant le 3 automazioni consigliate."
     },
+    "set_maintenance": {
+      "name": "Imposta scadenza manutenzione",
+      "description": "Imposta la prossima scadenza (tagliando/gomme) per km e/o data.",
+      "fields": {
+        "tipo": { "name": "Tipo" },
+        "km": { "name": "Km" },
+        "data": { "name": "Data" }
+      }
+    },
     "set_schedule": {
       "name": "Imposta schedulazione",
       "description": "Crea/aggiorna l'automazione di ricarica o clima programmato.",

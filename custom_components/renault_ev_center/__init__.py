@@ -119,13 +119,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_add_maintenance(call: ServiceCall) -> None:
         for coord in _all_coordinators(hass):
             rec = coord.service_add_maintenance(
-                call.data["data"],
-                float(call.data["km"]),
-                float(call.data.get("costo", 0)),
+                str(call.data.get("data", "") or ""),
+                call.data.get("km"),
+                float(call.data.get("costo", 0) or 0),
                 call.data.get("tipo", "Tagliando"),
                 call.data.get("note", ""),
             )
-            _LOGGER.info("Tagliando registrato: %s (%s km)", rec["data"], rec["km"])
+            _LOGGER.info("Manutenzione registrata: %s (%s km)", rec["data"], rec["km"])
+
+    async def handle_set_maintenance(call: ServiceCall) -> None:
+        for coord in _all_coordinators(hass):
+            coord.service_set_maintenance(
+                str(call.data.get("tipo", "tagliando")),
+                call.data.get("km"),
+                str(call.data.get("data", "") or ""),
+            )
 
     async def handle_delete_maintenance(call: ServiceCall) -> None:
         mid = int(call.data["maintenance_id"])
@@ -196,11 +204,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
               schema=vol.Schema({vol.Required("trip_id"): cv.positive_int}))
     _register(SERVICE_ADD_MAINTENANCE, handle_add_maintenance,
               schema=vol.Schema({
-                  vol.Required("data"): str,
-                  vol.Required("km"): cv.positive_float,
+                  vol.Optional("data", default=""): str,
+                  vol.Optional("km"): vol.Coerce(float),
                   vol.Optional("costo", default=0.0): vol.Coerce(float),
                   vol.Optional("tipo", default="Tagliando"): str,
                   vol.Optional("note", default=""): str,
+              }))
+    _register("set_maintenance", handle_set_maintenance,
+              schema=vol.Schema({
+                  vol.Required("tipo"): vol.In(["tagliando", "gomme"]),
+                  vol.Optional("km"): vol.Coerce(float),
+                  vol.Optional("data", default=""): str,
               }))
     _register(SERVICE_DELETE_MAINTENANCE, handle_delete_maintenance,
               schema=vol.Schema({vol.Required("maintenance_id"): cv.positive_int}))
@@ -222,7 +236,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _register(SERVICE_CREATE_DASHBOARD, handle_create_dashboard)
     _register(SERVICE_CREATE_AUTOMATIONS, handle_create_automations)
     _register("set_schedule", handle_set_schedule, schema=vol.Schema({
-        vol.Required("tipo"): vol.In(["ricarica", "clima"]),
+        vol.Required("tipo"): vol.In(["ricarica", "clima", "promemoria"]),
         vol.Optional("attivo", default=True): cv.boolean,
         vol.Optional("inizio", default="23:30"): str,
         vol.Optional("fine", default="07:00"): str,

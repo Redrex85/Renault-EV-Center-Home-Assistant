@@ -61,6 +61,20 @@ delete_maintenance:
     maintenance_id:
       name: ID manutenzione
       example: 1755864000
+set_maintenance:
+  name: Imposta scadenza manutenzione
+  description: Imposta la prossima scadenza (tagliando o gomme) per km e/o data.
+  fields:
+    tipo:
+      name: Tipo
+      description: "tagliando oppure gomme"
+      example: gomme
+    km:
+      name: Km
+      example: 75000
+    data:
+      name: Data
+      example: "2027-03-01"
 renew_insurance:
   name: Rinnova assicurazione
   description: Imposta la nuova scadenza dell'assicurazione (6 o 12 mesi da oggi, oppure data precisa).
