@@ -102,3 +102,33 @@ create_automations:
 create_dashboard:
   name: Crea dashboard
   description: (Ri)crea la dashboard laterale "«Nome» EV Center" con tutte le viste.
+set_schedule:
+  name: Imposta schedulazione
+  description: Crea/aggiorna l'automazione di ricarica o clima programmato (orario + giorni).
+  fields:
+    tipo:
+      name: Tipo
+      description: "ricarica oppure clima"
+      example: ricarica
+    attivo:
+      name: Attivo
+      example: true
+    inizio:
+      name: Orario
+      example: "23:30"
+    fine:
+      name: Fine (ricarica)
+      example: "07:00"
+    soc:
+      name: SoC obiettivo %
+      example: 80
+    modo:
+      name: Modo clima
+      example: cool
+    temperatura:
+      name: Temperatura °C
+      example: 21
+    giorni:
+      name: Giorni
+      description: "Lista mon,tue,wed,thu,fri,sat,sun (vuoto = tutti i giorni)"
+      example: "['mon','tue','wed','thu','fri']"

@@ -51,6 +51,7 @@ from .const import (
     CONF_CHARGE_START_SOC,
     CONF_CHARGE_STOP_SOC,
     CONF_CHARGE_START_BUTTON,
+    CONF_AC_BUTTON,
     CONF_CHARGE_TARGET_NUMBER,
     CONF_WB_CHARGE_SWITCH,
     CONF_BALANCE_GRID_SENSOR,
@@ -1656,37 +1657,81 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             },
         }
 
+        return await self._automations_apply(autos, [])
+
+    async def _automations_apply(self, upserts: dict[str, dict], removes: list[str]) -> list[str]:
+        """Scrive/aggiorna/rimuove automazioni in automations.yaml (come la UI HA)."""
         from homeassistant.config import AUTOMATION_CONFIG_PATH
         from homeassistant.util.file import write_utf8_file_atomic
         from homeassistant.util.yaml import dump as _yaml_dump
         from homeassistant.util.yaml import load_yaml as _yaml_load
 
         path = self.hass.config.path(AUTOMATION_CONFIG_PATH)
+        rmset = set(removes)
 
-        def _upsert() -> list[str]:
+        def _apply() -> list[str]:
             try:
                 data = _yaml_load(path)
             except Exception:  # noqa: BLE001
                 data = None
             if not isinstance(data, list):
                 data = []
+            data = [d for d in data if not (isinstance(d, dict) and d.get("id") in rmset)]
             byid = {d.get("id"): i for i, d in enumerate(data) if isinstance(d, dict) and d.get("id")}
             made: list[str] = []
-            for aid, cfg in autos.items():
+            for aid, cfg in upserts.items():
                 entry = {"id": aid, **cfg}
                 if aid in byid:
-                    data[byid[aid]] = entry  # aggiorna/ripara le nostre automazioni
+                    data[byid[aid]] = entry
                 else:
                     data.append(entry)
                 made.append(aid)
-            if made:
+            if made or rmset:
                 write_utf8_file_atomic(path, _yaml_dump(data))
             return made
 
-        created = await self.hass.async_add_executor_job(_upsert)
-        if created:
+        changed = await self.hass.async_add_executor_job(_apply)
+        if changed or rmset:
             await self.hass.services.async_call("automation", "reload", {}, blocking=True)
-        return created
+        return changed
+
+    async def service_set_schedule(self, tipo: str, attivo: bool, inizio: str,
+                                   fine: str, soc: int, modo: str, temperatura: int,
+                                   giorni: list[str]) -> list[str]:
+        """Crea/aggiorna l'automazione di schedulazione ricarica o clima."""
+        from .dashboard import slugify
+
+        n = slugify(str(self.opts.get(CONF_NAME, "Renault")))
+        aid = f"renault_ev_center_{n}_programma_{tipo}"
+        if not attivo:
+            return await self._automations_apply({}, [aid])
+
+        days = [d for d in (giorni or []) if d in ("mon", "tue", "wed", "thu", "fri", "sat", "sun")]
+        cond = [{"condition": "time", "weekday": days}] if days else []
+
+        if tipo == "ricarica":
+            actions: list[dict] = []
+            tgt = self.opts.get(CONF_CHARGE_TARGET_NUMBER)
+            if soc and tgt:
+                actions.append({"action": "number.set_value",
+                                "target": {"entity_id": tgt}, "data": {"value": int(soc)}})
+            wb = self.opts.get(CONF_WB_CHARGE_SWITCH)
+            btn = self.opts.get(CONF_CHARGE_START_BUTTON)
+            if wb:
+                actions.append({"action": "homeassistant.turn_on", "target": {"entity_id": wb}})
+            elif btn:
+                actions.append({"action": "button.press", "target": {"entity_id": btn}})
+            cfg = {"alias": f"Renault EV Center — Programma ricarica ({n})",
+                   "trigger": [{"trigger": "time", "at": f"{inizio}:00"}],
+                   "condition": cond, "action": actions, "mode": "single"}
+        else:
+            btn = self.opts.get(CONF_AC_BUTTON)
+            cfg = {"alias": f"Renault EV Center — Programma clima ({n})",
+                   "trigger": [{"trigger": "time", "at": f"{inizio}:00"}],
+                   "condition": cond,
+                   "action": [{"action": "button.press", "target": {"entity_id": btn}}] if btn else [],
+                   "mode": "single"}
+        return await self._automations_apply({aid: cfg}, [])
 
     async def _check_notifications(self, scadenze: list[dict], oggi) -> None:
         """Invia una notifica al giorno se una scadenza rientra nel preavviso."""

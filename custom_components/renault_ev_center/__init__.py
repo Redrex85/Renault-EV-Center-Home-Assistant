@@ -156,6 +156,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             created = await coord.service_create_automations()
             _LOGGER.info("Automazioni Renault EV Center create: %s", created)
 
+    async def handle_set_schedule(call: ServiceCall) -> None:
+        for coord in _all_coordinators(hass):
+            made = await coord.service_set_schedule(
+                str(call.data.get("tipo", "ricarica")),
+                bool(call.data.get("attivo", True)),
+                str(call.data.get("inizio", "23:30")),
+                str(call.data.get("fine", "07:00")),
+                int(call.data.get("soc", 80) or 0),
+                str(call.data.get("modo", "cool")),
+                int(call.data.get("temperatura", 21) or 21),
+                list(call.data.get("giorni", []) or []),
+            )
+            _LOGGER.info("Schedulazione %s: %s", call.data.get("tipo"), made)
+
     def _register(name, handler, schema=None, supports_response=None):
         if hass.services.has_service(DOMAIN, name):
             return
@@ -207,6 +221,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
               }))
     _register(SERVICE_CREATE_DASHBOARD, handle_create_dashboard)
     _register(SERVICE_CREATE_AUTOMATIONS, handle_create_automations)
+    _register("set_schedule", handle_set_schedule, schema=vol.Schema({
+        vol.Required("tipo"): vol.In(["ricarica", "clima"]),
+        vol.Optional("attivo", default=True): cv.boolean,
+        vol.Optional("inizio", default="23:30"): str,
+        vol.Optional("fine", default="07:00"): str,
+        vol.Optional("soc", default=80): vol.Coerce(int),
+        vol.Optional("modo", default="cool"): str,
+        vol.Optional("temperatura", default=21): vol.Coerce(int),
+        vol.Optional("giorni", default=[]): [str],
+    }))
 
     return True
 

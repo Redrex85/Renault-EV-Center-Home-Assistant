@@ -216,7 +216,10 @@ class PeriodKmSensor(MateSensor):
 
     @property
     def native_value(self):
-        return round(self.coordinator.data["km"][self._period]["value"], 1)
+        val = self.coordinator.data["km"][self._period]["value"]
+        if self._period == "daily":
+            val = max(val, self.coordinator.data.get("km_oggi_trip", 0) or 0)
+        return round(val, 1)
 
     @property
     def extra_state_attributes(self):
@@ -297,7 +300,13 @@ class PctBatteriaOggi(MateSensor):
 
     @property
     def native_value(self):
-        return round(abs(self.coordinator.data["pct_daily"][self._direction]["value"]), 1)
+        val = abs(self.coordinator.data["pct_daily"][self._direction]["value"])
+        if self._direction == "down":
+            rows = self.coordinator.data.get("percorrenza", []) or []
+            r = next((x for x in rows if str(x.get("nome", "")).lower() == "oggi"), None)
+            if r:
+                val = max(val, float(r.get("pct") or 0))
+        return round(val, 1)
 
     @property
     def extra_state_attributes(self):
@@ -322,7 +331,13 @@ class EnergiaBatteriaSensor(MateSensor):
 
     @property
     def native_value(self):
-        return round(abs(self._meter("down")["value"]), 2)
+        val = abs(self._meter("down")["value"])
+        if self._period == "daily":
+            rows = self.coordinator.data.get("percorrenza", []) or []
+            r = next((x for x in rows if str(x.get("nome", "")).lower() == "oggi"), None)
+            if r:
+                val = max(val, float(r.get("usati") or 0))
+        return round(val, 2)
 
     @property
     def extra_state_attributes(self):

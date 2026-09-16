@@ -266,6 +266,20 @@
     "create_automations": {
       "name": "Crea automazioni consigliate",
       "description": "Crea in Home Assistant le 3 automazioni consigliate."
+    },
+    "set_schedule": {
+      "name": "Imposta schedulazione",
+      "description": "Crea/aggiorna l'automazione di ricarica o clima programmato.",
+      "fields": {
+        "tipo": { "name": "Tipo" },
+        "attivo": { "name": "Attivo" },
+        "inizio": { "name": "Orario" },
+        "fine": { "name": "Fine (ricarica)" },
+        "soc": { "name": "SoC obiettivo %" },
+        "modo": { "name": "Modo clima" },
+        "temperatura": { "name": "Temperatura °C" },
+        "giorni": { "name": "Giorni" }
+      }
     }
   }
 }

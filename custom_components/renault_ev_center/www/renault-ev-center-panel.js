@@ -85,6 +85,13 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
   _i(v) { return v === null || v === undefined || isNaN(v) ? "—" : Math.round(v).toLocaleString("it-IT"); }
   _d(iso) { const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}-${m[2]}-${m[1]}` : (iso || "—"); }
+  _zn(z) {
+    const s = String(z ?? "").trim();
+    if (!s || s === "—" || s === "null" || s === "undefined") return "—";
+    if (s === "home") return "Casa";
+    if (s === "not_home") return "Fuori";
+    return s.replace(/_/g, " ").replace(/^\w/, (m) => m.toUpperCase());
+  }
 
   /** id entità integrazione: sensor.<slug>_<rest> */
   _sid(rest) { return `sensor.${this._slug(this._cfg.name)}_${rest}`; }
@@ -127,21 +134,19 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "plug": return S._st(S._car("binary_sensor", "plug_status"), S._car("binary_sensor", "plugged_in"), S._sid("stato_della_spina"), `binary_sensor.wallbox_${c}`);
       case "batt_kwh": return S._num(S._sid("batteria_kwh_disponibili"), "sensor.megane_battery_available_energy_2", S._car("sensor", "battery_remaining_capacity"));
       case "km_oggi": {
-        const v = S._num("sensor.km_giornalieri", S._sid("km_giornalieri"), S._sid("km_oggi_trip"));
-        if (v !== null && v > 0) return v;
         const rows = S._list(S._sid("percorrenza"));
         const r = rows.find((x) => S._slug(String(x.nome ?? "")) === "oggi");
-        return r ? (parseFloat(r.km) || 0) : v;
+        const v = r ? (parseFloat(r.km) || 0) : null;
+        if (v !== null && v > 0) return v;
+        return S._num("sensor.km_giornalieri", S._sid("km_giornalieri"), S._sid("km_oggi_trip"));
       }
       case "kwh_oggi_k": {
-        const v = S._num(S._sid("battery_energy_daily_discharge"), "sensor.megane_battery_energy_daily_discharge", S._sid("kwh_usati_giorno"), S._sid("kwh_oggi"));
-        if (v !== null && v > 0.05) return Math.abs(v);
         const rows = S._list(S._sid("percorrenza"));
         const r = rows.find((x) => S._slug(String(x.nome ?? "")) === "oggi");
-        const km = S._num("sensor.km_giornalieri", S._sid("km_giornalieri")) ?? (r ? (parseFloat(r.km) || 0) : null);
-        const e = S._num(S._sid("kwh_per_100km"), "sensor.megane_kwh_per_100_km");
-        if (km !== null && km > 0 && e !== null && e > 0) return km * e / 100;
-        return r ? (parseFloat(r.usati) || 0) : v;
+        const v = r ? (parseFloat(r.usati) || 0) : null;
+        if (v !== null && v > 0) return v;
+        const m = S._num(S._sid("battery_energy_daily_discharge"), "sensor.megane_battery_energy_daily_discharge", S._sid("kwh_usati_giorno"), S._sid("kwh_oggi"));
+        return m === null ? null : Math.abs(m);
       }
       case "km_per_kwh": {
         const k = S._num(S._sid("km_per_kwh"), "sensor.megane_km_per_kwh");
@@ -156,6 +161,9 @@ class RenaultEvCenterPanel extends HTMLElement {
         return (b === null || b <= 0) ? e : b * (parseFloat(S._cfg.capacity) || 60) / 100;
       }
       case "kwh_tot": return S._num(S._sid("kwh_totali_consumati"), "sensor.megane_kwh_totali");
+      case "stat_km_tot": { const s = S._st(S._sid("statistiche_viaggi")); return s ? S._attrAny(s, ["km_totali"]) : null; }
+      case "stat_n_trip": { const s = S._st(S._sid("statistiche_viaggi")); return s ? S._attrAny(s, ["totale_viaggi", "n_trip"]) : null; }
+      case "stat_eff": { const s = S._st(S._sid("statistiche_viaggi")); return s ? S._attrAny(s, ["efficienza_media", "kwh_per_100km"]) : null; }
       case "costo_km": return S._num(S._sid("costo_per_km"), "sensor.costo_per_km_megane");
       case "costo_100": {
         const c100 = S._num(S._sid("costo_per_100_km"), "sensor.costo_per_100_km_megane");
@@ -256,12 +264,15 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "costo_ric_tot": return S._num(S._sid("costo_ricarica_totale"), S._ov("costo_ric_tot"));
       // Extra
       case "drain": {
-        const v = S._num(S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge", S._sid("batteria_scaricata_oggi"));
-        if (v !== null && v > 0.05) return Math.round(Math.abs(v) * 10) / 10;
+        const rows = S._list(S._sid("percorrenza"));
+        const r = rows.find((x) => S._slug(String(x.nome ?? "")) === "oggi");
+        const p = r ? (parseFloat(r.pct) || 0) : 0;
+        if (p > 0) return Math.round(p * 10) / 10;
         const kwh = S._field("kwh_oggi_k");
         const cap = parseFloat(S._cfg.capacity) || 60;
         if (typeof kwh === "number" && kwh > 0) return Math.round(kwh / cap * 1000) / 10;
-        return v === 0 ? 0 : null;
+        const v = S._num(S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge", S._sid("batteria_scaricata_oggi"));
+        return v === null ? null : Math.round(Math.abs(v) * 10) / 10;
       }
       case "vampire": return S._num(S._sid("batteria_persa_da_fermo_oggi"));
       case "drain_mese_pct": return S._num(S._sid("batteria_persa_da_fermo_mese"));
@@ -416,7 +427,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.28</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.32</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -493,6 +504,14 @@ class RenaultEvCenterPanel extends HTMLElement {
         this._call("time", "set_value", { entity_id: eid, time: `${hh}:${mm}:00` });
       });
     });
+    // filtri locali viaggi (anno/mese)
+    this.shadowRoot.querySelectorAll("[data-tf], [data-tfm]").forEach((sel) => {
+      sel.addEventListener("change", () => this._update());
+    });
+    // chip giorni schedulazione
+    this.shadowRoot.querySelectorAll(".dchip").forEach((el) => {
+      el.addEventListener("click", () => el.classList.toggle("on"));
+    });
     // input locali (localStorage): prezzo diesel, consumo equivalente, notify, preavviso
     this.shadowRoot.querySelectorAll("input[data-ls]").forEach((inp) => {
       const saved = localStorage.getItem(inp.dataset.ls);
@@ -550,6 +569,8 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "openmap": this._moreInfo(this._car("device_tracker", "posizione") || "device_tracker.megane_posizione"); break;
       case "csv": this._call(D, "export_trips_csv", {}, "📥 CSV esportato"); break;
       case "create_automations": this._call(D, "create_automations", {}, "✨ Automazioni create"); break;
+      case "schsave_ricarica": this._saveSchedule("ricarica"); break;
+      case "schsave_clima": this._saveSchedule("clima"); break;
       case "reset_km": this._call(D, "reset_counters", { scope: "km" }, "🔄 Km azzerati"); break;
       case "reset_energia": this._call(D, "reset_counters", { scope: "energia" }, "🔄 Energia azzerata"); break;
       case "reset_costi": this._call(D, "reset_counters", { scope: "costi" }, "🔄 Costi azzerati"); break;
@@ -720,6 +741,24 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._drawSeasons(root);
     this._rowsAttr(root);
   }
+  _saveSchedule(tipo) {
+    const root = this.shadowRoot;
+    const g = (k) => root.querySelector(`[data-sch="${tipo}"][data-k="${k}"]`);
+    const on = root.querySelector(`input[data-schon="${tipo}"]`);
+    const giorni = [...root.querySelectorAll(`[data-schday^="${tipo}|"].on`)]
+      .map((e) => e.dataset.schday.split("|")[1]);
+    const d = {
+      tipo,
+      attivo: on ? on.checked : true,
+      inizio: (g("inizio") && g("inizio").value) || "23:30",
+      fine: (g("fine") && g("fine").value) || "07:00",
+      soc: (g("soc") && parseInt(g("soc").value, 10)) || 80,
+      modo: (g("modo") && g("modo").value) || "cool",
+      temperatura: (g("temperatura") && parseInt(g("temperatura").value, 10)) || 21,
+      giorni,
+    };
+    this._call("renault_ev_center", "set_schedule", d, `⏰ Schedulazione ${tipo} salvata`);
+  }
   async _drawMap() {
     const box = this.shadowRoot && this.shadowRoot.querySelector("#evmap");
     if (!box || this._mapCard) return;
@@ -845,16 +884,40 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     const tb = root.querySelector('[data-c="tab-viaggi"]');
     if (!tb) return;
-    tb.innerHTML = rows.slice(0, 8).map((r) => {
+    const selY = root.querySelector('[data-tf="year"]');
+    const selM = root.querySelector('[data-tfm="month"]');
+    const years = [...new Set(rows.map((r) => String(r.data || "").slice(0, 4)).filter(Boolean))].sort().reverse();
+    if (selY && (selY.dataset.sig || "") !== years.join("|")) {
+      selY.dataset.sig = years.join("|");
+      const cur = selY.value;
+      selY.innerHTML = `<option value="">Tutti gli anni</option>` + years.map((y) => `<option value="${y}">${y}</option>`).join("");
+      selY.value = cur;
+    }
+    if (selM && !selM.dataset.done) {
+      selM.dataset.done = "1";
+      selM.innerHTML = `<option value="">Tutti i mesi</option>` + NOMI_MESI.map((n, i) => `<option value="${String(i + 1).padStart(2, "0")}">${n}</option>`).join("");
+    }
+    const fy = selY ? selY.value : "";
+    const fm = selM ? selM.value : "";
+    const vis = rows.filter((r) => {
+      const dd = String(r.data || "");
+      if (fy && dd.slice(0, 4) !== fy) return false;
+      if (fm && dd.slice(5, 7) !== fm) return false;
+      return true;
+    });
+    tb.innerHTML = vis.slice(0, 30).map((r) => {
       const eff = r.kwh_per_100km ?? r.efficienza ?? r.eff;
       const d = r.batteria_delta ?? r.delta_soc;
+      const soc = (r.batteria_inizio != null && r.batteria_fine != null)
+        ? `${Math.round(r.batteria_inizio)}% → ${Math.round(r.batteria_fine)}%`
+        : (d !== undefined && d !== null ? d + "%" : "—");
       return `<tr><td>${this._d(r.data)}</td><td>${r.ora_inizio ?? "—"}${r.ora_fine ? "–" + r.ora_fine : ""}</td>
         <td><b>${this._fmt(parseFloat(r.km ?? r.chilometri ?? 0), 1)}</b></td>
-        <td>${d !== undefined && d !== null ? d + "%" : "—"}</td><td>${this._fmt(parseFloat(r.kwh_consumati ?? r.kwh ?? 0), 2)}</td>
+        <td>${soc}</td><td>${this._fmt(parseFloat(r.kwh_consumati ?? r.kwh ?? 0), 2)}</td>
         <td><span class="badge">${this._fmt(parseFloat(eff ?? 0), 1)}</span></td>
         <td>${this._fmt(parseFloat(r.costo_stimato ?? r.costo ?? 0), 2)} €</td>
-        <td>${r.zona_partenza ?? r.ricarica_precedente ?? "—"}</td><td>${r.zona_arrivo ?? "—"}</td></tr>`;
-    }).join("") || `<tr><td colspan="9" style="color:var(--muted)">Nessun viaggio registrato</td></tr>`;
+        <td>${this._zn(r.zona_partenza ?? r.ricarica_precedente)}</td><td>${this._zn(r.zona_arrivo)}</td></tr>`;
+    }).join("") || `<tr><td colspan="9" style="color:var(--muted)">Nessun viaggio per il filtro scelto</td></tr>`;
   }
   _tableRicariche(root) {
     const rows = this._list(this._sid("lista_ricariche"));
@@ -1019,7 +1082,7 @@ const THEMES = [
 ];
 
 const CSS = `
-.app{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;transition:background .25s,color .25s}
+.app{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;transition:background .25s,color .25s;user-select:text}
 .app[data-theme="blu"]{--bg:#0d1522;--panel:#14202f;--panel2:#101b2c;--line:#1e2d40;--txt:#e8eef6;--muted:#8296ad;--accent:#4d8dff;--accent-soft:rgba(77,141,255,.15);--good:#4ade80;--warn:#fbbf24;--bad:#f87171}
 .app[data-theme="giallo"]{--bg:#141414;--panel:#1d1d1d;--panel2:#181818;--line:#2a2a2a;--txt:#f2f2f2;--muted:#9e9e9e;--accent:#F5CB39;--accent-soft:rgba(245,203,57,.14);--good:#7ed957;--warn:#ff9f43;--bad:#ff5252}
 .app[data-theme="verde"]{--bg:#0f1613;--panel:#16211c;--panel2:#121a16;--line:#22322a;--txt:#e9f2ec;--muted:#87a094;--accent:#57b98a;--accent-soft:rgba(87,185,138,.15);--good:#57b98a;--warn:#fbbf24;--bad:#f87171}
@@ -1080,6 +1143,8 @@ h1{font-size:26px;margin-bottom:4px}
 .chip{font-size:12px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
 .chip.ok{color:var(--good);border-color:var(--good)}
 .chip.acc{color:var(--accent);border-color:var(--accent)}
+.dchip{cursor:pointer;user-select:none}
+.dchip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
 .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
 @media(max-width:900px){.tiles{grid-template-columns:repeat(2,1fr)}}
 .tile{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:15px;padding:16px;display:flex;gap:13px;align-items:center;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 -12px 26px rgba(0,0,0,.38),0 14px 30px rgba(0,0,0,.3)}
@@ -1219,8 +1284,17 @@ const PAGES = {
   </div>`,
 
   p2: `<h1>Viaggi</h1>
+  <div class="tiles">
+    <div class="tile"><div class="em">🛣️</div><div><div class="v" data-f="stat_km_tot">—</div><div class="l">Distanza viaggi (km)</div></div></div>
+    <div class="tile"><div class="em">📖</div><div><div class="v" data-f="stat_n_trip">—</div><div class="l">Viaggi totali</div></div></div>
+    <div class="tile"><div class="em">⚡</div><div><div class="v" data-f="stat_eff">—</div><div class="l">Consumo medio kWh/100km</div></div></div>
+  </div>
   <div class="card tree"><h3>Archivio</h3><div data-c="tree">—</div></div>
   <div class="card" style="margin-top:16px"><h3>Dettaglio viaggi recenti</h3>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <select data-tf="year" style="width:auto"><option value="">Tutti gli anni</option></select>
+      <select data-tfm="month" style="width:auto"><option value="">Tutti i mesi</option></select>
+    </div>
     <table><tr><th>Data</th><th>Ora</th><th>Km</th><th>SoC</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th><th>Partenza</th><th>Arrivo</th></tr>
     <tbody data-c="tab-viaggi"></tbody></table></div>`,
 
@@ -1370,6 +1444,29 @@ const PAGES = {
       <div class="row"><span>↳ Orario stop</span><input type="time" data-time="t_stop"></div>
       <div class="row"><span>↳ Promemoria da</span><input type="time" data-time="t_low_start"></div>
       <div class="row"><span>↳ Promemoria a</span><input type="time" data-time="t_low_end"></div></div></div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>⏰ Programma ricarica</h3>
+      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="ricarica"><span></span></label></div>
+      <div class="row"><span>Inizio</span><input type="time" data-sch="ricarica" data-k="inizio" value="23:30"></div>
+      <div class="row"><span>Fine</span><input type="time" data-sch="ricarica" data-k="fine" value="07:00"></div>
+      <div class="row"><span>SoC obiettivo %</span><input type="number" data-sch="ricarica" data-k="soc" value="80" min="50" max="100" style="width:80px"></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span>Giorni</span>
+        <span><span class="chip dchip" data-schday="ricarica|mon">Lun</span><span class="chip dchip" data-schday="ricarica|tue">Mar</span><span class="chip dchip" data-schday="ricarica|wed">Mer</span><span class="chip dchip" data-schday="ricarica|thu">Gio</span><span class="chip dchip" data-schday="ricarica|fri">Ven</span><span class="chip dchip" data-schday="ricarica|sat">Sab</span><span class="chip dchip" data-schday="ricarica|sun">Dom</span></span>
+      </div>
+      <div class="btn" data-cmd="schsave_ricarica" style="margin-top:10px">💾 Salva programma ricarica</div>
+    </div>
+    <div class="card"><h3>❄️ Programma clima</h3>
+      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="clima"><span></span></label></div>
+      <div class="row"><span>Orario</span><input type="time" data-sch="clima" data-k="inizio" value="07:00"></div>
+      <div class="row"><span>Modo</span><select data-sch="clima" data-k="modo" style="width:auto"><option value="cool">Raffr. rapido</option><option value="heat">Risc. rapido</option><option value="vent">Ventilazione</option><option value="defrost">Sbrinamento</option><option value="auto">Auto</option></select></div>
+      <div class="row"><span>Temperatura °C</span><input type="number" data-sch="clima" data-k="temperatura" value="21" min="16" max="28" style="width:80px"></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span>Giorni</span>
+        <span><span class="chip dchip" data-schday="clima|mon">Lun</span><span class="chip dchip" data-schday="clima|tue">Mar</span><span class="chip dchip" data-schday="clima|wed">Mer</span><span class="chip dchip" data-schday="clima|thu">Gio</span><span class="chip dchip" data-schday="clima|fri">Ven</span><span class="chip dchip" data-schday="clima|sat">Sab</span><span class="chip dchip" data-schday="clima|sun">Dom</span></span>
+      </div>
+      <div class="btn" data-cmd="schsave_clima" style="margin-top:10px">💾 Salva programma clima</div>
+    </div>
+  </div>
+  <div style="color:var(--muted);font-size:11.5px;margin-top:8px">La schedulazione crea/aggiorna un'<b>automazione</b> in Home Assistant (orario + giorni) che preme il tasto di avvio.</div>
   <div class="card" style="margin-top:16px"><h3>Come si cambiano i parametri</h3>
     <div style="color:var(--muted);font-size:13px;line-height:1.8">
       Tutto in <b>Impostazioni → Integrazioni → Renault EV Center → Configura</b>:
