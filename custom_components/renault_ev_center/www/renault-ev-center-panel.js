@@ -135,10 +135,13 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       case "kwh_oggi_k": {
         const v = S._num(S._sid("battery_energy_daily_discharge"), "sensor.megane_battery_energy_daily_discharge", S._sid("kwh_usati_giorno"), S._sid("kwh_oggi"));
-        if (v !== null) return Math.abs(v);
-        const km = S._num("sensor.km_giornalieri", S._sid("km_giornalieri"));
+        if (v !== null && v > 0.05) return Math.abs(v);
+        const rows = S._list(S._sid("percorrenza"));
+        const r = rows.find((x) => S._slug(String(x.nome ?? "")) === "oggi");
+        const km = S._num("sensor.km_giornalieri", S._sid("km_giornalieri")) ?? (r ? (parseFloat(r.km) || 0) : null);
         const e = S._num(S._sid("kwh_per_100km"), "sensor.megane_kwh_per_100_km");
-        return (km === null || e === null) ? null : km * e / 100;
+        if (km !== null && km > 0 && e !== null && e > 0) return km * e / 100;
+        return r ? (parseFloat(r.usati) || 0) : v;
       }
       case "km_per_kwh": {
         const k = S._num(S._sid("km_per_kwh"), "sensor.megane_km_per_kwh");
@@ -409,7 +412,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.25</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.26</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -712,10 +715,26 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._drawSeasons(root);
     this._rowsAttr(root);
   }
+  _ensureLeaflet() {
+    if (window.L) return Promise.resolve(true);
+    if (this._leafLoading) return this._leafLoading;
+    this._leafLoading = new Promise((resolve) => {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(css);
+      const js = document.createElement("script");
+      js.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      js.onload = () => resolve(!!window.L);
+      js.onerror = () => resolve(false);
+      document.head.appendChild(js);
+    });
+    return this._leafLoading;
+  }
   async _drawMap() {
-    const root = this.shadowRoot;
-    const svg = root && root.querySelector("#evmap");
-    if (!svg) return;
+    const box = this.shadowRoot && this.shadowRoot.querySelector("#evmap");
+    if (!box) return;
+    if (this._leafMap) { try { this._leafMap.invalidateSize(); } catch (e) { /* noop */ } return; }
     const loc = this._ov("location") || this._car("device_tracker", "posizione") || "device_tracker.megane_posizione";
     const pts = [];
     const cur = this._hass.states[loc];
@@ -735,24 +754,43 @@ class RenaultEvCenterPanel extends HTMLElement {
         if (typeof la === "number" && typeof lo === "number") pts.push([la, lo]);
       }
     } catch (e) { /* cronologia non disponibile */ }
+    if (!box.offsetWidth) return;
     const W = 400, H = 220, pad = 26;
     if (!pts.length) {
-      svg.innerHTML = `<rect width="${W}" height="${H}" fill="var(--panel2)"/><text x="${W / 2}" y="${H / 2}" text-anchor="middle" fill="var(--muted)" font-size="12">Nessuna posizione GPS</text>`;
+      box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Nessuna posizione GPS</div>`;
       return;
     }
-    const lats = pts.map((p) => p[0]);
-    const lons = pts.map((p) => p[1]);
-    const minLa = Math.min(...lats), maxLa = Math.max(...lats);
-    const minLo = Math.min(...lons), maxLo = Math.max(...lons);
+    const hasL = await this._ensureLeaflet();
+    if (hasL && window.L) {
+      try {
+        box.style.position = "relative";
+        box.innerHTML = "";
+        const div = document.createElement("div");
+        div.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
+        box.appendChild(div);
+        const map = window.L.map(div, { zoomControl: true, attributionControl: true, scrollWheelZoom: false });
+        window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(map);
+        const ll = pts.map((p) => [p[0], p[1]]);
+        window.L.polyline(ll, { color: "#4d8dff", weight: 3, opacity: 0.9 }).addTo(map);
+        window.L.circleMarker(ll[ll.length - 1],
+          { radius: 7, color: "#4d8dff", fillColor: "#4d8dff", fillOpacity: 1 }).addTo(map);
+        map.fitBounds(ll.length > 1 ? ll : [ll[0], ll[0]], { padding: [26, 26], maxZoom: 16 });
+        this._leafMap = map;
+        return;
+      } catch (e) { this._leafMap = null; }
+    }
+    const lats = pts.map((p) => p[0]), lons = pts.map((p) => p[1]);
+    const minLa = Math.min(...lats), maxLa = Math.max(...lats), minLo = Math.min(...lons), maxLo = Math.max(...lons);
     const spanLa = Math.max(maxLa - minLa, 1e-4), spanLo = Math.max(maxLo - minLo, 1e-4);
     const x = (lo) => pad + ((lo - minLo) / spanLo) * (W - 2 * pad);
     const y = (la) => H - pad - ((la - minLa) / spanLa) * (H - 2 * pad);
     const d = pts.map((p, i) => `${i ? "L" : "M"}${x(p[1]).toFixed(1)} ${y(p[0]).toFixed(1)}`).join(" ");
     const last = pts[pts.length - 1];
-    svg.innerHTML = `<rect width="${W}" height="${H}" fill="var(--panel2)"/>
+    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="display:block;width:100%;height:100%"><rect width="${W}" height="${H}" fill="var(--panel2)"/>
       <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>
       <circle cx="${x(last[1]).toFixed(1)}" cy="${y(last[0]).toFixed(1)}" r="6" fill="var(--accent)"/>
-      <text x="12" y="18" fill="var(--muted)" font-size="11">Ultime 24h · ${pts.length} punti</text>`;
+      <text x="12" y="18" fill="var(--muted)" font-size="11">Ultime 24h · ${pts.length} punti (mappa non disponibile)</text></svg>`;
   }
   _wb_state_txt() {
     const p = this._num(this._sid("wallbox_potenza"), "sensor.wallbox_instant_power", this._car("sensor", "battery_charger_power"));
@@ -1148,7 +1186,7 @@ const PAGES = {
       <div class="row"><span>Media</span><b><span data-f="media_ult">—</span> kW</b></div>
       <div class="row"><span>Costo · Eff.</span><b><span data-f="costo_corr">—</span> € · <span data-f="eff_ric">—</span>%</b></div>
     </div>
-    <div class="mapbox"><svg id="evmap" viewBox="0 0 400 220" preserveAspectRatio="xMidYMid meet" style="display:block;width:100%;height:100%"></svg></div>
+    <div class="mapbox" id="evmap"></div>
     <div class="card netto"><h3>💰 Risparmio netto</h3>
       <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)"><span data-f="risp_tot">—</span> €</b></div>
       <div class="row"><span>+ Tagliandi</span><b><span data-f="risp_tagliandi">—</span> €</b></div>
