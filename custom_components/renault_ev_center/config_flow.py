@@ -34,6 +34,8 @@ from .const import (
     CONF_CHARGE_START_SOC,
     CONF_CHARGE_STOP_SOC,
     CONF_CHARGE_START_BUTTON,
+    CONF_AC_BUTTON,
+    CONF_CLIMATE_ENTITY,
     CONF_CHARGE_TARGET_NUMBER,
     CONF_CREATE_DASHBOARD,
     CONF_WB_CHARGE_SWITCH,
@@ -153,6 +155,15 @@ def _car_schema(defaults: dict[str, Any]) -> vol.Schema:
         vol.Optional(
             CONF_LOCATION_ENTITY, description={"suggested_value": defaults.get(CONF_LOCATION_ENTITY)}
         ): EntitySelector(EntitySelectorConfig(domain=["device_tracker", "sensor"])),
+        vol.Optional(
+            CONF_CHARGE_START_BUTTON, description={"suggested_value": defaults.get(CONF_CHARGE_START_BUTTON)}
+        ): EntitySelector(EntitySelectorConfig(domain=["button", "switch"])),
+        vol.Optional(
+            CONF_AC_BUTTON, description={"suggested_value": defaults.get(CONF_AC_BUTTON)}
+        ): EntitySelector(EntitySelectorConfig(domain=["button", "switch"])),
+        vol.Optional(
+            CONF_CLIMATE_ENTITY, description={"suggested_value": defaults.get(CONF_CLIMATE_ENTITY)}
+        ): EntitySelector(EntitySelectorConfig(domain="climate")),
     })
 
 

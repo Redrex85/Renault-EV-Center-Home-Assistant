@@ -12,6 +12,8 @@ from homeassistant.components import frontend
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
+from .const import CONF_AC_BUTTON, CONF_CHARGE_START_BUTTON, CONF_CLIMATE_ENTITY
+
 _LOGGER = logging.getLogger(__name__)
 
 WWW_DIR = "renault-ev-center"
@@ -102,7 +104,7 @@ def setup_car_image(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
         return None
 
 
-def _panel_view(name: str, image: str | None) -> dict[str, Any]:
+def _panel_view(name: str, image: str | None, overrides: dict[str, Any] | None = None) -> dict[str, Any]:
     """Vista unica tipo panel: una sola card custom full-width."""
     card: dict[str, Any] = {
         "type": "custom:renault-ev-center-panel",
@@ -112,6 +114,8 @@ def _panel_view(name: str, image: str | None) -> dict[str, Any]:
     }
     if image:
         card["image"] = image
+    if overrides:
+        card["overrides"] = overrides
     return {"title": f"{name} EV Center", "path": "ev-center", "type": "panel",
             "cards": [card]}
 
@@ -211,7 +215,14 @@ async def async_setup_dashboard(hass: HomeAssistant, entry: ConfigEntry, name: s
     """Crea (una sola volta) la dashboard laterale con la vista panel."""
     url_path = f"renault-ev-center-{slugify(name)}"
     title = f"{name} EV Center"
-    views = [_panel_view(name, None)]
+    opts = {**entry.data, **entry.options}
+    _ov = {
+        "start_charge": opts.get(CONF_CHARGE_START_BUTTON),
+        "ac_button": opts.get(CONF_AC_BUTTON),
+        "climate": opts.get(CONF_CLIMATE_ENTITY),
+    }
+    overrides = {k: v for k, v in _ov.items() if v}
+    views = [_panel_view(name, None, overrides)]
 
     async def piano_b() -> None:
         path = await hass.async_add_executor_job(_export_yaml_fallback, hass, name, views)

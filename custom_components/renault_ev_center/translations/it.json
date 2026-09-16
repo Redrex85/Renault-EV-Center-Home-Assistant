@@ -12,7 +12,10 @@
           "range_entity": "Sensore autonomia residua",
           "charging_entity": "Sensore/binary sensor in carica",
           "plug_entity": "Stato spina collegata (opzionale)",
-          "location_entity": "Tracker GPS posizione auto (opzionale)"
+          "location_entity": "Tracker GPS posizione auto (opzionale)",
+          "charge_start_button": "Pulsante Avvia carica (Renault)",
+          "ac_button_entity": "Pulsante Avvia A/C (Renault)",
+          "climate_entity": "Climatizzatore (climate) Renault"
         }
       },
       "wallbox": {
@@ -107,6 +110,9 @@
           "charging_entity": "Sensore/binary sensor in carica",
           "plug_entity": "Stato spina collegata (opzionale)",
           "location_entity": "Tracker GPS posizione auto (opzionale)",
+          "charge_start_button": "Pulsante Avvia carica (Renault)",
+          "ac_button_entity": "Pulsante Avvia A/C (Renault)",
+          "climate_entity": "Climatizzatore (climate) Renault",
           "wallbox_enabled": "Ho una wallbox in Home Assistant",
           "wallbox_power_entity": "Potenza istantanea di carica (W o kW)",
           "wallbox_state_entity": "Stato della wallbox (es. charging)",

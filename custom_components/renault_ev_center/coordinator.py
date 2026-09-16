@@ -914,12 +914,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             )
             co2_termica = odometer * self.co2_thermal_gkm / 1000.0
             co2_ev = kwh_caricati_tot * self.co2_grid_gkwh / 1000.0
+            km_anno = sum(
+                _f(t.get("km")) for t in trips if str(t.get("data", ""))[:4] == str(now.year)
+            )
             co2 = {
                 "totale": round(co2_termica - co2_ev, 1),
                 "termica": round(co2_termica, 1),
                 "ev": round(co2_ev, 1),
                 "anno": round(
-                    _f(self.km_meters["yearly"].value) * self.co2_thermal_gkm / 1000.0
+                    km_anno * self.co2_thermal_gkm / 1000.0
                     - kwh_caricati_anno * self.co2_grid_gkwh / 1000.0, 1
                 ),
             }
