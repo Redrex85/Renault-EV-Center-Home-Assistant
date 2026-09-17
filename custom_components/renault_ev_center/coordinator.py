@@ -79,6 +79,8 @@ from .const import (
     CONF_TAG_TERMICO,
     CONF_TAGLIANDO_DATA,
     CONF_TAGLIANDO_INTERVALLO,
+    CONF_TYRE_INTERVAL,
+    CONF_PURCHASE_DATE,
     CONF_TAGLIANDO_MODE,
     CONF_TARGET_SOC,
     CONF_ASSICURAZIONE_DATA,
@@ -207,6 +209,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.bollo_termico = _f(opts.get(CONF_BOLLO_TERMICO), 350.0)
         self.bollo_ev = _f(opts.get(CONF_BOLLO_EV), 150.0)
         self.tagliando_intervallo = max(_f(opts.get(CONF_TAGLIANDO_INTERVALLO), 15000), 5000)
+        self.tyre_interval = max(_f(opts.get(CONF_TYRE_INTERVAL), 40000), 5000)
         self.temp_entity = opts.get(CONF_TEMP_ENTITY) or ""
         self.co2_enabled = bool(opts.get(CONF_CO2_ENABLED))
         self.co2_thermal_gkm = _f(opts.get(CONF_CO2_THERMAL_GKM), 120.0)
@@ -982,7 +985,21 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             km_giorno = km_anno / 365.0
             manutenzioni = self.store.data.get("maintenance", [])
 
-            def _due(label: str, key: str) -> None:
+            def _due(label: str, key: str, interval_km: float) -> None:
+                # scadenza = ultima manutenzione registrata di quel tipo + intervallo km
+                recs = [m for m in manutenzioni if key in str(m.get("tipo", "")).lower()]
+                last = max(recs, key=lambda m: (str(m.get("data", "")), m.get("id", 0)), default=None)
+                last_km = _f(last.get("km")) if last else 0.0
+                kmv = scad_cfg.get(f"{key}_km")
+                if kmv is None:
+                    base = last_km if last_km > 0 else (odometer if odometer > 0 else 0.0)
+                    kmv = base + interval_km
+                if kmv:
+                    target = _f(kmv)
+                    mancanti = target - odometer
+                    scadenze.append({"nome": label, "km": round(mancanti, 0),
+                                     "data": f"{target:.0f} km",
+                                     "giorni": max(int(mancanti / km_giorno), 0)})
                 dv = str(scad_cfg.get(f"{key}_data") or "").strip()
                 if dv:
                     try:
@@ -991,19 +1008,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                                          "giorni": max((td - oggi_d).days, 0)})
                     except ValueError:
                         pass
-                kmv = scad_cfg.get(f"{key}_km")
-                if kmv is None and key == "tagliando":
-                    ultimo = max((_f(m.get("km")) for m in manutenzioni), default=0.0)
-                    kmv = (ultimo or odometer) + self.tagliando_intervallo
-                if kmv is not None:
-                    target = _f(kmv)
-                    mancanti = target - odometer
-                    scadenze.append({"nome": label, "km": round(mancanti, 0),
-                                     "data": f"{target:.0f} km",
-                                     "giorni": max(int(mancanti / km_giorno), 0)})
 
-            _due("Tagliando", "tagliando")
-            _due("Cambio gomme", "gomme")
+            _due("Tagliando", "tagliando", self.tagliando_intervallo)
+            _due("Cambio gomme", "gomme", self.tyre_interval)
             scadenze.sort(key=lambda s: s["giorni"])
             await self._check_notifications(scadenze, now)
 

@@ -252,6 +252,17 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "fv_tot": return S._num(S._sid("energia_caricata_fotovoltaico_totale"), "sensor.energia_caricata_fotovoltaico_totale");
       case "fv_mese": return S._num(S._sid("ricaricato_fotovoltaico_mese"), "sensor.energia_caricata_fotovoltaico_mensile");
       // Salute
+      case "cap_nom": {
+        const n = S._field("n_capacity");
+        const st = typeof n === "string" ? S._hass.states[n] : null;
+        const v = st ? parseFloat(st.state) : NaN;
+        return isNaN(v) ? (parseFloat(S._cfg.capacity) || 60) : v;
+      }
+      case "cap_stim": {
+        const nom = S._field("cap_nom");
+        const soh = S._num(S._sid("soh_stimato"), "sensor.megane_soh_stimato");
+        return (typeof nom === "number" && soh !== null && soh > 0) ? Math.round(nom * soh / 100 * 10) / 10 : null;
+      }
       case "soh_off": return S._num(S._nid("soh_ufficiale"), "sensor.megane_soh_ufficiale");
       case "soh_est": return S._num(S._sid("soh_stimato"), "sensor.megane_soh_stimato");
       case "kwh_1pct": return S._num(S._sid("kwh_per_1_batteria"), S._sid("kwh_per_1pct"), "sensor.megane_kwh_per_1");
@@ -444,7 +455,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.35</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.36</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -591,6 +602,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "schsave_promemoria": this._saveSchedule("promemoria"); break;
       case "maint_tagliando": this._saveMaint("tagliando"); break;
       case "maint_gomme": this._saveMaint("gomme"); break;
+      case "maint_add": this._addMaint(); break;
       case "reset_km": this._call(D, "reset_counters", { scope: "km" }, "🔄 Km azzerati"); break;
       case "reset_energia": this._call(D, "reset_counters", { scope: "energia" }, "🔄 Energia azzerata"); break;
       case "reset_costi": this._call(D, "reset_counters", { scope: "costi" }, "🔄 Costi azzerati"); break;
@@ -751,6 +763,17 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._tileStats(root);
     this._drawSeasons(root);
     this._rowsAttr(root);
+  }
+  _addMaint() {
+    const root = this.shadowRoot;
+    const g = (k) => root.querySelector(`[data-ma="${k}"]`);
+    const data = g("data") && g("data").value ? g("data").value : "";
+    const km = g("km") && g("km").value ? parseFloat(g("km").value) : undefined;
+    const costo = g("costo") && g("costo").value ? parseFloat(g("costo").value) : 0;
+    const tipo = (g("tipo") && g("tipo").value) || "Tagliando";
+    const payload = { data, tipo, costo, note: "" };
+    if (km !== undefined && !isNaN(km)) payload.km = km;
+    this._call("renault_ev_center", "add_maintenance", payload, "➕ Intervento registrato");
   }
   _saveMaint(tipo) {
     const root = this.shadowRoot;
@@ -1409,6 +1432,12 @@ const PAGES = {
     <tbody data-c="tab-ricariche"></tbody></table></div>`,
 
   p5: `<h1>Salute batteria</h1>
+  <div class="tiles">
+    <div class="tile"><div class="em">📉</div><div><div class="v" data-f="cap_stim">—</div><div class="l">CAPACITÀ STIM. (kWh)</div></div></div>
+    <div class="tile"><div class="em">🔋</div><div><div class="v" data-f="cap_nom">—</div><div class="l">NOMINALE (kWh)</div></div></div>
+    <div class="tile"><div class="em">💚</div><div><div class="v" data-f="soh_est">—</div><div class="l">SOH STIMATO %</div></div></div>
+    <div class="tile"><div class="em">✅</div><div><div class="v" data-f="soh_off">—</div><div class="l">SOH UFFICIALE %</div></div></div>
+  </div>
   <div class="grid g3">
     <div class="card"><h3>SOH Ufficiale ✏️</h3>
       <div class="inp" style="border:none"><input data-n="n_soh" style="width:120px;font-size:26px;font-weight:800"><span class="u" style="font-size:16px">%</span></div>
@@ -1448,6 +1477,15 @@ const PAGES = {
       <div class="inp"><span>Scadenza a data</span><input type="date" data-mk="gomme" data-mdate="1"><span class="u"></span></div>
       <div class="btn" data-cmd="maint_gomme" style="margin-top:8px">💾 Salva scadenza gomme</div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Ricordati che le notifiche scadenze coprono tagliando e gomme.</div></div></div>
+  <div class="card" style="margin-top:16px"><h3>➕ Registra intervento</h3>
+    <div class="grid g2">
+      <div class="inp"><span>Tipo</span><select data-ma="tipo" style="width:auto"><option>Tagliando</option><option>Cambio gomme</option><option>Riparazione</option><option>Altro</option></select></div>
+      <div class="inp"><span>Data</span><input type="date" data-ma="data"></div>
+      <div class="inp"><span>Km</span><input type="number" data-ma="km"><span class="u">km</span></div>
+      <div class="inp"><span>Costo</span><input type="number" data-ma="costo" step="0.01"><span class="u">€</span></div>
+    </div>
+    <div class="btn" data-cmd="maint_add" style="margin-top:10px">➕ Aggiungi intervento</div>
+  </div>
   <div class="card netto" style="margin-top:16px"><h3>🏆 Risparmio manutenzione</h3>
     <div class="row"><span>Termica teorica (450 € × tagliandi)</span><b><span data-f="teo_tagliandi">—</span> €</b></div>
     <div class="row"><span>Spesa reale EV</span><b><span data-f="tagliandi">—</span> €</b></div>

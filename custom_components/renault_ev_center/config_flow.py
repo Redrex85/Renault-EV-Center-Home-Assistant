@@ -87,6 +87,8 @@ from .const import (
     CONF_TAG_EV,
     CONF_TAG_TERMICO,
     CONF_TAGLIANDO_INTERVALLO,
+    CONF_TYRE_INTERVAL,
+    CONF_PURCHASE_DATE,
     CONF_TARGET_SOC,
     CONF_TEMP_ENTITY,
     CONF_TRIP_TIMEOUT,
@@ -122,6 +124,7 @@ from .const import (
     DEFAULT_TAG_EV,
     DEFAULT_TAG_TERMICO,
     DEFAULT_TAGLIANDO_INTERVALLO,
+    DEFAULT_TYRE_INTERVAL,
     DEFAULT_ASSICURAZIONE_COSTO,
     DEFAULT_TARGET_SOC,
     DEFAULT_TRIP_TIMEOUT,
@@ -228,6 +231,9 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             NumberSelectorConfig(min=0, max=2000, step=5, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
         vol.Optional(CONF_TAGLIANDO_INTERVALLO, default=defaults.get(CONF_TAGLIANDO_INTERVALLO, DEFAULT_TAGLIANDO_INTERVALLO)): NumberSelector(
             NumberSelectorConfig(min=5000, max=50000, step=1000, unit_of_measurement="km", mode=NumberSelectorMode.BOX)),
+        vol.Optional(CONF_TYRE_INTERVAL, default=defaults.get(CONF_TYRE_INTERVAL, DEFAULT_TYRE_INTERVAL)): NumberSelector(
+            NumberSelectorConfig(min=5000, max=150000, step=1000, unit_of_measurement="km", mode=NumberSelectorMode.BOX)),
+        vol.Optional(CONF_PURCHASE_DATE, description={"suggested_value": defaults.get(CONF_PURCHASE_DATE, "")}): TextSelector(),
         vol.Optional(CONF_NOTIFY_SERVICE, description={"suggested_value": defaults.get(CONF_NOTIFY_SERVICE, "")}): TextSelector(),
         vol.Optional(CONF_NOTIFY_DAYS, default=defaults.get(CONF_NOTIFY_DAYS, DEFAULT_NOTIFY_DAYS)): NumberSelector(
             NumberSelectorConfig(min=1, max=90, step=1, unit_of_measurement="gg")),

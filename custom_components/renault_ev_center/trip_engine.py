@@ -80,6 +80,11 @@ class TripEngine:
         self.lat_last: float | None = None
         self.lon_last: float | None = None
         self.arrived = False
+        self.seed_odometer: float | None = None
+        self.seed_battery = 0.0
+        self.seed_ts = 0.0
+        self.seed_mono = 0.0
+        self.seed_zone = "unknown"
 
     def restore(self, data: dict[str, Any]) -> None:
         self.active = bool(data.get("active", False))
@@ -120,39 +125,55 @@ class TripEngine:
         if odometer <= 0:
             return False, None
 
-        if not self.active:
-            self.active = True
-            opened = True
-            self.mileage_start = odometer
-            self.battery_start = battery_pct
-            self.ts_start = now_wall
-            self.ts_last_change = now_wall
-            self.mono_start = now_mono
-            self.mono_last_change = now_mono
-            self.zone_start = zone or "unknown"
-            self.mileage_now = odometer
-            self.battery_now = battery_pct
-            self.lat_last = lat
-            self.lon_last = lon
-            return opened, closed
-
-        # aggiorna posizione attuale
-        prev_mileage = self.mileage_now
-        prev_battery = self.battery_now
-        self.mileage_now = odometer
-        self.battery_now = battery_pct
-        # attività = movimento odometro, oppure scarica batteria, oppure spostamento GPS.
-        # Il GPS copre il caso "fuori -> fuori" (stato zona invariato ma coordinate diverse).
+        # movimento GPS dal campione precedente (copre "fuori -> fuori")
         moved_gps = (
             lat is not None and lon is not None
             and self.lat_last is not None and self.lon_last is not None
             and (abs(lat - self.lat_last) > 0.0005 or abs(lon - self.lon_last) > 0.0005)
         )
+
+        if not self.active:
+            # AUTO FERMA: aggiorno solo il "seed" (ultimo stato da fermo).
+            # Apro il viaggio SOLO se c'è movimento reale dal seed → niente "in movimento" a auto spenta.
+            if self.seed_odometer is not None and (
+                abs(odometer - self.seed_odometer) > 0.05
+                or (self.seed_battery - battery_pct) >= 1.0
+                or moved_gps
+            ):
+                self.active = True
+                opened = True
+                self.mileage_start = self.seed_odometer
+                self.battery_start = self.seed_battery
+                self.ts_start = self.seed_ts
+                self.ts_last_change = now_wall
+                self.mono_start = self.seed_mono
+                self.mono_last_change = now_mono
+                self.zone_start = self.seed_zone or zone or "unknown"
+                self.mileage_now = odometer
+                self.battery_now = battery_pct
+                self.lat_last = lat
+                self.lon_last = lon
+                self.arrived = False
+                return opened, closed
+            self.seed_odometer = odometer
+            self.seed_battery = battery_pct
+            self.seed_ts = now_wall
+            self.seed_mono = now_mono
+            self.seed_zone = zone
+            self.lat_last = lat
+            self.lon_last = lon
+            return False, None
+
+        # --- viaggio attivo ---
+        prev_mileage = self.mileage_now
+        prev_battery = self.battery_now
+        self.mileage_now = odometer
+        self.battery_now = battery_pct
         if abs(odometer - prev_mileage) > 0.05 or (prev_battery - battery_pct) >= 1.0 or moved_gps:
             self.ts_last_change = now_wall
             self.mono_last_change = now_mono
-        # arrivo: Renault aggiorna odometro+posizione a spegnimento.
-        # se nello stesso campione cambia la posizione E salta l'odometro → auto spenta all'arrivo.
+        # arrivo: Renault aggiorna odometro+posizione a spegnimento →
+        # se nello stesso campione cambia la posizione E salta l'odometro, l'auto è spenta all'arrivo.
         self.arrived = bool(moved_gps and abs(odometer - prev_mileage) > 0.5)
         if lat is not None:
             self.lat_last = lat
@@ -178,6 +199,7 @@ class TripEngine:
         durata_min = int((now - self.ts_start) / 60)
 
         self.active = False
+        self.seed_odometer = None
         if km < self.min_km or durata_min < self.min_minutes:
             return None
 
