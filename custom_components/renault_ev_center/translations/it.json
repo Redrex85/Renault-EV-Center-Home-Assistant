@@ -3,101 +3,158 @@
   "config": {
     "step": {
       "user": {
-        "title": "Renault EV Center — L'auto",
-        "description": "Seleziona le entità della tua Renault elettrica (integrazione Renault). Dai all'auto un nome breve (es. Megane): verrà usato come prefisso per tutte le nuove entità.",
-        "data": {
-          "name": "Nome dell'auto",
-          "odometer_entity": "Sensore odometro/chilometraggio",
-          "battery_level_entity": "Sensore livello batteria (%)",
-          "range_entity": "Sensore autonomia residua",
-          "charging_entity": "Sensore/binary sensor in carica",
-          "plug_entity": "Stato spina collegata (opzionale)",
-          "location_entity": "Tracker GPS posizione auto (opzionale)",
-          "charge_start_button": "Pulsante Avvia carica (Renault)",
-          "ac_button_entity": "Pulsante Avvia A/C (Renault)",
-          "climate_entity": "Climatizzatore (climate) Renault"
+        "title": "🚗 Renault EV Center — L'auto",
+        "description": "![Renault EV Center](https://raw.githubusercontent.com/Redrex85/Renault-Home-Assistant-Package/main/custom_components/renault_ev_center/brand/logo.png)\n\n**Benvenuto!** Seleziona le entità della tua Renault elettrica (integrazione Renault ufficiale).\n\n- Dai all'auto un **nome breve** (es. `Megane`): sarà il prefisso di tutte le nuove entità.\n- Il **modello** sceglie la foto dell'auto.\n- Puoi far creare la **dashboard** nella barra laterale.",
+        "sections": {
+          "car": {
+            "name": "🚗 L'auto",
+            "data": {
+              "name": "Nome dell'auto",
+              "odometer_entity": "Sensore odometro/chilometraggio",
+              "battery_level_entity": "Sensore livello batteria (%)",
+              "range_entity": "Sensore autonomia residua",
+              "charging_entity": "Sensore/binary sensor in carica",
+              "plug_entity": "Stato spina collegata (opzionale)",
+              "location_entity": "Tracker GPS posizione auto (opzionale)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Comandi Renault",
+            "data": {
+              "charge_start_button": "Pulsante Avvia carica (Renault)",
+              "ac_button_entity": "Pulsante Avvia A/C (Renault)",
+              "climate_entity": "Climatizzatore (climate) Renault"
+            }
+          }
         }
       },
       "wallbox": {
         "title": "Renault EV Center — Wallbox",
         "description": "Mappa i sensori della tua wallbox (Wallbox, go-e, Easee, OCPP…). Puoi lasciare vuoti i campi che non hai.",
-        "data": {
-          "wallbox_enabled": "Ho una wallbox in Home Assistant",
-          "wallbox_power_entity": "Potenza istantanea di carica (W o kW)",
-          "wallbox_state_entity": "Stato della wallbox (es. charging)",
-          "wallbox_session_energy_entity": "Contatore energia sessione (kWh)",
-          "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
-          "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
-          "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
-          "has_pv": "Ho il fotovoltaico (profilo Enterprise)",
-          "balance_grid_sensor": "Sensore potenza scambiata/prelevata dalla rete (W)",
-          "balance_battery_sensor": "Sensore potenza batteria (W, opzionale)",
-          "balance_invert_grid": "Inverti il segno del sensore rete",
-          "balance_include_battery": "Includi la scarica batteria nel surplus",
-          "balance_watts_per_amp": "Watt per ampere (230V mono ≈ 690)",
-          "balance_battery_soc_sensor": "Sensore SoC batteria casa (%) — per la priorità",
-          "battery_priority_min": "SoC minimo batteria casa prima di dare surplus all'auto (%)"
+        "sections": {
+          "wallbox": {
+            "name": "🔌 Wallbox",
+            "data": {
+              "wallbox_enabled": "Ho una wallbox in Home Assistant",
+              "wallbox_power_entity": "Potenza istantanea di carica (W o kW)",
+              "wallbox_state_entity": "Stato della wallbox (es. charging)",
+              "wallbox_session_energy_entity": "Contatore energia sessione (kWh)",
+              "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
+              "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
+              "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno"
+            }
+          },
+          "solar": {
+            "name": "☀️ Fotovoltaico e bilanciamento",
+            "data": {
+              "has_pv": "Ho il fotovoltaico (profilo Enterprise)",
+              "balance_grid_sensor": "Sensore potenza scambiata/prelevata dalla rete (W)",
+              "balance_battery_sensor": "Sensore potenza batteria (W, opzionale)",
+              "balance_invert_grid": "Inverti il segno del sensore rete",
+              "balance_include_battery": "Includi la scarica batteria nel surplus",
+              "balance_watts_per_amp": "Watt per ampere (230V mono ≈ 690)",
+              "balance_battery_soc_sensor": "Sensore SoC batteria casa (%) — per la priorità",
+              "battery_priority_min": "SoC minimo batteria casa prima di dare surplus all'auto (%)"
+            }
+          }
         }
       },
       "settings": {
         "title": "Renault EV Center — Impostazioni",
         "description": "Capacità batteria, prezzi dell'energia e preferenze. Tutto modificabile dopo dalle opzioni.",
         "data": {
-          "notify_charge_start": "Notifica avvio ricarica",
-          "notify_charge_end": "Notifica fine ricarica",
-          "low_soc_enabled": "Promemoria batteria bassa (a casa)",
-          "low_soc_threshold": "% minima promemoria",
-          "low_soc_start": "Inizio fascia oraria",
-          "low_soc_end": "Fine fascia oraria",
-          "charge_sched_enabled": "Carica programmata",
-          "charge_sched_mode": "Modalità (orario o percentuale)",
-          "charge_start_time": "Orario avvio carica",
-          "charge_stop_time": "Orario stop carica",
-          "charge_start_soc": "% avvio carica",
-          "charge_stop_soc": "% stop carica",
           "charge_start_button": "Pulsante avvio carica (Renault)",
-          "charge_target_number": "Number target di carica (per lo stop)",
-          "notify_service": "Servizio notifiche (es. notify.michele)",
-          "notify_days": "Giorni di preavviso scadenze",
-          "tagliando_mode": "Tagliando: scadenza per km o data",
-          "tagliando_data": "Data tagliando (se modalità data)",
-          "assicurazione_costo": "Costo annuo assicurazione",
-          "assicurazione_data": "Scadenza assicurazione (YYYY-MM-DD)",
           "model": "Modello dell'auto (imposta la foto)",
-          "create_dashboard": "Crea automaticamente la dashboard nella barra laterale",
-          "battery_capacity": "Capacità utile batteria",
-          "target_soc": "Obiettivo Ricarica (% per le stime di fine carica)",
-          "price_home": "Prezzo energia a casa",
-          "price_public": "Prezzo colonnine pubbliche",
-          "price_solar": "Costo fotovoltaico (0 = gratis)",
-          "charging_efficiency": "Rendimento di carica AC→batteria",
-          "solar_zone": "Nome della zona fotovoltaico/BEB (vuoto = nessuna)",
-          "poll_interval": "Intervallo di aggiornamento",
-          "trip_timeout": "Minuti di odometro fermo prima di chiudere un viaggio",
-          "fuel_comparison": "Confronto risparmio con auto termica",
-          "fuel_label": "Nome carburante (Diesel, Benzina…)",
-          "fuel_consumption": "Consumo auto termica equivalente",
-          "fuel_price": "Prezzo carburante",
-          "wb_charge_switch": "Switch/avvio carica wallbox (per la carica programmata)",
-          "diesel_price_entity": "Sensore prezzo diesel €/l (opzionale)",
-          "maint_comparison": "Confronto costi manutenzione termico vs EV",
-          "service_cost_thermal": "Costo tagliando termico (€)",
-          "service_cost_ev": "Costo tagliando EV (€)",
-          "service_interval_km": "Intervallo tagliando (km)",
-          "tyre_interval_km": "Intervallo cambio gomme (km)",
-          "purchase_date": "Data acquisto auto (YYYY-MM-DD)",
-          "road_tax_thermal": "Bollo termico (€/anno)",
-          "road_tax_ev": "Bollo EV (€/anno)",
-          "scadenze_enabled": "Abilita promemoria scadenze",
-          "scadenza_assicurazione": "Scadenza assicurazione (YYYY-MM-DD)",
-          "scadenza_bollo": "Scadenza bollo (YYYY-MM-DD)",
-          "scadenza_revisione": "Scadenza revisione (YYYY-MM-DD)",
-          "temp_entity": "Sensore temperatura esterna (per CO2/meteo)",
-          "co2_comparison": "Calcola confronto CO2 termico vs EV",
-          "geocode_enabled": "Via e paese nei viaggi (geocoding OpenStreetMap)",
-          "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)",
-          "co2_thermal_gkm": "CO2 termico (g/km)",
-          "co2_grid_gkwh": "CO2 rete (g/kWh)"
+          "create_dashboard": "Crea automaticamente la dashboard nella barra laterale"
+        },
+        "sections": {
+          "battery": {
+            "name": "🔋 Batteria",
+            "data": {
+              "battery_capacity": "Capacità utile batteria",
+              "target_soc": "Obiettivo Ricarica (% per le stime di fine carica)",
+              "charging_efficiency": "Rendimento di carica AC→batteria"
+            }
+          },
+          "prices": {
+            "name": "💶 Prezzi energia",
+            "data": {
+              "price_home": "Prezzo energia a casa",
+              "price_public": "Prezzo colonnine pubbliche",
+              "price_solar": "Costo fotovoltaico (0 = gratis)",
+              "solar_zone": "Nome della zona fotovoltaico/BEB (vuoto = nessuna)"
+            }
+          },
+          "fuel": {
+            "name": "⛽ Confronto carburante",
+            "data": {
+              "fuel_comparison": "Confronto risparmio con auto termica",
+              "fuel_label": "Nome carburante (Diesel, Benzina…)",
+              "fuel_consumption": "Consumo auto termica equivalente",
+              "fuel_price": "Prezzo carburante",
+              "diesel_price_entity": "Sensore prezzo diesel €/l (opzionale)"
+            }
+          },
+          "maint": {
+            "name": "🔧 Manutenzione e bollo",
+            "data": {
+              "maint_comparison": "Confronto costi manutenzione termico vs EV",
+              "service_cost_thermal": "Costo tagliando termico (€)",
+              "service_cost_ev": "Costo tagliando EV (€)",
+              "service_interval_km": "Intervallo tagliando (km)",
+              "tyre_interval_km": "Intervallo cambio gomme (km)",
+              "purchase_date": "Data consegna/acquisto auto (per il tagliando annuale)",
+              "road_tax_thermal": "Bollo termico (€/anno)",
+              "road_tax_ev": "Bollo EV (€/anno)",
+              "assicurazione_costo": "Costo annuo assicurazione",
+              "assicurazione_data": "Scadenza assicurazione (YYYY-MM-DD)"
+            }
+          },
+          "notify": {
+            "name": "🔔 Notifiche",
+            "data": {
+              "notify_service": "Servizio notifiche (es. notify.michele)",
+              "notify_days": "Giorni di preavviso scadenze",
+              "notify_charge_start": "Notifica avvio ricarica",
+              "notify_charge_end": "Notifica fine ricarica",
+              "low_soc_enabled": "Promemoria batteria bassa (a casa)",
+              "low_soc_threshold": "% minima promemoria",
+              "low_soc_start": "Inizio fascia oraria",
+              "low_soc_end": "Fine fascia oraria"
+            }
+          },
+          "schedule": {
+            "name": "⏰ Carica programmata",
+            "data": {
+              "charge_sched_enabled": "Carica programmata",
+              "charge_sched_mode": "Modalità (orario o percentuale)",
+              "charge_start_time": "Orario avvio carica",
+              "charge_stop_time": "Orario stop carica",
+              "charge_start_soc": "% avvio carica",
+              "charge_stop_soc": "% stop carica",
+              "wb_charge_switch": "Switch/avvio carica wallbox (per la carica programmata)",
+              "charge_target_number": "Number target di carica (per lo stop)"
+            }
+          },
+          "advanced": {
+            "name": "⚙️ Avanzate",
+            "data": {
+              "poll_interval": "Intervallo di aggiornamento",
+              "trip_timeout": "Minuti di odometro fermo prima di chiudere un viaggio",
+              "temp_entity": "Sensore temperatura esterna (per CO2/meteo)",
+              "co2_comparison": "Calcola confronto CO2 termico vs EV",
+              "co2_thermal_gkm": "CO2 termico (g/km)",
+              "co2_grid_gkwh": "CO2 rete (g/kWh)",
+              "geocode_enabled": "Via e paese nei viaggi (geocoding OpenStreetMap)",
+              "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)",
+              "scadenze_enabled": "Abilita promemoria scadenze",
+              "scadenza_bollo": "Scadenza bollo (YYYY-MM-DD)",
+              "scadenza_revisione": "Scadenza revisione (YYYY-MM-DD)",
+              "scadenza_assicurazione": "Scadenza assicurazione (YYYY-MM-DD)",
+              "tagliando_mode": "Tagliando: scadenza per km o data",
+              "tagliando_data": "Data tagliando (se modalità data)"
+            }
+          }
         }
       }
     }
@@ -108,86 +165,142 @@
         "title": "Renault EV Center — Opzioni",
         "description": "Modifica entità mappate e impostazioni.",
         "data": {
-          "name": "Nome dell'auto",
-          "odometer_entity": "Sensore odometro/chilometraggio",
-          "battery_level_entity": "Sensore livello batteria (%)",
-          "range_entity": "Sensore autonomia residua",
-          "charging_entity": "Sensore/binary sensor in carica",
-          "plug_entity": "Stato spina collegata (opzionale)",
-          "location_entity": "Tracker GPS posizione auto (opzionale)",
-          "charge_start_button": "Pulsante Avvia carica (Renault)",
-          "ac_button_entity": "Pulsante Avvia A/C (Renault)",
-          "climate_entity": "Climatizzatore (climate) Renault",
-          "wallbox_enabled": "Ho una wallbox in Home Assistant",
-          "wallbox_power_entity": "Potenza istantanea di carica (W o kW)",
-          "wallbox_state_entity": "Stato della wallbox (es. charging)",
-          "wallbox_session_energy_entity": "Contatore energia sessione (kWh)",
-          "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
-          "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
-          "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
-          "has_pv": "Ho il fotovoltaico (profilo Enterprise)",
-          "balance_grid_sensor": "Sensore potenza scambiata/prelevata dalla rete (W)",
-          "balance_battery_sensor": "Sensore potenza batteria (W, opzionale)",
-          "balance_invert_grid": "Inverti il segno del sensore rete",
-          "balance_include_battery": "Includi la scarica batteria nel surplus",
-          "balance_watts_per_amp": "Watt per ampere (230V mono ≈ 690)",
-          "balance_battery_soc_sensor": "Sensore SoC batteria casa (%) — per la priorità",
-          "battery_priority_min": "SoC minimo batteria casa prima di dare surplus all'auto (%)",
-          "notify_charge_start": "Notifica avvio ricarica",
-          "notify_charge_end": "Notifica fine ricarica",
-          "low_soc_enabled": "Promemoria batteria bassa (a casa)",
-          "low_soc_threshold": "% minima promemoria",
-          "low_soc_start": "Inizio fascia oraria",
-          "low_soc_end": "Fine fascia oraria",
-          "charge_sched_enabled": "Carica programmata",
-          "charge_sched_mode": "Modalità (orario o percentuale)",
-          "charge_start_time": "Orario avvio carica",
-          "charge_stop_time": "Orario stop carica",
-          "charge_start_soc": "% avvio carica",
-          "charge_stop_soc": "% stop carica",
-          "charge_start_button": "Pulsante avvio carica (Renault)",
-          "charge_target_number": "Number target di carica (per lo stop)",
-          "notify_service": "Servizio notifiche (es. notify.michele)",
-          "notify_days": "Giorni di preavviso scadenze",
-          "tagliando_mode": "Tagliando: scadenza per km o data",
-          "tagliando_data": "Data tagliando (se modalità data)",
-          "assicurazione_costo": "Costo annuo assicurazione",
-          "assicurazione_data": "Scadenza assicurazione (YYYY-MM-DD)",
           "model": "Modello dell'auto (imposta la foto)",
-          "create_dashboard": "Crea automaticamente la dashboard nella barra laterale",
-          "battery_capacity": "Capacità utile batteria",
-          "target_soc": "Obiettivo Ricarica (% per le stime di fine carica)",
-          "price_home": "Prezzo energia a casa",
-          "price_public": "Prezzo colonnine pubbliche",
-          "price_solar": "Costo fotovoltaico (0 = gratis)",
-          "charging_efficiency": "Rendimento di carica AC→batteria",
-          "solar_zone": "Nome della zona fotovoltaico/BEB (vuoto = nessuna)",
-          "poll_interval": "Intervallo di aggiornamento",
-          "trip_timeout": "Minuti di odometro fermo prima di chiudere un viaggio",
-          "fuel_comparison": "Confronto risparmio con auto termica",
-          "fuel_label": "Nome carburante (Diesel, Benzina…)",
-          "fuel_consumption": "Consumo auto termica equivalente",
-          "fuel_price": "Prezzo carburante",
-          "wb_charge_switch": "Switch/avvio carica wallbox (per la carica programmata)",
-          "diesel_price_entity": "Sensore prezzo diesel €/l (opzionale)",
-          "maint_comparison": "Confronto costi manutenzione termico vs EV",
-          "service_cost_thermal": "Costo tagliando termico (€)",
-          "service_cost_ev": "Costo tagliando EV (€)",
-          "service_interval_km": "Intervallo tagliando (km)",
-          "tyre_interval_km": "Intervallo cambio gomme (km)",
-          "purchase_date": "Data acquisto auto (YYYY-MM-DD)",
-          "road_tax_thermal": "Bollo termico (€/anno)",
-          "road_tax_ev": "Bollo EV (€/anno)",
-          "scadenze_enabled": "Abilita promemoria scadenze",
-          "scadenza_assicurazione": "Scadenza assicurazione (YYYY-MM-DD)",
-          "scadenza_bollo": "Scadenza bollo (YYYY-MM-DD)",
-          "scadenza_revisione": "Scadenza revisione (YYYY-MM-DD)",
-          "temp_entity": "Sensore temperatura esterna (per CO2/meteo)",
-          "co2_comparison": "Calcola confronto CO2 termico vs EV",
-          "geocode_enabled": "Via e paese nei viaggi (geocoding OpenStreetMap)",
-          "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)",
-          "co2_thermal_gkm": "CO2 termico (g/km)",
-          "co2_grid_gkwh": "CO2 rete (g/kWh)"
+          "create_dashboard": "Crea automaticamente la dashboard nella barra laterale"
+        },
+        "sections": {
+          "car": {
+            "name": "🚗 L'auto",
+            "data": {
+              "name": "Nome dell'auto",
+              "odometer_entity": "Sensore odometro/chilometraggio",
+              "battery_level_entity": "Sensore livello batteria (%)",
+              "range_entity": "Sensore autonomia residua",
+              "charging_entity": "Sensore/binary sensor in carica",
+              "plug_entity": "Stato spina collegata (opzionale)",
+              "location_entity": "Tracker GPS posizione auto (opzionale)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Comandi Renault",
+            "data": {
+              "charge_start_button": "Pulsante avvio carica (Renault)",
+              "ac_button_entity": "Pulsante Avvia A/C (Renault)",
+              "climate_entity": "Climatizzatore (climate) Renault"
+            }
+          },
+          "wallbox": {
+            "name": "🔌 Wallbox",
+            "data": {
+              "wallbox_enabled": "Ho una wallbox in Home Assistant",
+              "wallbox_power_entity": "Potenza istantanea di carica (W o kW)",
+              "wallbox_state_entity": "Stato della wallbox (es. charging)",
+              "wallbox_session_energy_entity": "Contatore energia sessione (kWh)",
+              "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
+              "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
+              "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno"
+            }
+          },
+          "solar": {
+            "name": "☀️ Fotovoltaico e bilanciamento",
+            "data": {
+              "has_pv": "Ho il fotovoltaico (profilo Enterprise)",
+              "balance_grid_sensor": "Sensore potenza scambiata/prelevata dalla rete (W)",
+              "balance_battery_sensor": "Sensore potenza batteria (W, opzionale)",
+              "balance_invert_grid": "Inverti il segno del sensore rete",
+              "balance_include_battery": "Includi la scarica batteria nel surplus",
+              "balance_watts_per_amp": "Watt per ampere (230V mono ≈ 690)",
+              "balance_battery_soc_sensor": "Sensore SoC batteria casa (%) — per la priorità",
+              "battery_priority_min": "SoC minimo batteria casa prima di dare surplus all'auto (%)"
+            }
+          },
+          "battery": {
+            "name": "🔋 Batteria",
+            "data": {
+              "battery_capacity": "Capacità utile batteria",
+              "target_soc": "Obiettivo Ricarica (% per le stime di fine carica)",
+              "charging_efficiency": "Rendimento di carica AC→batteria"
+            }
+          },
+          "prices": {
+            "name": "💶 Prezzi energia",
+            "data": {
+              "price_home": "Prezzo energia a casa",
+              "price_public": "Prezzo colonnine pubbliche",
+              "price_solar": "Costo fotovoltaico (0 = gratis)",
+              "solar_zone": "Nome della zona fotovoltaico/BEB (vuoto = nessuna)"
+            }
+          },
+          "fuel": {
+            "name": "⛽ Confronto carburante",
+            "data": {
+              "fuel_comparison": "Confronto risparmio con auto termica",
+              "fuel_label": "Nome carburante (Diesel, Benzina…)",
+              "fuel_consumption": "Consumo auto termica equivalente",
+              "fuel_price": "Prezzo carburante",
+              "diesel_price_entity": "Sensore prezzo diesel €/l (opzionale)"
+            }
+          },
+          "maint": {
+            "name": "🔧 Manutenzione e bollo",
+            "data": {
+              "maint_comparison": "Confronto costi manutenzione termico vs EV",
+              "service_cost_thermal": "Costo tagliando termico (€)",
+              "service_cost_ev": "Costo tagliando EV (€)",
+              "service_interval_km": "Intervallo tagliando (km)",
+              "tyre_interval_km": "Intervallo cambio gomme (km)",
+              "purchase_date": "Data consegna/acquisto auto (per il tagliando annuale)",
+              "road_tax_thermal": "Bollo termico (€/anno)",
+              "road_tax_ev": "Bollo EV (€/anno)",
+              "assicurazione_costo": "Costo annuo assicurazione",
+              "assicurazione_data": "Scadenza assicurazione (YYYY-MM-DD)"
+            }
+          },
+          "notify": {
+            "name": "🔔 Notifiche",
+            "data": {
+              "notify_service": "Servizio notifiche (es. notify.michele)",
+              "notify_days": "Giorni di preavviso scadenze",
+              "notify_charge_start": "Notifica avvio ricarica",
+              "notify_charge_end": "Notifica fine ricarica",
+              "low_soc_enabled": "Promemoria batteria bassa (a casa)",
+              "low_soc_threshold": "% minima promemoria",
+              "low_soc_start": "Inizio fascia oraria",
+              "low_soc_end": "Fine fascia oraria"
+            }
+          },
+          "schedule": {
+            "name": "⏰ Carica programmata",
+            "data": {
+              "charge_sched_enabled": "Carica programmata",
+              "charge_sched_mode": "Modalità (orario o percentuale)",
+              "charge_start_time": "Orario avvio carica",
+              "charge_stop_time": "Orario stop carica",
+              "charge_start_soc": "% avvio carica",
+              "charge_stop_soc": "% stop carica",
+              "wb_charge_switch": "Switch/avvio carica wallbox (per la carica programmata)",
+              "charge_target_number": "Number target di carica (per lo stop)"
+            }
+          },
+          "advanced": {
+            "name": "⚙️ Avanzate",
+            "data": {
+              "poll_interval": "Intervallo di aggiornamento",
+              "trip_timeout": "Minuti di odometro fermo prima di chiudere un viaggio",
+              "temp_entity": "Sensore temperatura esterna (per CO2/meteo)",
+              "co2_comparison": "Calcola confronto CO2 termico vs EV",
+              "co2_thermal_gkm": "CO2 termico (g/km)",
+              "co2_grid_gkwh": "CO2 rete (g/kWh)",
+              "geocode_enabled": "Via e paese nei viaggi (geocoding OpenStreetMap)",
+              "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)",
+              "scadenze_enabled": "Abilita promemoria scadenze",
+              "scadenza_bollo": "Scadenza bollo (YYYY-MM-DD)",
+              "scadenza_revisione": "Scadenza revisione (YYYY-MM-DD)",
+              "scadenza_assicurazione": "Scadenza assicurazione (YYYY-MM-DD)",
+              "tagliando_mode": "Tagliando: scadenza per km o data",
+              "tagliando_data": "Data tagliando (se modalità data)"
+            }
+          }
         }
       }
     }
@@ -242,32 +355,67 @@
       "name": "Aggiungi tagliando",
       "description": "Registra un tagliando o una manutenzione.",
       "fields": {
-        "data": { "name": "Data" },
-        "km": { "name": "Km" },
-        "costo": { "name": "Costo €" },
-        "tipo": { "name": "Tipo" },
-        "note": { "name": "Note" }
+        "data": {
+          "name": "Data"
+        },
+        "km": {
+          "name": "Km"
+        },
+        "costo": {
+          "name": "Costo €"
+        },
+        "tipo": {
+          "name": "Tipo"
+        },
+        "note": {
+          "name": "Note"
+        }
       }
     },
     "delete_maintenance": {
       "name": "Elimina tagliando",
       "description": "Cancella una manutenzione dal registro.",
-      "fields": { "maintenance_id": { "name": "ID manutenzione" } }
+      "fields": {
+        "maintenance_id": {
+          "name": "ID manutenzione"
+        }
+      }
     },
     "renew_insurance": {
       "name": "Rinnova assicurazione",
       "description": "Imposta la nuova scadenza assicurazione (6/12 mesi o data precisa).",
-      "fields": { "mesi": { "name": "Mesi" }, "data": { "name": "Data" } }
+      "fields": {
+        "mesi": {
+          "name": "Mesi"
+        },
+        "data": {
+          "name": "Data"
+        }
+      }
     },
     "set_scadenza": {
       "name": "Imposta scadenza",
       "description": "Imposta manualmente una scadenza (assicurazione, bollo, revisione, tagliando_data).",
-      "fields": { "nome": { "name": "Nome" }, "data": { "name": "Data" } }
+      "fields": {
+        "nome": {
+          "name": "Nome"
+        },
+        "data": {
+          "name": "Data"
+        }
+      }
     },
     "set_tagliando": {
       "name": "Imposta tagliando",
       "description": "Scegli se il prossimo tagliando scade per km o per data.",
-      "fields": { "mode": { "name": "Modalità" }, "valore": { "name": "Valore" } }
+      "fields": {
+        "mode": {
+          "name": "Modalità"
+        },
+        "valore": {
+          "name": "Valore"
+        }
+      }
     },
     "create_dashboard": {
       "name": "Crea dashboard",
@@ -281,23 +429,45 @@
       "name": "Imposta scadenza manutenzione",
       "description": "Imposta la prossima scadenza (tagliando/gomme) per km e/o data.",
       "fields": {
-        "tipo": { "name": "Tipo" },
-        "km": { "name": "Km" },
-        "data": { "name": "Data" }
+        "tipo": {
+          "name": "Tipo"
+        },
+        "km": {
+          "name": "Km"
+        },
+        "data": {
+          "name": "Data"
+        }
       }
     },
     "set_schedule": {
       "name": "Imposta schedulazione",
       "description": "Crea/aggiorna l'automazione di ricarica o clima programmato.",
       "fields": {
-        "tipo": { "name": "Tipo" },
-        "attivo": { "name": "Attivo" },
-        "inizio": { "name": "Orario" },
-        "fine": { "name": "Fine (ricarica)" },
-        "soc": { "name": "SoC obiettivo %" },
-        "modo": { "name": "Modo clima" },
-        "temperatura": { "name": "Temperatura °C" },
-        "giorni": { "name": "Giorni" }
+        "tipo": {
+          "name": "Tipo"
+        },
+        "attivo": {
+          "name": "Attivo"
+        },
+        "inizio": {
+          "name": "Orario"
+        },
+        "fine": {
+          "name": "Fine (ricarica)"
+        },
+        "soc": {
+          "name": "SoC obiettivo %"
+        },
+        "modo": {
+          "name": "Modo clima"
+        },
+        "temperatura": {
+          "name": "Temperatura °C"
+        },
+        "giorni": {
+          "name": "Giorni"
+        }
       }
     }
   }

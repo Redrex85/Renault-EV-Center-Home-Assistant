@@ -128,6 +128,20 @@ In alternativa copia ciò che ti serve da [`examples/automazioni_esempio.yaml`](
 
 Sostituisci `notify.persistent_notification` con il tuo servizio di notifica (es. `notify.mobile_app_tuo_telefono`).
 
+## 5.1 Privacy e indirizzi (geocoding)
+
+Nei **Viaggi** l'integrazione può mostrare **via e paese** di partenza/arrivo, ricavati dalle
+coordinate GPS con **OpenStreetMap (Nominatim)**.
+
+- **Attivo di default.** Per **disattivarlo** (nessuna chiamata esterna, nessun indirizzo):
+  *Impostazioni → Integrazioni → Renault EV Center → **Configura** → Impostazioni →
+  "Via e paese nei viaggi"* (togli la spunta).
+- Le coordinate sono **arrotondate** e messe in **cache locale**: il geocoding gira una volta
+  per posizione e solo alla chiusura di un viaggio.
+- **"Velocità media stimata nei viaggi"** (default 30 km/h): serve solo a **stimare l'orario di
+  partenza** quando l'auto è rimasta ferma a lungo (il cloud Renault aggiorna odometro/GPS a
+  motore spento). Alzatela se i tuoi viaggi sono più veloci.
+
 ## 6. Problemi comuni
 
 | Problema | Soluzione |

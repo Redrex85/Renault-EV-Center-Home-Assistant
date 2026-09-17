@@ -8,6 +8,7 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers.selector import (
     BooleanSelector,
     EntitySelector,
@@ -18,6 +19,7 @@ from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
     TextSelector,
+    DateSelector,
 )
 
 from .const import (
@@ -140,174 +142,204 @@ PERCENT_SENSOR = EntitySelectorConfig(domain="sensor", device_class="battery")
 ENERGY_SENSOR = EntitySelectorConfig(domain="sensor", device_class=["energy", "energy_storage"])
 
 
+def _flat(data: dict[str, Any]) -> dict[str, Any]:
+    """Appiattisce i campi dentro le sezioni (config flow con section())."""
+    out: dict[str, Any] = {}
+    for k, v in data.items():
+        if isinstance(v, dict):
+            out.update(v)
+        else:
+            out[k] = v
+    return out
+
+
 def _car_schema(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema({
-        vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, DEFAULT_NAME)): str,
-        vol.Required(
-            CONF_ODOMETER, description={"suggested_value": defaults.get(CONF_ODOMETER)}
-        ): EntitySelector(EntitySelectorConfig(domain="sensor", device_class="distance")),
-        vol.Required(
-            CONF_BATTERY_LEVEL, description={"suggested_value": defaults.get(CONF_BATTERY_LEVEL)}
-        ): EntitySelector(PERCENT_SENSOR),
-        vol.Required(
-            CONF_RANGE, description={"suggested_value": defaults.get(CONF_RANGE)}
-        ): EntitySelector(EntitySelectorConfig(domain="sensor", device_class="distance")),
-        vol.Required(
-            CONF_CHARGING_ENTITY, description={"suggested_value": defaults.get(CONF_CHARGING_ENTITY)}
-        ): EntitySelector(EntitySelectorConfig(domain=["binary_sensor", "sensor"])),
-        vol.Optional(
-            CONF_PLUG_ENTITY, description={"suggested_value": defaults.get(CONF_PLUG_ENTITY)}
-        ): EntitySelector(EntitySelectorConfig(domain=["binary_sensor", "sensor"])),
-        vol.Optional(
-            CONF_LOCATION_ENTITY, description={"suggested_value": defaults.get(CONF_LOCATION_ENTITY)}
-        ): EntitySelector(EntitySelectorConfig(domain=["device_tracker", "sensor"])),
-        vol.Optional(
-            CONF_CHARGE_START_BUTTON, description={"suggested_value": defaults.get(CONF_CHARGE_START_BUTTON)}
-        ): EntitySelector(EntitySelectorConfig(domain=["button", "switch"])),
-        vol.Optional(
-            CONF_AC_BUTTON, description={"suggested_value": defaults.get(CONF_AC_BUTTON)}
-        ): EntitySelector(EntitySelectorConfig(domain=["button", "switch"])),
-        vol.Optional(
-            CONF_CLIMATE_ENTITY, description={"suggested_value": defaults.get(CONF_CLIMATE_ENTITY)}
-        ): EntitySelector(EntitySelectorConfig(domain="climate")),
+        vol.Required("car"): section(vol.Schema({
+            vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, DEFAULT_NAME)): str,
+            vol.Required(
+                CONF_ODOMETER, description={"suggested_value": defaults.get(CONF_ODOMETER)}
+            ): EntitySelector(EntitySelectorConfig(domain="sensor", device_class="distance")),
+            vol.Required(
+                CONF_BATTERY_LEVEL, description={"suggested_value": defaults.get(CONF_BATTERY_LEVEL)}
+            ): EntitySelector(PERCENT_SENSOR),
+            vol.Required(
+                CONF_RANGE, description={"suggested_value": defaults.get(CONF_RANGE)}
+            ): EntitySelector(EntitySelectorConfig(domain="sensor", device_class="distance")),
+            vol.Required(
+                CONF_CHARGING_ENTITY, description={"suggested_value": defaults.get(CONF_CHARGING_ENTITY)}
+            ): EntitySelector(EntitySelectorConfig(domain=["binary_sensor", "sensor"])),
+            vol.Optional(
+                CONF_PLUG_ENTITY, description={"suggested_value": defaults.get(CONF_PLUG_ENTITY)}
+            ): EntitySelector(EntitySelectorConfig(domain=["binary_sensor", "sensor"])),
+            vol.Optional(
+                CONF_LOCATION_ENTITY, description={"suggested_value": defaults.get(CONF_LOCATION_ENTITY)}
+            ): EntitySelector(EntitySelectorConfig(domain=["device_tracker", "sensor"])),
+        }), {"collapsed": False}),
+        vol.Required("commands"): section(vol.Schema({
+            vol.Optional(
+                CONF_CHARGE_START_BUTTON, description={"suggested_value": defaults.get(CONF_CHARGE_START_BUTTON)}
+            ): EntitySelector(EntitySelectorConfig(domain=["button", "switch"])),
+            vol.Optional(
+                CONF_AC_BUTTON, description={"suggested_value": defaults.get(CONF_AC_BUTTON)}
+            ): EntitySelector(EntitySelectorConfig(domain=["button", "switch"])),
+            vol.Optional(
+                CONF_CLIMATE_ENTITY, description={"suggested_value": defaults.get(CONF_CLIMATE_ENTITY)}
+            ): EntitySelector(EntitySelectorConfig(domain="climate")),
+        }), {"collapsed": True}),
     })
 
 
 def _wallbox_schema(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema({
-        vol.Required(CONF_WALLBOX_ENABLED, default=defaults.get(CONF_WALLBOX_ENABLED, True)): BooleanSelector(),
-        vol.Optional(
-            CONF_WB_POWER, description={"suggested_value": defaults.get(CONF_WB_POWER)}
-        ): EntitySelector(EntitySelectorConfig(domain=["sensor", "number"])),
-        vol.Optional(
-            CONF_WB_STATE, description={"suggested_value": defaults.get(CONF_WB_STATE)}
-        ): EntitySelector(EntitySelectorConfig(domain=["sensor", "binary_sensor"])),
-        vol.Optional(
-            CONF_WB_SESSION_ENERGY, description={"suggested_value": defaults.get(CONF_WB_SESSION_ENERGY)}
-        ): EntitySelector(ENERGY_SENSOR),
-        vol.Optional(
-            CONF_WB_TOTAL_ENERGY, description={"suggested_value": defaults.get(CONF_WB_TOTAL_ENERGY)}
-        ): EntitySelector(ENERGY_SENSOR),
-        vol.Optional(
-            CONF_WB_MAX_CURRENT, description={"suggested_value": defaults.get(CONF_WB_MAX_CURRENT)}
-        ): EntitySelector(EntitySelectorConfig(domain=["number"])),
-        vol.Optional(
-            CONF_WB_SESSION_TIME, description={"suggested_value": defaults.get(CONF_WB_SESSION_TIME)}
-        ): EntitySelector(EntitySelectorConfig(domain=["sensor"])),
+        vol.Required("wallbox"): section(vol.Schema({
+            vol.Required(CONF_WALLBOX_ENABLED, default=defaults.get(CONF_WALLBOX_ENABLED, True)): BooleanSelector(),
+            vol.Optional(
+                CONF_WB_POWER, description={"suggested_value": defaults.get(CONF_WB_POWER)}
+            ): EntitySelector(EntitySelectorConfig(domain=["sensor", "number"])),
+            vol.Optional(
+                CONF_WB_STATE, description={"suggested_value": defaults.get(CONF_WB_STATE)}
+            ): EntitySelector(EntitySelectorConfig(domain=["sensor", "binary_sensor"])),
+            vol.Optional(
+                CONF_WB_SESSION_ENERGY, description={"suggested_value": defaults.get(CONF_WB_SESSION_ENERGY)}
+            ): EntitySelector(ENERGY_SENSOR),
+            vol.Optional(
+                CONF_WB_TOTAL_ENERGY, description={"suggested_value": defaults.get(CONF_WB_TOTAL_ENERGY)}
+            ): EntitySelector(ENERGY_SENSOR),
+            vol.Optional(
+                CONF_WB_MAX_CURRENT, description={"suggested_value": defaults.get(CONF_WB_MAX_CURRENT)}
+            ): EntitySelector(EntitySelectorConfig(domain=["number"])),
+            vol.Optional(
+                CONF_WB_SESSION_TIME, description={"suggested_value": defaults.get(CONF_WB_SESSION_TIME)}
+            ): EntitySelector(EntitySelectorConfig(domain=["sensor"])),
+        }), {"collapsed": False}),
+        vol.Required("solar"): section(vol.Schema({
+            vol.Required(CONF_HAS_PV, default=defaults.get(CONF_HAS_PV, False)): BooleanSelector(),
+            vol.Optional(
+                CONF_BALANCE_GRID_SENSOR, description={"suggested_value": defaults.get(CONF_BALANCE_GRID_SENSOR)}
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            vol.Optional(
+                CONF_BALANCE_BATTERY_SENSOR, description={"suggested_value": defaults.get(CONF_BALANCE_BATTERY_SENSOR)}
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            vol.Optional(CONF_BALANCE_INVERT_GRID, default=defaults.get(CONF_BALANCE_INVERT_GRID, False)): BooleanSelector(),
+            vol.Optional(CONF_BALANCE_INCLUDE_BATTERY, default=defaults.get(CONF_BALANCE_INCLUDE_BATTERY, False)): BooleanSelector(),
+            vol.Optional(CONF_BALANCE_WPA, default=defaults.get(CONF_BALANCE_WPA, DEFAULT_WPA)): NumberSelector(
+                NumberSelectorConfig(min=100, max=1500, step=10, unit_of_measurement="W/A", mode=NumberSelectorMode.BOX)),
+            vol.Optional(
+                CONF_BALANCE_BATTERY_SOC_SENSOR, description={"suggested_value": defaults.get(CONF_BALANCE_BATTERY_SOC_SENSOR)}
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            vol.Optional(CONF_BATTERY_PRIORITY_MIN, default=defaults.get(CONF_BATTERY_PRIORITY_MIN, DEFAULT_BATTERY_PRIORITY)): NumberSelector(
+                NumberSelectorConfig(min=0, max=100, step=5, unit_of_measurement="%")),
+        }), {"collapsed": True}),
     })
 
 
 def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema({
-        vol.Required(CONF_CAPACITY, default=defaults.get(CONF_CAPACITY, DEFAULT_CAPACITY)): NumberSelector(
-            NumberSelectorConfig(min=20, max=150, step=0.5, unit_of_measurement="kWh", mode=NumberSelectorMode.BOX)),
-        vol.Required(CONF_TARGET_SOC, default=defaults.get(CONF_TARGET_SOC, DEFAULT_TARGET_SOC)): NumberSelector(
-            NumberSelectorConfig(min=50, max=100, step=1, unit_of_measurement="%")),
-        vol.Required(CONF_PRICE_HOME, default=defaults.get(CONF_PRICE_HOME, DEFAULT_PRICE_HOME)): NumberSelector(
-            NumberSelectorConfig(min=0, max=10, step=0.001, unit_of_measurement="€/kWh", mode=NumberSelectorMode.BOX)),
-        vol.Required(CONF_PRICE_PUBLIC, default=defaults.get(CONF_PRICE_PUBLIC, DEFAULT_PRICE_PUBLIC)): NumberSelector(
-            NumberSelectorConfig(min=0, max=10, step=0.001, unit_of_measurement="€/kWh", mode=NumberSelectorMode.BOX)),
-        vol.Required(CONF_PRICE_SOLAR, default=defaults.get(CONF_PRICE_SOLAR, DEFAULT_PRICE_SOLAR)): NumberSelector(
-            NumberSelectorConfig(min=0, max=10, step=0.001, unit_of_measurement="€/kWh", mode=NumberSelectorMode.BOX)),
-        vol.Required(CONF_CHARGING_EFFICIENCY, default=defaults.get(CONF_CHARGING_EFFICIENCY, DEFAULT_EFFICIENCY * 100)): NumberSelector(
-            NumberSelectorConfig(min=50, max=100, step=1, unit_of_measurement="%")),
-        vol.Optional(CONF_SOLAR_ZONE, default=defaults.get(CONF_SOLAR_ZONE, DEFAULT_SOLAR_ZONE)): TextSelector(),
-        vol.Required(CONF_POLL_INTERVAL, default=defaults.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)): NumberSelector(
-            NumberSelectorConfig(min=10, max=300, step=5, unit_of_measurement="s")),
-        vol.Required(CONF_TRIP_TIMEOUT, default=defaults.get(CONF_TRIP_TIMEOUT, DEFAULT_TRIP_TIMEOUT)): NumberSelector(
-            NumberSelectorConfig(min=5, max=60, step=1, unit_of_measurement="min")),
-        vol.Required(CONF_FUEL_ENABLED, default=defaults.get(CONF_FUEL_ENABLED, False)): BooleanSelector(),
-        vol.Optional(CONF_FUEL_LABEL, default=defaults.get(CONF_FUEL_LABEL, DEFAULT_FUEL_LABEL)): TextSelector(),
-        vol.Optional(CONF_FUEL_CONSUMPTION, default=defaults.get(CONF_FUEL_CONSUMPTION, DEFAULT_FUEL_CONSUMPTION)): NumberSelector(
-            NumberSelectorConfig(min=1, max=20, step=0.1, unit_of_measurement="l/100km", mode=NumberSelectorMode.BOX)),
-        vol.Optional(CONF_FUEL_PRICE, default=defaults.get(CONF_FUEL_PRICE, DEFAULT_FUEL_PRICE)): NumberSelector(
-            NumberSelectorConfig(min=0.5, max=5, step=0.01, unit_of_measurement="€/l", mode=NumberSelectorMode.BOX)),
-        vol.Optional(
-            CONF_DIESEL_PRICE_ENTITY,
-            description={"suggested_value": defaults.get(CONF_DIESEL_PRICE_ENTITY)},
-        ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-        vol.Required(CONF_MAINT_ENABLED, default=defaults.get(CONF_MAINT_ENABLED, False)): BooleanSelector(),
-        vol.Optional(CONF_TAG_TERMICO, default=defaults.get(CONF_TAG_TERMICO, DEFAULT_TAG_TERMICO)): NumberSelector(
-            NumberSelectorConfig(min=0, max=1000, step=5, unit_of_measurement="€", mode=NumberSelectorMode.BOX)),
-        vol.Optional(CONF_TAG_EV, default=defaults.get(CONF_TAG_EV, DEFAULT_TAG_EV)): NumberSelector(
-            NumberSelectorConfig(min=0, max=1000, step=5, unit_of_measurement="€", mode=NumberSelectorMode.BOX)),
-        vol.Optional(CONF_BOLLO_TERMICO, default=defaults.get(CONF_BOLLO_TERMICO, DEFAULT_BOLLO_TERMICO)): NumberSelector(
-            NumberSelectorConfig(min=0, max=2000, step=5, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
-        vol.Optional(CONF_BOLLO_EV, default=defaults.get(CONF_BOLLO_EV, DEFAULT_BOLLO_EV)): NumberSelector(
-            NumberSelectorConfig(min=0, max=2000, step=5, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
-        vol.Optional(CONF_TAGLIANDO_INTERVALLO, default=defaults.get(CONF_TAGLIANDO_INTERVALLO, DEFAULT_TAGLIANDO_INTERVALLO)): NumberSelector(
-            NumberSelectorConfig(min=5000, max=50000, step=1000, unit_of_measurement="km", mode=NumberSelectorMode.BOX)),
-        vol.Optional(CONF_TYRE_INTERVAL, default=defaults.get(CONF_TYRE_INTERVAL, DEFAULT_TYRE_INTERVAL)): NumberSelector(
-            NumberSelectorConfig(min=5000, max=150000, step=1000, unit_of_measurement="km", mode=NumberSelectorMode.BOX)),
-        vol.Optional(CONF_PURCHASE_DATE, description={"suggested_value": defaults.get(CONF_PURCHASE_DATE, "")}): TextSelector(),
-        vol.Optional(CONF_NOTIFY_SERVICE, description={"suggested_value": defaults.get(CONF_NOTIFY_SERVICE, "")}): TextSelector(),
-        vol.Optional(CONF_NOTIFY_DAYS, default=defaults.get(CONF_NOTIFY_DAYS, DEFAULT_NOTIFY_DAYS)): NumberSelector(
-            NumberSelectorConfig(min=1, max=90, step=1, unit_of_measurement="gg")),
-        vol.Optional(CONF_TAGLIANDO_MODE, default=defaults.get(CONF_TAGLIANDO_MODE, "km")): SelectSelector(
-            SelectSelectorConfig(options=["km", "data"])),
-        vol.Optional(CONF_TAGLIANDO_DATA, description={"suggested_value": defaults.get(CONF_TAGLIANDO_DATA, "")}): TextSelector(),
-        vol.Optional(CONF_ASSICURAZIONE_COSTO, default=defaults.get(CONF_ASSICURAZIONE_COSTO, DEFAULT_ASSICURAZIONE_COSTO)): NumberSelector(
-            NumberSelectorConfig(min=0, max=3000, step=10, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
-        vol.Optional(CONF_ASSICURAZIONE_DATA, description={"suggested_value": defaults.get(CONF_ASSICURAZIONE_DATA, "")}): TextSelector(),
-        vol.Required(CONF_NOTIFY_CHARGE_START, default=defaults.get(CONF_NOTIFY_CHARGE_START, True)): BooleanSelector(),
-        vol.Required(CONF_NOTIFY_CHARGE_END, default=defaults.get(CONF_NOTIFY_CHARGE_END, True)): BooleanSelector(),
-        vol.Required(CONF_LOW_SOC_ENABLED, default=defaults.get(CONF_LOW_SOC_ENABLED, True)): BooleanSelector(),
-        vol.Optional(CONF_LOW_SOC_THRESHOLD, default=defaults.get(CONF_LOW_SOC_THRESHOLD, DEFAULT_LOW_SOC_THRESHOLD)): NumberSelector(
-            NumberSelectorConfig(min=5, max=80, step=1, unit_of_measurement="%")),
-        vol.Optional(CONF_LOW_SOC_START, default=defaults.get(CONF_LOW_SOC_START, DEFAULT_LOW_SOC_START)): TextSelector(),
-        vol.Optional(CONF_LOW_SOC_END, default=defaults.get(CONF_LOW_SOC_END, DEFAULT_LOW_SOC_END)): TextSelector(),
-        vol.Required(CONF_CHARGE_SCHED_ENABLED, default=defaults.get(CONF_CHARGE_SCHED_ENABLED, False)): BooleanSelector(),
-        vol.Optional(CONF_CHARGE_SCHED_MODE, default=defaults.get(CONF_CHARGE_SCHED_MODE, "orario")): SelectSelector(
-            SelectSelectorConfig(options=["orario", "percentuale"])),
-        vol.Optional(CONF_CHARGE_START_TIME, default=defaults.get(CONF_CHARGE_START_TIME, "23:30")): TextSelector(),
-        vol.Optional(CONF_CHARGE_STOP_TIME, default=defaults.get(CONF_CHARGE_STOP_TIME, "07:00")): TextSelector(),
-        vol.Optional(CONF_CHARGE_START_SOC, default=defaults.get(CONF_CHARGE_START_SOC, 30)): NumberSelector(
-            NumberSelectorConfig(min=5, max=80, step=1, unit_of_measurement="%")),
-        vol.Optional(CONF_CHARGE_STOP_SOC, default=defaults.get(CONF_CHARGE_STOP_SOC, 80)): NumberSelector(
-            NumberSelectorConfig(min=50, max=100, step=1, unit_of_measurement="%")),
-        vol.Optional(
-            CONF_WB_CHARGE_SWITCH,
-            description={"suggested_value": defaults.get(CONF_WB_CHARGE_SWITCH)},
-        ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
-        vol.Required(CONF_HAS_PV, default=defaults.get(CONF_HAS_PV, False)): BooleanSelector(),
-        vol.Optional(
-            CONF_BALANCE_GRID_SENSOR,
-            description={"suggested_value": defaults.get(CONF_BALANCE_GRID_SENSOR)},
-        ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-        vol.Optional(
-            CONF_BALANCE_BATTERY_SENSOR,
-            description={"suggested_value": defaults.get(CONF_BALANCE_BATTERY_SENSOR)},
-        ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-        vol.Optional(CONF_BALANCE_INVERT_GRID, default=defaults.get(CONF_BALANCE_INVERT_GRID, False)): BooleanSelector(),
-        vol.Optional(CONF_BALANCE_INCLUDE_BATTERY, default=defaults.get(CONF_BALANCE_INCLUDE_BATTERY, False)): BooleanSelector(),
-        vol.Optional(CONF_BALANCE_WPA, default=defaults.get(CONF_BALANCE_WPA, DEFAULT_WPA)): NumberSelector(
-            NumberSelectorConfig(min=100, max=1500, step=10, unit_of_measurement="W/A", mode=NumberSelectorMode.BOX)),
-        vol.Optional(
-            CONF_BALANCE_BATTERY_SOC_SENSOR,
-            description={"suggested_value": defaults.get(CONF_BALANCE_BATTERY_SOC_SENSOR)},
-        ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-        vol.Optional(CONF_BATTERY_PRIORITY_MIN, default=defaults.get(CONF_BATTERY_PRIORITY_MIN, DEFAULT_BATTERY_PRIORITY)): NumberSelector(
-            NumberSelectorConfig(min=0, max=100, step=5, unit_of_measurement="%")),
-        vol.Optional(
-            CONF_CHARGE_TARGET_NUMBER,
-            description={"suggested_value": defaults.get(CONF_CHARGE_TARGET_NUMBER)},
-        ): EntitySelector(EntitySelectorConfig(domain="number")),
-        vol.Optional(
-            CONF_TEMP_ENTITY,
-            description={"suggested_value": defaults.get(CONF_TEMP_ENTITY)},
-        ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-        vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): BooleanSelector(),
-        vol.Required(CONF_GEOCODE_ENABLED, default=defaults.get(CONF_GEOCODE_ENABLED, True)): BooleanSelector(),
-        vol.Required(CONF_AVG_KMH, default=defaults.get(CONF_AVG_KMH, 30.0)): NumberSelector(
-            NumberSelectorConfig(min=10, max=120, step=1, unit_of_measurement="km/h", mode=NumberSelectorMode.BOX)),
-        vol.Optional(CONF_CO2_THERMAL_GKM, default=defaults.get(CONF_CO2_THERMAL_GKM, DEFAULT_CO2_THERMAL_GKM)): NumberSelector(
-            NumberSelectorConfig(min=50, max=300, step=5, unit_of_measurement="g/km", mode=NumberSelectorMode.BOX)),
-        vol.Optional(CONF_CO2_GRID_GKWH, default=defaults.get(CONF_CO2_GRID_GKWH, DEFAULT_CO2_GRID_GKWH)): NumberSelector(
-            NumberSelectorConfig(min=0, max=800, step=10, unit_of_measurement="g/kWh", mode=NumberSelectorMode.BOX)),
-        vol.Required(CONF_SCADENZE_ENABLED, default=defaults.get(CONF_SCADENZE_ENABLED, False)): BooleanSelector(),
-        vol.Optional(CONF_SCAD_BOLLO, description={"suggested_value": defaults.get(CONF_SCAD_BOLLO)}): TextSelector(),
-        vol.Optional(CONF_SCAD_REVISIONE, description={"suggested_value": defaults.get(CONF_SCAD_REVISIONE)}): TextSelector(),
-        vol.Optional(CONF_SCAD_ASSICURAZIONE, description={"suggested_value": defaults.get(CONF_SCAD_ASSICURAZIONE)}): TextSelector(),
+        vol.Required("battery"): section(vol.Schema({
+            vol.Required(CONF_CAPACITY, default=defaults.get(CONF_CAPACITY, DEFAULT_CAPACITY)): NumberSelector(
+                NumberSelectorConfig(min=20, max=150, step=0.5, unit_of_measurement="kWh", mode=NumberSelectorMode.BOX)),
+            vol.Required(CONF_TARGET_SOC, default=defaults.get(CONF_TARGET_SOC, DEFAULT_TARGET_SOC)): NumberSelector(
+                NumberSelectorConfig(min=50, max=100, step=1, unit_of_measurement="%")),
+            vol.Required(CONF_CHARGING_EFFICIENCY, default=defaults.get(CONF_CHARGING_EFFICIENCY, DEFAULT_EFFICIENCY * 100)): NumberSelector(
+                NumberSelectorConfig(min=50, max=100, step=1, unit_of_measurement="%")),
+        }), {"collapsed": False}),
+        vol.Required("prices"): section(vol.Schema({
+            vol.Required(CONF_PRICE_HOME, default=defaults.get(CONF_PRICE_HOME, DEFAULT_PRICE_HOME)): NumberSelector(
+                NumberSelectorConfig(min=0, max=10, step=0.001, unit_of_measurement="€/kWh", mode=NumberSelectorMode.BOX)),
+            vol.Required(CONF_PRICE_PUBLIC, default=defaults.get(CONF_PRICE_PUBLIC, DEFAULT_PRICE_PUBLIC)): NumberSelector(
+                NumberSelectorConfig(min=0, max=10, step=0.001, unit_of_measurement="€/kWh", mode=NumberSelectorMode.BOX)),
+            vol.Required(CONF_PRICE_SOLAR, default=defaults.get(CONF_PRICE_SOLAR, DEFAULT_PRICE_SOLAR)): NumberSelector(
+                NumberSelectorConfig(min=0, max=10, step=0.001, unit_of_measurement="€/kWh", mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_SOLAR_ZONE, default=defaults.get(CONF_SOLAR_ZONE, DEFAULT_SOLAR_ZONE)): TextSelector(),
+        }), {"collapsed": True}),
+        vol.Required("fuel"): section(vol.Schema({
+            vol.Required(CONF_FUEL_ENABLED, default=defaults.get(CONF_FUEL_ENABLED, False)): BooleanSelector(),
+            vol.Optional(CONF_FUEL_LABEL, default=defaults.get(CONF_FUEL_LABEL, DEFAULT_FUEL_LABEL)): TextSelector(),
+            vol.Optional(CONF_FUEL_CONSUMPTION, default=defaults.get(CONF_FUEL_CONSUMPTION, DEFAULT_FUEL_CONSUMPTION)): NumberSelector(
+                NumberSelectorConfig(min=1, max=20, step=0.1, unit_of_measurement="l/100km", mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_FUEL_PRICE, default=defaults.get(CONF_FUEL_PRICE, DEFAULT_FUEL_PRICE)): NumberSelector(
+                NumberSelectorConfig(min=0.5, max=5, step=0.01, unit_of_measurement="€/l", mode=NumberSelectorMode.BOX)),
+            vol.Optional(
+                CONF_DIESEL_PRICE_ENTITY,
+                description={"suggested_value": defaults.get(CONF_DIESEL_PRICE_ENTITY)},
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+        }), {"collapsed": True}),
+        vol.Required("maint"): section(vol.Schema({
+            vol.Required(CONF_MAINT_ENABLED, default=defaults.get(CONF_MAINT_ENABLED, False)): BooleanSelector(),
+            vol.Optional(CONF_TAG_TERMICO, default=defaults.get(CONF_TAG_TERMICO, DEFAULT_TAG_TERMICO)): NumberSelector(
+                NumberSelectorConfig(min=0, max=1000, step=5, unit_of_measurement="€", mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_TAG_EV, default=defaults.get(CONF_TAG_EV, DEFAULT_TAG_EV)): NumberSelector(
+                NumberSelectorConfig(min=0, max=1000, step=5, unit_of_measurement="€", mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_BOLLO_TERMICO, default=defaults.get(CONF_BOLLO_TERMICO, DEFAULT_BOLLO_TERMICO)): NumberSelector(
+                NumberSelectorConfig(min=0, max=2000, step=5, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_BOLLO_EV, default=defaults.get(CONF_BOLLO_EV, DEFAULT_BOLLO_EV)): NumberSelector(
+                NumberSelectorConfig(min=0, max=2000, step=5, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_TAGLIANDO_INTERVALLO, default=defaults.get(CONF_TAGLIANDO_INTERVALLO, DEFAULT_TAGLIANDO_INTERVALLO)): NumberSelector(
+                NumberSelectorConfig(min=5000, max=50000, step=1000, unit_of_measurement="km", mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_TYRE_INTERVAL, default=defaults.get(CONF_TYRE_INTERVAL, DEFAULT_TYRE_INTERVAL)): NumberSelector(
+                NumberSelectorConfig(min=5000, max=150000, step=1000, unit_of_measurement="km", mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_PURCHASE_DATE, description={"suggested_value": defaults.get(CONF_PURCHASE_DATE, "")}): DateSelector(),
+            vol.Optional(CONF_ASSICURAZIONE_COSTO, default=defaults.get(CONF_ASSICURAZIONE_COSTO, DEFAULT_ASSICURAZIONE_COSTO)): NumberSelector(
+                NumberSelectorConfig(min=0, max=3000, step=10, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_ASSICURAZIONE_DATA, description={"suggested_value": defaults.get(CONF_ASSICURAZIONE_DATA, "")}): TextSelector(),
+        }), {"collapsed": True}),
+        vol.Required("notify"): section(vol.Schema({
+            vol.Optional(CONF_NOTIFY_SERVICE, description={"suggested_value": defaults.get(CONF_NOTIFY_SERVICE, "")}): TextSelector(),
+            vol.Optional(CONF_NOTIFY_DAYS, default=defaults.get(CONF_NOTIFY_DAYS, DEFAULT_NOTIFY_DAYS)): NumberSelector(
+                NumberSelectorConfig(min=1, max=90, step=1, unit_of_measurement="gg")),
+            vol.Required(CONF_NOTIFY_CHARGE_START, default=defaults.get(CONF_NOTIFY_CHARGE_START, True)): BooleanSelector(),
+            vol.Required(CONF_NOTIFY_CHARGE_END, default=defaults.get(CONF_NOTIFY_CHARGE_END, True)): BooleanSelector(),
+            vol.Required(CONF_LOW_SOC_ENABLED, default=defaults.get(CONF_LOW_SOC_ENABLED, True)): BooleanSelector(),
+            vol.Optional(CONF_LOW_SOC_THRESHOLD, default=defaults.get(CONF_LOW_SOC_THRESHOLD, DEFAULT_LOW_SOC_THRESHOLD)): NumberSelector(
+                NumberSelectorConfig(min=5, max=80, step=1, unit_of_measurement="%")),
+            vol.Optional(CONF_LOW_SOC_START, default=defaults.get(CONF_LOW_SOC_START, DEFAULT_LOW_SOC_START)): TextSelector(),
+            vol.Optional(CONF_LOW_SOC_END, default=defaults.get(CONF_LOW_SOC_END, DEFAULT_LOW_SOC_END)): TextSelector(),
+        }), {"collapsed": True}),
+        vol.Required("schedule"): section(vol.Schema({
+            vol.Required(CONF_CHARGE_SCHED_ENABLED, default=defaults.get(CONF_CHARGE_SCHED_ENABLED, False)): BooleanSelector(),
+            vol.Optional(CONF_CHARGE_SCHED_MODE, default=defaults.get(CONF_CHARGE_SCHED_MODE, "orario")): SelectSelector(
+                SelectSelectorConfig(options=["orario", "percentuale"])),
+            vol.Optional(CONF_CHARGE_START_TIME, default=defaults.get(CONF_CHARGE_START_TIME, "23:30")): TextSelector(),
+            vol.Optional(CONF_CHARGE_STOP_TIME, default=defaults.get(CONF_CHARGE_STOP_TIME, "07:00")): TextSelector(),
+            vol.Optional(CONF_CHARGE_START_SOC, default=defaults.get(CONF_CHARGE_START_SOC, 30)): NumberSelector(
+                NumberSelectorConfig(min=5, max=80, step=1, unit_of_measurement="%")),
+            vol.Optional(CONF_CHARGE_STOP_SOC, default=defaults.get(CONF_CHARGE_STOP_SOC, 80)): NumberSelector(
+                NumberSelectorConfig(min=50, max=100, step=1, unit_of_measurement="%")),
+            vol.Optional(
+                CONF_WB_CHARGE_SWITCH,
+                description={"suggested_value": defaults.get(CONF_WB_CHARGE_SWITCH)},
+            ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
+            vol.Optional(
+                CONF_CHARGE_TARGET_NUMBER,
+                description={"suggested_value": defaults.get(CONF_CHARGE_TARGET_NUMBER)},
+            ): EntitySelector(EntitySelectorConfig(domain="number")),
+        }), {"collapsed": True}),
+        vol.Required("advanced"): section(vol.Schema({
+            vol.Required(CONF_POLL_INTERVAL, default=defaults.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)): NumberSelector(
+                NumberSelectorConfig(min=10, max=300, step=5, unit_of_measurement="s")),
+            vol.Required(CONF_TRIP_TIMEOUT, default=defaults.get(CONF_TRIP_TIMEOUT, DEFAULT_TRIP_TIMEOUT)): NumberSelector(
+                NumberSelectorConfig(min=5, max=60, step=1, unit_of_measurement="min")),
+            vol.Optional(CONF_TAGLIANDO_MODE, default=defaults.get(CONF_TAGLIANDO_MODE, "km")): SelectSelector(
+                SelectSelectorConfig(options=["km", "data"])),
+            vol.Optional(CONF_TAGLIANDO_DATA, description={"suggested_value": defaults.get(CONF_TAGLIANDO_DATA, "")}): TextSelector(),
+            vol.Optional(
+                CONF_TEMP_ENTITY,
+                description={"suggested_value": defaults.get(CONF_TEMP_ENTITY)},
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): BooleanSelector(),
+            vol.Optional(CONF_CO2_THERMAL_GKM, default=defaults.get(CONF_CO2_THERMAL_GKM, DEFAULT_CO2_THERMAL_GKM)): NumberSelector(
+                NumberSelectorConfig(min=50, max=300, step=5, unit_of_measurement="g/km", mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_CO2_GRID_GKWH, default=defaults.get(CONF_CO2_GRID_GKWH, DEFAULT_CO2_GRID_GKWH)): NumberSelector(
+                NumberSelectorConfig(min=0, max=800, step=10, unit_of_measurement="g/kWh", mode=NumberSelectorMode.BOX)),
+            vol.Required(CONF_GEOCODE_ENABLED, default=defaults.get(CONF_GEOCODE_ENABLED, True)): BooleanSelector(),
+            vol.Required(CONF_AVG_KMH, default=defaults.get(CONF_AVG_KMH, 30.0)): NumberSelector(
+                NumberSelectorConfig(min=10, max=120, step=1, unit_of_measurement="km/h", mode=NumberSelectorMode.BOX)),
+            vol.Required(CONF_SCADENZE_ENABLED, default=defaults.get(CONF_SCADENZE_ENABLED, False)): BooleanSelector(),
+            vol.Optional(CONF_SCAD_BOLLO, description={"suggested_value": defaults.get(CONF_SCAD_BOLLO)}): TextSelector(),
+            vol.Optional(CONF_SCAD_REVISIONE, description={"suggested_value": defaults.get(CONF_SCAD_REVISIONE)}): TextSelector(),
+            vol.Optional(CONF_SCAD_ASSICURAZIONE, description={"suggested_value": defaults.get(CONF_SCAD_ASSICURAZIONE)}): TextSelector(),
+        }), {"collapsed": True}),
     })
 
 
@@ -322,6 +354,7 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
         if user_input is not None:
+            user_input = _flat(user_input)
             await self.async_set_unique_id(f"{DOMAIN}_{user_input[CONF_NAME].lower()}")
             self._abort_if_unique_id_configured()
             self._data.update(user_input)
@@ -339,12 +372,13 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_wallbox(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
-            self._data.update(user_input)
+            self._data.update(_flat(user_input))
             return await self.async_step_settings()
         return self.async_show_form(step_id="wallbox", data_schema=_wallbox_schema({}))
 
     async def async_step_settings(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
+            user_input = _flat(user_input)
             eff = float(user_input.get(CONF_CHARGING_EFFICIENCY, DEFAULT_EFFICIENCY * 100))
             user_input[CONF_CHARGING_EFFICIENCY] = eff
             if not user_input.get(CONF_FUEL_ENABLED):
@@ -392,7 +426,7 @@ class RenaultMateOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            return self.async_create_entry(title="", data=_flat(user_input))
         base = {**self.config_entry.data, **self.config_entry.options}
         return self.async_show_form(
             step_id="init",

@@ -196,6 +196,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.opts = opts
         self.geocode_enabled = bool(opts.get(CONF_GEOCODE_ENABLED, True))
         self._geocode_backfilled = False
+        self.purchase_date = str(opts.get(CONF_PURCHASE_DATE) or "")
         self.store = MateStore(hass, entry.entry_id)
 
         self.capacity = _f(opts.get(CONF_CAPACITY), 60.0) or 60.0
@@ -1035,6 +1036,17 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
             _due("Tagliando", "tagliando", self.tagliando_intervallo)
             _due("Cambio gomme", "gomme", self.tyre_interval)
+            # tagliando annuale conteggiato dalla data di consegna dell'auto
+            if self.purchase_date:
+                try:
+                    pd = _date.fromisoformat(str(self.purchase_date)[:10])
+                    anniv = pd.replace(year=pd.year + (oggi_d.year - pd.year))
+                    if anniv < oggi_d:
+                        anniv = pd.replace(year=pd.year + (oggi_d.year - pd.year) + 1)
+                    scadenze.append({"nome": "Tagliando annuale (consegna)", "data": anniv.isoformat(),
+                                     "giorni": (anniv - oggi_d).days})
+                except ValueError:
+                    pass
             scadenze.sort(key=lambda s: s["giorni"])
             await self._check_notifications(scadenze, now)
 
@@ -1836,7 +1848,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             },
         }
 
-        return await self._automations_apply(autos, [])
+        return await self._automations_apply(autos, [f"renault_ev_center_{n}_promemoria"])
 
     async def _automations_apply(self, upserts: dict[str, dict], removes: list[str]) -> list[str]:
         """Scrive/aggiorna/rimuove automazioni in automations.yaml (come la UI HA)."""

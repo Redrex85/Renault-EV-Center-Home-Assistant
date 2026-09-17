@@ -5,3 +5,11 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
+Thumbs.db
+
+# ---- lavoro interno: NON pubblicare su GitHub ----
+agent.md
+preview/
+RELAZIONE_INTEGRAZIONE.md
+REVIEW.md
+Auto img/

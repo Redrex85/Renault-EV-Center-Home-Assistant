@@ -38,6 +38,20 @@ Si vous avez coché **Créer le tableau de bord automatiquement**, il apparaît 
 
 Préfixe différent de `Renault` ? Faites Rechercher/Remplacer `sensor.renault_`.
 
+## 4.1 Confidentialité et adresses (géocodage)
+
+Sur la page **Trajets**, l'intégration peut afficher la **rue et le pays** de départ/arrivée,
+à partir des coordonnées GPS via **OpenStreetMap (Nominatim)**.
+
+- **Activé par défaut.** Pour le **désactiver** (aucun appel externe, aucune adresse) :
+  *Paramètres → Appareils et services → Renault EV Center → **Configurer** → Paramètres →
+  « Rue et pays dans les trajets »* (décochez).
+- Les coordonnées sont **arrondies** et mises en **cache locale** : le géocodage ne s'exécute
+  qu'une fois par lieu et à la fermeture d'un trajet.
+- **« Vitesse moyenne estimée »** (défaut 30 km/h) : sert uniquement à estimer l'heure de départ
+  quand la voiture est restée longtemps garée (le cloud Renault met à jour à l'arrêt moteur).
+  Augmentez-la si vos trajets sont plus rapides.
+
 ## 4. Services, FAQ et dépannage
 Les automatisations recommandées peuvent être créées depuis la vue **Automazioni → « Crea automazioni consigliate »** (ou le service `renault_ev_center.create_automations`).
 Voir `docs/INSTALLATION.md` (EN) pour la référence complète.

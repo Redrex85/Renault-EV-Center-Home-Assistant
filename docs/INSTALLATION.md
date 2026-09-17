@@ -55,6 +55,20 @@ renault_ev_center.set_scadenza          # nome, data
 renault_ev_center.set_tagliando         # mode (km|data), valore
 ```
 
+## 4.1 Privacy and addresses (geocoding)
+
+On the **Trips** page the integration can show the **street and country** of departure/arrival,
+derived from the GPS coordinates via **OpenStreetMap (Nominatim)**.
+
+- **On by default.** To **turn it off** (no external calls, no addresses):
+  *Settings → Devices & Services → Renault EV Center → **Configure** → Settings → "Street and
+  country in trips"* (clear the checkbox).
+- Coordinates are **rounded** and cached locally: geocoding runs once per location and only when
+  a trip closes.
+- **"Average speed estimate for trip departure time"** (default 30 km/h): used only to estimate
+  the departure time when the car has been parked for a long time (the Renault cloud updates
+  odometer/GPS on ignition off). Raise it if your trips are faster.
+
 ## 5. Troubleshooting
 
 | Issue | Fix |

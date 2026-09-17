@@ -9,10 +9,10 @@
   ],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/Redrex85/Renault-EV-Center-Home-Assistant",
+  "documentation": "https://github.com/Redrex85/Renault-Home-Assistant-Package",
   "integration_type": "device",
   "iot_class": "calculated",
-  "issue_tracker": "https://github.com/Redrex85/Renault-EV-Center-Home-Assistant/issues",
+  "issue_tracker": "https://github.com/Redrex85/Renault-Home-Assistant-Package/issues",
   "requirements": [],
-  "version": "1.0.5.43"
+  "version": "1.0.6"
 }
