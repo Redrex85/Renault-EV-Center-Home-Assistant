@@ -94,6 +94,8 @@
           "scadenza_revisione": "Scadenza revisione (YYYY-MM-DD)",
           "temp_entity": "Sensore temperatura esterna (per CO2/meteo)",
           "co2_comparison": "Calcola confronto CO2 termico vs EV",
+          "geocode_enabled": "Via e paese nei viaggi (geocoding OpenStreetMap)",
+          "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)",
           "co2_thermal_gkm": "CO2 termico (g/km)",
           "co2_grid_gkwh": "CO2 rete (g/kWh)"
         }
@@ -182,6 +184,8 @@
           "scadenza_revisione": "Scadenza revisione (YYYY-MM-DD)",
           "temp_entity": "Sensore temperatura esterna (per CO2/meteo)",
           "co2_comparison": "Calcola confronto CO2 termico vs EV",
+          "geocode_enabled": "Via e paese nei viaggi (geocoding OpenStreetMap)",
+          "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)",
           "co2_thermal_gkm": "CO2 termico (g/km)",
           "co2_grid_gkwh": "CO2 rete (g/kWh)"
         }

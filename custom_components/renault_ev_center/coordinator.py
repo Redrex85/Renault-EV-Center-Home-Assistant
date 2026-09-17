@@ -1,6 +1,7 @@
 """Coordinator Renault EV Center: legge le entità sorgente e gestisce motori e contatori."""
 from __future__ import annotations
 
+import asyncio
 import csv
 import logging
 import os
@@ -26,6 +27,8 @@ from .const import (
     CONF_CHARGING_EFFICIENCY,
     CONF_CHARGING_ENTITY,
     CONF_CO2_ENABLED,
+    CONF_GEOCODE_ENABLED,
+    CONF_AVG_KMH,
     CONF_CO2_GRID_GKWH,
     CONF_CO2_THERMAL_GKM,
     CONF_DIESEL_PRICE_ENTITY,
@@ -191,6 +194,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         opts = {**entry.data, **entry.options}
         self.entry = entry
         self.opts = opts
+        self.geocode_enabled = bool(opts.get(CONF_GEOCODE_ENABLED, True))
+        self._geocode_backfilled = False
         self.store = MateStore(hass, entry.entry_id)
 
         self.capacity = _f(opts.get(CONF_CAPACITY), 60.0) or 60.0
@@ -285,6 +290,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             min_minutes=TRIP_MIN_MINUTES,
             capacity_kwh=self.capacity,
             tz=dt_util.DEFAULT_TIME_ZONE,
+            avg_kmh=_f(opts.get(CONF_AVG_KMH), 30.0) or 30.0,
         )
 
         # --- stato sessione di ricarica ------------------------------------------
@@ -757,6 +763,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             if closed_trip is not None:
                 self._enrich_trip(closed_trip)
                 self.store.data["trips"].append(closed_trip)
+                self._queue_geocode(closed_trip)
 
         # --- sessione di ricarica -------------------------------------------------
         finished_charge = None
@@ -770,6 +777,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     self._enrich_trip(chiuso_verifica)
                     chiuso_verifica["verifica"] = "chiuso anticipato: auto collegata alla carica"
                     self.store.data["trips"].append(chiuso_verifica)
+                    self._queue_geocode(chiuso_verifica)
                     closed_trip = chiuso_verifica
             if self.charge_session is None:
                 self.charge_session = {
@@ -1235,6 +1243,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 "charge_finished": finished_charge,
             },
         }
+        self._maybe_backfill_geocode()
         await self._handle_charge_events(data["events"], data, now)
         await self._balance_solar(data, wb_state)
         data["balance"] = dict(self.store.data.get("counters", {}).get("balance_last", {}))
@@ -1362,6 +1371,102 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 carica_prec = str(c.get("tipo", ""))
                 break
         record["carica_precedente"] = carica_prec
+
+    # ------------------------------------------------------ reverse geocoding GPS
+    def _queue_geocode(self, record: dict[str, Any]) -> None:
+        """Avvia in background il reverse-geocoding partenza+arrivo (non blocca il ciclo)."""
+        if not self.geocode_enabled:
+            return
+        if record.get("luogo_partenza") and record.get("luogo_arrivo"):
+            return
+        if not (record.get("gps_partenza") or record.get("gps_arrivo")):
+            return
+        try:
+            self.hass.async_create_task(self._geocode_trip(record))
+        except RuntimeError:  # nessun event loop attivo
+            pass
+
+    async def _reverse_geocode(self, lat: float, lon: float) -> dict[str, str]:
+        """Coordinate → {via, citta, paese, label} via Nominatim/OSM, con cache su disco."""
+        if not self.geocode_enabled:
+            return {}
+        lat4, lon4 = round(_f(lat), 4), round(_f(lon), 4)
+        key = f"{lat4},{lon4}"
+        cache = self.store.data.setdefault("geocache", {})
+        if key in cache:
+            return cache[key]
+        from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+        url = ("https://nominatim.openstreetmap.org/reverse?format=jsonv2"
+               f"&lat={lat4}&lon={lon4}&zoom=16&addressdetails=1&accept-language=it")
+        try:
+            session = async_get_clientsession(self.hass)
+            async with session.get(
+                url, headers={"User-Agent": "renault-ev-center/1.0 (Home Assistant)"}, timeout=6
+            ) as resp:
+                if resp.status != 200:
+                    return {}
+                js = await resp.json()
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("Reverse geocoding non riuscito: %s", err)
+            return {}
+        ad = js.get("address") or {}
+        via = ad.get("road") or ad.get("pedestrian") or ad.get("suburb") or ""
+        citta = (ad.get("city") or ad.get("town") or ad.get("village")
+                 or ad.get("municipality") or ad.get("county") or "")
+        paese = ad.get("country") or ""
+        out = {"via": via, "citta": citta, "paese": paese,
+               "label": ", ".join(p for p in (via, citta) if p)}
+        cache[key] = out
+        if len(cache) > 500:
+            for k in list(cache)[: len(cache) - 500]:
+                cache.pop(k, None)
+        self.persist()
+        return out
+
+    async def _geocode_trip(self, record: dict[str, Any]) -> None:
+        """Scrive via/città/paese di partenza e arrivo sul viaggio (best-effort)."""
+        for gkey, lkey, pkey in (("gps_partenza", "luogo_partenza", "paese_partenza"),
+                                 ("gps_arrivo", "luogo_arrivo", "paese_arrivo")):
+            if record.get(lkey):
+                continue
+            gps = record.get(gkey) or {}
+            lat, lon = gps.get("lat"), gps.get("lon")
+            if lat is None or lon is None:
+                continue
+            info = await self._reverse_geocode(lat, lon)
+            if info:
+                record[lkey] = info.get("label") or info.get("citta") or ""
+                record[pkey] = info.get("paese") or ""
+        self.persist()
+
+    def _maybe_backfill_geocode(self) -> None:
+        """Una tantum: geocodifica i viaggi registrati prima che il geocoding esistesse."""
+        if self._geocode_backfilled or not self.geocode_enabled:
+            return
+        self._geocode_backfilled = True
+        legacy = [t for t in self.store.data.get("trips", [])
+                  if (t.get("gps_partenza") or t.get("gps_arrivo"))
+                  and not (t.get("luogo_partenza") and t.get("luogo_arrivo"))]
+        if legacy:
+            self.hass.async_create_task(self._geocode_backfill())
+
+    async def _geocode_backfill(self) -> None:
+        """Geocodifica i viaggi vecchi, 1 alla volta (rispetta il limite ~1 req/s)."""
+        n = 0
+        for t in self.store.data.get("trips", []):
+            if t.get("luogo_partenza") and t.get("luogo_arrivo"):
+                continue
+            if not (t.get("gps_partenza") or t.get("gps_arrivo")):
+                continue
+            await self._geocode_trip(t)
+            n += 1
+            if n >= 120:
+                break
+            await asyncio.sleep(1.1)
+        if n:
+            _LOGGER.info("Geocoding: rielaborati %s viaggi", n)
+        self.persist()
 
     def _filter_charges(self, charges: list[dict], now) -> dict[str, Any]:
         """Filtra le ricariche secondo i select tipo/periodo/anno e calcola i totali."""

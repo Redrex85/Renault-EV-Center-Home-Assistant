@@ -455,7 +455,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.39</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.43</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -658,6 +658,19 @@ class RenaultEvCenterPanel extends HTMLElement {
         el.addEventListener("click", () => S._cmd(el.dataset.cmd, el)));
     }
   }
+  /** Elenco delle automazioni attive (Renault / Wallbox / Bilanciamento). */
+  _drawAutos(root) {
+    const host = root.querySelector('[data-c="autos-on"]');
+    if (!host) return;
+    const list = Object.values(this._hass.states)
+      .filter((s) => s.entity_id.startsWith("automation.") && s.state === "on"
+        && /renault|wallbox|bilanc/i.test(s.entity_id + " " + (s.attributes.friendly_name || "")))
+      .sort((a, b) => String(a.attributes.friendly_name || a.entity_id)
+        .localeCompare(String(b.attributes.friendly_name || b.entity_id), "it"));
+    host.innerHTML = list.length
+      ? list.map((s) => `<div class="row"><span>🟢 ${s.attributes.friendly_name || s.entity_id}</span></div>`).join("")
+      : `<div style="color:var(--muted);font-size:12px">Nessuna automazione attiva (Renault/Wallbox/Bilanciamento).</div>`;
+  }
   _cmd(cmd, el) {
     const n = this._slug(this._cfg.name);
     const D = "renault_ev_center";
@@ -843,6 +856,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     });
     this._tableRotte(root);
     this._drawWallbox(root);
+    this._drawAutos(root);
     // tabella scadenze (attributo scadenze di prossima_scadenza)
     const tbSc = root.querySelector('[data-c="tab-scadenze"]');
     if (tbSc) {
@@ -1117,12 +1131,13 @@ class RenaultEvCenterPanel extends HTMLElement {
       const soc = (r.batteria_inizio != null && r.batteria_fine != null)
         ? `${Math.round(r.batteria_inizio)}% → ${Math.round(r.batteria_fine)}%`
         : (d !== undefined && d !== null ? d + "%" : "—");
-      return `<tr><td>${this._d(r.data)}</td><td>${r.ora_inizio ?? "—"}${r.ora_fine ? "–" + r.ora_fine : ""}</td>
+      return `<tr><td>${this._d(r.data)}</td>        <td>${r.stima_orario ? "≈ " : ""}${r.ora_inizio ?? "—"}${r.ora_fine ? "–" + r.ora_fine : ""}</td>
         <td><b>${this._fmt(parseFloat(r.km ?? r.chilometri ?? 0), 1)}</b></td>
         <td>${soc}</td><td>${d !== undefined && d !== null ? d + "%" : "—"}</td><td>${this._fmt(parseFloat(r.kwh_consumati ?? r.kwh ?? 0), 2)}</td>
         <td><span class="badge">${this._fmt(parseFloat(eff ?? 0), 1)}</span></td>
         <td>${this._fmt(parseFloat(r.costo_stimato ?? r.costo ?? 0), 2)} €</td>
-        <td>${this._zn(r.zona_partenza ?? r.ricarica_precedente)}</td><td>${this._zn(r.zona_arrivo)}</td></tr>`;
+        <td>${this._zn(r.zona_partenza ?? r.ricarica_precedente)}${r.luogo_partenza ? `<br><span style="color:var(--muted);font-size:11px">${r.luogo_partenza}${r.paese_partenza ? " · " + r.paese_partenza : ""}</span>` : ""}</td>
+        <td>${this._zn(r.zona_arrivo)}${r.luogo_arrivo ? `<br><span style="color:var(--muted);font-size:11px">${r.luogo_arrivo}${r.paese_arrivo ? " · " + r.paese_arrivo : ""}</span>` : ""}</td></tr>`;
     }).join("") || `<tr><td colspan="10" style="color:var(--muted)">Nessun viaggio per il filtro scelto</td></tr>`;
   }
   _tableRicariche(root) {
@@ -1279,9 +1294,9 @@ class RenaultEvCenterPanel extends HTMLElement {
 const NOMI_MESI = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
 const NAV = [
   ["p1", "📊", "Panoramica"], ["p2", "🛣️", "Viaggi"], ["p3", "📈", "Statistiche"],
-  ["p4", "🔌", "Ricariche"], ["p5", "💚", "Salute batteria"], ["p6", "🔧", "Manutenzione"],
-  ["p7", "💰", "Risparmi"], ["p8", "⭐", "Extra"], ["p9", "🤖", "Automazioni"], ["p10", "⚙️", "Impostazioni"],
-  ["p11", "🎛️", "Wallbox"],
+  ["p4", "🔌", "Ricariche"], ["p11", "🎛️", "Wallbox"], ["p5", "💚", "Salute batteria"],
+  ["p6", "🔧", "Manutenzione"], ["p7", "💰", "Risparmi"], ["p8", "⭐", "Extra"],
+  ["p9", "🤖", "Automazioni"], ["p10", "⚙️", "Impostazioni"],
 ];
 const THEMES = [
   ["blu", "#4d8dff", "🔵 Blu Megane"], ["giallo", "#F5CB39", "🟡 Giallo R5"],
@@ -1453,6 +1468,11 @@ const PAGES = {
       <div style="margin-top:10px">
         <div class="row"><span>Viaggio in corso</span><b data-f="trip_attivo">—</b></div>
         <div class="row"><span>Carica programmata</span><b data-f="t_start_v">—</b></div>
+        <div class="row"><span>⚡ Wallbox ora</span><b data-v="cmd_wb">—</b></div>
+      </div>
+      <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+        <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Automazioni attive</div>
+        <div data-c="autos-on"></div>
       </div>
     </div>
   </div>
@@ -1479,14 +1499,13 @@ const PAGES = {
     <div class="grid g2">
       <div>
         <div class="row"><span>🔴 Consumata oggi</span><b><span data-f="drain" data-dec="1">—</span>%</b></div>
-        <div class="row"><span>⚡ Ricaricati oggi</span><b><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh · <span data-f="ricarica_oggi_pct" data-dec="0">—</span>%</b></div>
         <div class="row"><span>🔋 kWh usati oggi</span><b><span data-f="kwh_oggi_k" data-dec="2">—</span> kWh</b></div>
         <div class="row"><span>🚗 Km oggi</span><b><span data-f="km_oggi">—</span> km</b></div>
       </div>
       <div>
+        <div class="row"><span>⚡ Ricaricati oggi</span><b><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh · <span data-f="ricarica_oggi_pct" data-dec="0">—</span>%</b></div>
         <div class="row"><span>💰 Ricariche oggi</span><b><span data-f="costo_oggi">—</span> €</b></div>
         <div class="row"><span>💰 Ricariche mensili</span><b><span data-f="costo_mese">—</span> €</b></div>
-        <div class="row"><span>⚡ Wallbox ora</span><b data-v="cmd_wb">—</b></div>
       </div>
     </div>
   </div>
@@ -1507,7 +1526,7 @@ const PAGES = {
       <select data-tf="year" style="width:auto"><option value="">Tutti gli anni</option></select>
       <select data-tfm="month" style="width:auto"><option value="">Tutti i mesi</option></select>
     </div>
-    <table><tr><th>Data</th><th>Ora</th><th>Km</th><th>SoC</th><th>Consumata</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th><th>Partenza</th><th>Arrivo</th></tr>
+    <table><tr><th>Data</th><th>Ora</th><th>Km</th><th>SoC</th><th>Consumata</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th><th>Partenza · via · paese</th><th>Arrivo · via · paese</th></tr>
     <tbody data-c="tab-viaggi"></tbody></table></div>`,
 
   p3: `<h1>Statistiche</h1>

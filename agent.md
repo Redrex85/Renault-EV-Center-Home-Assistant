@@ -67,7 +67,7 @@ salute batteria (SOH), report tabelle, filtri ricariche. Nessun cloud: tutto loc
 
 ## 3. DA FARE / DA SISTEMARE ⚠️
 
-### 🧭 STATO COMPRESSO — v1.0.5.39 (leggi qui prima di tutto)
+### 🧭 STATO COMPRESSO — v1.0.5.43 (leggi qui prima di tutto)
 Fix chiave già nel codice:
 - **DeltaMeter**: direzione "down" ripristinata + auto-heal (contatori usati/% non più a 0).
 - **Eco-polling** + **reattività** (`async_track_state_change_event` sulle entità sorgente).

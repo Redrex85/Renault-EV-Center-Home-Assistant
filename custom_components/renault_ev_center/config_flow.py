@@ -54,6 +54,8 @@ from .const import (
     CONF_MODEL,
     MODELS,
     CONF_CO2_ENABLED,
+    CONF_GEOCODE_ENABLED,
+    CONF_AVG_KMH,
     CONF_CO2_GRID_GKWH,
     CONF_CO2_THERMAL_GKM,
     CONF_DIESEL_PRICE_ENTITY,
@@ -295,6 +297,9 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             description={"suggested_value": defaults.get(CONF_TEMP_ENTITY)},
         ): EntitySelector(EntitySelectorConfig(domain="sensor")),
         vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): BooleanSelector(),
+        vol.Required(CONF_GEOCODE_ENABLED, default=defaults.get(CONF_GEOCODE_ENABLED, True)): BooleanSelector(),
+        vol.Required(CONF_AVG_KMH, default=defaults.get(CONF_AVG_KMH, 30.0)): NumberSelector(
+            NumberSelectorConfig(min=10, max=120, step=1, unit_of_measurement="km/h", mode=NumberSelectorMode.BOX)),
         vol.Optional(CONF_CO2_THERMAL_GKM, default=defaults.get(CONF_CO2_THERMAL_GKM, DEFAULT_CO2_THERMAL_GKM)): NumberSelector(
             NumberSelectorConfig(min=50, max=300, step=5, unit_of_measurement="g/km", mode=NumberSelectorMode.BOX)),
         vol.Optional(CONF_CO2_GRID_GKWH, default=defaults.get(CONF_CO2_GRID_GKWH, DEFAULT_CO2_GRID_GKWH)): NumberSelector(

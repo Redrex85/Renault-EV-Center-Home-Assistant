@@ -107,10 +107,13 @@ DEFAULT_MIN_AMPS = 6.0
 DEFAULT_BATTERY_PRIORITY = 80.0
 DEFAULT_MAX_AMPS = 16.0
 DEFAULT_WB_START_W = 10.0  # soglia: avvia il contatore tempo sessione wallbox
+DEFAULT_AVG_KMH = 30.0  # velocità media stimata per l'orario di partenza dei viaggi
 
 # extra: meteo, CO2, scadenze
 CONF_TEMP_ENTITY = "temp_entity"
 CONF_CO2_ENABLED = "co2_comparison"
+CONF_GEOCODE_ENABLED = "geocode_enabled"
+CONF_AVG_KMH = "avg_speed_kmh"
 CONF_CO2_THERMAL_GKM = "co2_thermal_gkm"
 CONF_CO2_GRID_GKWH = "co2_grid_gkwh"
 CONF_SCADENZE_ENABLED = "scadenze_enabled"

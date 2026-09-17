@@ -61,12 +61,17 @@ class TripEngine:
     """Stato del viaggio in corso + chiusura per timeout."""
 
     def __init__(self, timeout_minuti: int = 20, min_km: float = 0.5,
-                 min_minutes: int = 2, capacity_kwh: float = 60.0, tz=None) -> None:
+                 min_minutes: int = 2, capacity_kwh: float = 60.0, tz=None,
+                 park_threshold_min: float = 90.0, avg_kmh: float = 30.0) -> None:
         self.timeout_minuti = timeout_minuti
         self.min_km = min_km
         self.min_minutes = min_minutes
         self.capacity_kwh = capacity_kwh
         self.tz = tz
+        # se l'auto resta ferma più di N minuti, l'orario di partenza si stima
+        # (km / velocità media): il cloud Renault aggiorna solo a motore spento.
+        self.park_threshold_min = park_threshold_min
+        self.avg_kmh = avg_kmh
         self.active = False
         self.mileage_start = 0.0
         self.battery_start = 0.0
@@ -79,12 +84,17 @@ class TripEngine:
         self.battery_now = 0.0
         self.lat_last: float | None = None
         self.lon_last: float | None = None
+        self.lat_start: float | None = None
+        self.lon_start: float | None = None
+        self.stima_orario = False
         self.arrived = False
         self.seed_odometer: float | None = None
         self.seed_battery = 0.0
         self.seed_ts = 0.0
         self.seed_mono = 0.0
         self.seed_zone = "unknown"
+        self.seed_lat: float | None = None
+        self.seed_lon: float | None = None
 
     def restore(self, data: dict[str, Any]) -> None:
         self.active = bool(data.get("active", False))
@@ -97,6 +107,9 @@ class TripEngine:
         self.zone_start = data.get("zone_start", "unknown")
         self.mileage_now = float(data.get("mileage_now", 0))
         self.battery_now = float(data.get("battery_now", 0))
+        self.lat_start = data.get("lat_start")
+        self.lon_start = data.get("lon_start")
+        self.stima_orario = bool(data.get("stima_orario", False))
 
     def dump(self) -> dict[str, Any]:
         return {
@@ -110,6 +123,9 @@ class TripEngine:
             "zone_start": self.zone_start,
             "mileage_now": self.mileage_now,
             "battery_now": self.battery_now,
+            "lat_start": self.lat_start,
+            "lon_start": self.lon_start,
+            "stima_orario": self.stima_orario,
         }
 
     def tick(self, odometer: float, battery_pct: float, zone: str,
@@ -144,22 +160,38 @@ class TripEngine:
                 opened = True
                 self.mileage_start = self.seed_odometer
                 self.battery_start = self.seed_battery
-                self.ts_start = self.seed_ts
+                # Se l'auto è rimasta ferma a lungo (cloud Renault che aggiorna solo a
+                # motore spento) l'ultimo campione "da ferma" è l'ORARIO DI SOSTA, non la
+                # partenza: in quel caso stimo la partenza da km e velocità media.
+                km_gap = abs(odometer - self.seed_odometer)
+                gap_min = (now_wall - self.seed_ts) / 60.0
+                self.stima_orario = False
+                if gap_min > self.park_threshold_min and km_gap > 0.5:
+                    self.ts_start = now_wall - min(gap_min, km_gap / max(self.avg_kmh, 10.0) * 60.0) * 60.0
+                    self.stima_orario = True
+                else:
+                    self.ts_start = self.seed_ts
                 self.ts_last_change = now_wall
-                self.mono_start = self.seed_mono
+                self.mono_start = now_mono
                 self.mono_last_change = now_mono
                 self.zone_start = self.seed_zone or zone or "unknown"
                 self.mileage_now = odometer
                 self.battery_now = battery_pct
+                self.lat_start = self.seed_lat
+                self.lon_start = self.seed_lon
                 self.lat_last = lat
                 self.lon_last = lon
-                self.arrived = False
+                # se nello stesso campione c'è già lo scarto chilometrico, l'auto è
+                # arrivata (cloud Renault che riporta odometro+GPS a motore spento)
+                self.arrived = bool(moved_gps and km_gap > 0.5)
                 return opened, closed
             self.seed_odometer = odometer
             self.seed_battery = battery_pct
             self.seed_ts = now_wall
             self.seed_mono = now_mono
             self.seed_zone = zone
+            self.seed_lat = lat
+            self.seed_lon = lon
             self.lat_last = lat
             self.lon_last = lon
             return False, None
@@ -231,4 +263,7 @@ class TripEngine:
             "kwh_per_100km": kwh_per_100,
             "zona_partenza": self.zone_start,
             "zona_arrivo": zone_arrivo or "unknown",
+            "stima_orario": self.stima_orario,
+            "gps_partenza": ({"lat": round(self.lat_start, 5), "lon": round(self.lon_start, 5)}
+                             if self.lat_start is not None and self.lon_start is not None else {}),
         }
