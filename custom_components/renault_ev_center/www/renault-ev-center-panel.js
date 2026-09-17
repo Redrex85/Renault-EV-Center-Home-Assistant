@@ -455,7 +455,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.37</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.38</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -569,6 +569,83 @@ class RenaultEvCenterPanel extends HTMLElement {
     this.shadowRoot.querySelector(".app").dataset.theme = t;
     this.shadowRoot.querySelectorAll("[data-palette]").forEach((b) => b.classList.toggle("active", b.dataset.palette === t));
   }
+  _dur(sec) {
+    if (sec === null || sec === undefined || isNaN(sec)) return "—";
+    const s = Math.max(0, Math.round(sec));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+    return (h > 0 ? h + "h " : "") + (m > 0 || h > 0 ? m + "m " : "") + ss + "s";
+  }
+  /** Wallbox: valori live + slider A + bilanciamento (entità da config, fallback Lektrico) */
+  _drawWallbox(root) {
+    if (!root.getElementById("p11")) return;
+    const S = this;
+    const set = (k, v) => root.querySelectorAll(`[data-wb="${k}"]`).forEach((el) => { el.textContent = v; });
+    const stMap = { available: "Disponibile", charging: "In carica", preparing: "Preparazione",
+      suspended: "Sospesa", finishing: "Completamento", faulted: "Guasto", idle: "Inattiva",
+      connected: "Collegata", locked: "Bloccata" };
+
+    const stateEnt = S._st(S._ov("wallbox_state"), "sensor.wallbox_charger_state");
+    set("state", stateEnt ? (stMap[stateEnt.state] || stateEnt.state) : "—");
+
+    const power = S._num(S._ov("wallbox_power"), S._sid("wallbox_potenza"), "sensor.wallbox_instant_power");
+    set("power", power === null ? "—" : S._fmt(power) + " kW");
+    const cur = S._num("sensor.wallbox_current");
+    set("current", cur === null ? "—" : S._fmt(cur, 1) + " A");
+    const volt = S._num("sensor.wallbox_voltage");
+    set("voltage", volt === null ? "—" : S._fmt(volt, 0) + " V");
+    const temp = S._num("sensor.wallbox_temperature");
+    set("temp", temp === null ? "—" : S._fmt(temp, 1) + " °C");
+    const lim = S._st("sensor.wallbox_limit_reason");
+    set("limit", lim ? lim.state : "—");
+
+    const skwh = S._num(S._ov("wallbox_session_energy"), "sensor.wallbox_session_energy");
+    set("session_kwh", skwh === null ? "—" : S._fmt(skwh, 2) + " kWh");
+    const stime = S._num("sensor.wallbox_charging_time");
+    set("session_time", stime === null ? "—" : S._dur(stime));
+    const tot = S._num(S._ov("wallbox_total_energy"), "sensor.wallbox_total_charged_energy");
+    set("total_kwh", tot === null ? "—" : S._fmt(tot, 1) + " kWh");
+
+    // slider ampere (number di config, fallback Lektrico)
+    const eid = S._ov("wallbox_max_current") || "number.wallbox_user_limit";
+    const sNum = S._hass.states[eid];
+    const sl = root.getElementById("wb_amp");
+    if (sl && sNum) {
+      const a = sNum.attributes || {};
+      if (a.min !== undefined) sl.min = a.min;
+      if (a.max !== undefined) sl.max = a.max;
+      if (a.step !== undefined) sl.step = a.step;
+      if (parseFloat(sNum.state)) sl.value = sNum.state;
+      root.getElementById("wb_amp_val").textContent = `${S._fmt(parseFloat(sNum.state), 0)} A (min ${a.min ?? "?"} · max ${a.max ?? "?"} A)`;
+    } else if (sl) {
+      root.getElementById("wb_amp_val").textContent = "Nessun number corrente wallbox in configurazione";
+    }
+
+    // bilanciamento solare (switch integrazione + ultimo stato dal sensore potenza)
+    const balEnt = S._swid("bilanciamento_solare");
+    const balSw = S._hass.states[balEnt];
+    const bBtn = root.querySelector('[data-cmd="wb_bal_toggle"]');
+    if (bBtn) bBtn.textContent = balSw && balSw.state === "on"
+      ? "☀️ Bilanciamento solare: ATTIVO" : "☀️ Bilanciamento solare: spento";
+    const ps = S._st(S._sid("wallbox_potenza"));
+    const bAttr = (k) => { const v = ps ? S._attrAny(ps, [k]) : null; return v === null || v === undefined ? "—" : v; };
+    set("bal_surplus", bAttr("surplus_w"));
+    set("bal_grid", bAttr("rete_w"));
+    set("bal_amps", bAttr("ampere_impostati"));
+    set("bal_ts", bAttr("bilanciamento_ultimo_aggiustamento"));
+
+    // bilanciamento casalingo: automazioni HA per nome
+    const host = root.querySelector('[data-c="wb-home-autos"]');
+    if (host) {
+      const ids = ["automation.regola_potenza_wallbox_se_consumo_elevato",
+                   "automation.ripristina_potenza_wallbox_se_consumo_basso"];
+      const found = ids.map((id) => S._hass.states[id]).filter(Boolean);
+      host.innerHTML = found.map((s) =>
+        `<div class="cmd" data-cmd="switch" data-ent="${s.entity_id}"><span class="em">${s.state === "on" ? "🟢" : "⚪"}</span>${s.attributes.friendly_name || s.entity_id}<b>${s.state === "on" ? "attiva" : "spenta"}</b></div>`).join("")
+        || `<div style="color:var(--muted);font-size:12px">Nessuna automazione "potenza wallbox" trovata — creala in Impostazioni → Automazioni.</div>`;
+      host.querySelectorAll("[data-cmd]").forEach((el) =>
+        el.addEventListener("click", () => S._cmd(el.dataset.cmd, el)));
+    }
+  }
   _cmd(cmd, el) {
     const n = this._slug(this._cfg.name);
     const D = "renault_ev_center";
@@ -619,6 +696,34 @@ class RenaultEvCenterPanel extends HTMLElement {
         const s = this._hass.states[eid];
         if (!s) return;
         this._call("homeassistant", s.state === "on" ? "turn_off" : "turn_on", { entity_id: eid });
+        break;
+      }
+      case "wb_start": {
+        const b = this._st(this._ov("wb_charge_switch"), "button.wallbox_charger_start");
+        if (!b) { this._toast("⚠️ Comando avvio wallbox non trovato (configura la wallbox)"); break; }
+        if (b.entity_id.startsWith("switch.")) this._call("switch", "turn_on", { entity_id: b.entity_id }, "🔌 Ricarica avviata");
+        else this._call("button", "press", { entity_id: b.entity_id }, "🔌 Ricarica avviata");
+        break;
+      }
+      case "wb_stop": {
+        const b = this._st("button.wallbox_charge_stop", this._ov("wb_charge_switch"));
+        if (!b) { this._toast("⚠️ Comando stop wallbox non trovato"); break; }
+        if (b.entity_id.startsWith("switch.")) this._call("switch", "turn_off", { entity_id: b.entity_id }, "⏹️ Ricarica fermata");
+        else this._call("button", "press", { entity_id: b.entity_id }, "⏹️ Ricarica fermata");
+        break;
+      }
+      case "wb_set_current": {
+        const eid = this._ov("wallbox_max_current") || "number.wallbox_user_limit";
+        const inp = this.shadowRoot.getElementById("wb_amp");
+        const v = inp ? parseFloat(inp.value) : null;
+        if (v) this._call("number", "set_value", { entity_id: eid, value: v }, `🔌 Limite corrente: ${v} A`);
+        break;
+      }
+      case "wb_bal_toggle": {
+        const eid = this._swid("bilanciamento_solare");
+        const s = this._hass.states[eid];
+        if (!s) { this._toast("⚠️ Switch bilanciamento solare non trovato"); break; }
+        this._call("homeassistant", s.state === "on" ? "turn_off" : "turn_on", { entity_id: eid }, "☀️ Bilanciamento solare");
         break;
       }
     }
@@ -725,6 +830,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         || `<tr><td colspan="4" style="color:var(--muted)">Nessun dato</td></tr>`;
     });
     this._tableRotte(root);
+    this._drawWallbox(root);
     // tabella scadenze (attributo scadenze di prossima_scadenza)
     const tbSc = root.querySelector('[data-c="tab-scadenze"]');
     if (tbSc) {
@@ -1163,6 +1269,7 @@ const NAV = [
   ["p1", "📊", "Panoramica"], ["p2", "🛣️", "Viaggi"], ["p3", "📈", "Statistiche"],
   ["p4", "🔌", "Ricariche"], ["p5", "💚", "Salute batteria"], ["p6", "🔧", "Manutenzione"],
   ["p7", "💰", "Risparmi"], ["p8", "⭐", "Extra"], ["p9", "🤖", "Automazioni"], ["p10", "⚙️", "Impostazioni"],
+  ["p11", "🎛️", "Wallbox"],
 ];
 const THEMES = [
   ["blu", "#4d8dff", "🔵 Blu Megane"], ["giallo", "#F5CB39", "🟡 Giallo R5"],
@@ -1624,6 +1731,39 @@ const PAGES = {
     <div class="note">Crea in Home Assistant 3 automazioni pronte: <b>ricarica completata</b> (kWh, SoC, costo),
       <b>batteria bassa fuori casa</b>, <b>riassunto giornaliero</b> alle 21:30. Sono modificabili da
       Impostazioni → Automazioni. Notifiche via persistent_notification se nessun servizio notify configurato.</div></div>`,
+
+  p11: `<h1>Wallbox</h1>
+  <div class="grid g2">
+    <div class="card"><h3>🔌 Stato wallbox</h3>
+      <div class="big" style="font-size:32px;color:var(--accent)"><span data-wb="state">—</span></div>
+      <div class="row"><span>Potenza ora</span><b><span data-wb="power">—</span></b></div>
+      <div class="row"><span>Corrente</span><b><span data-wb="current">—</span></b></div>
+      <div class="row"><span>Tensione</span><b><span data-wb="voltage">—</span></b></div>
+      <div class="row"><span>Temperatura</span><b><span data-wb="temp">—</span></b></div>
+      <div class="row"><span>Motivo limite</span><b><span data-wb="limit">—</span></b></div></div>
+    <div class="card"><h3>⏱️ Sessione corrente</h3>
+      <div class="big" style="font-size:32px;color:var(--good)"><span data-wb="session_kwh">—</span></div>
+      <div class="row"><span>Tempo di ricarica</span><b><span data-wb="session_time">—</span></b></div>
+      <div class="row"><span>Energia totale erogata</span><b><span data-wb="total_kwh">—</span></b></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <div class="btn" data-cmd="wb_start">▶️ Avvia</div>
+        <div class="btn" data-cmd="wb_stop">⏹️ Ferma</div></div></div></div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>🎚️ Corrente di carica (A)</h3>
+      <div class="inp"><span>Limite</span><input id="wb_amp" type="range" min="6" max="32" step="1" style="flex:1" oninput="this.closest('.inp').querySelector('#wb_amp_live').textContent=this.value+' A'"><b id="wb_amp_live" style="min-width:54px;text-align:right">—</b></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:4px" id="wb_amp_val">—</div>
+      <div class="btn" data-cmd="wb_set_current" style="margin-top:10px">💾 Applica corrente</div>
+      <div class="note">Imposta il limite della wallbox (<code>number</code>). Le automazioni di bilanciamento possono sovrascriverlo.</div></div>
+    <div class="card"><h3>☀️ Bilanciamento solare</h3>
+      <div class="btn" data-cmd="wb_bal_toggle" style="margin-bottom:6px">☀️ Bilanciamento solare: —</div>
+      <div class="row"><span>Surplus rete</span><b><span data-wb="bal_surplus">—</span> W</b></div>
+      <div class="row"><span>Prelievo rete</span><b><span data-wb="bal_grid">—</span> W</b></div>
+      <div class="row"><span>Ampere impostati</span><b><span data-wb="bal_amps">—</span> A</b></div>
+      <div class="row"><span>Ultimo aggiustamento</span><b><span data-wb="bal_ts">—</span></b></div>
+      <div class="note">Adatta gli ampere per tenere il prelievo da rete ~0. Sensori rete/batteria e W per A in <b>Configura → Bilanciamento</b>.</div></div></div>
+  <div class="card" style="margin-top:16px"><h3>🏠 Bilanciamento casalingo</h3>
+    <div class="note">Se la wallbox non fa da sé il bilanciamento domestico (non superare il contatore di casa), usa automazioni Home Assistant — es. quelle che riducono gli ampere quando il consumo sale. Trovo per nome:</div>
+    <div data-c="wb-home-autos" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div></div>`,
 };
 
 if (!customElements.get("renault-ev-center-panel")) {

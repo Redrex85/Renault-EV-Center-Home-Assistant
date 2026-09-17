@@ -79,3 +79,20 @@ automation:
             📈 Media: {{ states('sensor.megane_kwh_per_100km') }} kWh/100km
 
             💸 Costo/km: {{ states('sensor.megane_costo_per_km') }} €
+
+  # Notifica all'avvio della ricarica.
+  # IMPORTANTE: usa il sensore di stato della WALLBOX registrato in configurazione
+  # (Renault EV Center -> Configura -> Wallbox -> Stato). Qui l'esempio col Lektrico.
+  - alias: "Renault EV Center - Notifica avvio ricarica"
+    id: renault_ev_center_avvio_ricarica
+    trigger:
+      - platform: state
+        entity_id: sensor.wallbox_charger_state   # ← entità wallbox da configurazione
+        to: charging
+    condition: []
+    mode: single
+    action:
+      - action: notify.michele                     # ← servizio notify configurato
+        data:
+          message: |
+            🔋 La ricarica è iniziata alle {{ now().strftime('%Y-%m-%d %H:%M:%S') }}

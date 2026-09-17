@@ -1649,7 +1649,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         return mode
 
     async def service_create_automations(self) -> list[str]:
-        """Crea (solo se assenti) le 3 automazioni consigliate in automations.yaml."""
+        """Crea (solo se assenti) le automazioni consigliate in automations.yaml."""
         from .dashboard import slugify
 
         n = slugify(str(self.opts.get(CONF_NAME, "Renault")))
@@ -1657,6 +1657,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         range_e = str(self.opts.get("range_entity") or f"sensor.{n}_autonomia_della_batteria")
         charging = str(self.opts.get("charging_entity") or f"binary_sensor.{n}_in_carica")
         loc = str(self.opts.get("location_entity") or "")
+        wb_state_e = str(self.opts.get(CONF_WB_STATE) or "sensor.wallbox_charger_state")
         target = ""
         if self.notify_service:
             target = self.notify_service if "." in self.notify_service else f"notify.{self.notify_service}"
@@ -1678,6 +1679,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                                 "⚡ {{ states('sensor." + n + "_ultima_ricarica') }} kWh · "
                                 "🔋 {{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_end') }}% · "
                                 "💰 {{ state_attr('sensor." + n + "_ultima_ricarica', 'costo') }} €")],
+                "mode": "single",
+            },
+            f"renault_ev_center_{n}_avvio_ricarica": {
+                "alias": f"Renault EV Center — Notifica avvio ricarica ({n})",
+                "trigger": [{"trigger": "state", "entity_id": wb_state_e, "to": "charging"}],
+                "condition": [],
+                "action": [_pn(f"rec_start_{n}", "🔋 Ricarica avviata",
+                                "La ricarica è iniziata alle {{ now().strftime('%Y-%m-%d %H:%M:%S') }}")],
                 "mode": "single",
             },
             f"renault_ev_center_{n}_batteria_bassa": {
