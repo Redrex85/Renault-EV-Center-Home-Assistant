@@ -444,7 +444,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.34</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.35</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -522,7 +522,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       });
     });
     // filtri locali viaggi (anno/mese)
-    this.shadowRoot.querySelectorAll("[data-tf], [data-tfm]").forEach((sel) => {
+    this.shadowRoot.querySelectorAll("[data-tf], [data-tfm], [data-rf], [data-rfm]").forEach((sel) => {
       sel.addEventListener("change", () => this._update());
     });
     // chip giorni schedulazione
@@ -706,16 +706,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         <td><span class="badge">${this._fmt(parseFloat(r.kwh_100km ?? r.efficienza ?? r.eff ?? 0), 1)}</span></td></tr>`).join("")
         || `<tr><td colspan="4" style="color:var(--muted)">Nessun dato</td></tr>`;
     });
-    // tabella rotte avanzate (attributo rotte di consumo_per_zona)
-    const tbRot = root.querySelector('[data-c="tab-rotte"]');
-    if (tbRot) {
-      const rs = this._list(this._sid("consumo_per_zona"));
-      tbRot.innerHTML = rs.slice(0, 8).map((r) =>
-        `<tr><td>${r.rotta ?? "—"}</td><td>${r.n ?? "—"}</td><td>${this._fmt(parseFloat(r.km ?? 0), 0)}</td>
-        <td>${this._fmt(parseFloat(r.km_medio ?? 0), 1)}</td><td><span class="badge">${this._fmt(parseFloat(r.eff ?? 0), 1)}</span></td>
-        <td>${this._fmt(parseFloat(r.costo ?? 0), 2)} €</td></tr>`).join("")
-        || `<tr><td colspan="6" style="color:var(--muted)">Nessuna rotta</td></tr>`;
-    }
+    this._tableRotte(root);
     // tabella scadenze (attributo scadenze di prossima_scadenza)
     const tbSc = root.querySelector('[data-c="tab-scadenze"]');
     if (tbSc) {
@@ -799,7 +790,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const card = helpers.createCardElement({
         type: "map",
         entities: [{ entity: loc }],
-        hours_to_show: 96,
+        hours_to_show: 48,
         theme_mode: "dark",
         auto_fit: true,
       });
@@ -869,6 +860,44 @@ class RenaultEvCenterPanel extends HTMLElement {
   _rowsOf(state, keys) {
     const list = this._list(state ? state.entity_id : "");
     return list;
+  }
+  _tableRotte(root) {
+    const tb = root.querySelector('[data-c="tab-rotte"]');
+    if (!tb) return;
+    const trips = this._list(this._sid("archivio_viaggi"), this._sid("viaggi_recenti"));
+    const selY = root.querySelector('[data-rf="year"]');
+    const selM = root.querySelector('[data-rfm="month"]');
+    const years = [...new Set(trips.map((r) => String(r.data || "").slice(0, 4)).filter(Boolean))].sort().reverse();
+    if (selY && (selY.dataset.sig || "") !== years.join("|")) {
+      selY.dataset.sig = years.join("|");
+      const cur = selY.value;
+      selY.innerHTML = `<option value="">Tutti gli anni</option>` + years.map((y) => `<option value="${y}">${y}</option>`).join("");
+      selY.value = cur;
+    }
+    if (selM && !selM.dataset.done) {
+      selM.dataset.done = "1";
+      selM.innerHTML = `<option value="">Tutti i mesi</option>` + NOMI_MESI.map((n, i) => `<option value="${String(i + 1).padStart(2, "0")}">${n}</option>`).join("");
+    }
+    const fy = selY ? selY.value : "";
+    const fm = selM ? selM.value : "";
+    const groups = {};
+    trips.forEach((r) => {
+      const d = String(r.data || "");
+      if (fy && d.slice(0, 4) !== fy) return;
+      if (fm && d.slice(5, 7) !== fm) return;
+      const key = `${this._zn(r.zona_partenza ?? r.ricarica_precedente)} → ${this._zn(r.zona_arrivo)}`;
+      const g = groups[key] = groups[key] || { n: 0, km: 0, kwh: 0, costo: 0 };
+      g.n += 1;
+      g.km += parseFloat(r.km || 0) || 0;
+      g.kwh += Math.abs(parseFloat(r.kwh_consumati ?? r.kwh ?? 0)) || 0;
+      g.costo += parseFloat(r.costo_stimato ?? r.costo ?? 0) || 0;
+    });
+    const rows = Object.entries(groups).sort((a, b) => b[1].km - a[1].km);
+    tb.innerHTML = rows.map(([k, g]) => {
+      const eff = g.km > 0 ? g.kwh / g.km * 100 : 0;
+      return `<tr><td>${k}</td><td>${g.n}</td><td>${this._i(g.km)}</td><td>${this._fmt(g.kwh, 1)}</td>
+        <td><span class="badge">${this._fmt(eff, 1)}</span></td><td>${this._fmt(g.costo, 2)} €</td></tr>`;
+    }).join("") || `<tr><td colspan="6" style="color:var(--muted)">Nessun dato per il filtro</td></tr>`;
   }
   _tableMesi(root) {
     const box = root.querySelector('[data-c="tab-mesi"]');
@@ -1355,11 +1384,13 @@ const PAGES = {
         <tr><td><b>SETTIMANA</b></td><td data-per="settimana|usati">—</td><td data-per="settimana|caricati">—</td><td data-per="settimana|km">—</td></tr>
         <tr><td><b>MESE</b></td><td data-per="mese|usati">—</td><td data-per="mese|caricati">—</td><td data-per="mese|km">—</td></tr>
         <tr><td><b>ANNO</b></td><td data-per="anno|usati">—</td><td data-per="anno|caricati">—</td><td data-per="anno|km">—</td></tr></table></div></div>
-  <div class="card" style="margin-top:16px"><h3>Rotte avanzate (consumo per zona)</h3>
-    <table><tr><th>Rotta</th><th>Viaggi</th><th>Km</th><th>Km/viaggio</th><th>kWh/100km</th><th>Spesa</th></tr>
-    <tbody data-c="tab-rotte"></tbody></table>
-    <div class="row"><span>🏆 Più efficiente</span><b data-attr="consumo_per_zona|migliore_rotta">—</b></div>
-    <div class="row"><span>🐢 Più vorace</span><b data-attr="consumo_per_zona|peggior_rotta">—</b></div></div>
+  <div class="card" style="margin-top:16px"><h3>Rotte (consumo per zona)</h3>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <select data-rf="year" style="width:auto"><option value="">Tutti gli anni</option></select>
+      <select data-rfm="month" style="width:auto"><option value="">Tutti i mesi</option></select>
+    </div>
+    <table><tr><th>Rotta</th><th>Viaggi</th><th>Km</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th></tr>
+    <tbody data-c="tab-rotte"></tbody></table></div>
   <div class="card" style="margin-top:16px"><h3>Storico mensile (tutti gli anni)</h3><div data-c="tab-mesi"></div></div>`,
 
   p4: `<h1>Ricariche</h1>
@@ -1457,8 +1488,6 @@ const PAGES = {
     <div class="card"><h3>📅 Scadenze</h3>
       <table><tr><th>Tipo</th><th>Giorni</th></tr><tbody data-c="tab-scadenze"></tbody></table></div></div>
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>Consumo per zona</h3>
-      <table><tr><th>Rotta</th><th>Viaggi</th><th>Km</th><th>kWh/100km</th></tr><tbody data-attr-list="consumo_per_zona"></tbody></table></div>
     <div class="card"><h3>🌦️ Meteo vs consumi</h3>
       <div class="row"><span>Temperatura esterna</span><b><span data-f="temp_est">—</span> °C</b></div>
       <div class="row"><span>Consumo attuale</span><b><span data-f="kwh_100">—</span> kWh/100km</b></div>
@@ -1479,7 +1508,6 @@ const PAGES = {
     <div class="card"><h3>Notifiche</h3>
       <div class="row"><span>⚡ Avvio ricarica</span><label class="switch"><input type="checkbox" data-sw="sw_start"><span></span></label></div>
       <div class="row"><span>🔋 Fine ricarica (kWh, SoC, costo)</span><label class="switch"><input type="checkbox" data-sw="sw_end"><span></span></label></div>
-      <div class="row"><span>⚠️ Batteria bassa a casa</span><label class="switch"><input type="checkbox" data-sw="sw_low"><span></span></label></div>
       <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div></div>
   <div class="grid g3" style="margin-top:16px">
     <div class="card"><h3>⏰ Programma ricarica</h3>
@@ -1501,7 +1529,7 @@ const PAGES = {
       <div class="btn" data-cmd="schsave_clima" style="margin-top:10px">💾 Salva programma clima</div>
       <div style="color:var(--muted);font-size:11px;margin-top:6px">Premе il tasto Avvia A/C all'orario scelto (modo/temperatura non sono inviabili coi button Renault).</div>
     </div>
-    <div class="card"><h3>🔔 Promemoria collegamento</h3>
+    <div class="card"><h3>🔔 Promemoria batteria bassa</h3>
       <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="promemoria"><span></span></label></div>
       <div class="row"><span>Orario</span><input type="time" data-sch="promemoria" data-k="inizio" value="21:00"></div>
       <div class="row" style="flex-wrap:wrap;gap:6px"><span>Giorni</span>
