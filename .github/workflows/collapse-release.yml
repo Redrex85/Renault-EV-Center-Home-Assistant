@@ -1,0 +1,66 @@
+name: Collapse release series
+
+# Accorpa una serie di patch in UN solo tag/release.
+# Esempio: quando si passa a 1.0.6, lancia con series=1.0.5
+# -> elimina i tag/release 1.0.5.* e crea un unico tag 1.0.5 all'ultimo commit della serie.
+on:
+  workflow_dispatch:
+    inputs:
+      series:
+        description: "Serie da accorpare (es. 1.0.5)"
+        required: true
+        default: "1.0.5"
+
+permissions:
+  contents: write
+
+jobs:
+  collapse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Collapse series into one tag + release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          S="${{ github.event.inputs.series }}"
+          echo "Serie da accorpare: $S"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch --tags --force origin >/dev/null 2>&1 || true
+
+          # ultimo commit della serie (tag piu' recente che inizia con "$S.")
+          LAST="$(git tag -l "${S}.*" | sort -V | tail -n1)"
+          if [ -z "$LAST" ]; then
+            echo "Nessun tag ${S}.* da accorpare — creo solo $S."
+            SHA="$(git rev-parse HEAD)"
+          else
+            SHA="$(git rev-list -n1 "$LAST")"
+            echo "Ultimo tag serie: $LAST -> $SHA"
+          fi
+
+          # 1) rimuovi release + tag remoti della serie
+          for t in $(git ls-remote --tags origin "refs/tags/${S}.*" | sed 's#.*refs/tags/##' | grep -v '\^{}'); do
+            echo "rimuovo $t"
+            gh release delete "$t" --yes --cleanup-tag 2>/dev/null || git push origin --delete "$t" || true
+          done
+
+          # 2) rimuovi i tag locali della serie
+          git tag -l "${S}.*" | xargs -r git tag -d || true
+
+          # 3) crea/sposta il tag unico all'ultimo commit della serie
+          git tag -f "$S" "$SHA"
+          git push -f origin "$S"
+
+          # 4) release unica (se manca)
+          if gh release view "$S" >/dev/null 2>&1; then
+            gh release edit "$S" --target "$SHA" || true
+          else
+            gh release create "$S" --title "$S" --target "$SHA" --generate-notes
+          fi
+          echo "Accorpata la serie $S in un unico tag $S."

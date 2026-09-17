@@ -1,5 +1,58 @@
 # Changelog
 
+Release accorpate: **1.0.4 · 1.0.3 · 1.0.1 · 1.0.0** — le patch `1.0.3.x` / `1.0.4.x`
+non esistono più come release separate.
+La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
+al passaggio alla **1.0.6** (workflow *Collapse release series*).
+
+## 1.0.5 — Pannello EV Center, Wallbox e rifiniture
+
+### Pannello Lovelace (`renault-ev-center-panel.js`)
+- Pannello completo a **11 pagine**: Panoramica, Viaggi, Statistiche, Ricariche,
+  Salute batteria, Manutenzione, Risparmi, Extra, Automazioni, Impostazioni, **Wallbox**.
+- Sensori cliccabili → more-info di Home Assistant; date `gg-mm-aaaa`; zone leggibili;
+  selettore tema (pulsante palette) + navigazione laterale e mobile.
+
+### Wallbox (nuova pagina)
+- Live: **stato**, potenza, corrente, tensione, temperatura, motivo limite.
+- **Tempo sessione** e **kWh sessione**: entità prese dalla configurazione, con fallback
+  al **contatore interno** (parte oltre la soglia W) e ai sensori Lektrico; formattazione
+  adattiva **secondi/minuti/ore**.
+- **Limite di carica in A** (slider sul `number` mappato) e **avvio/stop** ricarica.
+- **Bilanciamento solare** (switch + surplus/rete/ampere) e **bilanciamento casalingo**
+  (automazioni HA con "wallbox" nel nome).
+
+### Manutenzione · Risparmi · Extra · Automazioni
+- Manutenzione: Tagliando e Cambio gomme affiancati, **registro interventi** con elimina,
+  form d'inserimento compatto; scadenze da ultima manutenzione + intervallo km.
+- Risparmi: mese/anno, bollo e **costo totale ricariche** letti dai sensori reali.
+- Extra: Meteo a piena larghezza, **CO₂ evitata**, scadenze; rimosse card ridondanti.
+- Automazioni: notifiche, programma ricarica/clima, promemoria batteria bassa e nuova
+  **"Notifica avvio ricarica"** (trigger sull'entità stato wallbox mappata in configurazione),
+  create da *Impostazioni → Crea automazioni consigliate* in `automations.yaml`.
+
+### Correzioni
+- Contatori giornalieri **dimezzati**: baseline ancorata all'odometro; workaround `max(contatore, viaggi)`.
+- **Giorno sbagliato** per l'early-exit del coordinator (aggiunta chiave `daily`).
+- `DeltaMeter`: direzione "down" ripristinata + auto-heal; `button.press` ora fa refresh.
+- **Trip engine** seed-based: niente viaggi fantasma ad auto ferma; chiusura su arrivo/GPS.
+- Mappa spostamenti via card nativa; rimossi i sottotitoli `.sub`; numeri `data-dec`.
+
+## 1.0.4 — Pannello Lovelace e servizi
+
+- Introdotto il **pannello Lovelace** (`www/renault-ev-center-panel.js`, vista `panel`)
+  registrato dalla dashboard laterale.
+- `dashboard.py` riscritto; `RELAZIONE_INTEGRAZIONE.md`; nuovi servizi in `services.yaml`;
+  `strings.json` + traduzioni **it** ampliati.
+- Card JS `renault-ev-center-card.js`; preview aggiornata.
+
+## 1.0.3 — Branding, icone e documentazione
+
+- Aggiunti **brand assets** (`brand/icon.png`, `icon@2x`, logo) e icona HACS + `icon.png`.
+- **README** ampliato (guida completa, funzionalità, esempi); docs d'installazione (IT/EN/FR).
+- `__init__.py` esteso; allineamento traduzioni **en**/**fr**; workflow `validate` aggiornato.
+- *(Assorbe la 1.0.2.)*
+
 ## 1.0.1 — Correzioni bug
 
 - **Import mancanti**: aggiunti `DOMAIN` e `CONF_WB_MAX_CURRENT` in `coordinator.py`;
