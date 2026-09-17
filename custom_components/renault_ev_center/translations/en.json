@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "🚗 Renault EV Center — Your car",
-        "description": "![Renault EV Center](https://raw.githubusercontent.com/Redrex85/Renault-Home-Assistant-Package/main/custom_components/renault_ev_center/brand/logo.png)\n\n**Welcome!** Select your Renault EV entities (official Renault integration).\n\n- Give the car a **short name** (e.g. `Megane`): it becomes the prefix of all new entities.\n- The **model** sets the car picture.\n- You can create the **dashboard** in the sidebar automatically.",
+        "description": "**Welcome!** Select your Renault EV entities (official Renault integration).\n\n- Give the car a **short name** (e.g. `Megane`): it becomes the prefix of all new entities.\n- The **model** sets the car picture.\n- You can create the **dashboard** in the sidebar automatically.",
         "data": {
           "model": "Car model (sets the picture)",
           "create_dashboard": "Create the dashboard automatically in the sidebar"
@@ -140,7 +140,7 @@
               "charge_stop_time": "Charge stop time",
               "charge_start_soc": "Start charge below (%)",
               "charge_stop_soc": "Stop charge above (%)",
-              "wb_charge_switch": "Wallbox start/stop entity (switch or button)",
+              "wb_charge_switch": "WALLBOX charge start (switch or button) — used by Start charge and the automation",
               "charge_target_number": "Charge target number (fallback stop)"
             }
           },
@@ -286,7 +286,7 @@
               "charge_stop_time": "Charge stop time",
               "charge_start_soc": "Charge start %",
               "charge_stop_soc": "Charge stop %",
-              "wb_charge_switch": "Wallbox charge switch (for scheduled charging)",
+              "wb_charge_switch": "WALLBOX charge start (switch or button) — used by Start charge and the automation",
               "charge_target_number": "Charge target number (for stop)"
             }
           },

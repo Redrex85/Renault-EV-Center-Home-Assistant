@@ -18,9 +18,33 @@
  *   notify: notify.michele
  *   overrides: {battery: "sensor.megane_battery", ...}
  */
+
+/** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
+const REC_VER = "1.0.6.4";
+let _recVerChecked = false;
+
 class RenaultEvCenterPanel extends HTMLElement {
+  /** Se la risorsa servita ha una versione diversa, ricarica la pagina una volta. */
+  _checkVersion() {
+    if (_recVerChecked) return;
+    _recVerChecked = true;
+    try {
+      fetch(`/local/renault-ev-center/renault-ev-center-panel.js?ts=${Date.now()}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.text() : ""))
+        .then((t) => {
+          const m = t && t.match(/const REC_VER = "([^"]+)"/);
+          if (!m || m[1] === REC_VER) return;
+          const key = "rec_ver_" + m[1];
+          if (sessionStorage.getItem(key)) return;
+          sessionStorage.setItem(key, "1");
+          location.reload();
+        })
+        .catch(() => {});
+    } catch (e) { /* ignore */ }
+  }
   setConfig(config) {
     if (!config) config = {};
+    this._checkVersion();
     const name = config.name || "Megane";
     this._cfg = {
       name,
@@ -455,7 +479,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.6</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v${REC_VER}</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -733,13 +757,18 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       case "charge": {
         const b = this._st(
+          this._ov("wb_charge_switch"),
           this._ov("start_charge"),
-          "button.start_charge",
           this._car("button", "start_charge"),
           this._car("button", "avviare_la_ricarica"),
+          "button.wallbox_charger_start",
+          "button.start_charge",
         );
-        if (b) this._call("button", "press", { entity_id: b.entity_id }, "⚡ Avvio carica");
-        else this._toast("⚠️ Pulsante carica non trovato (configura overrides.start_charge)");
+        if (!b) { this._toast("⚠️ Nessun avvio carica trovato (mappa 'Avvio carica WALLBOX' in Configura)"); break; }
+        const dom = String(b.entity_id).split(".")[0];
+        if (dom === "switch") this._call("switch", "turn_on", { entity_id: b.entity_id }, "⚡ Avvio carica (wallbox)");
+        else if (dom === "button") this._call("button", "press", { entity_id: b.entity_id }, "⚡ Avvio carica");
+        else this._call("homeassistant", "turn_on", { entity_id: b.entity_id }, "⚡ Avvio carica");
         break;
       }
       case "close_trip": this._call(D, "close_trip", {}, "🏁 Viaggio chiuso"); break;

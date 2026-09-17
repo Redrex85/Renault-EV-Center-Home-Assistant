@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "🚗 Renault EV Center — L'auto",
-        "description": "![Renault EV Center](https://raw.githubusercontent.com/Redrex85/Renault-Home-Assistant-Package/main/custom_components/renault_ev_center/brand/logo.png)\n\n**Benvenuto!** Seleziona le entità della tua Renault elettrica (integrazione Renault ufficiale).\n\n- Dai all'auto un **nome breve** (es. `Megane`): sarà il prefisso di tutte le nuove entità.\n- Il **modello** sceglie la foto dell'auto.\n- Puoi far creare la **dashboard** nella barra laterale.",
+        "description": "**Benvenuto!** Seleziona le entità della tua Renault elettrica (integrazione Renault ufficiale).\n\n- Dai all'auto un **nome breve** (es. `Megane`): sarà il prefisso di tutte le nuove entità.\n- Il **modello** sceglie la foto dell'auto.\n- Puoi far creare la **dashboard** nella barra laterale.",
         "sections": {
           "car": {
             "name": "🚗 L'auto",
@@ -132,7 +132,7 @@
               "charge_stop_time": "Orario stop carica",
               "charge_start_soc": "% avvio carica",
               "charge_stop_soc": "% stop carica",
-              "wb_charge_switch": "Switch/avvio carica wallbox (per la carica programmata)",
+              "wb_charge_switch": "Avvio carica WALLBOX (switch o button) — usato da Avvia carica e dall'automazione",
               "charge_target_number": "Number target di carica (per lo stop)"
             }
           },
@@ -278,7 +278,7 @@
               "charge_stop_time": "Orario stop carica",
               "charge_start_soc": "% avvio carica",
               "charge_stop_soc": "% stop carica",
-              "wb_charge_switch": "Switch/avvio carica wallbox (per la carica programmata)",
+              "wb_charge_switch": "Avvio carica WALLBOX (switch o button) — usato da Avvia carica e dall'automazione",
               "charge_target_number": "Number target di carica (per lo stop)"
             }
           },

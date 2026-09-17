@@ -1908,10 +1908,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                                 "target": {"entity_id": tgt}, "data": {"value": int(soc)}})
             wb = self.opts.get(CONF_WB_CHARGE_SWITCH)
             btn = self.opts.get(CONF_CHARGE_START_BUTTON)
-            if wb:
-                actions.append({"action": "homeassistant.turn_on", "target": {"entity_id": wb}})
-            elif btn:
-                actions.append({"action": "button.press", "target": {"entity_id": btn}})
+            ent = wb or btn
+            if ent:
+                dom = str(ent).split(".")[0]
+                if dom == "switch":
+                    actions.append({"action": "switch.turn_on", "target": {"entity_id": ent}})
+                elif dom == "button":
+                    actions.append({"action": "button.press", "target": {"entity_id": ent}})
+                else:
+                    actions.append({"action": "homeassistant.turn_on", "target": {"entity_id": ent}})
             cfg = {"alias": f"Renault EV Center — Programma ricarica ({n})",
                    "trigger": [{"trigger": "time", "at": f"{inizio}:00"}],
                    "condition": cond, "action": actions, "mode": "single"}

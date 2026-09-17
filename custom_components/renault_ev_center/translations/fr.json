@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "🚗 Renault EV Center — Votre voiture",
-        "description": "![Renault EV Center](https://raw.githubusercontent.com/Redrex85/Renault-Home-Assistant-Package/main/custom_components/renault_ev_center/brand/logo.png)\n\n**Bienvenue !** Sélectionnez vos entités Renault (intégration officielle).\n\n- Donnez un **nom court** à la voiture (ex. `Mégane`) : il devient le préfixe de toutes les nouvelles entités.\n- Le **modèle** définit l'image de la voiture.\n- Vous pouvez créer le **tableau de bord** dans la barre latérale automatiquement.",
+        "description": "**Bienvenue !** Sélectionnez vos entités Renault (intégration officielle).\n\n- Donnez un **nom court** à la voiture (ex. `Mégane`) : il devient le préfixe de toutes les nouvelles entités.\n- Le **modèle** définit l'image de la voiture.\n- Vous pouvez créer le **tableau de bord** dans la barre latérale automatiquement.",
         "data": {
           "model": "Modèle de voiture (définit l'image)",
           "create_dashboard": "Créer automatiquement le tableau de bord"
@@ -140,7 +140,7 @@
               "charge_stop_time": "Heure fin charge",
               "charge_start_soc": "Démarrer charge sous (%)",
               "charge_stop_soc": "Arrêter charge au-dessus (%)",
-              "wb_charge_switch": "Entité start/stop wallbox (switch ou button)",
+              "wb_charge_switch": "Démarrage charge WALLBOX (switch ou bouton) — utilisé par Démarrer la charge et l'automatisation",
               "charge_target_number": "Nombre cible de charge (repli arrêt)"
             }
           },
@@ -286,7 +286,7 @@
               "charge_stop_time": "Heure arrêt de charge",
               "charge_start_soc": "% début de charge",
               "charge_stop_soc": "% arrêt de charge",
-              "wb_charge_switch": "Interrupteur charge wallbox (pour la charge programmée)",
+              "wb_charge_switch": "Démarrage charge WALLBOX (switch ou bouton) — utilisé par Démarrer la charge et l'automatisation",
               "charge_target_number": "Number cible de charge (pour l'arrêt)"
             }
           },
