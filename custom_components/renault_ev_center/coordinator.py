@@ -638,6 +638,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             location,
             self._wb_counter(),
             self._automation_sig(),
+            keys["daily"],
         )
         if self._last_inputs == _curr_inputs and not self.trip.active and not self.charge_session and self.data:
             return self.data
@@ -722,9 +723,17 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         now_mono = __import__("time").monotonic()
         trip_opened = False
         closed_trip = None
-        opened, _ = self.trip.tick(odometer, battery, location, eff_kwh_100, now_wall, now_mono)
+        # coordinate GPS del tracker: servono a capire il movimento anche "fuori -> fuori"
+        lat = lon = None
+        _loc_ent = o.get(CONF_LOCATION_ENTITY)
+        if _loc_ent:
+            _st = hass.states.get(_loc_ent)
+            if _st is not None:
+                lat = _st.attributes.get("latitude")
+                lon = _st.attributes.get("longitude")
+        opened, _ = self.trip.tick(odometer, battery, location, eff_kwh_100, now_wall, now_mono, lat, lon)
         trip_opened = opened
-        if self.trip.should_close(now_mono):
+        if self.trip.should_close(now_mono) or self.trip.arrived or (self.trip.active and (now_wall - self.trip.ts_start) > 6 * 3600):
             closed_trip = self.trip.close(location, eff_kwh_100, now_wall)
             if closed_trip is not None:
                 self._enrich_trip(closed_trip)
@@ -1033,28 +1042,33 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
         yday = (now - timedelta(days=1)).strftime("%Y-%m-%d")
 
-        def _trips_sum(pred) -> tuple[float, float]:
-            km = kwh = 0.0
+        def _trips_sum(pred) -> tuple[float, float, float]:
+            km = kwh = pct = 0.0
             for t in trips:
                 if pred(str(t.get("data", ""))):
                     km += _f(t.get("km"))
                     kwh += _f(t.get("kwh_consumati"))
-            return round(km, 0), round(kwh, 2)
+                    pct += abs(_f(t.get("batteria_delta")))
+            return round(km, 0), round(kwh, 2), round(pct, 1)
 
-        o_km, o_kwh = _trips_sum(lambda d: d == today_key)
-        i_km, i_kwh = _trips_sum(lambda d: d == yday)
-        w_km, w_kwh = _trips_sum(lambda d: _week_key(d) == keys["weekly"])
-        m_km, m_kwh = _trips_sum(lambda d: d[:7] == keys["monthly"])
-        y_km, y_kwh = _trips_sum(lambda d: d[:4] == keys["yearly"])
+        o_km, o_kwh, o_pct = _trips_sum(lambda d: d == today_key)
+        i_km, i_kwh, i_pct = _trips_sum(lambda d: d == yday)
+        w_km, w_kwh, _ = _trips_sum(lambda d: _week_key(d) == keys["weekly"])
+        m_km, m_kwh, _ = _trips_sum(lambda d: d[:7] == keys["monthly"])
+        y_km, y_kwh, _ = _trips_sum(lambda d: d[:4] == keys["yearly"])
 
-        def _pct(kwh: float) -> float:
+        def _pct_from_kwh(kwh: float) -> float:
             cap = self.capacity or 60.0
             return round(kwh / cap * 100.0, 1) if kwh > 0 else 0.0
 
+        def _pct(trip_pct: float, kwh: float) -> float:
+            # priorità al delta batteria reale dei viaggi, altrimenti kWh/capacità
+            return trip_pct if trip_pct > 0 else _pct_from_kwh(kwh)
+
         percorrenza = [
-            {"nome": "Oggi", "pct": _pct(o_kwh), "usati": o_kwh,
+            {"nome": "Oggi", "pct": _pct(o_pct, o_kwh), "usati": o_kwh,
              "caricati": round(_f(self.wb_meters["daily"].value), 2), "km": o_km},
-            {"nome": "Ieri", "pct": _pct(i_kwh), "usati": i_kwh,
+            {"nome": "Ieri", "pct": _pct(i_pct, i_kwh), "usati": i_kwh,
              "caricati": round(_f(self.wb_meters["daily"].last), 2), "km": i_km},
             {"nome": "Settimana", "usati": w_kwh,
              "caricati": round(_f(self.wb_meters["weekly"].value), 2), "km": w_km},

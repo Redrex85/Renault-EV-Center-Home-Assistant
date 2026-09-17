@@ -38,8 +38,22 @@ class RenaultEvCenterPanel extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    if (!this._built) this._build();
-    else if (!this._raf) this._raf = requestAnimationFrame(() => { this._raf = null; if (!PAGES[this._page]) this._page = "p1"; this._update(); });
+    try {
+      if (!this._built) this._build();
+      else if (!this._raf) this._raf = requestAnimationFrame(() => {
+        this._raf = null;
+        try { if (!PAGES[this._page]) this._page = "p1"; this._update(); }
+        catch (e) { this._showError(e); }
+      });
+    } catch (e) { this._showError(e); }
+  }
+
+  _showError(e) {
+    try {
+      if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+      const msg = (e && e.stack) ? e.stack : String(e);
+      this.shadowRoot.innerHTML = `<div style="padding:16px;background:#1a0f12;color:#f87171;font-family:monospace;font-size:12px;white-space:pre-wrap">Renault EV Center — errore:<br>${msg}</div>`;
+    } catch (e2) { /* noop */ }
   }
 
   getCardSize() { return 12; }
@@ -146,6 +160,9 @@ class RenaultEvCenterPanel extends HTMLElement {
         const v = r ? (parseFloat(r.usati) || 0) : null;
         if (v !== null && v > 0) return v;
         const m = S._num(S._sid("battery_energy_daily_discharge"), "sensor.megane_battery_energy_daily_discharge", S._sid("kwh_usati_giorno"), S._sid("kwh_oggi"));
+        if (m !== null && Math.abs(m) > 0.05) return Math.abs(m);
+        const pct = r ? (parseFloat(r.pct) || 0) : 0;
+        if (pct > 0) return Math.round(pct / 100 * (parseFloat(S._cfg.capacity) || 60) * 100) / 100;
         return m === null ? null : Math.abs(m);
       }
       case "km_per_kwh": {
@@ -427,7 +444,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.33</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.34</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -1125,7 +1142,12 @@ h1{font-size:26px;margin-bottom:4px}
 @media(max-width:1100px){.g3{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:700px){.g3,.g2{grid-template-columns:1fr}.sidebar{display:none}.app{flex-direction:column;min-height:0}.main{margin-left:0;width:100%}}
 .mobilenav{display:none;position:sticky;top:0;z-index:30;background:var(--panel2)}
-.note{margin-top:26px;color:var(--muted);font-size:12.5px;border-top:1px dashed var(--line);padding-top:14px}
+  @media(max-width:700px){
+    .card{overflow-x:auto}
+    table{font-size:12px}
+    th,td{padding:6px 6px}
+  }
+  .note{margin-top:26px;color:var(--muted);font-size:12.5px;border-top:1px dashed var(--line);padding-top:14px}
 .switch{position:relative;width:46px;height:25px;flex-shrink:0;display:inline-block}
 .switch input{opacity:0;width:0;height:0}
 .switch span{position:absolute;inset:0;background:#39445a;border-radius:999px;transition:.25s;cursor:pointer}
@@ -1532,6 +1554,8 @@ const PAGES = {
       Impostazioni → Automazioni. Notifiche via persistent_notification se nessun servizio notify configurato.</div></div>`,
 };
 
-customElements.define("renault-ev-center-panel", RenaultEvCenterPanel);
+if (!customElements.get("renault-ev-center-panel")) {
+  customElements.define("renault-ev-center-panel", RenaultEvCenterPanel);
+}
 
 

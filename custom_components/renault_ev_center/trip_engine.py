@@ -77,6 +77,9 @@ class TripEngine:
         self.zone_start = "unknown"
         self.mileage_now = 0.0
         self.battery_now = 0.0
+        self.lat_last: float | None = None
+        self.lon_last: float | None = None
+        self.arrived = False
 
     def restore(self, data: dict[str, Any]) -> None:
         self.active = bool(data.get("active", False))
@@ -106,7 +109,8 @@ class TripEngine:
 
     def tick(self, odometer: float, battery_pct: float, zone: str,
              eff_live_kwh_100km: float, now_wall: float | None = None,
-             now_mono: float | None = None) -> tuple[bool, dict | None]:
+             now_mono: float | None = None,
+             lat: float | None = None, lon: float | None = None) -> tuple[bool, dict | None]:
         """Elabora un campione. Ritorna (viaggio_aperto, viaggio_chiuso|None)."""
         opened = False
         closed = None
@@ -128,6 +132,8 @@ class TripEngine:
             self.zone_start = zone or "unknown"
             self.mileage_now = odometer
             self.battery_now = battery_pct
+            self.lat_last = lat
+            self.lon_last = lon
             return opened, closed
 
         # aggiorna posizione attuale
@@ -135,11 +141,23 @@ class TripEngine:
         prev_battery = self.battery_now
         self.mileage_now = odometer
         self.battery_now = battery_pct
-        # timeout solo su movimento reale (Renault: odometro solo a spegnimento,
-        # batteria ogni 5-6'): mantiene il viaggio vivo anche mentre l'odometro è fermo
-        if abs(odometer - prev_mileage) > 0.05 or (prev_battery - battery_pct) >= 0.3:
+        # attività = movimento odometro, oppure scarica batteria, oppure spostamento GPS.
+        # Il GPS copre il caso "fuori -> fuori" (stato zona invariato ma coordinate diverse).
+        moved_gps = (
+            lat is not None and lon is not None
+            and self.lat_last is not None and self.lon_last is not None
+            and (abs(lat - self.lat_last) > 0.0005 or abs(lon - self.lon_last) > 0.0005)
+        )
+        if abs(odometer - prev_mileage) > 0.05 or (prev_battery - battery_pct) >= 1.0 or moved_gps:
             self.ts_last_change = now_wall
             self.mono_last_change = now_mono
+        # arrivo: Renault aggiorna odometro+posizione a spegnimento.
+        # se nello stesso campione cambia la posizione E salta l'odometro → auto spenta all'arrivo.
+        self.arrived = bool(moved_gps and abs(odometer - prev_mileage) > 0.5)
+        if lat is not None:
+            self.lat_last = lat
+        if lon is not None:
+            self.lon_last = lon
         return opened, closed
 
     def should_close(self, now_mono: float | None = None) -> bool:
