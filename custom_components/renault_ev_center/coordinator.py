@@ -1841,9 +1841,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 "condition": [{"condition": "numeric_state",
                                 "entity_id": f"sensor.{n}_km_giornalieri", "above": 0.5}],
                 "action": [_pn(f"rec_sum_{n}", "📊 Oggi con la tua Renault",
-                                "🚗 {{ states('sensor." + n + "_km_giornalieri') }} km · "
-                                "📈 {{ states('sensor." + n + "_kwh_per_100km') }} kWh/100km · "
-                                "💸 {{ states('sensor." + n + "_costo_per_km') }} €/km")],
+                                "{% set kwh = states('sensor." + n + "_energia_batteria_giornaliero') | float(none) %}"
+                                "{% set prezzo = states('number." + n + "_costo_energia_casa') | float(none) %}"
+                                "Km oggi: {{ states('sensor." + n + "_km_giornalieri') }} km\n"
+                                "Energia consumata oggi: {% if kwh is not none %}{{ kwh | round(2) }} kWh"
+                                "{% else %}non disponibile{% endif %}\n"
+                                "Costo totale energia oggi (stimato, tariffa casa): "
+                                "{% if kwh is not none and prezzo is not none %}{{ (kwh * prezzo) | round(2) }} €"
+                                "{% else %}non disponibile{% endif %}\n"
+                                "Consumo: {{ states('sensor." + n + "_kwh_per_100km') }} kWh/100km · "
+                                "Costo/km: {{ states('sensor." + n + "_costo_per_km') }} €/km")],
                 "mode": "single",
             },
         }

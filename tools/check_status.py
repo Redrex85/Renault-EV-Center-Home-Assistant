@@ -250,6 +250,35 @@ if os.path.isfile(agent):
     else:
         ok("nessuna attività aperta dichiarata in agent.md")
 
+print("\n[7] Riepilogo giornaliero")
+try:
+    import ast
+    from jinja2 import Environment
+
+    with open(os.path.join(CC, "coordinator.py"), encoding="utf-8") as fh:
+        tree = ast.parse(fh.read())
+    message = next(node.args[2] for node in ast.walk(tree)
+                   if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                   and node.func.id == "_pn" and isinstance(node.args[0], ast.JoinedStr)
+                   and node.args[0].values[0].value == "rec_sum_")
+    template = Environment().from_string(eval(
+        compile(ast.Expression(message), "<daily-summary>", "eval"),
+        {"__builtins__": {}, "n": "renault"}))
+    for energy, price, expected in (
+        ("12", "0.25", "3.0 €"), ("0", "0.25", "0.0 €"),
+        ("12", "0", "0.0 €"), ("unknown", "0.25", "non disponibile"),
+        ("12", "unavailable", "non disponibile"),
+    ):
+        states = {"sensor.renault_energia_batteria_giornaliero": energy,
+                  "number.renault_costo_energia_casa": price}
+        rendered = template.render(states=lambda entity: states.get(entity, "unknown"))
+        assert expected in rendered, rendered
+        if energy == "12":
+            assert "12.0 kWh" in rendered, rendered
+    ok("riepilogo: consumo, costo, valori zero e dati mancanti")
+except Exception as e:
+    bad(f"riepilogo giornaliero: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:
