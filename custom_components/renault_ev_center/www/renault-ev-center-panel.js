@@ -276,12 +276,12 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "assic": return S._st(S._sid("assicurazione"));
       case "scadenze": return S._st(S._sid("prossima_scadenza"));
       case "teo_tagliandi": { const km = S._num(S._sid("chilometraggio"), S._ov("odometer"), S._car("sensor", "odometer")); const st = S._st(S._sid("tagliandi")); const iv = st ? (S._attrAny(st, ["intervallo_km"]) || 15000) : 15000; return km === null ? null : Math.floor(km / iv) * 450; }
-      case "risp_tagliandi": { const km = S._num(S._sid("chilometraggio"), S._ov("odometer"), S._car("sensor", "odometer")); const iv = S._num(S._sid("tagliandi")) === null ? null : (S._attrAny(S._st(S._sid("tagliandi")), ["intervallo_km"]) || 15000); const sp = S._num(S._sid("tagliandi")); return (km === null || iv === null || sp === null || iv <= 0) ? null : Math.floor(km / iv) * 450 - sp; }
-      case "risp_bollo": return S._ov("bollo_termico") ? S._num(S._ov("bollo_termico")) : null;
+      case "risp_tagliandi": { const v0 = S._num(S._sid("risparmio_tagliandi_vs_diesel")); if (v0 !== null) return v0; const km = S._num(S._sid("chilometraggio"), S._ov("odometer"), S._car("sensor", "odometer")); const iv = S._num(S._sid("tagliandi")) === null ? null : (S._attrAny(S._st(S._sid("tagliandi")), ["intervallo_km"]) || 15000); const sp = S._num(S._sid("tagliandi")); return (km === null || iv === null || sp === null || iv <= 0) ? null : Math.floor(km / iv) * 450 - sp; }
+      case "risp_bollo": { const v = S._num(S._sid("risparmio_bollo_vs_diesel")); return v !== null ? v : (S._ov("bollo_termico") ? S._num(S._ov("bollo_termico")) : null); }
       case "assic_costo": return S._num(S._nid("assic_costo"), S._nid("costo_assicurazione"));
-      // Risparmi carburante (calcolati client: le entità risparmio_* non esistono nell'integrazione)
-      case "risp_mese": return S._rispKm(S._num(S._sid("km_mensili")), S._num(S._sid("costo_ricarica_mensile"), S._sid("costo_ricarica_mese")));
-      case "risp_anno": return S._rispKm(S._num(S._sid("km_annuali")), S._num(S._sid("costo_ricarica_annuale"), S._sid("costo_ricarica_anno")));
+      // Risparmi carburante: entità risparmio_* dell'integrazione, altrimenti calcolo client
+      case "risp_mese": { const v = S._num(S._sid("risparmio_mese_vs_diesel")); return v !== null ? v : S._rispKm(S._num(S._sid("km_mensili")), S._num(S._sid("costo_ricarica_mensile"), S._sid("costo_ricarica_mese"))); }
+      case "risp_anno": { const v = S._num(S._sid("risparmio_anno_vs_diesel")); return v !== null ? v : S._rispKm(S._num(S._sid("km_annuali")), S._num(S._sid("costo_ricarica_annuale"), S._sid("costo_ricarica_anno"))); }
       case "spesa_teorica": {
         if (S._ov("spesa_teorica")) return S._num(S._ov("spesa_teorica"));
         const st = S._st(S._sid("risparmio_totale_vs_diesel"));
@@ -289,7 +289,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         if (tt !== null) return tt;
         return S._spesaTeo(S._field("odo"));
       }
-      case "costo_ric_tot": return S._num(S._sid("costo_ricarica_totale"), S._ov("costo_ric_tot"));
+      case "costo_ric_tot": { const st = S._st(S._sid("risparmio_totale_vs_diesel")); const v = st ? S._attrAny(st, ["elettrico_totale"]) : null; if (v !== null) return v; return S._num(S._sid("costo_ricarica_totale"), S._ov("costo_ric_tot")); }
       // Extra
       case "drain": {
         const rows = S._list(S._sid("percorrenza"));
@@ -455,7 +455,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.36</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.37</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -485,6 +485,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     });
     // click sui sensori KPI → apre il more-info di HA
     this.shadowRoot.addEventListener("click", (ev) => {
+      const del = ev.target && ev.target.closest ? ev.target.closest("[data-mdel]") : null;
+      if (del) {
+        this._call("renault_ev_center", "delete_maintenance",
+          { maintenance_id: parseInt(del.dataset.mdel, 10) }, "🗑 Intervento eliminato");
+        return;
+      }
       const target = ev.target && ev.target.closest ? ev.target.closest("[data-more], [data-f]") : null;
       if (!target) return;
       const key = target.dataset.more || target.dataset.f;
@@ -740,9 +746,9 @@ class RenaultEvCenterPanel extends HTMLElement {
     const tbTag = root.querySelector('[data-c="tab-tagliandi"]');
     if (tbTag) {
       const rows = this._list(this._sid("tagliandi"));
-      tbTag.innerHTML = rows.slice(0, 6).map((r) =>
-        `<tr><td>${r.data ?? "—"}</td><td>${this._i(parseFloat(r.km) || 0)}</td><td>${r.tipo ?? "—"}</td><td><b>${this._fmt(parseFloat(r.costo ?? r.euro ?? 0), 0)} €</b></td></tr>`).join("")
-        || `<tr><td colspan="4" style="color:var(--muted)">Nessun intervento registrato</td></tr>`;
+      tbTag.innerHTML = rows.slice(0, 12).map((r) =>
+        `<tr><td>${this._d(r.data)}</td><td>${this._i(parseFloat(r.km) || 0)}</td><td>${r.tipo ?? "—"}</td><td><b>${this._fmt(parseFloat(r.costo ?? r.euro ?? 0), 0)} €</b></td><td><span class="dchip" data-mdel="${r.id}" title="Elimina">🗑</span></td></tr>`).join("")
+        || `<tr><td colspan="5" style="color:var(--muted)">Nessun intervento registrato</td></tr>`;
     }
     // righe top/stop da attributi oggetto: [data-topstop="migliore|kwh_per_100km"]
     root.querySelectorAll("[data-topstop]").forEach((el) => {
@@ -1457,35 +1463,36 @@ const PAGES = {
       <tbody data-c="tab-salute"></tbody></table></div></div>`,
 
   p6: `<h1>Manutenzione</h1>
-  <div class="grid g2">
+  <div class="grid g3">
     <div class="card"><h3>🔧 Tagliando</h3>
       <div class="row"><span>Prossimo (km)</span><b><span data-attr="tagliandi|prossimo_km">—</span> km</b></div>
       <div class="row"><span>Speso finora</span><b><span data-f="tagliandi">—</span> € (<span data-attr="tagliandi|n">—</span> interventi)</b></div>
       <div class="inp"><span>Scadenza a km</span><input type="number" data-mk="tagliando"><span class="u">km</span></div>
       <div class="inp"><span>Scadenza a data</span><input type="date" data-mk="tagliando" data-mdate="1"><span class="u"></span></div>
-      <div class="btn" data-cmd="maint_tagliando" style="margin-top:8px">💾 Salva scadenza tagliando</div>
-      <table style="margin-top:10px"><tr><th>Data</th><th>Km</th><th>Tipo</th><th>€</th></tr>
-      <tbody data-c="tab-tagliandi"></tbody></table></div>
+      <div class="btn" data-cmd="maint_tagliando" style="margin-top:8px">💾 Salva scadenza tagliando</div></div>
+    <div class="card"><h3>🛞 Cambio gomme</h3>
+      <div class="inp"><span>Scadenza a km</span><input type="number" data-mk="gomme"><span class="u">km</span></div>
+      <div class="inp"><span>Scadenza a data</span><input type="date" data-mk="gomme" data-mdate="1"><span class="u"></span></div>
+      <div class="btn" data-cmd="maint_gomme" style="margin-top:8px">💾 Salva scadenza gomme</div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Le notifiche scadenze coprono tagliando e gomme.</div></div>
     <div class="card"><h3>🛡️ Assicurazione</h3>
       <div class="row"><span>Scadenza</span><b><span data-attr="assicurazione|data">—</span> · <span data-f="assic">—</span> gg</b></div>
       <div class="inp"><span>Costo annuo</span><input data-n="n_assic"><span class="u">€/anno</span></div>
       <div style="display:flex;gap:8px;margin-top:14px">
         <div class="btn" data-cmd="ass_plus6">Rinnova +6 mesi</div>
-        <div class="btn" data-cmd="ass_plus12">Rinnova +1 anno</div></div></div>
-    <div class="card"><h3>🛞 Cambio gomme</h3>
-      <div class="inp"><span>Scadenza a km</span><input type="number" data-mk="gomme"><span class="u">km</span></div>
-      <div class="inp"><span>Scadenza a data</span><input type="date" data-mk="gomme" data-mdate="1"><span class="u"></span></div>
-      <div class="btn" data-cmd="maint_gomme" style="margin-top:8px">💾 Salva scadenza gomme</div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Ricordati che le notifiche scadenze coprono tagliando e gomme.</div></div></div>
+        <div class="btn" data-cmd="ass_plus12">Rinnova +1 anno</div></div></div></div>
   <div class="card" style="margin-top:16px"><h3>➕ Registra intervento</h3>
-    <div class="grid g2">
-      <div class="inp"><span>Tipo</span><select data-ma="tipo" style="width:auto"><option>Tagliando</option><option>Cambio gomme</option><option>Riparazione</option><option>Altro</option></select></div>
-      <div class="inp"><span>Data</span><input type="date" data-ma="data"></div>
-      <div class="inp"><span>Km</span><input type="number" data-ma="km"><span class="u">km</span></div>
-      <div class="inp"><span>Costo</span><input type="number" data-ma="costo" step="0.01"><span class="u">€</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:center">
+      <select data-ma="tipo" style="width:100%"><option>Tagliando</option><option>Cambio gomme</option><option>Riparazione</option><option>Altro</option></select>
+      <input type="date" data-ma="data" style="width:100%">
+      <input type="number" data-ma="km" placeholder="km" style="width:100%">
+      <input type="number" data-ma="costo" step="0.01" placeholder="€" style="width:100%">
     </div>
     <div class="btn" data-cmd="maint_add" style="margin-top:10px">➕ Aggiungi intervento</div>
   </div>
+  <div class="card" style="margin-top:16px"><h3>📋 Interventi registrati</h3>
+    <table><tr><th>Data</th><th>Km</th><th>Tipo</th><th>€</th><th></th></tr>
+    <tbody data-c="tab-tagliandi"></tbody></table></div>
   <div class="card netto" style="margin-top:16px"><h3>🏆 Risparmio manutenzione</h3>
     <div class="row"><span>Termica teorica (450 € × tagliandi)</span><b><span data-f="teo_tagliandi">—</span> €</b></div>
     <div class="row"><span>Spesa reale EV</span><b><span data-f="tagliandi">—</span> €</b></div>
@@ -1525,7 +1532,7 @@ const PAGES = {
       <div style="color:var(--muted);font-size:11.5px;margin-top:4px">evitata = termica − rete</div></div>
     <div class="card"><h3>📅 Scadenze</h3>
       <table><tr><th>Tipo</th><th>Giorni</th></tr><tbody data-c="tab-scadenze"></tbody></table></div></div>
-  <div class="grid g2" style="margin-top:16px">
+  <div style="margin-top:16px">
     <div class="card"><h3>🌦️ Meteo vs consumi</h3>
       <div class="row"><span>Temperatura esterna</span><b><span data-f="temp_est">—</span> °C</b></div>
       <div class="row"><span>Consumo attuale</span><b><span data-f="kwh_100">—</span> kWh/100km</b></div>
@@ -1544,10 +1551,9 @@ const PAGES = {
   p9: `<h1>Automazioni</h1>
   <div class="grid g2">
     <div class="card"><h3>Notifiche</h3>
-      <div class="row"><span>⚡ Avvio ricarica</span><label class="switch"><input type="checkbox" data-sw="sw_start"><span></span></label></div>
       <div class="row"><span>🔋 Fine ricarica (kWh, SoC, costo)</span><label class="switch"><input type="checkbox" data-sw="sw_end"><span></span></label></div>
-      <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div></div>
-  <div class="grid g3" style="margin-top:16px">
+      <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Avvio ricarica e promemoria batteria bassa si gestiscono nelle card qui sotto.</div></div>
     <div class="card"><h3>⏰ Programma ricarica</h3>
       <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="ricarica"><span></span></label></div>
       <div class="row"><span>Inizio</span><input type="time" data-sch="ricarica" data-k="inizio" value="23:30"></div>
