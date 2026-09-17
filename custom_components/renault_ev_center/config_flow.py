@@ -96,6 +96,7 @@ from .const import (
     CONF_WB_MAX_CURRENT,
     CONF_WB_POWER,
     CONF_WB_SESSION_ENERGY,
+    CONF_WB_SESSION_TIME,
     CONF_WB_STATE,
     CONF_WB_TOTAL_ENERGY,
     DEFAULT_BOLLO_EV,
@@ -188,6 +189,9 @@ def _wallbox_schema(defaults: dict[str, Any]) -> vol.Schema:
         vol.Optional(
             CONF_WB_MAX_CURRENT, description={"suggested_value": defaults.get(CONF_WB_MAX_CURRENT)}
         ): EntitySelector(EntitySelectorConfig(domain=["number"])),
+        vol.Optional(
+            CONF_WB_SESSION_TIME, description={"suggested_value": defaults.get(CONF_WB_SESSION_TIME)}
+        ): EntitySelector(EntitySelectorConfig(domain=["sensor"])),
     })
 
 

@@ -455,7 +455,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       <div class="sidebar">
         <div class="logo">
           <div class="ph">🚗</div>
-          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.38</span><small>${c.name} · live</small></div>
+          <div><b>Renault EV<br>Center</b><span class="ver">v1.0.5.39</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
           ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
@@ -569,8 +569,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     this.shadowRoot.querySelector(".app").dataset.theme = t;
     this.shadowRoot.querySelectorAll("[data-palette]").forEach((b) => b.classList.toggle("active", b.dataset.palette === t));
   }
-  _dur(sec) {
-    if (sec === null || sec === undefined || isNaN(sec)) return "—";
+  _dur(v, unit) {
+    if (v === null || v === undefined || isNaN(v)) return "—";
+    let sec = Number(v);
+    const u = String(unit || "s").toLowerCase();
+    if (u === "h" || u.includes("hour") || u.includes("ora")) sec = v * 3600;
+    else if (u.includes("min")) sec = v * 60;
     const s = Math.max(0, Math.round(sec));
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
     return (h > 0 ? h + "h " : "") + (m > 0 || h > 0 ? m + "m " : "") + ss + "s";
@@ -600,8 +604,9 @@ class RenaultEvCenterPanel extends HTMLElement {
 
     const skwh = S._num(S._ov("wallbox_session_energy"), "sensor.wallbox_session_energy");
     set("session_kwh", skwh === null ? "—" : S._fmt(skwh, 2) + " kWh");
-    const stime = S._num("sensor.wallbox_charging_time");
-    set("session_time", stime === null ? "—" : S._dur(stime));
+    const stEnt = S._st(S._ov("wallbox_session_time"), S._sid("wallbox_tempo_sessione"), "sensor.wallbox_charging_time");
+    const stime = S._num(S._ov("wallbox_session_time"), S._sid("wallbox_tempo_sessione"), "sensor.wallbox_charging_time");
+    set("session_time", stime === null ? "—" : S._dur(stime, stEnt ? stEnt.attributes.unit_of_measurement : "s"));
     const tot = S._num(S._ov("wallbox_total_energy"), "sensor.wallbox_total_charged_energy");
     set("total_kwh", tot === null ? "—" : S._fmt(tot, 1) + " kWh");
 
@@ -638,7 +643,14 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (host) {
       const ids = ["automation.regola_potenza_wallbox_se_consumo_elevato",
                    "automation.ripristina_potenza_wallbox_se_consumo_basso"];
-      const found = ids.map((id) => S._hass.states[id]).filter(Boolean);
+      let found = ids.map((id) => S._hass.states[id]).filter(Boolean);
+      if (!found.length) {
+        found = Object.values(S._hass.states)
+          .filter((s) => s.entity_id.startsWith("automation.")
+            && /wallbox/i.test(s.entity_id + " " + (s.attributes.friendly_name || "")))
+          .sort((a, b) => String(a.attributes.friendly_name || a.entity_id)
+            .localeCompare(String(b.attributes.friendly_name || b.entity_id), "it"));
+      }
       host.innerHTML = found.map((s) =>
         `<div class="cmd" data-cmd="switch" data-ent="${s.entity_id}"><span class="em">${s.state === "on" ? "🟢" : "⚪"}</span>${s.attributes.friendly_name || s.entity_id}<b>${s.state === "on" ? "attiva" : "spenta"}</b></div>`).join("")
         || `<div style="color:var(--muted);font-size:12px">Nessuna automazione "potenza wallbox" trovata — creala in Impostazioni → Automazioni.</div>`;

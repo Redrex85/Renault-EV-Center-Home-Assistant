@@ -110,6 +110,7 @@ async def async_setup_entry(
 
     if wb:
         entities.append(WbPotenza(coordinator, name))
+        entities.append(WbTempoSessione(coordinator, name))
 
     async_add_entities(entities)
 
@@ -719,6 +720,31 @@ class WbPotenza(MateSensor):
             "surplus_w": b.get("surplus_w"),
             "rete_w": b.get("rete_w"),
             "ampere_impostati": b.get("ampere"),
+        }
+
+
+class WbTempoSessione(MateSensor):
+    """Tempo della sessione di ricarica wallbox (contatore personale, soglia W)."""
+
+    def __init__(self, coordinator, name):
+        super().__init__(coordinator, name)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_wb_tempo_sessione"
+        self._attr_name = f"{name} Wallbox Tempo Sessione"
+        self._attr_native_unit_of_measurement = "s"
+        self._attr_device_class = SensorDeviceClass.DURATION
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_icon = "mdi:timer-outline"
+
+    @property
+    def native_value(self):
+        return self.coordinator.data.get("wb_session_time")
+
+    @property
+    def extra_state_attributes(self):
+        s = int(self.coordinator.data.get("wb_session_time") or 0)
+        return {
+            "attiva": bool(self.coordinator.data.get("wb_session_active")),
+            "formato": f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}",
         }
 
 

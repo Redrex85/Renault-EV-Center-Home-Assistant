@@ -61,8 +61,9 @@ from .const import (
     CONF_BALANCE_BATTERY_SOC_SENSOR,
     CONF_BATTERY_PRIORITY_MIN,
     CONF_BALANCE_WPA,
-    DEFAULT_MAX_AMPS,
-    DEFAULT_MIN_AMPS,
+DEFAULT_MAX_AMPS,
+DEFAULT_MIN_AMPS,
+DEFAULT_WB_START_W,
     DEFAULT_BATTERY_PRIORITY,
     CONF_PLUG_ENTITY,
     CONF_POLL_INTERVAL,
@@ -91,6 +92,7 @@ from .const import (
     CONF_WB_MAX_CURRENT,
     CONF_WB_POWER,
     CONF_WB_SESSION_ENERGY,
+    CONF_WB_SESSION_TIME,
     CONF_WB_STATE,
     CONF_WB_TOTAL_ENERGY,
     DEFAULT_BOLLO_EV,
@@ -287,6 +289,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
         # --- stato sessione di ricarica ------------------------------------------
         self.charge_session: dict[str, Any] | None = None
+        self._wb_sess_start: float | None = None
+        self._wb_sess_time = 0.0
         self._charge_off_polls = 0
         self._wb_counter_ref: float | None = None
 
@@ -721,6 +725,18 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     m["value"] += aggiunta
                 self.cost_total += aggiunta
 
+        # --- tempo sessione wallbox (contatore personale: parte oltre la soglia) --
+        wb_sess_s = self._wb_sess_time
+        if wb_enabled:
+            soglia_w = self._setting_num("wb_start_w", DEFAULT_WB_START_W)
+            if wb_power * 1000.0 > soglia_w:
+                if self._wb_sess_start is None:
+                    self._wb_sess_start = now.timestamp()
+                wb_sess_s = now.timestamp() - self._wb_sess_start
+                self._wb_sess_time = wb_sess_s
+            else:
+                self._wb_sess_start = None
+
         # --- viaggi --------------------------------------------------------------
         now_wall = now.timestamp()
         now_mono = __import__("time").monotonic()
@@ -1141,6 +1157,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 for p in PERIODS
             },
             "wb_power_kw": round(wb_power, 2),
+            "wb_session_time": int(wb_sess_s),
+            "wb_session_active": self._wb_sess_start is not None,
             "wb_state": wb_state,
             "tipo_ricarica": tipo_ricarica,
             "estimate": {

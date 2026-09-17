@@ -26,7 +26,8 @@
           "wallbox_state_entity": "Wallbox state (e.g. charging)",
           "wallbox_session_energy_entity": "Session energy counter (kWh)",
           "wallbox_total_energy_entity": "Total energy counter (kWh) — used if no session counter",
-          "wallbox_max_current_entity": "Max charging current number (optional)"
+          "wallbox_max_current_entity": "Max charging current number (optional)",
+          "wallbox_session_time_entity": "Wallbox session time (s/min/h) — optional, else internal timer"
         }
       },
       "settings": {

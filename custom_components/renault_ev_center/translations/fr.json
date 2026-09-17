@@ -26,7 +26,8 @@
           "wallbox_state_entity": "État wallbox (ex. charging)",
           "wallbox_session_energy_entity": "Compteur énergie session (kWh)",
           "wallbox_total_energy_entity": "Compteur énergie total (kWh) — utilisé sans compteur session",
-          "wallbox_max_current_entity": "Nombre courant max (optionnel)"
+          "wallbox_max_current_entity": "Nombre courant max (optionnel)",
+          "wallbox_session_time_entity": "Temps de session wallbox (s/min/h) — optionnel, sinon compteur interne"
         }
       },
       "settings": {

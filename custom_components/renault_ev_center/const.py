@@ -20,6 +20,7 @@ CONF_WB_STATE = "wallbox_state_entity"
 CONF_WB_SESSION_ENERGY = "wallbox_session_energy_entity"
 CONF_WB_TOTAL_ENERGY = "wallbox_total_energy_entity"
 CONF_WB_MAX_CURRENT = "wallbox_max_current_entity"
+CONF_WB_SESSION_TIME = "wallbox_session_time_entity"
 
 CONF_CAPACITY = "battery_capacity"
 CONF_TARGET_SOC = "target_soc"
@@ -105,6 +106,7 @@ DEFAULT_WPA = 230.0 * 3  # monofase 230 V ≈ 690 W/A
 DEFAULT_MIN_AMPS = 6.0
 DEFAULT_BATTERY_PRIORITY = 80.0
 DEFAULT_MAX_AMPS = 16.0
+DEFAULT_WB_START_W = 10.0  # soglia: avvia il contatore tempo sessione wallbox
 
 # extra: meteo, CO2, scadenze
 CONF_TEMP_ENTITY = "temp_entity"
