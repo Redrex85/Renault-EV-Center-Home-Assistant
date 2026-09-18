@@ -1,0 +1,1001 @@
+############################################################
+#                                                          #
+#        CENTRO CONTROLLO MEGANE E TECH V. 2.1             #
+#                                                          #
+#        author: 'Redrex'                                  #
+#                                                          #
+############################################################
+
+
+############################################################
+#             METER CHILOMETRI                             #
+############################################################
+
+
+
+
+utility_meter:
+  daily_km:
+    source: sensor.mileage
+    cycle: daily
+    name: Km Giornalieri
+    unique_id: megane_km_daily
+  weekly_km:
+    source: sensor.mileage
+    cycle: weekly
+    name: Km Settimanali
+    unique_id: megane_km_weekly
+  monthly_km:
+    source: sensor.mileage
+    cycle: monthly
+    name: Km Mensili
+    unique_id: megane_km_monthly
+  yearly_km:
+    source: sensor.mileage
+    cycle: yearly
+    name: Km Annuali
+    unique_id: megane_km_yearly
+
+  
+       
+############################################################
+#             METER %                                      #
+############################################################
+      
+  megane_battery_perc_giorno:
+    name: "Megane % Batteria Giornaliera"
+    source: sensor.battery_level
+    cycle: daily
+    unique_id: megane_battery_perc_giorno
+    net_consumption : true
+    tariffs:
+      - "charge"
+      - "discharge"   
+
+
+     
+############################################################
+#             METER ENERGIA BATTERIA                       #
+############################################################
+  
+  megane_battery_energy_daily:
+    name: "Megane Energia Batteria Giornaliera"
+    source: sensor.megane_battery_available_energy_2
+    unique_id: megane_battery_energy_daily
+    cycle: daily
+    net_consumption : true
+    tariffs:
+      - "charge"
+      - "discharge"
+      
+  megane_battery_energy_weekly:
+    name: "Megane Energia Batteria Settimanale"
+    source: sensor.megane_battery_available_energy_2
+    unique_id: megane_battery_energy_weekly
+    cycle: weekly
+    net_consumption : true
+    tariffs:
+      - "charge"
+      - "discharge"
+  megane_battery_energy_monthly:
+    name: "Megane Energia Batteria Mensile"
+    source: sensor.megane_battery_available_energy_2
+    unique_id: megane_battery_energy_monthly
+    cycle: monthly
+    net_consumption : true
+    tariffs:
+      - "charge"
+      - "discharge"
+  megane_battery_energy_bimonthly:
+    name: "Megane Energia Batteria Bimestrale"
+    source: sensor.megane_battery_available_energy_2
+    unique_id: megane_battery_energy_bimonthly
+    cycle: bimonthly
+    net_consumption : true
+    tariffs:
+      - "charge"
+      - "discharge"
+  megane_battery_energy_yearly:
+    name: "Megane Energia Batteria Annuale"
+    source: sensor.megane_battery_available_energy_2
+    unique_id: megane_battery_energy_yearly
+    cycle: yearly
+    net_consumption : true
+    tariffs:
+      - "charge"
+      - "discharge"
+  megane_battery_energy_total:
+    name: "Battery Energy Total"
+    unique_id: megane_battery_energy_total
+    source: sensor.megane_battery_available_energy_2
+    tariffs:
+      - "charge"
+      - "discharge"
+
+
+############################################################
+#             METER RICARICHE PER LOCATION                 #
+############################################################
+      
+##################  COLONNINA   #########################
+
+
+  megane_ricarica_colonnina_oggi:
+    name: "Megane Energia Caricata Colonnina Giornaliera"
+    source: sensor.megane_ricarica_colonnine_totale_2
+    unique_id: megane_colonnina_oggi
+    cycle: daily
+
+
+
+  megane_ricarica_colonnina_settimana:
+    name: "Megane Energia Caricata Colonnina Settimana"
+    source: sensor.megane_ricarica_colonnine_totale_2
+    unique_id: megane_colonnina_settimana
+    cycle: weekly
+
+
+  megane_ricarica_colonnina_mese:
+    name: "Megane Energia Caricata Colonnina Mese"
+    unique_id: megane_colonnina_mese
+    source: sensor.megane_ricarica_colonnine_totale_2
+    cycle: monthly
+
+
+      
+  megane_ricarica_colonnina_anno:
+    name: "Megane Energia Caricata Colonnina Anno"
+    source: sensor.megane_ricarica_colonnine_totale_2
+    unique_id: megane_colonnina_anno
+    cycle: yearly    
+
+
+      
+########### RICARICHE BEB (fotovoltaico)  ################
+
+
+
+  megane_ricarica_beb_oggi:
+    name: "Megane Energia Caricata BEB Giornaliera"
+    source: input_number.megane_ricarica_beb_totale
+    unique_id: megane_ricarica_beb_oggi
+    cycle: daily
+
+
+  megane_ricarica_beb_settimana:
+    name: "Megane Energia Caricata BEB Settimana"
+    source: sensor.megane_ricarica_beb_totale_2
+    unique_id: megane_ricarica_beb_settimana
+    cycle: weekly
+
+
+  megane_ricarica_beb_mese:
+    name: "Megane Energia Caricata BEB Mese"
+    source: sensor.megane_ricarica_beb_totale_2
+    unique_id: megane_ricarica_beb_mese
+    cycle: monthly
+
+
+
+  megane_ricarica_beb_anno:
+    name: "Megane Energia Caricata BEB Anno"
+    source: sensor.megane_ricarica_beb_totale_2
+    unique_id: megane_ricarica_beb_anno
+    cycle: yearly
+
+
+      
+############################################################
+#             TEMPLATE                                     #
+############################################################
+
+template:
+  - trigger:
+      - platform: state
+        entity_id: sensor.battery_level
+        not_to: ["unavailable", "unknown"]
+    sensor:
+      - name: "Megane Battery available energy"
+        
+        state: >
+          {{ ( 0.6 * (states('sensor.battery_level'))| float(0)) | float|round(2)}}        
+        unique_id: battery_available_energy
+        device_class: energy
+        state_class: total
+        unit_of_measurement: "kWh"
+
+
+
+
+
+  - sensor:
+    - name: "Megane Ricarica Colonnine Totale"
+      unique_id: megane_ricarica_colonnine_totale
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total
+      state: "{{ states('input_number.megane_ricarica_colonnine_totale') | float(0) }}"
+
+
+
+  - sensor:
+      - name: "Megane Ricarica BEB Totale"
+        unique_id: megane_ricarica_beb_totale
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total
+        state: "{{ states('input_number.megane_ricarica_beb_totale') | float(0) }}"
+
+
+
+  - sensor:
+      - unique_id: risparmio_megane
+        name: "Risparmio totale carburante vs elettricità"
+        state: >
+          {% set mileage = states('sensor.mileage') | float(0) %}
+          {% set consumo_litri_100km = 6.5 %}
+          {% set prezzo_diesel = 1.65 %}
+          {% set costo_diesel = ((mileage * consumo_litri_100km * prezzo_diesel) / 100) %}
+          {% set costo_elettrico = (states('sensor.megane_kwh_totali') | float(0)) * (states('input_number.costo_energia_megane') | float(0)) %}
+          {{ (costo_diesel - costo_elettrico) | round(2) }}
+        unit_of_measurement: "€"
+        icon: mdi:currency-eur
+        attributes:
+          costo_diesel_equivalente: >
+            {% set mileage = states('sensor.mileage') | float(0) %}
+            {% set consumo_litri_100km = 6.5 %}
+            {% set prezzo_diesel = 1.65 %}
+            {{ ((mileage * consumo_litri_100km * prezzo_diesel) / 100) | round(2) }}€
+          km_totali: "{{ states('sensor.mileage') | float(0) }} km"
+          kwh_totali: "{{ states('sensor.megane_kwh_totali') | float(0) }} kWh"
+          costo_elettrico_totale: >
+            {{ ((states('sensor.megane_kwh_totali') | float(0)) * (states('input_number.costo_energia_megane') | float(0))) | round(2) }}€
+          percentuale_risparmio: >
+            {% set mileage = states('sensor.mileage') | float(0) %}
+            {% set consumo_litri_100km = 6.5 %}
+            {% set prezzo_diesel = 1.65 %}
+            {% set costo_diesel = ((mileage * consumo_litri_100km * prezzo_diesel) / 100) %}
+            {% set costo_elettrico = (states('sensor.megane_kwh_totali') | float(0)) * (states('input_number.costo_energia_megane') | float(0)) %}
+            {{ ((costo_diesel - costo_elettrico) / costo_diesel * 100) | round(1) if costo_diesel > 0 else 0 }}%
+
+################################## RISPARMI PRECISI CON FV #############################################
+
+  - sensor:
+      # RISPARMIO MENSILE PRECISO (solo energia pagata)
+      - unique_id: risparmio_preciso_mese
+        name: "Risparmio Mensile Preciso vs Diesel"
+        state: >
+          {% set km_mese = states('sensor.km_mensili') | float(0) %}
+          {% set consumo_litri_100km = 6.5 %}
+          {% set prezzo_diesel = 1.65 %}
+          {% set costo_diesel_mese = ((km_mese * consumo_litri_100km * prezzo_diesel) / 100) %}
+          {% set costo_elettrico_mese = (states('sensor.energia_mese_megane') | float(0)) * (states('input_number.costo_energia_megane') | float(0)) %}
+          {{ (costo_diesel_mese - costo_elettrico_mese) | round(2) }}
+        unit_of_measurement: "€"
+        icon: mdi:currency-eur
+        attributes:
+          km_percorsi_mese: "{{ states('sensor.km_mensili') | float(0) }} km"
+          energia_pagata_mese: "{{ states('sensor.energia_mese_megane') | float(0) }} kWh"
+          costo_diesel_equivalente_mese: >
+            {% set km_mese = states('sensor.km_mensili') | float(0) %}
+            {% set consumo_litri_100km = 6.5 %}
+            {% set prezzo_diesel = 1.65 %}
+            {{ ((km_mese * consumo_litri_100km * prezzo_diesel) / 100) | round(2) }}€
+          costo_elettrico_pagato_mese: >
+            {{ ((states('sensor.energia_mese_megane') | float(0)) * (states('input_number.costo_energia_megane') | float(0))) | round(2) }}€
+          percentuale_risparmio_mese: >
+            {% set km_mese = states('sensor.km_mensili') | float(0) %}
+            {% set consumo_litri_100km = 6.5 %}
+            {% set prezzo_diesel = 1.65 %}
+            {% set costo_diesel_mese = ((km_mese * consumo_litri_100km * prezzo_diesel) / 100) %}
+            {% set costo_elettrico_mese = (states('sensor.energia_mese_megane') | float(0)) * (states('input_number.costo_energia_megane') | float(0)) %}
+            {{ ((costo_diesel_mese - costo_elettrico_mese) / costo_diesel_mese * 100) | round(1) if costo_diesel_mese > 0 else 0 }}%
+
+      # RISPARMIO ANNUALE PRECISO (solo energia pagata)
+      - unique_id: risparmio_preciso_anno
+        name: "Risparmio Annuale Preciso vs Diesel"
+        state: >
+          {% set km_anno = states('sensor.km_annuali') | float(0) %}
+          {% set consumo_litri_100km = 6.5 %}
+          {% set prezzo_diesel = 1.65 %}
+          {% set costo_diesel_anno = ((km_anno * consumo_litri_100km * prezzo_diesel) / 100) %}
+          {% set costo_elettrico_anno = (states('sensor.energia_anno_megane') | float(0)) * (states('input_number.costo_energia_megane') | float(0)) %}
+          {{ (costo_diesel_anno - costo_elettrico_anno) | round(2) }}
+        unit_of_measurement: "€"
+        icon: mdi:currency-eur
+        attributes:
+          km_percorsi_anno: "{{ states('sensor.km_annuali') | float(0) }} km"
+          energia_pagata_anno: "{{ states('sensor.energia_anno_megane') | float(0) }} kWh"
+          costo_diesel_equivalente_anno: >
+            {% set km_anno = states('sensor.km_annuali') | float(0) %}
+            {% set consumo_litri_100km = 6.5 %}
+            {% set prezzo_diesel = 1.65 %}
+            {{ ((km_anno * consumo_litri_100km * prezzo_diesel) / 100) | round(2) }}€
+          costo_elettrico_pagato_anno: >
+            {{ ((states('sensor.energia_anno_megane') | float(0)) * (states('input_number.costo_energia_megane') | float(0))) | round(2) }}€
+          percentuale_risparmio_anno: >
+            {% set km_anno = states('sensor.km_annuali') | float(0) %}
+            {% set consumo_litri_100km = 6.5 %}
+            {% set prezzo_diesel = 1.65 %}
+            {% set costo_diesel_anno = ((km_anno * consumo_litri_100km * prezzo_diesel) / 100) %}
+            {% set costo_elettrico_anno = (states('sensor.energia_anno_megane') | float(0)) * (states('input_number.costo_energia_megane') | float(0)) %}
+            {{ ((costo_diesel_anno - costo_elettrico_anno) / costo_diesel_anno * 100) | round(1) if costo_diesel_anno > 0 else 0 }}%
+
+
+# ENERGIA GRATUITA DAL FOTOVOLTAICO ANNO
+
+      - unique_id: energia_gratuita_fotovoltaico_anno
+        name: "Energia Gratuita FV Quest'Anno"
+        state: >
+          {% set kwh_totali_anno = (states('sensor.km_annuali') | float(0)) / (states('sensor.megane_km_per_kwh') | float(1)) %}
+          {% set kwh_pagati_anno = states('sensor.energia_anno_megane') | float(0) %}
+          {{ (kwh_totali_anno - kwh_pagati_anno) | round(2) if kwh_totali_anno > kwh_pagati_anno else 0 }}
+        unit_of_measurement: "kWh"
+        icon: mdi:solar-power
+        attributes:
+          valore_energia_gratuita_anno: >
+            {% set kwh_totali_anno = (states('sensor.km_annuali') | float(0)) / (states('sensor.megane_km_per_kwh') | float(1)) %}
+            {% set kwh_pagati_anno = states('sensor.energia_anno_megane') | float(0) %}
+            {% set kwh_gratis = kwh_totali_anno - kwh_pagati_anno if kwh_totali_anno > kwh_pagati_anno else 0 %}
+            {{ (kwh_gratis * (states('input_number.costo_energia_megane') | float(0))) | round(2) }}€
+
+
+  - sensor:
+      ################### COSTI RICARICHE COLONNINA ##############################
+
+      - name: "Costo Colonnina Giornaliero"
+        unique_id: costo_colonnina_giornaliero
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.megane_energia_caricata_colonnina_giornaliera') | float(0)) *
+              (states('input_number.costo_energia_colonnina') | float(0))) | round(2) }}
+
+      - name: "Costo Colonnina Settimanale"
+        unique_id: costo_colonnina_settimana
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.megane_energia_caricata_colonnina_settimana') | float(0)) *
+              (states('input_number.costo_energia_colonnina') | float(0))) | round(2) }}
+
+      - name: "Costo Colonnina Mese"
+        unique_id: costo_colonnina_mese
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.megane_energia_caricata_colonnina_mese') | float(0)) *
+              (states('input_number.costo_energia_colonnina') | float(0))) | round(2) }}
+
+      - name: "Costo Colonnina Anno"
+        unique_id: costo_colonnina_anno
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.megane_energia_caricata_colonnina_anno') | float(0)) *
+              (states('input_number.costo_energia_colonnina') | float(0))) | round(2) }}
+
+      ##################### COSTI COLONNINA PRECEDENTI ######################
+
+      - name: "Costo Consumo Ieri Colonnina"
+        unique_id: costo_consumo_ieri_colonnina
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.megane_energia_caricata_colonnina_giornaliera', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_colonnina') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Settimana Precedente Colonnina"
+        unique_id: costo_consumo_settimana_precedente_colonnina
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.megane_energia_caricata_colonnina_settimana', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_colonnina') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Mese Precedente Colonnina"
+        unique_id: costo_consumo_mese_precedente_colonnina
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.megane_energia_caricata_colonnina_mese', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_colonnina') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Anno Precedente Colonnina"
+        unique_id: costo_consumo_anno_precedente_colonnina
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.megane_energia_caricata_colonnina_anno', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_colonnina') | float(0))) | round(2) }}
+
+
+  - sensor:
+      ################### SPESA DIESEL ##########################
+
+      - name: "Spesa Diesel Totale"
+        unique_id: consumo_diesel
+        unit_of_measurement: '€'
+        state: >
+          {% set mileage = states('sensor.mileage') | float(0) %}
+          {% set consumo_litri_100km = 6.5 %}  
+          {% set prezzo_diesel = 1.65 %}        
+          {{ ((mileage * consumo_litri_100km * prezzo_diesel) / 100) | round(2) }}
+
+      - name: "Spesa Diesel Mensile"
+        unique_id: consumo_diesel_mese
+        unit_of_measurement: '€'
+        state: >
+          {% set km_mese = states('sensor.km_mensili') | float(0) %}
+          {% set consumo_litri_100km = 6.5 %}
+          {% set prezzo_diesel = 1.65 %}
+          {{ ((km_mese * consumo_litri_100km * prezzo_diesel) / 100) | round(2) }}
+
+      - name: "Spesa Diesel Annuale"
+        unique_id: consumo_diesel_anno
+        unit_of_measurement: '€'
+        state: >
+          {% set km_anno = states('sensor.km_annuali') | float(0) %}
+          {% set consumo_litri_100km = 6.5 %}
+          {% set prezzo_diesel = 1.65 %}
+          {{ ((km_anno * consumo_litri_100km * prezzo_diesel) / 100) | round(2) }}
+
+      ################### SPESA CORRENTE ##########################
+
+      - name: "Costo mensile energia Megane"
+        unique_id: costo_mensile_megane_kwh
+        unit_of_measurement: '€'
+        state: >
+          {{ (-1 * states('sensor.megane_battery_energy_monthly_discharge') | float *
+              states('input_number.costo_energia_megane') | float) | round(2) }}
+
+      - name: "Costo anno energia Megane"
+        unique_id: costo_anno_megane_kwh
+        unit_of_measurement: '€'
+        state: >
+          {{ (-1 * states('sensor.megane_battery_energy_yearly_discharge') | float *
+              states('input_number.costo_energia_megane') | float) | round(2) }}
+
+      ################### RISPARMIO ##########################
+
+      - name: "Megane Km per kWh"
+        unique_id: megane_km_per_kwh
+        unit_of_measurement: 'km/kWh'
+        state: >
+          {% set autonomia = states('sensor.battery_autonomy') | float(0) %}
+          {% set batteria_perc = states('sensor.battery_level') | float(0) %}
+          {% if batteria_perc > 0 and autonomia > 0 %}
+            {{ (autonomia / (batteria_perc * 0.6)) | round(2) }}
+          {% else %}
+            0
+          {% endif %}
+
+      - name: "Megane kWh per 100 km"
+        unique_id: megane_kwh_per_100km
+        unit_of_measurement: 'kWh/100km'
+        state: >
+          {% set autonomia = states('sensor.battery_autonomy') | float(0) %}
+          {% set batteria_perc = states('sensor.battery_level') | float(0) %}
+          {% if autonomia > 0 and batteria_perc > 0 %}
+            {{ (100 * batteria_perc * 0.6 / autonomia) | round(2) }}
+          {% else %}
+            0
+          {% endif %}
+
+      - name: "Megane kWh totali"
+        unique_id: megane_kwh_totali
+        unit_of_measurement: 'kWh'
+        state: >
+          {% set mileage = states('sensor.mileage') | float(0) %}
+          {% set km_per_kwh = states('sensor.megane_km_per_kwh') | float(0) %}
+          {% if km_per_kwh > 0 and mileage > 0 %}
+            {{ (mileage / km_per_kwh) | round(2) }}
+          {% else %}
+            0
+          {% endif %}
+
+      - name: "Risparmio Mese"
+        unique_id: differenza_consumo_mese
+        unit_of_measurement: '€'
+        icon: mdi:currency-eur-off
+        state: >
+          {{ (states('sensor.consumo_diesel_mese') | float - 
+              states('sensor.costo_mensile_megane_kwh') | float) | round(2) }}
+
+      - name: "Risparmio Anno"
+        unique_id: differenza_consumo_anno
+        unit_of_measurement: '€'
+        icon: mdi:currency-eur-off
+        state: >
+          {{ (states('sensor.consumo_diesel_anno') | float - 
+              states('sensor.costo_anno_megane_kwh') | float) | round(2) }}
+
+  - sensor:
+      #################### Tipo di ricarica attuale ####################
+
+      - name: "Tipo Ricarica Attuale"
+        unique_id: tipo_ricarica_attuale
+        state: >
+          {% set location = states('device_tracker.location') %}
+          {% if location == 'home' %}
+            {% if is_state('sensor.wallbox_charger_state', 'charging') %}
+              Ricarica a Casa
+            {% else %}
+              Non in Carica
+            {% endif %}
+          {% else %}
+            {% if is_state('binary_sensor.charging', 'on') %}
+              {% if location == 'beb' %}
+                Ricarica BEB (Fotovoltaico)
+              {% else %}
+                Ricarica Pubblica
+              {% endif %}
+            {% else %}
+              Non in Carica
+            {% endif %}
+          {% endif %}
+
+        icon: >
+          {% set location = states('device_tracker.location') %}
+          {% if location == 'home' %}
+            {% if is_state('sensor.wallbox_charger_state', 'charging') %}
+              mdi:home-battery
+            {% else %}
+              mdi:battery-charging-outline
+            {% endif %}
+          {% else %}
+            {% if is_state('binary_sensor.charging', 'on') %}
+              {% if location == 'beb' %}
+                mdi:solar-power-variant
+              {% else %}
+                mdi:ev-station
+              {% endif %}
+            {% else %}
+              mdi:battery-charging-outline
+            {% endif %}
+          {% endif %}
+
+####################################  CALCOLO CAPACITA BATTERIA  ##############################
+
+  - sensor:
+      - name: "kWh per 1% batteria"
+        unique_id: batteria_kwh_per_percento
+        unit_of_measurement: "kWh"
+        state_class: measurement
+        icon: mdi:percent
+        state: >
+          {% set capacita = states('input_number.batteria_capacita_kwh') | float(0) %}
+          {% if capacita > 0 %}
+            {{ (capacita / 100) | round(3) }}
+          {% else %}
+            0
+          {% endif %}
+
+###############################   % 100km ###############
+
+
+  - sensor:
+      - name: "Megane % Batteria per 100 km"
+        unique_id: megane_percent_per_100km
+        unit_of_measurement: "%/100km"
+        icon: mdi:gauge
+        state: >
+          {% set km = states('sensor.km_giornalieri') | float(0) %}
+          {% set perc = states('sensor.megane_battery_perc_giorno_discharge') | float(0) | abs %}
+          {% if km > 0 and perc > 0 %}
+            {{ ((perc / km) * 100) | round(1) }}
+          {% else %}
+            0
+          {% endif %}
+
+
+####################################################
+#                                                  #
+#               INPUT NUMBER                       #
+#                                                  #
+####################################################
+
+input_number:
+
+
+  costo_energia_colonnina:
+      name: Costo Colonnina
+      min: 0.000
+      max: 99999.000
+      unit_of_measurement: '€/kWh'
+      step: 0.01
+      mode: box
+      icon: mdi:currency-eur   
+
+
+  batteria_capacita_kwh:
+    name: Capacità batteria auto
+    min: 40
+    max: 100
+    step: 1
+    mode: box
+    unit_of_measurement: "kWh"
+    icon: mdi:car-battery
+
+
+  megane_battery_start:
+    name: Megane Start Charge
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+
+
+
+  costo_energia_beb:
+    name: Costo Energia BEB
+    min: 0.000
+    max: 99999.000
+    unit_of_measurement: '€/kWh'
+    step: 0.001
+    mode: box
+    icon: mdi:solar-power
+    initial: 0.00      
+
+  previous_battery_level:
+    name: Previous Battery Level
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: '%'
+
+
+  last_potenza_carica:
+    name: Last Potenza Carica
+    min: 0
+    max: 100
+    step: 0.01
+    unit_of_measurement: 'kW'    
+    
+
+  max_battery_level:
+    name: Livello massimo di batteria
+    initial: 80
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: '%'    
+
+
+  charging_start_battery:
+    name: Battery Level at Charging Start
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: '%'
+
+
+
+  megane_ricarica_beb_totale:
+    name: "Megane Ricarica BEB Totale"
+    min: 0
+    max: 10000
+    step: 0.1
+    unit_of_measurement: "kWh" 
+    
+    
+
+  megane_ricarica_colonnine_totale:
+    name: "Megane Ricarica Colonnine Totale"
+    min: 0
+    max: 1000
+    step: 0.1
+    unit_of_measurement: "kWh"
+
+    
+####################################################
+#                                                  #
+#               INPUT TIME                         #
+#                                                  #
+####################################################
+
+input_datetime:
+  last_battery_change_time:
+    name: Last Battery Change Time
+    has_date: true
+    has_time: true
+
+  charging_start_time:
+    name: Charging Start Time
+    has_date: true
+    has_time: true
+
+
+
+############################################################
+#                                                          #
+#             AUTOMAZIONI                                  #
+#                                                          #
+############################################################         
+         
+automation:
+  
+  - alias: Megane correzione carica/scarica
+    id: meganecaricascarica
+    trigger:
+      - platform: state
+        entity_id: sensor.charge_state
+    action:
+      - service: select.select_option
+        target:
+          entity_id:
+            - select.megane_battery_energy_daily
+            - select.megane_battery_energy_weekly
+            - select.megane_battery_energy_monthly
+            - select.megane_battery_energy_bimonthly
+            - select.megane_battery_energy_yearly
+            - select.megane_battery_energy_total
+            - select.megane_battery_perc_giorno
+
+
+        data:
+          option: "{{ 'discharge' if states('sensor.charge_state') == 'not_in_charge' else 'charge' }}"         
+
+###################################################################################################
+#  - alias: Update Previous Battery Level
+#    id: update_previous_battery
+ #   trigger:
+ #     - platform: state
+ #       entity_id: sensor.battery_level
+ #   condition:
+ #     - condition: template
+ #       value_template: >
+ #         {{ (states('sensor.battery_level') | float(0)) != (states('input_number.previous_battery_level') | float(0)) }}
+    
+  #  action:
+ #     - service: input_number.set_value
+  #      target:
+  #        entity_id: input_number.previous_battery_level
+  #      data:
+  #        value: "{{ trigger.from_state.state | float(0) }}"
+  #    - service: input_datetime.set_datetime
+  #      target:
+  #        entity_id: input_datetime.last_battery_change_time
+   #     data:
+   #       datetime: "{{ trigger.from_state.last_changed.strftime('%Y-%m-%d %H:%M:%S') }}"
+
+###########################  CARICHE FUORI  ###############################
+
+  - alias: "Aggiorna kWh caricati Megane in tempo reale"
+    id: aggiorna_kwh_megane_realtime
+    description: "Calcola i kWh caricati ad ogni variazione di % batteria (solo BEB e Colonnine)"
+    trigger:
+      - platform: state
+        entity_id: sensor.battery_level
+    condition:
+      - condition: state
+        entity_id: binary_sensor.charging
+        state: "on"   # aggiorna solo se la macchina sta caricando
+    action:
+      - variables:
+          prev: "{{ states('input_number.previous_battery_level') | float(0) }}"
+          curr: "{{ states('sensor.battery_level') | float(0) }}"
+          diff: "{{ curr - prev }}"
+      - if:
+          - condition: template
+            value_template: "{{ diff > 0 }}"   # aggiorna solo se è salita la % di batteria
+        then:
+          - choose:
+              # 🏨 Caso 1: carica al B&B
+              - conditions:
+                  - condition: template
+                    value_template: "{{ states('device_tracker.location') == 'beb' }}"
+                sequence:
+                  - service: input_number.set_value
+                    target:
+                      entity_id: input_number.megane_ricarica_beb_totale
+                    data:
+                      value: >
+                        {{ (states('input_number.megane_ricarica_beb_totale') | float(0) + (diff * 0.60)) | round(2) }}
+
+              # ⚡ Caso 2: colonnine pubbliche
+              - conditions:
+                  - condition: template
+                    value_template: "{{ states('device_tracker.location') not in ['home','beb'] }}"
+                sequence:
+                  - service: input_number.set_value
+                    target:
+                      entity_id: input_number.megane_ricarica_colonnine_totale
+                    data:
+                      value: >
+                        {{ (states('input_number.megane_ricarica_colonnine_totale') | float(0) + (diff * 0.60)) | round(2) }}
+          - service: input_number.set_value
+            target:
+              entity_id: input_number.previous_battery_level
+            data:
+              value: "{{ curr }}"
+
+
+          
+  - alias: "Salva inizio carica Megane"
+    id: Salva inizio carica Megane
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.charging
+        to: "on"
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.megane_battery_start
+        data:
+          value: "{{ states('sensor.battery_level') | float(0) }}"
+    mode: single
+
+#############  RICARICA INTEGRAZIONE RENAULT ################
+
+  - alias: Reload Renault Integration
+    id: reloadintegrazione
+    description: Ricarica integrazione ogni 30 minuti
+    trigger:
+     - platform: time_pattern
+       hours: /1
+    condition:
+      - condition: state
+        entity_id: sensor.mileage
+        state: unavailable
+    action:
+      - service: homeassistant.reload_config_entry
+        data: {}
+        target:
+          entity_id: device_tracker.location
+    mode: single
+
+
+  - alias: "Monitor Charging Efficiency"
+    id: monitor_charging_efficiency
+    trigger:
+      - platform: state
+        entity_id: sensor.wallbox_charger_state
+        to: 'charging'
+        for: '00:05:00'
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.charging_start_battery
+        data:
+          value: "{{ states('sensor.battery_level') | float(0) }}"
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.charging_start_time
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+          
+  - alias: "Charging Session Complete"
+    id: charging_session_complete
+    description: Notifica al termine della ricarica con calcolo energia e costo
+    triggers:
+    - platform: state
+      entity_id: sensor.wallbox_charger_state
+      from: charging
+      to:
+        - "disconnected"
+        - "completed"
+        - "available"
+        - "need_auth"
+        - "connected"
+      for: "00:02:00"
+
+
+
+    actions:
+    - delay: "00:01:00"  # Tempo per far aggiornare i sensori
+    - service: notify.michele
+      data:
+        title: "🔋 Ricarica Completata"
+        message: >
+          {% set start_battery = states('input_number.charging_start_battery') | float(0) %}
+          {% set end_battery = states('sensor.battery_level') | float(0) %}
+          {% set delta_battery = end_battery - start_battery %}
+          {% if delta_battery < 0 %}
+            {% set delta_battery = 0 %}
+          {% endif %}
+          
+          {% set kwh_per_percent = 0.6 %}
+          {% set energy_added = (delta_battery * kwh_per_percent) | round(2) %}
+          {% set location = states('device_tracker.location') | lower %}
+          {% set start_time = states('input_datetime.charging_start_time') %}
+          
+          {% if start_time not in ['unknown', 'unavailable', 'none', ''] and start_time is not none %}
+            {% set charging_time = ((as_timestamp(now()) - as_timestamp(start_time)) / 3600) | round(2) %}
+          {% else %}
+            {% set charging_time = 0 %}
+          {% endif %}
+          
+          {% if location == 'home' %}
+            {% set cost_per_kwh = states('input_number.costo_energia_casa') | float(0) %}
+          {% elif location == 'beb' %}
+            {% set cost_per_kwh = states('input_number.costo_energia_beb') | float(0) %}
+          {% else %}
+            {% set cost_per_kwh = states('input_number.costo_energia_colonnina') | float(0) %}
+          {% endif %}
+          
+          {% set total_cost = (energy_added * cost_per_kwh) | round(2) %}
+          
+          📍 Location: {{ location | title }}
+          ⚡ Energia: {{ energy_added }} kWh
+          🕐 Tempo: {{ charging_time }} ore
+          📊 Batteria: {{ start_battery }}% → {{ end_battery }}%
+          💰 Costo stimato: €{{ total_cost }}
+
+
+############################################################
+#                                                          #
+#             SCRIPT RESET                                 #
+#                                                          #
+############################################################
+
+
+script:
+  reset_sensori_energia_caricascarica:
+    sequence:
+    - service: utility_meter.calibrate
+      data:
+        value: "0"
+      target:
+        entity_id:
+          - sensor.megane_battery_energy_bimonthly_charge
+          - sensor.megane_battery_energy_bimonthly_discharge
+          - sensor.megane_battery_energy_daily_charge
+          - sensor.megane_battery_energy_daily_discharge
+          - sensor.megane_battery_energy_weekly_charge
+          - sensor.megane_battery_energy_weekly_discharge
+          - sensor.megane_battery_energy_monthly_charge
+          - sensor.megane_battery_energy_monthly_discharge
+          - sensor.megane_battery_energy_yearly_charge
+          - sensor.megane_battery_energy_yearly_discharge
+          - sensor.megane_battery_energy_total_charge
+          - sensor.megane_battery_energy_total_discharge    
+
+
+  reset_sensori_percorrenza:
+    sequence:
+    - service: utility_meter.calibrate
+      data:
+        value: "0"
+      target:
+        entity_id:    
+          - sensor.km_annuali
+          - sensor.km_giornalieri
+          - sensor.km_mensili
+          - sensor.km_settimanali
+          
+  reset_sensori_colonnina:
+    sequence:
+
+    - service: utility_meter.calibrate
+      data:
+        value: '0'
+      target:
+        entity_id:
+          - sensor.megane_energia_caricata_colonnina_giornaliera
+
+          - sensor.megane_energia_caricata_colonnina_settimana
+
+          - sensor.megane_energia_caricata_colonnina_mese
+
+          - sensor.megane_energia_caricata_colonnina_anno
+
+
+  reset_sensori_beb:
+    sequence:
+      - service: utility_meter.calibrate
+        data:
+          value: '0'
+        target:
+          entity_id:
+            - sensor.megane_energia_caricata_beb_giornaliera
+
+            - sensor.megane_energia_caricata_beb_settimana
+
+            - sensor.megane_energia_caricata_beb_mese
+
+            - sensor.megane_energia_caricata_beb_anno
+
+  
+
+

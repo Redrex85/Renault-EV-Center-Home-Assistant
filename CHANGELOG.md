@@ -5,7 +5,7 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.6.7 — Fix notifiche ripetute, configurazione ampliata
+## 1.0.6.8 — Fix notifiche ripetute, configurazione ampliata
 
 ### Bug critico
 - **Notifiche ripetute (~2000 a notte)**: `persist()` e il salvataggio allo shutdown
@@ -14,11 +14,14 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
   giorno e la card "Bilanciamento solare" non resta più vuota.
 - **Riepilogo giornaliero** (21:30): aggiunti **kWh consumati** e **costo totale della giornata**
   (energia × tariffa casa) con fallback "non disponibile".
-- **Consumo batteria di oggi**: differenza **reale** tra il SoC di inizio giornata e quello attuale
-  (dati dall'app Renault) — non più la sola somma dei viaggi.
-- **Energia di ricarica**: presa dal **delta misurato** della wallbox (contatore sessione **o** totale;
-  i reset di mezzanotte vengono scartati). La stima dal SoC si usa **solo per le ricariche fuori casa**;
-  a casa, se la misura manca, il record viene marcato `stima` e logga un avviso.
+- **Consumo batteria di oggi**: riferimento = **SoC massimo della giornata** (dati app Renault),
+  non più la sola somma dei viaggi (né una baseline falsata da un riavvio a metà giornata).
+- **Energia di ricarica**, in ordine di affidabilità: 1) delta contatori wallbox, 2) **integrale della
+  potenza istantanea** accumulato nella sessione, 3) stima dal SoC (solo fuori casa). A casa, se la
+  misura manca, il record viene marcato `stima`.
+- **Notifica batteria scarica**: oltre a soglia % e fascia oraria, ora si scelgono **i giorni della settimana**.
+- Nuovo sensore **Δ % Ultima Carica** (`soc_end − soc_start`).
+- I comandi `Avvia carica` del pannello sono dell'**auto** (app Renault); lo **stop** resta lato wallbox.
 
 ### Configurazione
 - **Wallbox**: mappabili in *Configura → Wallbox* sia **avvio** sia **stop** carica (switch/button).
@@ -31,9 +34,11 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
 - Card **"Automazioni create"** spostata in cima accanto a *Fine ricarica*, con **icona per tipo**.
 - Panoramica: i KPI dell'auto sono **box cliccabili** (aprono il sensore) con **% e kWh consumati oggi**
   al posto di €/km; **Efficienza** mostra %batteria/100km al posto dei duplicati.
-- Comandi: nuova riga **Indirizzo** (zona + via dal tracker/geocode) e **Ferma carica**.
-- Risparmio netto e costi con **2 decimali**; **mappa** con zoom predefinito 2 livelli più ampio.
-- Rimosso il box promemoria batteria bassa da *Automazioni* (ora tutto in *Configura*).
+- Comandi: nuova riga **Indirizzo** (tracker/geocode, stesso dato della pagina Viaggi) e **Zona ricarica**.
+- Panoramica: **grafico Km percorsi 7 giorni** (apexcharts, colonne + linea consumi) e box **Automazioni attive**.
+- Box KPI più leggibili; **Efficienza** con %batteria/100km (con ripiego calcolato se il sensore è a 0).
+- Risparmio netto e costi con **2 decimali**; **mappa** con zoom predefinito più ampio.
+- Rimossi i doppioni: box promemoria da *Automazioni* e la voce "Fine ricarica" duplicata.
 
 ## 1.0.5 — Pannello EV Center, Wallbox e rifiniture
 

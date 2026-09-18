@@ -1,0 +1,211 @@
+# 1. INPUT NUMBER (Per il tuo riferimento manuale)
+input_number:
+  megane_soh:
+    name: "SOH Batteria Megane"
+    min: 80
+    max: 100
+    step: 0.1
+    unit_of_measurement: "%"
+mqtt:
+  sensor:
+    - name: "Megane Trip History"
+      unique_id: megane_trip_history
+      state_topic: "megane/trips/history"
+      value_template: >
+        {{ value_json.days | count if value_json.days is defined else 0 }}
+      json_attributes_topic: "megane/trips/history"
+      json_attributes_template: >
+        {{ value_json | to_json }}
+      icon: mdi:calendar-clock
+# 2. SENSORI TEMPLATE (Gestiscono tutto: logica di avvio/fine e calcoli)
+template:
+  # --- SEZIONE TRIGGER: Cattura i dati reali ---
+  - trigger:
+      - platform: state
+        entity_id: sensor.wallbox_charger_state
+        to: "charging"
+    sensor:
+      - name: "Megane SOC Inizio Carica"
+        unique_id: megane_soc_start_capture
+        unit_of_measurement: "%"
+        state: "{{ states('sensor.battery_level') | float(0) }}"
+
+  - trigger:
+      - platform: state
+        entity_id: sensor.wallbox_charger_state
+        from: "charging"
+    sensor:
+      - name: "Ultima ricarica Wallbox totale"
+        unique_id: megane_last_wb_energy_total
+        unit_of_measurement: "kWh"
+        state: "{{ states('sensor.wallbox_session_energy') | float(0) }}"
+
+      - name: "Ultima ricarica Delta batteria"
+        unique_id: megane_last_delta_battery_perc
+        unit_of_measurement: "%"
+        state: >
+          {% set fine = states('sensor.battery_level') | float(0) %}
+          {% set inizio = states('sensor.megane_soc_inizio_carica') | float(0) %}
+          {% set delta = fine - inizio %}
+          {{ delta | round(1) if delta > 0 else 0 }}
+
+  # --- SEZIONE CALCOLI: Elabora i dati catturati sopra ---
+  - sensor:
+      - name: "Megane kWh per 1%"
+        unique_id: megane_kwh_per_1_percent
+        unit_of_measurement: "kWh"
+        state: "{{ (60 * (states('input_number.megane_soh') | float(100) / 100) / 100) | round(3) }}"
+
+      - name: "Megane Energia teorica sessione"
+        unique_id: megane_theoretical_energy_session
+        unit_of_measurement: "kWh"
+        state: >
+          {% set perc = states('sensor.ultima_ricarica_delta_batteria') | float(0) %}
+          {% set kwh_perc = states('sensor.megane_kwh_per_1') | float(0) %}
+          {{ (perc * kwh_perc) | round(2) }}
+
+      - name: "Megane Efficienza"
+        unique_id: megane_charging_efficiency_history
+        unit_of_measurement: "%"
+        state: >
+          {% set wb = states('sensor.ultima_ricarica_wallbox_totale') | float(0) %}
+          {% set teorica = states('sensor.megane_energia_teorica_sessione') | float(0) %}
+          {% if wb > 0 %}
+            {{ ((teorica / wb) * 100) | round(1) }}
+          {% else %}
+            0
+          {% endif %}
+
+      - name: "Megane Perdite kWh"
+        unique_id: megane_energy_loss_kwh_history
+        unit_of_measurement: "kWh"
+        state: >
+          {% set wb = states('sensor.ultima_ricarica_wallbox_totale') | float(0) %}
+          {% set teorica = states('sensor.megane_energia_teorica_sessione') | float(0) %}
+          {{ (wb - teorica) | round(2) if wb > 0 else 0 }}
+
+      - name: "Megane Perdite percentuale"
+        unique_id: megane_energy_loss_percentage_history
+        unit_of_measurement: "%"
+        state: >
+          {% set eff = states('sensor.megane_efficienza') | float(0) %}
+          {{ (100 - eff) | round(1) if eff > 0 else 0 }}
+
+      - name: "Megane SOH stimato"
+        unique_id: megane_estimated_soh_history
+        unit_of_measurement: "%"
+        state: >
+          {% set wb = states('sensor.ultima_ricarica_wallbox_totale') | float(0) %}
+          {% set perc = states('sensor.ultima_ricarica_delta_batteria') | float(0) %}
+          {% if perc > 5 %}
+            {# Usiamo 0.92 come fattore di efficienza medio per pulire il SOH dalle perdite AC/DC #}
+            {{ ((wb * 0.92 / perc * 100) / 0.6) | round(1) }}
+          {% else %}
+            {# Mantiene il valore precedente se la ricarica è piccola o non disponibile #}
+            {{ states('sensor.megane_soh_stimato') if states('sensor.megane_soh_stimato') not in ['unknown', 'unavailable'] else 0 }}
+          {% endif %}
+          
+          
+          
+          
+#####################################  RISPARMI TOTALE  ####################################
+
+
+
+  - trigger:
+      - platform: state
+        entity_id:
+          - sensor.mileage
+          - sensor.wallbox_total_charged_energy
+      - platform: homeassistant
+        event: start
+
+    sensor:
+
+
+      # 🔌 Costo reale elettrico
+      - name: "Costo Elettrico Totale"
+        unique_id: costo_elettrico_totale
+        unit_of_measurement: "€"
+        icon: mdi:flash
+        state: >
+          {% set kwh = states('sensor.wallbox_total_charged_energy') %}
+          {% if kwh not in ['unknown','unavailable','none',''] %}
+            {{ (kwh | float * 0.24) | round(2) }}
+          {% else %}
+            0
+          {% endif %}
+
+      # 💰 Risparmio reale
+      - name: "Differenza Spesa Diesel vs Elettrico"
+        unique_id: differenza_spesa_auto
+        unit_of_measurement: "€"
+        icon: mdi:cash-minus
+        state: >
+          {% set km = states('sensor.mileage') %}
+          {% set kwh = states('sensor.wallbox_total_charged_energy') %}
+
+          {% if km not in ['unknown','unavailable'] and kwh not in ['unknown','unavailable'] %}
+            {% set diesel = (km | float * 6.5 * 1.65) / 100 %}
+            {% set elettrico = (kwh | float * 0.24) %}
+            {{ (diesel - elettrico) | round(2) }}
+          {% else %}
+            0
+          {% endif %}
+
+automation:
+  - id: megane_salva_storico_trip_giornaliero
+    alias: "Megane - Salva storico trip giornaliero"
+    description: "Salva ogni sera km, percentuale batteria usata, kWh e media kWh/100 km nello storico MQTT retained."
+    mode: single
+
+    triggers:
+      - trigger: time
+        at: "23:58:00"
+
+    conditions:
+      - condition: template
+        value_template: >
+          {% set km = states('sensor.km_giornalieri') | float(0) %}
+          {% set kwh = (states('sensor.megane_battery_energy_daily_discharge') | float(0)) | abs %}
+          {% set pct = (states('sensor.megane_battery_perc_giorno_discharge') | float(0)) | abs %}
+          {{ km > 0 or kwh > 0 or pct > 0 }}
+
+    actions:
+      - action: mqtt.publish
+        data:
+          topic: "megane/trips/history"
+          retain: true
+          payload: >
+            {% set today = now().strftime('%Y-%m-%d') %}
+            {% set old_days = state_attr('sensor.megane_trip_history', 'days') or [] %}
+
+            {% set km = states('sensor.km_giornalieri') | float(0) %}
+            {% set kwh = (states('sensor.megane_battery_energy_daily_discharge') | float(0)) | abs %}
+            {% set pct = (states('sensor.megane_battery_perc_giorno_discharge') | float(0)) | abs %}
+            {% set eff = (kwh / km * 100) if km > 0 else none %}
+
+            {% set ns = namespace(days=[]) %}
+            {% for day in old_days %}
+              {% if day.date != today %}
+                {% set ns.days = ns.days + [day] %}
+              {% endif %}
+            {% endfor %}
+
+            {% set new_day = {
+              "date": today,
+              "year": now().year,
+              "month": now().month,
+              "month_name": now().strftime('%B'),
+              "day": now().day,
+              "km": km | round(1),
+              "battery_pct": pct | round(1),
+              "kwh": kwh | round(2),
+              "kwh_100": (eff | round(2)) if eff is not none else none
+            } %}
+
+            {{ {
+              "updated_at": now().isoformat(),
+              "days": ([new_day] + ns.days)[:1200]
+            } | to_json }}          
+          

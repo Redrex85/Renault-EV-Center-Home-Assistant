@@ -47,6 +47,9 @@ from .const import (
     CONF_LOW_SOC_THRESHOLD,
     CONF_LOW_SOC_START,
     CONF_LOW_SOC_END,
+    CONF_LOW_SOC_DAYS,
+    DEFAULT_LOW_SOC_DAYS,
+    WEEKDAYS,
     CONF_CHARGE_SCHED_ENABLED,
     CONF_CHARGE_SCHED_MODE,
     CONF_CHARGE_START_TIME,
@@ -167,15 +170,20 @@ def _best_measured_delta(pairs):
     return max(vals) if vals else 0.0
 
 
-def _charge_energy(measured: float, tipo: str, soc_start, battery, capacity):
-    """Energia di una ricarica: misura wallbox se c'è, altrimenti stima dal SoC.
+def _charge_energy(measured: float, accum: float, tipo: str, soc_start, battery, capacity):
+    """Energia di una ricarica, in ordine di affidabilità.
 
-    Ritorna (kWh, origine): origine è None se misurata, altrimenti
-    "fuori_casa" (caso normale per le colonnine pubbliche) o
-    "casa_senza_misura" (ripiego da segnalare: manca la mappatura del contatore wallbox).
+    1. delta dei contatori wallbox (misura vera, kWh);
+    2. integrale della potenza istantanea wallbox accumulato durante la sessione;
+    3. stima dal SoC — solo fuori casa (per le colonnine pubbliche è la via normale).
+
+    Ritorna (kWh, origine): origine None se misurata, altrimenti
+    "potenza_istantanea", "fuori_casa" o "casa_senza_misura" (ripiego da segnalare).
     """
     if measured > 0:
         return measured, None
+    if _f(accum) > 0.05:
+        return _f(accum), "potenza_istantanea"
     delta = max(_f(battery) - _f(soc_start), 0.0)
     kwh = delta * _f(capacity, 60.0) / 100.0
     return kwh, "fuori_casa" if tipo != "Casa" else "casa_senza_misura"
@@ -268,6 +276,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.low_soc_threshold = _f(opts.get(CONF_LOW_SOC_THRESHOLD), 25.0)
         self.low_soc_start = str(opts.get(CONF_LOW_SOC_START) or "18:00")
         self.low_soc_end = str(opts.get(CONF_LOW_SOC_END) or "22:00")
+        _days = opts.get(CONF_LOW_SOC_DAYS)
+        self.low_soc_days = [str(d) for d in _days] if isinstance(_days, (list, tuple)) and _days \
+            else list(DEFAULT_LOW_SOC_DAYS)
         self.charge_sched_enabled = bool(opts.get(CONF_CHARGE_SCHED_ENABLED, False))
         self.charge_sched_mode = str(opts.get(CONF_CHARGE_SCHED_MODE) or "orario")
         self.charge_start_time = str(opts.get(CONF_CHARGE_START_TIME) or "23:30")
@@ -823,12 +834,20 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     "soc_start": battery,
                     "counter_start": self._wb_counter(),
                     "total_start": self._wb_total_counter(),
+                    "kwh_accum": 0.0,
+                    "ts_last": time.time(),
                     "odometro_inizio": odometer,
                     "prezzo": self._price_for_zone(location or "home"),
                 }
                 started_charge = True
             self.charge_session["soc_now"] = battery
             self.charge_session["power_kw"] = wb_power
+            # integrale della potenza istantanea: conta i kWh se i contatori wallbox mancano
+            _now_ts = time.time()
+            _dt_h = max(_now_ts - _f(self.charge_session.get("ts_last"), _now_ts), 0.0) / 3600.0
+            self.charge_session["kwh_accum"] = round(
+                _f(self.charge_session.get("kwh_accum")) + wb_power * _dt_h, 4)
+            self.charge_session["ts_last"] = _now_ts
             if (time.time() - self.charge_session["start_ts"]) > 26 * 3600:
                 finished_charge = self._finalize_charge(location, battery)
         elif self.charge_session is not None:
@@ -850,9 +869,12 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 del history[:-365]
             self.today_rec = {"data": today_key, "km": 0.0, "kwh": 0.0, "pct": 0.0, "eff": 0.0,
                               "soc_start": None}
-        # baseline reale (SoC dall'app Renault): primo campione del giorno NON in carica
-        if self.today_rec.get("soc_start") is None and not charging:
-            self.today_rec["soc_start"] = round(_f(battery), 1)
+        # riferimento reale (SoC dall'app Renault): massimo della giornata NON in carica.
+        # Il massimo evita che un riavvio di HA a metà giornata sposti la baseline per errore.
+        if not charging:
+            _soc_rif = round(_f(battery), 1)
+            if self.today_rec.get("soc_start") is None or _soc_rif > self.today_rec["soc_start"]:
+                self.today_rec["soc_start"] = _soc_rif
         km_oggi = _f(self.km_meters["daily"].value)
         kwh_oggi = _f(self.kwh_meters["daily"]["down"].value)
         self.today_rec.update({
@@ -1322,7 +1344,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 (s.get("counter_start"), counter_end),
                 (s.get("total_start"), total_end),
             )),
-            tipo, s.get("soc_start"), battery, self.capacity,
+            s.get("kwh_accum"), tipo, s.get("soc_start"), battery, self.capacity,
         )
         if origine == "casa_senza_misura":
             _LOGGER.warning(
@@ -2198,7 +2220,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             dentro = inizio <= hhmm <= fine if inizio <= fine else (hhmm >= inizio or hhmm <= fine)
             counters = self.store.data["counters"]
             today_key = now.strftime("%Y-%m-%d")
-            if (dentro and (data.get("location") or "") == "home"
+            if (dentro and WEEKDAYS[now.weekday()] in self.low_soc_days
+                    and (data.get("location") or "") == "home"
                     and data.get("battery", 100) <= soglia
                     and counters.get("last_low_notify") != today_key):
                 await self._send_notify(

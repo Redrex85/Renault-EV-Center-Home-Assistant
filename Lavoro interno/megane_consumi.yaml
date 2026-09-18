@@ -1,0 +1,887 @@
+homeassistant:
+  customize:
+    package.node_anchors:
+      customize: &customize
+        package: 'Centro Ricarica Megane 2.0'
+        author: 'Redrex'
+        setting:
+
+####################################################
+#                                                  #
+#              IMPOSTAZIONI PACKAGE                #
+#                                                  #
+####################################################
+
+        Sensore Consumo Generale W: &power "{{ states('sensor.wallbox_instant_power') }}"
+
+            #SOSTITUISCI  sensor.wallbox_instant_power_watts  CON IL TUO SENSORE DELLA wallbox #
+            
+            # SOSTITUISCI GLI ALTRI SENSORI CONTRASSEGNATI CON   RIGO 220 , 478 , 481 , 488 , 493 , 495 ##
+
+####################################################
+#                                                  #
+#               INPUT NUMBER                       #
+#                                                  #
+####################################################
+
+input_number:
+  costo_energia_megane:
+      name: Costo Energia
+      min: 0.000
+      max: 99999.000
+      unit_of_measurement: '€/kWh'
+      step: 0.01
+      mode: box
+      icon: mdi:currency-eur
+      
+
+####################################################
+#                                                  #
+#            INPUT NUMBER KWH CONSUMATI            #
+#                                                  #
+####################################################
+
+  kwh_consumati_lunedi_megane:
+    name: Kwh Consumati Lunedì Megane
+    icon: mdi:counter
+    min: 0
+    max: 999999
+    mode: box
+    unit_of_measurement: kWh
+
+####################################################
+
+  kwh_consumati_martedi_megane:
+    name: Kwh Consumati Martedì Megane
+    icon: mdi:counter
+    min: 0
+    max: 999999
+    mode: box
+    unit_of_measurement: kWh
+
+####################################################
+
+  kwh_consumati_mercoledi_megane:
+    name: Kwh Consumati Mercoledì Megane
+    icon: mdi:counter
+    min: 0
+    max: 999999
+    mode: box
+    unit_of_measurement: kWh
+
+####################################################
+
+  kwh_consumati_giovedi_megane:
+    name: Kwh Consumati Giovedì Megane
+    icon: mdi:counter
+    min: 0
+    max: 999999
+    mode: box
+    unit_of_measurement: kWh
+
+####################################################
+
+  kwh_consumati_venerdi_megane:
+    name: Kwh Consumati Venerdì Megane
+    icon: mdi:counter
+    min: 0
+    max: 999999
+    mode: box
+    unit_of_measurement: kWh
+
+####################################################
+
+  kwh_consumati_sabato_megane:
+    name: Kwh Consumati Sabato Megane
+    icon: mdi:counter
+    min: 0
+    max: 999999
+    mode: box
+    unit_of_measurement: kWh
+
+####################################################
+
+  kwh_consumati_domenica_megane:
+    name: Kwh Consumati Domenica Megane
+    icon: mdi:counter
+    min: 0
+    max: 999999
+    mode: box
+    unit_of_measurement: kWh
+    
+####################################################
+
+  soglia_lavoro_elettrodomestici_w_wallbox:
+    name: Soglia Lavoro Elettrodomestici W
+    icon: mdi:flash
+    min: 0
+    max: 999999
+    step: 1.00
+    unit_of_measurement: "w"
+    mode: box
+
+  tempo_innesco_elettrodomestici_m_wallbox:
+    name: Tempo Innesco Elettrodomestici M
+    icon: mdi:flash
+    min: 0
+    max: 60
+    step: 1.00
+    unit_of_measurement: "m"
+    mode: box
+
+####################################################
+#                                                  #
+#               TEMPLATE                           #
+#                                                  #
+####################################################
+
+template:
+  
+  - binary_sensor:
+      - name: wallbox_Megane
+        icon: mdi:car
+        state: >-
+          {% set power = state_attr('sensor.w_kwh_megane', 'source') %}
+          {{ states(power) | int(0) > states('input_number.soglia_lavoro_elettrodomestici_w_wallbox') | int(0) }}
+        delay_off: "00:{{ states('input_number.tempo_innesco_elettrodomestici_m_wallbox') | int(0) }}:00"
+
+  - sensor:
+      - name: "Stato Wallbox"
+        icon: mdi:history
+        state: >-
+          {% from 'history_stats_custom.jinja' import time_on %}
+          {{ time_on('binary_sensor.wallbox_megane') }}
+
+  - trigger:
+      - platform: time
+        at: "00:00:01"
+      - platform: time_pattern
+        minutes: "/30"   # Aggiornamento ogni 30 minuti
+      - platform: state
+        entity_id:
+          - binary_sensor.wallbox_megane
+          - script.reset_sensori_energia_megane
+        from: "on"
+        to: "off"
+        for:
+          seconds: 2
+    sensor:
+      - name: Storico Wallbox
+        state: "{{ now().strftime('%d/%m/%Y %H:%M') }}"
+        attributes:
+          Settimanale: >-
+            {% from 'history_stats_custom.jinja' import storico_statistiche, history %} 
+            {% set this_entity = state_attr('sensor.storico_wallbox', 'Settimanale') %}
+            {% set consumo = states('sensor.energia_oggi_megane') | float(0) | round(2) %}
+            {% set costo = (consumo * states('input_number.costo_energia_casa') | float(0)) | round(2, default=0) %}
+            {% set cicli = '0' %}
+            {% set tempo = 'False' %}
+            {% set km = states('sensor.km_giornalieri') | float(0) | round(0) %}            
+            {% set reset = trigger.entity_id == 'script.reset_sensori_energia_megane' %}
+            {{ storico_statistiche('giorni', this_entity, costo, consumo, cicli, tempo, km, reset) | from_json }}
+          Mensile: >-
+            {% from 'history_stats_custom.jinja' import storico_statistiche, history %} 
+            {% set this_entity = state_attr('sensor.storico_wallbox', 'Mensile') %}
+            {% set consumo = states('sensor.energia_mese_megane') |float(0) | round(2) %}
+            {% set costo = (consumo * states('input_number.costo_energia_casa') | float(0)) | round(2, default=0) %}
+            {% set cicli = '0' %}
+            {% set tempo = 'False' %}
+            {% set km = states('sensor.km_mensili') | float(0) | round(0) %}            
+            {% set reset = trigger.entity_id == 'script.reset_sensori_energia_megane' %}
+            {{ storico_statistiche('mesi', this_entity, costo, consumo, cicli, tempo, km, reset) | from_json }}
+            
+#########################   COSTI € / KM  #################################
+  - sensor:
+      - name: "Costo per km Megane"
+        unique_id: costo_km_megane
+        unit_of_measurement: "€/km"
+        state: >
+          {% set km_per_kwh = states('sensor.megane_km_per_kwh')|float(0) %}
+          {% set prezzo = states('input_number.costo_energia_megane')|float(0) %}
+          
+          {% if km_per_kwh > 0 %}
+            {% set kwh_per_km = 1 / km_per_kwh %}
+            {{ (kwh_per_km * prezzo) | round(3) }}
+          {% else %}
+            0
+          {% endif %}
+        icon: mdi:currency-eur
+
+  - sensor:
+      - name: "Costo per 100 km Megane"
+        unique_id: costo_100km_megane
+        unit_of_measurement: "€/100km"
+        state: >
+          {% set kwh_100 = states('sensor.megane_kwh_per_100_km')|float(0) %}
+          {% set prezzo = states('input_number.costo_energia_megane')|float(0) %}
+          {{ (kwh_100 * prezzo) | round(2) }}
+        icon: mdi:currency-eur
+            
+            
+
+
+  - sensor:
+      - name: "Media Consumi Settimanali Megane"
+        unique_id: media_consumi_settimanali_megane
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state: >
+          {% set lunedi = states('input_number.kwh_consumati_lunedi_megane') | float(0) %}
+          {% set martedi = states('input_number.kwh_consumati_martedi_megane') | float(0) %}
+          {% set mercoledi = states('input_number.kwh_consumati_mercoledi_megane') | float(0) %}
+          {% set giovedi = states('input_number.kwh_consumati_giovedi_megane') | float(0) %}
+          {% set venerdi = states('input_number.kwh_consumati_venerdi_megane') | float(0) %}
+          {% set sabato = states('input_number.kwh_consumati_sabato_megane') | float(0) %}
+          {% set domenica = states('input_number.kwh_consumati_domenica_megane') | float(0) %}
+          {{ ((lunedi + martedi + mercoledi + giovedi + venerdi + sabato + domenica) / 7) | round(2) }}        
+
+################# STIMA RICARICA ##################################
+
+# TEMPLATE SENSOR TEMPO RICARICA STIMATO
+
+
+  - sensor:
+      - name: "Tempo Ricarica Stimato"
+        unique_id: tempo_ricarica_stimato
+        icon: mdi:clock-end
+        state: >
+          {% set bl = states('sensor.battery_level') %}
+          {% set ml = states('input_number.max_battery_level') %}
+          {% set pw = states('sensor.sensore_potenza_megane_w') %}
+          {% set charging = states('binary_sensor.charging') %}
+          
+          {% if bl not in ['unknown', 'unavailable'] and
+                ml not in ['unknown', 'unavailable'] and
+                pw not in ['unknown', 'unavailable'] %}
+            {% set current_level = bl | float(0) %}
+            {% set target_level  = ml | float(0) %}
+            {% set power_watt    = pw | float(0) %}
+            
+            {# Calcola solo se in carica e con potenza > 0 #}
+            {% if charging == 'on' and power_watt > 0 and current_level < target_level %}
+              {% set percent_to_charge = target_level - current_level %}
+              {% set energy_needed_kwh = percent_to_charge * 0.6 %}
+              {% set power_kw = power_watt / 1000 %}
+              {% set efficiency = 0.90 %}
+              {% set adjusted_power = power_kw * efficiency %}
+              
+              {% if adjusted_power > 0 %}
+                {% set total_minutes = (energy_needed_kwh / adjusted_power * 60) | round(0, 'ceil') %}
+                {% set hh = (total_minutes // 60) | int %}
+                {% set mm = (total_minutes % 60) | int %}
+                {{ '{:02}:{:02}:00'.format(hh, mm) }}
+              {% else %}
+                Non disponibile
+              {% endif %}
+            {% elif current_level >= target_level %}
+              Completo
+            {% elif charging == 'off' or charging in ['unknown', 'unavailable'] %}
+              Non in carica
+            {% else %}
+              00:00:00
+            {% endif %}
+          {% else %}
+            Non disponibile
+          {% endif %}
+        attributes:
+          stato_ricarica: >
+            {% if states('binary_sensor.charging') == 'on' %}
+              In carica
+            {% elif states('sensor.battery_level') | float(0) >= states('input_number.max_battery_level') | float(0) %}
+              Completo
+            {% else %}
+              Non in carica
+            {% endif %}
+          potenza_attuale: "{{ states('sensor.sensore_potenza_megane_w') | float(0) / 1000 | round(2) }} kW"
+          energia_rimanente: >
+            {% set current = states('sensor.battery_level') | float(0) %}
+            {% set target = states('input_number.max_battery_level') | float(0) %}
+            {% if target > current %}
+              {{ ((target - current) * 0.6) | round(2) }} kWh
+            {% else %}
+              0 kWh
+            {% endif %}            
+
+
+
+#########  Template sensor per ora di completamento stimata  #########
+
+  - sensor:
+      - name: "Ora Completamento Ricarica"
+        unique_id: ora_completamento_ricarica
+        icon: mdi:clock-time-four
+        state: >
+          {% set tempo_ricarica = states('sensor.tempo_ricarica_stimato') %}
+          {% set charging = states('binary_sensor.charging') %}
+          
+          {% if charging == 'on' and tempo_ricarica not in ['Non disponibile', 'Non in carica', 'Completo', '00:00:00'] %}
+            {% set ore, minuti, secondi = tempo_ricarica.split(':') | map('int') | list %}
+            {% set total_minuti = ore * 60 + minuti %}
+            {% set completamento = now() + timedelta(minutes=total_minuti) %}
+            {{ completamento.strftime('%H:%M') }}
+          {% elif tempo_ricarica == 'Completo' %}
+            Completo
+          {% else %}
+            --:--
+          {% endif %}
+
+############     Costo stimato della ricarica corrente  ##########
+      - name: "Costo Ricarica Corrente Stimato"
+        unique_id: costo_ricarica_corrente_stimato
+        icon: mdi:currency-eur
+        unit_of_measurement: "€"
+        state: >
+          {% set energia_rimanente = state_attr('sensor.tempo_ricarica_stimato', 'energia_rimanente') %}
+          {% set location = states('device_tracker.location') %}
+          
+          {% if energia_rimanente and energia_rimanente != '0 kWh' %}
+            {% set kwh_needed = energia_rimanente.replace(' kWh', '') | float(0) %}
+            {% if location == 'home' %}
+              {% set costo_kwh = states('input_number.costo_energia_casa') | float(0) %}
+            {% elif location == 'beb' %}
+              {% set costo_kwh = states('input_number.costo_energia_beb') | float(0) %}
+            {% else %}
+              {% set costo_kwh = states('input_number.costo_energia_colonnina') | float(0) %}
+            {% endif %}
+            {{ (kwh_needed * costo_kwh) | round(2) }}
+          {% else %}
+            0.00
+          {% endif %}
+          
+          
+
+  - sensor:
+      ####################################################
+      #                 Megane COSTI RICARICA            #
+      ####################################################
+
+      # SOMMA F1 e F2
+      - name: "Costo Consumo Giornaliero Megane F1 e F2"
+        unique_id: costo_consumo_giornaliero_totale_megane_f1_2
+        unit_of_measurement: "€"
+        state: >
+          {{ (states('sensor.costo_consumo_giornaliero_megane_f1') | float(0) +
+              states('sensor.costo_consumo_giornaliero_megane_f2') | float(0)) | round(2) }}
+
+      - name: "Costo Consumo Settimana Megane F1 e F2"
+        unique_id: costo_consumo_settimana_totale_megane_f1_2
+        unit_of_measurement: "€"
+        state: >
+          {{ (states('sensor.costo_consumo_settimana_megane_f1') | float(0) +
+              states('sensor.costo_consumo_settimana_megane_f2') | float(0)) | round(2) }}
+
+      - name: "Costo Consumo Mese Megane F1 e F2"
+        unique_id: costo_consumo_mese_totale_megane_f1_2
+        unit_of_measurement: "€"
+        state: >
+          {{ (states('sensor.costo_consumo_mensile_megane_f1') | float(0) +
+              states('sensor.costo_consumo_mensile_megane_f2') | float(0)) | round(2) }}
+
+      - name: "Costo Consumo Anno Megane F1 e F2"
+        unique_id: costo_consumo_anno_totale_megane_f1_2
+        unit_of_measurement: "€"
+        state: >
+          {{ (states('sensor.costo_consumo_annuale_megane_f1') | float(0) +
+              states('sensor.costo_consumo_annuale_megane_f2') | float(0)) | round(2) }}
+
+      # SOMMA PRECEDENTI
+      - name: "Costo Consumo Ieri Megane F1 e F2"
+        unique_id: costo_consumo_giornaliero_precedente_megane_f1_2
+        unit_of_measurement: "€"
+        state: >
+          {{ (states('sensor.costo_consumo_ieri_megane_f1') | float(0) +
+              states('sensor.costo_consumo_ieri_megane_f2') | float(0)) | round(2) }}
+
+      - name: "Costo Consumo Settimana Precedente Megane F1 e F2"
+        unique_id: costo_consumo_settimana_precedente_megane_f1_2
+        unit_of_measurement: "€"
+        state: >
+          {{ (states('sensor.costo_consumo_settimana_precedente_megane_f1') | float(0) +
+              states('sensor.costo_consumo_settimana_precedente_megane_f2') | float(0)) | round(2) }}
+
+      - name: "Costo Consumo Mese Precedente Megane F1 e F2"
+        unique_id: costo_consumo_mese_precedente_megane_f1_2
+        unit_of_measurement: "€"
+        state: >
+          {{ (states('sensor.costo_consumo_mese_precedente_megane_f1') | float(0) +
+              states('sensor.costo_consumo_mese_precedente_megane_f2') | float(0)) | round(2) }}
+
+      - name: "Costo Consumo Anno Precedente Megane F1 e F2"
+        unique_id: costo_consumo_anno_precedente_megane_f1_2
+        unit_of_measurement: "€"
+        state: >
+          {{ (states('sensor.costo_consumo_anno_precedente_megane_f1') | float(0) +
+              states('sensor.costo_consumo_anno_precedente_megane_f2') | float(0)) | round(2) }}
+
+
+  - sensor:
+      ##################################   COSTI ##############################################
+
+      # Costo consumo ogni ora
+      - name: "Costo Consumo Ogni Ora Megane"
+        unique_id: costo_consumo_ogni_ora_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.energia_ogni_ora_megane') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      # Costo consumo giornaliero
+      - name: "Costo Consumo Giornaliero Megane"
+        unique_id: costo_consumo_giornaliero_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.energia_oggi_megane') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      # Costo giornaliero F1 e F2
+      - name: "Costo Consumo Giornaliero Megane F1"
+        unique_id: costo_consumo_giornaliero_megane_f1
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.consumo_giornaliero_megane_f1') | float(0)) *
+              (states('input_number.costo_energia_casa_f1') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Giornaliero Megane F2"
+        unique_id: costo_consumo_giornaliero_megane_f2
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.consumo_giornaliero_megane_f2') | float(0)) *
+              (states('input_number.costo_energia_casa_f2') | float(0))) | round(2) }}
+
+      # Costo consumo settimanale
+      - name: "Costo Consumo Settimana Megane"
+        unique_id: costo_consumo_settimana_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.energia_settimana_megane') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Settimana Megane F1"
+        unique_id: costo_consumo_settimana_megane_f1
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.consumo_settimana_megane_f1') | float(0)) *
+              (states('input_number.costo_energia_casa_f1') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Settimana Megane F2"
+        unique_id: costo_consumo_settimana_megane_f2
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.consumo_settimana_megane_f2') | float(0)) *
+              (states('input_number.costo_energia_casa_f2') | float(0))) | round(2) }}
+
+      # Costo consumo mensile
+      - name: "Costo Consumo Mensile Megane"
+        unique_id: costo_consumo_mensile_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.energia_mese_megane') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Mensile Megane F1"
+        unique_id: costo_consumo_mensile_megane_f1
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.consumo_mensile_megane_f1') | float(0)) *
+              (states('input_number.costo_energia_casa_f1') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Mensile Megane F2"
+        unique_id: costo_consumo_mensile_megane_f2
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.consumo_mensile_megane_f2') | float(0)) *
+              (states('input_number.costo_energia_casa_f2') | float(0))) | round(2) }}
+
+      # Costo consumo bimestre
+      - name: "Costo Consumo Bimestre Megane"
+        unique_id: costo_consumo_bimestre_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.energia_bimestre_megane') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      # Costo consumo annuale
+      - name: "Costo Consumo Annuale Megane"
+        unique_id: costo_consumo_annuale_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.energia_anno_megane') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Anno Megane F1"
+        unique_id: costo_consumo_annuale_megane_f1
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.consumo_anno_megane_f1') | float(0)) *
+              (states('input_number.costo_energia_casa_f1') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Anno Megane F2"
+        unique_id: costo_consumo_annuale_megane_f2
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((states('sensor.consumo_anno_megane_f2') | float(0)) *
+              (states('input_number.costo_energia_casa_f2') | float(0))) | round(2) }}
+
+
+
+  - sensor:
+      ####################################################
+      #                COSTI RICARICA PRECEDENTI         #
+      ####################################################
+
+      - name: "Costo Consumo Ora Precedente Megane"
+        unique_id: costo_consumo_ora_precedente_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.energia_ogni_ora_megane', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Ieri Megane"
+        unique_id: costo_consumo_ieri_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.energia_oggi_megane', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Ieri Megane F1"
+        unique_id: costo_consumo_ieri_megane_f1
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.consumo_giornaliero_megane_f1', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_casa_f1') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Ieri Megane F2"
+        unique_id: costo_consumo_ieri_megane_f2
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.consumo_giornaliero_megane_f2', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_casa_f2') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Settimana Precedente Megane"
+        unique_id: costo_consumo_settimana_precedente_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.energia_settimana_megane', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Settimana Precedente Megane F1"
+        unique_id: costo_consumo_settimana_precedente_megane_f1
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.consumo_settimana_megane_f1', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_casa_f1') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Settimana Precedente Megane F2"
+        unique_id: costo_consumo_settimana_precedente_megane_f2
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.consumo_settimana_megane_f2', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_casa_f2') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Mese Precedente Megane"
+        unique_id: costo_consumo_mese_precedente_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.energia_mese_megane', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Mese Precedente Megane F1"
+        unique_id: costo_consumo_mese_precedente_megane_f1
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.consumo_mensile_megane_f1', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_casa_f1') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Mese Precedente Megane F2"
+        unique_id: costo_consumo_mese_precedente_megane_f2
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.consumo_mensile_megane_f2', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_casa_f2') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Bimestre Precedente Megane"
+        unique_id: costo_consumo_bimestre_precedente_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.energia_bimestre_megane', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Anno Precedente Megane"
+        unique_id: costo_consumo_anno_precedente_megane
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.energia_anno_megane', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_megane') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Anno Precedente Megane F1"
+        unique_id: costo_consumo_anno_precedente_megane_f1
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.consumo_anno_megane_f1', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_casa_f1') | float(0))) | round(2) }}
+
+      - name: "Costo Consumo Anno Precedente Megane F2"
+        unique_id: costo_consumo_anno_precedente_megane_f2
+        icon: mdi:currency-eur
+        unit_of_measurement: '€'
+        state: >
+          {{ ((state_attr('sensor.consumo_anno_megane_f2', 'last_period') | float(0)) *
+              (states('input_number.costo_energia_casa_f2') | float(0))) | round(2) }}
+
+
+################################################################################
+
+      - name: "Sensore Potenza Megane W"
+        unique_id: sensore_potenza_megane_w
+        unit_of_measurement: "W"
+        device_class: power
+        icon: mdi:flash
+        state: *power
+
+
+
+          
+####################################################
+#                                                  #
+#                   SENSORI                        #
+#                                                  #
+####################################################
+
+sensor:
+
+
+  - platform: statistics
+    name: "potenza_importata_15min"
+    entity_id: sensor.sensore_potenza_casa_w     ## SOSITUISCI CON IL TUO SENSORE DEI CONSUMI GENERALI DELLA CASA DI SOLITO SHELLY EM#
+    state_characteristic: mean
+    precision: 0
+    max_age:
+      minutes: 15
+
+
+
+####################################################
+
+  - platform: integration
+    source: sensor.sensore_potenza_megane_w
+    name: w_kwh_megane
+    unit_prefix: k
+    method: left
+    round: 2
+    unique_id: w_kwh_megane
+
+
+
+
+
+
+
+####################################################
+#                                                  #
+#                METER ENERGIA CARICA Megane       #
+#                                                  #
+####################################################
+
+utility_meter:
+
+  energia_ogni_ora_megane:
+    unique_id: energia_ogni_ora_megane
+    source: sensor.w_kwh_megane
+    cycle: hourly
+
+  energia_oggi_megane:
+    unique_id: energia_oggi_megane
+    source: sensor.w_kwh_megane
+    cycle: daily
+
+  energia_settimana_megane:
+    unique_id: energia_settimana_megane
+    source: sensor.w_kwh_megane
+    cycle: weekly
+
+  energia_mese_megane:
+    unique_id: energia_mese_megane
+    source: sensor.w_kwh_megane
+    cycle: monthly
+
+  energia_bimestre_megane:
+    unique_id: energia_bimestre_megane
+    source: sensor.w_kwh_megane
+    cycle: bimonthly
+
+  energia_anno_megane:
+    unique_id: energia_anno_megane
+    source: sensor.w_kwh_megane
+    cycle: yearly
+    
+
+####################### F1 e F2 ####################
+
+  consumo_giornaliero_megane:
+    source: sensor.w_kwh_megane
+    cycle: daily 
+    tariffs:
+      - f1
+      - f2
+      
+  consumo_mensile_megane:
+    source: sensor.w_kwh_megane
+    cycle: monthly
+    tariffs:
+      - f1
+      - f2
+      
+  consumo_settimana_megane:
+    source: sensor.w_kwh_megane
+    cycle: weekly
+    tariffs:
+      - f1
+      - f2   
+      
+  consumo_anno_megane:
+    source: sensor.w_kwh_megane
+    cycle: yearly
+    tariffs:
+      - f1
+      - f2      
+
+
+####################################################
+#                                                  #
+#                       SCRIPT                     #
+#                                                  #
+####################################################
+script:
+
+  reset_sensori_energia_megane:
+    sequence:
+      - service: utility_meter.calibrate
+        data:
+          value: '0'
+        target:
+          entity_id:
+            - sensor.energia_ogni_ora_megane
+            - sensor.energia_oggi_megane
+            - sensor.energia_settimana_megane
+            - sensor.energia_mese_megane
+            - sensor.energia_bimestre_megane
+            - sensor.energia_anno_megane
+
+
+       
+####################################################
+#                                                  #
+#                     AUTOMAZIONI                  #
+#                                                  #
+####################################################
+
+automation:
+
+- alias: Incremento Kwh
+  id: incremento_kwh_megane
+  trigger:
+    platform: state
+    entity_id: sensor.energia_oggi_megane
+  action:
+    - service: input_number.set_value
+      target:
+        entity_id: >
+          {% set today = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][now().weekday()] %}
+          {% if (today in ["Monday"]) %} input_number.kwh_consumati_lunedi_megane
+          {% elif (today in ["Tuesday"]) %} input_number.kwh_consumati_martedi_megane
+          {% elif (today in ["Wednesday"]) %} input_number.kwh_consumati_mercoledi_megane
+          {% elif (today in ["Thursday"]) %} input_number.kwh_consumati_giovedi_megane
+          {% elif (today in ["Friday"]) %} input_number.kwh_consumati_venerdi_megane
+          {% elif (today in ["Saturday"]) %} input_number.kwh_consumati_sabato_megane
+          {% elif (today in ["Sunday"]) %} input_number.kwh_consumati_domenica_megane
+          {% endif %}
+      data:
+        value: "{{states('sensor.energia_oggi_megane')}}"
+
+
+
+- alias: Notifica avvio ricarica
+  id: notifica_avvio_ricarica
+  description: Invia notifica a inizio ricarica
+  trigger:
+    - platform: state
+      entity_id: sensor.wallbox_charger_state
+      to: "charging"
+  conditions: []
+  action:
+
+    - service: notify.michele
+      data:
+        message: >
+          🔋 La ricarica è iniziata alle {{ now().strftime('%Y-%m-%d %H:%M:%S') }}
+  mode: single
+
+
+
+
+######################### POTENZA PRELEVATA ############################
+
+
+# SOSTITUISCI CON I TUOI SENSORI DELLA WALLBOX #
+
+
+- alias: notifica_potenza_importata_elevata
+  id: notifica_potenza_elevata
+  description: Regola la potenza massima prelevata durante la ricarica
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.potenza_importata_15min
+      above: 5500
+      for:
+        hours: 2
+        minutes: 40
+  condition:
+    - condition: state
+      entity_id: sensor.wallbox_charger_state      ## SOSTITUISCI CON SENSORE CARICA DELLA TUA WALLBOX , DI SOLITO LO STATO DI CARICA #
+      state: charging
+  action:
+    - service: notify.michele    ## SOSTITUISCI CON IL I TUOI NOTIFY  #
+      data:
+        message: >-
+          La potenza importata è stata superiore a 6kW per oltre 2 ore e 40
+          minuti. Abbasso la potenza WallBox
+    - service: number.set_value
+      data:
+        entity_id: number.wallbox_user_limit    #SOSTITUISCI CON IL SENSORE CHE CAMBIA LA POTENZA DI CARICA DELLA TUA WALLBOX  #
+        value: "22"
+    - delay: "00:15:00"
+    - service: number.set_value
+      data:
+        entity_id: number.wallbox_user_limit    #SOSTITUISCI CON IL SENSORE CHE CAMBIA LA POTENZA DI CARICA DELLA TUA WALLBOX  #
+        value: "25"
+    - service: notify.michele   ## SOSTITUISCI CON IL I TUOI NOTIFY  #
+      data:
+        message: Potenza WallBox ripristinata
+  mode: single

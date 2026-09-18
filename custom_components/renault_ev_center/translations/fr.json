@@ -132,7 +132,8 @@
               "low_soc_enabled": "Rappel batterie faible (à domicile)",
               "low_soc_threshold": "Seuil batterie faible (%)",
               "low_soc_start": "Fenêtre rappel — début",
-              "low_soc_end": "Fenêtre rappel — fin"
+              "low_soc_end": "Fenêtre rappel — fin",
+              "low_soc_days": "Jours de la semaine"
             }
           },
           "schedule": {
@@ -282,7 +283,8 @@
               "low_soc_enabled": "Rappel batterie faible (à la maison)",
               "low_soc_threshold": "% minimum rappel",
               "low_soc_start": "Début plage horaire",
-              "low_soc_end": "Fin plage horaire"
+              "low_soc_end": "Fin plage horaire",
+              "low_soc_days": "Jours de la semaine"
             }
           },
           "schedule": {

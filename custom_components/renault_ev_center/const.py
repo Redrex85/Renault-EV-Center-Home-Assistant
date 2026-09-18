@@ -76,6 +76,7 @@ CONF_LOW_SOC_ENABLED = "low_soc_enabled"
 CONF_LOW_SOC_THRESHOLD = "low_soc_threshold"
 CONF_LOW_SOC_START = "low_soc_start"
 CONF_LOW_SOC_END = "low_soc_end"
+CONF_LOW_SOC_DAYS = "low_soc_days"
 CONF_CHARGE_SCHED_ENABLED = "charge_sched_enabled"
 CONF_CHARGE_SCHED_MODE = "charge_sched_mode"  # orario | percentuale
 CONF_CHARGE_START_TIME = "charge_start_time"
@@ -93,6 +94,8 @@ CONF_HORN_ENTITY = "horn_entity"
 DEFAULT_LOW_SOC_THRESHOLD = 25.0
 DEFAULT_LOW_SOC_START = "18:00"
 DEFAULT_LOW_SOC_END = "22:00"
+DEFAULT_LOW_SOC_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 # profili installazione: minimal (solo auto) · pro (auto+wallbox) · enterprise (+FV)
 CONF_HAS_PV = "has_pv"

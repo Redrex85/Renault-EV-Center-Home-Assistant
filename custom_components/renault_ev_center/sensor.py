@@ -61,6 +61,7 @@ async def async_setup_entry(
         ListaRicariche(coordinator, name),
         ReportGenerale(coordinator, name),
         UltimaRicarica(coordinator, name),
+        DeltaUltimaCarica(coordinator, name),
         RicaricheContatore(coordinator, name, "oggi"),
         RicaricheContatore(coordinator, name, "mese"),
         EfficienzaRicarica(coordinator, name),
@@ -651,6 +652,24 @@ class UltimaRicarica(MateSensor):
             "costo": ric.get("costo"),
             "tipo": ric.get("tipo"),
         }
+
+
+class DeltaUltimaCarica(MateSensor):
+    """Δ% di batteria dell'ultima ricarica (soc_end − soc_start)."""
+
+    def __init__(self, coordinator, name):
+        super().__init__(coordinator, name)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_delta_ultima_carica"
+        self._attr_name = f"{name} Delta % Ultima Carica"
+        self._attr_native_unit_of_measurement = "%"
+        self._attr_icon = "mdi:battery-plus-variant"
+
+    @property
+    def native_value(self):
+        ric = self.coordinator.data.get("last_charge")
+        if not ric or ric.get("soc_start") is None or ric.get("soc_end") is None:
+            return 0.0
+        return round(max(float(ric["soc_end"]) - float(ric["soc_start"]), 0.0), 1)
 
 
 class RicaricheContatore(MateSensor):

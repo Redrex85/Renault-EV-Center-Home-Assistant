@@ -146,7 +146,8 @@ friendly = [
     f"{NAME} Ultimo Trip", f"{NAME} Trip Completati Oggi", f"{NAME} Km Oggi (Trip)",
     f"{NAME} Statistiche Viaggi", f"{NAME} Viaggi Recenti", f"{NAME} Storico Giornaliero",
     f"{NAME} Archivio Viaggi", f"{NAME} Lista Ricariche", f"{NAME} Report Generale",
-    f"{NAME} Ultima Ricarica", f"{NAME} Ricariche Oggi", f"{NAME} Ricariche Mese",
+    f"{NAME} Ultima Ricarica", f"{NAME} Delta % Ultima Carica",
+    f"{NAME} Ricariche Oggi", f"{NAME} Ricariche Mese",
     *[f"{NAME} Risparmio {l} vs Diesel" for l in ("Totale", "Mese", "Anno")],
     f"{NAME} Wallbox Potenza",
     f"{NAME} Efficienza Ricarica", f"{NAME} Perdite Ultima Ricarica", f"{NAME} SOH Stimato",
@@ -324,11 +325,12 @@ try:
     assert delta([(None, 5.0), (None, None)]) == 0.0
     assert delta([]) == 0.0
     en = ns10["_charge_energy"]
-    assert en(38.24, "Casa", 20, 80, 60) == (38.24, None)  # misurata: vince sempre
-    assert (round(en(0.0, "Pubblica", 20, 50, 60)[0], 2), en(0.0, "Pubblica", 20, 50, 60)[1]) \
+    assert en(38.24, 0, "Casa", 20, 80, 60) == (38.24, None)  # misura: vince sempre
+    assert en(0, 12.5, "Casa", 20, 80, 60) == (12.5, "potenza_istantanea")  # integrale potenza
+    assert (round(en(0, 0, "Pubblica", 20, 50, 60)[0], 2), en(0, 0, "Pubblica", 20, 50, 60)[1]) \
         == (18.0, "fuori_casa")  # stima dal SoC: caso normale fuori casa
-    assert en(0.0, "Casa", 20, 50, 60)[1] == "casa_senza_misura"  # a casa: ripiego da segnalare
-    ok("energia ricarica: misurata, stima fuori casa, ripiego a casa")
+    assert en(0, 0, "Casa", 20, 50, 60)[1] == "casa_senza_misura"  # a casa: ripiego da segnalare
+    ok("energia ricarica: misura, integrale potenza, stima fuori casa / ripiego a casa")
 except Exception as e:
     bad(f"energia ricarica: {e}")
 

@@ -18,6 +18,7 @@ from homeassistant.helpers.selector import (
     NumberSelectorMode,
     SelectSelector,
     SelectSelectorConfig,
+    SelectOptionDict,
     TextSelector,
     TimeSelector,
     DateSelector,
@@ -57,6 +58,9 @@ from .const import (
     CONF_LOW_SOC_THRESHOLD,
     CONF_LOW_SOC_START,
     CONF_LOW_SOC_END,
+    CONF_LOW_SOC_DAYS,
+    DEFAULT_LOW_SOC_DAYS,
+    WEEKDAYS as WEEKDAY_KEYS,
     CONF_MODEL,
     MODELS,
     CONF_CO2_ENABLED,
@@ -144,6 +148,12 @@ _LOGGER = logging.getLogger(__name__)
 
 PERCENT_SENSOR = EntitySelectorConfig(domain="sensor", device_class="battery")
 ENERGY_SENSOR = EntitySelectorConfig(domain="sensor", device_class=["energy", "energy_storage"])
+
+WEEKDAY_LABELS = {
+    "mon": "Lunedì", "tue": "Martedì", "wed": "Mercoledì", "thu": "Giovedì",
+    "fri": "Venerdì", "sat": "Sabato", "sun": "Domenica",
+}
+WEEKDAY_OPTIONS = [SelectOptionDict(value=k, label=v) for k, v in WEEKDAY_LABELS.items()]
 
 
 def _flat(data: dict[str, Any]) -> dict[str, Any]:
@@ -311,6 +321,8 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                 NumberSelectorConfig(min=5, max=80, step=1, unit_of_measurement="%")),
             vol.Optional(CONF_LOW_SOC_START, default=defaults.get(CONF_LOW_SOC_START, DEFAULT_LOW_SOC_START)): TimeSelector(),
             vol.Optional(CONF_LOW_SOC_END, default=defaults.get(CONF_LOW_SOC_END, DEFAULT_LOW_SOC_END)): TimeSelector(),
+            vol.Optional(CONF_LOW_SOC_DAYS, default=defaults.get(CONF_LOW_SOC_DAYS, DEFAULT_LOW_SOC_DAYS)): SelectSelector(
+                SelectSelectorConfig(options=WEEKDAY_OPTIONS, multiple=True)),
         }), {"collapsed": True}),
         vol.Required("schedule"): section(vol.Schema({
             vol.Required(CONF_CHARGE_SCHED_ENABLED, default=defaults.get(CONF_CHARGE_SCHED_ENABLED, False)): BooleanSelector(),
@@ -409,7 +421,7 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 for k in (CONF_SCAD_BOLLO, CONF_SCAD_REVISIONE, CONF_SCAD_ASSICURAZIONE):
                     user_input.pop(k, None)
             if not user_input.get(CONF_LOW_SOC_ENABLED):
-                for k in (CONF_LOW_SOC_THRESHOLD, CONF_LOW_SOC_START, CONF_LOW_SOC_END):
+                for k in (CONF_LOW_SOC_THRESHOLD, CONF_LOW_SOC_START, CONF_LOW_SOC_END, CONF_LOW_SOC_DAYS):
                     user_input.pop(k, None)
             if not user_input.get(CONF_CHARGE_SCHED_ENABLED):
                 for k in (CONF_CHARGE_SCHED_MODE, CONF_CHARGE_START_TIME, CONF_CHARGE_STOP_TIME,

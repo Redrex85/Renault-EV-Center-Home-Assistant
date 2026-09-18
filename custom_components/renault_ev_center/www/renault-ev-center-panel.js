@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.6.7";
+const REC_VER = "1.0.6.8";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -328,7 +328,14 @@ class RenaultEvCenterPanel extends HTMLElement {
         if (typeof kwh === "number" && kwh > 0) return Math.round(kwh / cap * 1000) / 10;
         return null;
       }
-      case "perc_100km": return S._num(S._sid("batteria_per_100km"), "sensor.megane_batteria_per_100_km");
+      case "perc_100km": {
+        const v = S._num(S._sid("batteria_per_100km"), "sensor.megane_batteria_per_100_km");
+        if (v !== null && v > 0) return v;
+        // ripiego: % consumata oggi sui km di oggi (dati reali della batteria)
+        const km = S._field("km_oggi");
+        const d = S._field("drain");
+        return (typeof km === "number" && km > 0.5 && typeof d === "number") ? d / km * 100 : v;
+      }
       case "vampire": return S._num(S._sid("batteria_persa_da_fermo_oggi"));
       case "drain_mese_pct": return S._num(S._sid("batteria_persa_da_fermo_mese"));
       case "temp_est": {
@@ -454,16 +461,27 @@ class RenaultEvCenterPanel extends HTMLElement {
     const z = this._st(this._sid("zona"), this._sid("zona_attuale"), "sensor.megane_zona_attuale");
     return z ? this._txt(z) : null;
   }
-  /** indirizzo corrente: attributi del tracker (companion/Android) o geocode integrazione */
+  /** indirizzo corrente: attributi del tracker (companion/Android) o stessi dati della pagina Viaggi */
   _addrName() {
     for (const id of [
       this._ov("location"),
       `device_tracker.${this._slug(this._cfg.name)}_posizione`,
       this._car("device_tracker", "location"),
+      this._car("device_tracker", ""),
     ]) {
       const s = id ? this._hass.states[id] : null;
       if (!s) continue;
       const v = this._attrAny(s, ["address", "geocoded_location", "place", "location_name", "street"]);
+      if (v) return String(v);
+    }
+    // ripiego: ultimo luogo noto dai viaggi (stessa fonte usata nella pagina Viaggi)
+    for (const id of [this._sid("ultimo_trip"), this._sid("viaggi_recenti"), this._sid("archivio_viaggi")]) {
+      const s = this._hass.states[id];
+      if (!s) continue;
+      const trips = Array.isArray(s.attributes.trips) ? s.attributes.trips : [];
+      const t = trips.length ? trips[trips.length - 1] : s.attributes;
+      const v = this._attrAny(s, ["luogo_arrivo", "luogo_partenza", "indirizzo", "via"])
+        || (t && (t.luogo_arrivo || t.luogo_partenza));
       if (v) return String(v);
     }
     const p = this._hass.states[this._sid("posizione")];
@@ -772,19 +790,20 @@ class RenaultEvCenterPanel extends HTMLElement {
         break;
       }
       case "charge": {
+        // comando dell'AUTO (app Renault): avvia la ricarica lato veicolo
         const b = this._st(
-          this._ov("wb_charge_switch"),
           this._ov("start_charge"),
           this._car("button", "start_charge"),
           this._car("button", "avviare_la_ricarica"),
-          "button.wallbox_charger_start",
           "button.start_charge",
+          this._ov("wb_charge_switch"),
+          "button.wallbox_charger_start",
         );
-        if (!b) { this._toast("⚠️ Nessun avvio carica trovato (mappa 'Avvio carica WALLBOX' in Configura)"); break; }
+        if (!b) { this._toast("⚠️ Nessun avvio carica trovato (mappa 'Pulsante Avvia carica' in Configura)"); break; }
         const dom = String(b.entity_id).split(".")[0];
-        if (dom === "switch") this._call("switch", "turn_on", { entity_id: b.entity_id }, "⚡ Avvio carica (wallbox)");
-        else if (dom === "button") this._call("button", "press", { entity_id: b.entity_id }, "⚡ Avvio carica");
-        else this._call("homeassistant", "turn_on", { entity_id: b.entity_id }, "⚡ Avvio carica");
+        if (dom === "switch") this._call("switch", "turn_on", { entity_id: b.entity_id }, "⚡ Avvia carica");
+        else if (dom === "button") this._call("button", "press", { entity_id: b.entity_id }, "⚡ Avvia carica (auto)");
+        else this._call("homeassistant", "turn_on", { entity_id: b.entity_id }, "⚡ Avvia carica");
         break;
       }
       case "close_trip": this._call(D, "close_trip", {}, "🏁 Viaggio chiuso"); break;
@@ -889,6 +908,8 @@ class RenaultEvCenterPanel extends HTMLElement {
       this._mapTs = Date.now();
       this._drawMap();
     }
+    if (root.querySelector("#kmchart") && !this._kmChart) this._drawKmChart();
+    if (this._kmChart) this._kmChart.hass = this._hass;
     root.querySelectorAll("[data-sw]").forEach((el) => {
       if (el.tagName === "INPUT") { const s = this._hass.states[el.dataset.ent]; el.checked = !!s && s.state === "on"; }
     });
@@ -1065,7 +1086,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         hours_to_show: 48,
         theme_mode: "dark",
         auto_fit: false,
-        default_zoom: 13,
+        default_zoom: 11,
       });
       card.hass = this._hass;
       card.style.display = "block";
@@ -1075,6 +1096,51 @@ class RenaultEvCenterPanel extends HTMLElement {
       this._mapCard = card;
     } catch (e) {
       box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Mappa non disponibile</div>`;
+    }
+  }
+  /** grafico km percorsi 7 giorni (apexcharts-card via Lovelace helpers) */
+  async _drawKmChart() {
+    const box = this.shadowRoot && this.shadowRoot.querySelector("#kmchart");
+    if (!box || this._kmChart) return;
+    if (typeof window.loadCardHelpers !== "function") return;
+    try {
+      const helpers = await window.loadCardHelpers();
+      const card = helpers.createCardElement({
+        type: "custom:apexcharts-card",
+        graph_span: "7d",
+        span: { end: "day" },
+        update_interval: "10min",
+        apex_config: { chart: { height: 200 } },
+        yaxis: [
+          { id: "first", min: 0, decimals: 0 },
+          { id: "second", opposite: true, min: 0, decimals: 1 },
+        ],
+        series: [
+          {
+            entity: this._sid("km_giornalieri"), name: "Km Percorsi", type: "column",
+            yaxis_id: "first", color: "#ff9933", stroke_width: 2, curve: "smooth",
+            float_precision: 0, extend_to: "end", min: 0,
+            group_by: { func: "max", fill: "zero", duration: "1d" },
+            show: { legend_value: false },
+          },
+          {
+            entity: this._sid("kwh_per_100km"), name: "Media Consumi", type: "line",
+            yaxis_id: "second", color: "green", stroke_width: 3, curve: "smooth",
+            float_precision: 2, min: 0, extend_to: "end",
+            group_by: { func: "avg", fill: "last", duration: "1d" },
+            show: { legend_value: false },
+          },
+        ],
+        header: { show: true, show_states: true },
+        all_series_config: { stroke_width: 1, show: { extremas: true } },
+      });
+      card.hass = this._hass;
+      card.style.display = "block";
+      box.innerHTML = "";
+      box.appendChild(card);
+      this._kmChart = card;
+    } catch (e) {
+      box.innerHTML = `<div style="display:flex;min-height:180px;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center">Grafico non disponibile.<br>Installa <b>apexcharts-card</b> da HACS → Frontend.</div>`;
     }
   }
   _wb_state_txt() {
@@ -1491,7 +1557,8 @@ h1{font-size:26px;margin-bottom:4px}
 .tile .v{font-size:24px;font-weight:800;line-height:1.05}
 .tile .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
 .cmd{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:15px 8px;text-align:center;font-size:13.5px;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 -10px 22px rgba(0,0,0,.35),0 12px 26px rgba(0,0,0,.3)}
-.kv{text-align:center;background:var(--panel2);border-radius:12px;padding:10px 4px}
+.kv{text-align:center;background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:12px;padding:10px 4px;box-shadow:0 1px 0 rgba(255,255,255,.08) inset}
+.kv:hover{border-color:var(--accent)}
 .kv b{display:block;font-size:22px;font-weight:800;line-height:1.1}
 .kv div{font-size:10.5px;letter-spacing:.04em;color:var(--muted);margin-top:2px}
 .cmd .em{font-size:22px;display:block;margin-bottom:5px}
@@ -1563,12 +1630,11 @@ const PAGES = {
     <div class="card"><h3>Comandi Renault</h3>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
         <div class="cmd" data-more="charging"><span class="em">🔌</span>Carica<b data-v="cmd_charge">—</b></div>
-        <div class="cmd" data-more="loc"><span class="em">📍</span>Zona<b data-v="cmd_zona">—</b></div>
+        <div class="cmd" data-more="loc"><span class="em">📍</span>Zona ricarica<b data-v="cmd_zona">—</b></div>
         <div class="cmd" data-more="loc"><span class="em">🏠</span>Indirizzo<b data-v="cmd_addr">—</b></div>
         <div class="cmd" data-more="plug"><span class="em">🔗</span>Presa<b data-v="cmd_plug">—</b></div>
         <div class="cmd" data-cmd="ac"><span class="em">🧊</span>Avvia A/C<b>Premi ▸</b></div>
         <div class="cmd" data-cmd="charge"><span class="em">⚡</span>Avvia carica<b>Premi ▸</b></div>
-        <div class="cmd" data-cmd="charge_stop"><span class="em">⏹</span>Ferma carica<b>Premi ▸</b></div>
         <div class="cmd" data-more="ora_compl"><span class="em">⏱</span>Fine ricarica<b data-v="cmd_ora">—</b></div>
         <div class="cmd" data-cmd="horn"><span class="em">📣</span>Clacson<b>Premi ▸</b></div>
         <div class="cmd" data-cmd="flash"><span class="em">💡</span>Lampeggia<b>Premi ▸</b></div>
@@ -1585,10 +1651,15 @@ const PAGES = {
         <div class="row"><span>Carica programmata</span><b data-f="t_start_v">—</b></div>
         <div class="row"><span>⚡ Wallbox ora</span><b data-v="cmd_wb">—</b></div>
       </div>
-      <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
-        <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Automazioni attive</div>
-        <div data-c="autos-on"></div>
-      </div>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>📈 Km percorsi (7 giorni)</h3>
+      <div id="kmchart" style="min-height:210px"></div>
+    </div>
+    <div class="card"><h3>🤖 Automazioni attive</h3>
+      <div data-c="autos-on"></div>
     </div>
   </div>
 
@@ -1804,7 +1875,6 @@ const PAGES = {
   p9: `<h1>Automazioni</h1>
   <div class="grid g2">
     <div class="card"><h3>Notifiche</h3>
-      <div class="row"><span>🔋 Fine ricarica (kWh, SoC, costo)</span><label class="switch"><input type="checkbox" data-sw="sw_end"><span></span></label></div>
       <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Avvio ricarica e promemoria batteria bassa si configurano in <b>Configura</b>.</div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">

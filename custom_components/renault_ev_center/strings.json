@@ -124,7 +124,8 @@
               "low_soc_enabled": "Promemoria batteria bassa (a casa)",
               "low_soc_threshold": "% minima promemoria",
               "low_soc_start": "Inizio fascia oraria",
-              "low_soc_end": "Fine fascia oraria"
+              "low_soc_end": "Fine fascia oraria",
+              "low_soc_days": "Giorni della settimana"
             }
           },
           "schedule": {
@@ -274,7 +275,8 @@
               "low_soc_enabled": "Promemoria batteria bassa (a casa)",
               "low_soc_threshold": "% minima promemoria",
               "low_soc_start": "Inizio fascia oraria",
-              "low_soc_end": "Fine fascia oraria"
+              "low_soc_end": "Fine fascia oraria",
+              "low_soc_days": "Giorni della settimana"
             }
           },
           "schedule": {

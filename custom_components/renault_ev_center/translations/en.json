@@ -132,7 +132,8 @@
               "low_soc_enabled": "Low battery reminder (at home)",
               "low_soc_threshold": "Low battery threshold (%)",
               "low_soc_start": "Reminder window — start",
-              "low_soc_end": "Reminder window — end"
+              "low_soc_end": "Reminder window — end",
+              "low_soc_days": "Days of the week"
             }
           },
           "schedule": {
@@ -282,7 +283,8 @@
               "low_soc_enabled": "Low battery reminder (at home)",
               "low_soc_threshold": "Reminder min %",
               "low_soc_start": "Time window start",
-              "low_soc_end": "Time window end"
+              "low_soc_end": "Time window end",
+              "low_soc_days": "Days of the week"
             }
           },
           "schedule": {
