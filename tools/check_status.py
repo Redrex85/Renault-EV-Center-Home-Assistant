@@ -362,6 +362,17 @@ try:
 except Exception as e:
     bad(f"markup pannello: {e}")
 
+print("\n[13] Versione compatibile HACS")
+try:
+    version = open(os.path.join(BASE, "VERSION"), encoding="utf-8").read().strip()
+    assert re.fullmatch(r"\d+\.\d+\.\d+", version), (
+        f"VERSION '{version}' non è x.y.z: HACS prende la PRIMA release dell'elenco GitHub "
+        "e con 4 numeri l'ordine si rompe (es. 1.0.6.8 prima di 1.0.6.12) -> nessun aggiornamento"
+    )
+    ok(f"VERSION {version} in formato semver x.y.z (HACS-safe)")
+except Exception as e:
+    bad(f"versione HACS: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:
