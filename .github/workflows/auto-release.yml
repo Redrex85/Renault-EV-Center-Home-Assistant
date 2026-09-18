@@ -38,4 +38,12 @@ jobs:
             git tag "$V"
             git push origin "$V"
           fi
-          gh release create "$V" --title "$V" --generate-notes
+          # "1.0.10-beta" / "1.0.10-rc1" → release PRE-RELEASE.
+          # HACS mostra le pre-release solo a chi attiva "Mostra le beta";
+          # senza --prerelease finirebbero a TUTTI come versione stabile.
+          case "$V" in
+            *-*) FLAG="--prerelease" ;;
+            *)   FLAG="" ;;
+          esac
+          echo "Flag release: '${FLAG:-stabile}'"
+          gh release create "$V" --title "$V" --generate-notes $FLAG

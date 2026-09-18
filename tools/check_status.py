@@ -365,11 +365,13 @@ except Exception as e:
 print("\n[13] Versione compatibile HACS")
 try:
     version = open(os.path.join(BASE, "VERSION"), encoding="utf-8").read().strip()
-    assert re.fullmatch(r"\d+\.\d+\.\d+", version), (
-        f"VERSION '{version}' non è x.y.z: HACS prende la PRIMA release dell'elenco GitHub "
-        "e con 4 numeri l'ordine si rompe (es. 1.0.6.8 prima di 1.0.6.12) -> nessun aggiornamento"
+    assert re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?", version), (
+        f"VERSION '{version}' non valida: serve x.y.z oppure x.y.z-suffix "
+        "(es. 1.0.10-beta). HACS prende la PRIMA release dell'elenco GitHub: "
+        "con 4 numeri l'ordine si rompe (1.0.6.8 prima di 1.0.6.12) -> nessun aggiornamento"
     )
-    ok(f"VERSION {version} in formato semver x.y.z (HACS-safe)")
+    kind = "beta/pre-release" if "-" in version else "stabile (semver x.y.z)"
+    ok(f"VERSION {version} valida — {kind}")
 except Exception as e:
     bad(f"versione HACS: {e}")
 

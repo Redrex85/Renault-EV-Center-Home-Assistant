@@ -111,11 +111,9 @@ def setup_car_image(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
 
 def _integration_version() -> str:
     """Versione dell'integrazione dal manifest: la card la confronta col proprio JS."""
-    try:
-        with open(os.path.join(os.path.dirname(__file__), "manifest.json"), encoding="utf-8") as fh:
-            return str(json.load(fh).get("version") or "")
-    except Exception:  # noqa: BLE001
-        return ""
+    from .const import integration_version
+
+    return integration_version()
 
 
 def _panel_view(name: str, image: str | None, overrides: dict[str, Any] | None = None) -> dict[str, Any]:

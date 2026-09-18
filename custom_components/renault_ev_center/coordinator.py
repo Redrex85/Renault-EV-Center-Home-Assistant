@@ -400,7 +400,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         }
         self.drain_meter = DeltaMeter.from_dict(counters.get("drain_down"), "down")
         self.drain_mesi = DeltaMeter.from_dict(counters.get("drain_month_down"), "down")
-        self.cost_total = _f(counters.get("cost_total"), 0.0)
+        # costo totale = somma delle ricariche registrate (fonte di verità).
+        # Ricalcolato anche qui: i record già presenti non devono restare fuori dal totale.
+        _somma_costi = round(sum(_f(c.get("costo")) for c in self.store.data["charges"]), 2)
+        self.cost_total = _somma_costi or _f(counters.get("cost_total"), 0.0)
         if isinstance(counters.get("trip"), dict):
             self.trip.restore(counters["trip"])
             # un viaggio non sopravvive al riavvio: evita "in movimento" fantasma

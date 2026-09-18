@@ -5,6 +5,38 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.11 — Panoramica: batteria/media, costo ricariche, auto-refresh via websocket
+
+### Correzioni
+- **Panoramica → Ultima ricarica**: "Batteria" e "Media" erano vuoti perché il pannello cercava
+  chiavi inesistenti (`soc_inizio`, `media_kw`). Il record usa `soc_start`/`soc_end` e
+  `potenza_media_kw` (le stesse che la pagina Ricariche legge correttamente).
+- **Costo totale ricariche a 0 €**: il totale è ora ricalcolato **anche al caricamento**
+  dell'integrazione, non solo a fine ricarica — così i record già in archivio entrano subito
+  nel conteggio.
+
+### Auto-refresh — ora via websocket
+- La versione dell'integrazione viaggia come **attributo del sensore "Prossima Scadenza"**
+  (`version`), quindi arriva al pannello per **websocket**, senza passare da cache HTTP o
+  Service Worker. Il controllo gira **ogni minuto** (prima ogni 2) + 3 s dopo l'apertura.
+- Il `fetch` del file JS resta solo come ripiego per integrazioni vecchie.
+- In console: `Renault EV Center: JS 1.0.11 · integrazione 1.0.11`.
+
+## 1.0.10 — Release beta e versioning a 3 numeri
+
+### Versioning (regole definitive)
+- **Solo 3 numeri**: `x.y.z`. Il quarto numero **non si usa più**: HACS prende la *prima* release
+  dell'elenco GitHub e con 4 numeri l'ordine si rompe (`1.0.6.8` prima di `1.0.6.12` → nessun
+  aggiornamento). Sequenza: `1.0.10 → 1.0.11 → …`, `1.1.0` per gruppi di funzioni.
+- **Versioni di test**: `VERSION = 1.0.10-beta` → il workflow crea una **pre-release GitHub**
+  (`--prerelease`). HACS la mostra **solo** a chi attiva *"Mostra le beta"* su quel repository;
+  per gli altri l'ultima stabile resta quella valida.
+  ⚠️ Senza `--prerelease` una beta verrebbe distribuita a tutti come stabile.
+- `check_status.py` [13] accetta `x.y.z` e `x.y.z-suffisso`, rifiuta i 4 numeri.
+
+### Release
+- `collapse-release.yml` accorpa **più serie** in un colpo (input `1.0.5,1.0.6` → un tag `1.0.5`).
+
 ## 1.0.9 — Auto-refresh, costo ricariche, layout Extra
 
 ### Auto-refresh (niente più Ctrl+F5)

@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.9";
+const REC_VER = "1.0.11";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -29,30 +29,32 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (_recVerChecked) return;
     _recVerChecked = true;
     console.info(`Renault EV Center: JS ${REC_VER} · integrazione ${serverVer || "non dichiarata"}`);
-    // 1) versione dichiarata dal server nella config della card: nessuna cache JS di mezzo
+    // 1) la config della card dichiara la versione dell'integrazione (fonte affidabile)
     if (serverVer) {
       if (serverVer !== REC_VER) this._reloadOnce(serverVer);
       return;
     }
-    // 2) ripiego (dashboard create da versioni precedenti, senza campo version)
-    try {
-      fetch(`/local/renault-ev-center/renault-ev-center-panel.js?ts=${Date.now()}`, { cache: "no-store" })
-        .then((r) => (r.ok ? r.text() : ""))
-        .then((t) => {
-          const m = t && t.match(/const REC_VER = "([^"]+)"/);
-          if (m && m[1] !== REC_VER) this._reloadOnce(m[1]);
-        })
-        .catch(() => {});
-    } catch (e) { /* ignore */ }
+    // 2) niente version in config (dashboard creata da versioni vecchie): lascia lavorare
+    //    _startVersionWatch(), che legge l'attributo del sensore via websocket.
   }
   /**
-   * Controllo periodico della versione servita.
-   * setConfig gira una volta sola: senza questo, una pagina già aperta durante un
-   * aggiornamento non se ne accorgerebbe mai (servirebbe F5 a mano).
+   * Auto-refresh: la versione arriva via **websocket** nell'attributo `version` del sensore
+   * <name>_prossima_scadenza. Affidabile: nessuna cache HTTP/Service Worker di mezzo.
+   * Il fetch resta come ripiego per integrazioni vecchie (senza l'attributo).
    */
   _startVersionWatch() {
     if (this._verTimer) return;
-    const tick = () => {
+    const entity = this._sid("prossima_scadenza");
+    const check = () => {
+      try {
+        const st = this._hass && this._hass.states && this._hass.states[entity];
+        const v = st && st.attributes ? st.attributes.version : null;
+        if (v) {                       // websocket: dato sempre fresco
+          if (v !== REC_VER) this._reloadOnce(v);
+          return;
+        }
+      } catch (e) { /* ignore */ }
+      // ripiego: rilegge il file servito
       fetch(`/local/renault-ev-center/renault-ev-center-panel.js?ts=${Date.now()}`, { cache: "no-store" })
         .then((r) => (r.ok ? r.text() : ""))
         .then((t) => {
@@ -61,8 +63,8 @@ class RenaultEvCenterPanel extends HTMLElement {
         })
         .catch(() => {});
     };
-    this._verTimer = setInterval(tick, 120000); // 2 minuti
-    setTimeout(tick, 5000);                      // primo controllo poco dopo l'apertura
+    this._verTimer = setInterval(check, 60000); // 1 minuto
+    setTimeout(check, 3000);
   }
   _reloadOnce(ver) {
     try {
@@ -271,7 +273,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       // Ultima ricarica / ricariche
       case "media_ult": {
         const r = S._list(S._sid("lista_ricariche"))[0];
-        const v = r ? r.media_kw ?? r.potenza_media ?? r.power ?? null : null;
+        const v = r ? (r.potenza_media_kw ?? r.media_kw ?? r.potenza_media ?? r.power ?? null) : null;
         const n = S._num(S._sid("potenza_media_ultima_ricarica"), S._sid("media_kW"), S._sid("potenza_media_kw"));
         const wp = S._field("wb_potenza");
         return v ?? n ?? (typeof wp === "number" && wp > 0 ? wp : null);
@@ -286,12 +288,12 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       case "batt_ult_pct": {
         const r = S._list(S._sid("lista_ricariche"))[0];
-        const a = r ? (r.soc_inizio ?? r.inizio ?? r.start ?? null) : null;
-        const b = r ? (r.soc_fine ?? r.fine ?? r.end ?? null) : null;
-        if (a !== null && b !== null) return `${a}% → ${b}%`;
+        const a = r ? (r.soc_start ?? r.soc_inizio ?? r.inizio ?? r.start ?? null) : null;
+        const b = r ? (r.soc_end ?? r.soc_fine ?? r.fine ?? r.end ?? null) : null;
+        if (a !== null && b !== null) return `${Math.round(a)}% → ${Math.round(b)}%`;
         const start = S._num(S._sid("soc_inizio_carica"), "sensor.megane_soc_inizio_carica");
         const delta = S._num(S._sid("ultima_ricarica_delta_batteria"), "sensor.ultima_ricarica_delta_batteria");
-        return (start === null || delta === null) ? null : `${start}% → ${Math.min(100, start + Math.abs(delta))}%`;
+        return (start === null || delta === null) ? null : `${Math.round(start)}% → ${Math.round(Math.min(100, start + Math.abs(delta)))}%`;
       }
       case "kwh_oggi_wb": return S._num("sensor.megane_battery_energy_daily_charge", S._sid("battery_energy_daily_charge"), S._sid("energia_caricata_giornaliera"), S._sid("wb_energy_oggi"), S._sid("ricariche_oggi"));
       case "kwh_sett_wb": return S._num(S._sid("energia_caricata_settimanale"), S._sid("wb_energy_settimana"), S._sid("ricariche_settimana"), "sensor.megane_battery_energy_weekly_charge");

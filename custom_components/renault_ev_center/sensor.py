@@ -14,7 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_WALLBOX_ENABLED, DOMAIN
+from .const import CONF_WALLBOX_ENABLED, DOMAIN, integration_version
 from .coordinator import PERIODS, RenaultMateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -1158,7 +1158,8 @@ class Scadenze(MateSensor):
 
     @property
     def extra_state_attributes(self):
-        return {"scadenze": self.coordinator.data.get("scadenze", [])}
+        return {"scadenze": self.coordinator.data.get("scadenze", []),
+                "version": integration_version()}
 
 
 class ViaggioEstremo(MateSensor):
