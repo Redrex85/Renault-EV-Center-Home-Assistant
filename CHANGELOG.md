@@ -5,6 +5,19 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.13 — Fix pannello morto (setConfig usava _cfg prima di crearlo)
+
+### Bug critico (regressione 1.0.11)
+- `setConfig` chiamava `_startVersionWatch()` **prima** di assegnare `this._cfg`. Quella funzione
+  fa `this._sid("prossima_scadenza")` → `this._slug(this._cfg.name)` su `undefined` →
+  **TypeError** → `setConfig` si interrompeva e la card non veniva mai configurata:
+  **pannello vuoto/bloccato**.
+- Ora `this._cfg` viene assegnato per primo; `_checkVersion()` e `_startVersionWatch()` girano
+  **dopo**. In più il watcher risolve l'entità **a ogni giro** (non più una volta sola all'avvio),
+  così non dipende dall'ordine di inizializzazione.
+- `check_status.py` **[14]**: fallisce se una chiamata precede `this._cfg = {...}` nella
+  `setConfig`. Verificato che cattura davvero l'ordine rotto.
+
 ## 1.0.12 — Fix blocking call nell'event loop (dashboard rotta)
 
 ### Bug critico (regressione 1.0.11)

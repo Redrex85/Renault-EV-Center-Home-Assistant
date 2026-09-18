@@ -382,6 +382,22 @@ try:
 except Exception as e:
     bad(f"versione HACS: {e}")
 
+print("\n[14] Pannello: setConfig assegna _cfg prima di usarlo")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    start = js.index("setConfig(config)")
+    body = js[start:start + 900]           # corpo di setConfig: ampiamente sufficiente
+    i_cfg = body.index("this._cfg = {")
+    for call in ("this._checkVersion(", "this._startVersionWatch("):
+        if call in body:
+            assert body.index(call) > i_cfg, (
+                f"{call} chiamata PRIMA di this._cfg = {{...}}: "
+                "this._sid() legge _cfg.name -> TypeError, la card non si configura"
+            )
+    ok("_cfg assegnato prima di _checkVersion/_startVersionWatch")
+except Exception as e:
+    bad(f"setConfig: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

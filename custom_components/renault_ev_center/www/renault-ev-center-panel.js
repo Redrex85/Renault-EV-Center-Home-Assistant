@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.12";
+const REC_VER = "1.0.13";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -44,10 +44,11 @@ class RenaultEvCenterPanel extends HTMLElement {
    */
   _startVersionWatch() {
     if (this._verTimer) return;
-    const entity = this._sid("prossima_scadenza");
     const check = () => {
       try {
-        const st = this._hass && this._hass.states && this._hass.states[entity];
+        // entità risolta a ogni giro: non dipende da quando parte il watcher
+        const st = this._cfg && this._hass && this._hass.states
+          ? this._hass.states[this._sid("prossima_scadenza")] : null;
         const v = st && st.attributes ? st.attributes.version : null;
         if (v) {                       // websocket: dato sempre fresco
           if (v !== REC_VER) this._reloadOnce(v);
@@ -84,8 +85,6 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
   setConfig(config) {
     if (!config) config = {};
-    this._checkVersion(config.version);
-    this._startVersionWatch();
     const name = config.name || "Megane";
     this._cfg = {
       name,
@@ -99,6 +98,9 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._theme = localStorage.getItem("rec_panel_theme") || "blu";
     this._built = false;
     this._raf = null;
+    // SOLO ORA: queste usano this._cfg, quindi vanno dopo la sua assegnazione
+    this._checkVersion(config.version);
+    this._startVersionWatch();
   }
 
   set hass(hass) {
