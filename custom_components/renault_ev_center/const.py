@@ -1,20 +1,7 @@
 """Costanti per Renault EV Center."""
 from __future__ import annotations
 
-import json
-import os
-
 DOMAIN = "renault_ev_center"
-
-
-def integration_version() -> str:
-    """Versione dichiarata nel manifest: usata da sensori e card per l'auto-refresh."""
-    try:
-        path = os.path.join(os.path.dirname(__file__), "manifest.json")
-        with open(path, encoding="utf-8") as fh:
-            return str(json.load(fh).get("version") or "")
-    except Exception:  # noqa: BLE001
-        return ""
 MANUFACTURER = "Renault EV Center"
 PLATFORMS: list[str] = ["sensor", "binary_sensor", "button", "number", "select", "switch", "time", "device_tracker", "climate"]
 

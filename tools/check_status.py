@@ -344,9 +344,16 @@ try:
         assert m, f"{const} non trovato in {fname}"
         assert m.group(1) == version, f"{fname}: {const} {m.group(1)} != VERSION {version}"
     dash = open(os.path.join(CC, "dashboard.py"), encoding="utf-8").read()
-    assert '"version": _integration_version()' in dash, \
-        "dashboard.py non dichiara la versione nella card: l'auto-refresh non scatta"
-    ok(f"REC_VER/CARD_VER = VERSION ({version}) e la card dichiara la versione")
+    assert '"version": version' in dash, \
+        "dashboard.py non passa la versione alla card: l'auto-refresh non scatta"
+    assert 'version: str = ""' in dash, "async_setup_dashboard non accetta la versione"
+    # la versione NON deve essere letta con I/O dentro l'event loop (era un blocking call)
+    flow = open(os.path.join(CC, "__init__.py"), encoding="utf-8").read()
+    assert "async_add_executor_job(_read_manifest_version)" in flow, \
+        "la versione va letta in executor, non nell'event loop"
+    assert "open(" not in open(os.path.join(CC, "const.py"), encoding="utf-8").read(), \
+        "const.py non deve fare I/O (blocking call nell'event loop)"
+    ok(f"REC_VER/CARD_VER = VERSION ({version}) · card dichiara la versione · letta in executor")
 except Exception as e:
     bad(f"auto-refresh: {e}")
 

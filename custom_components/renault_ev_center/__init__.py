@@ -1,6 +1,7 @@
 """Renault EV Center: statistiche viaggi/ricariche per Renault elettriche via entità esistenti."""
 from __future__ import annotations
 
+import json
 import logging
 import os
 import shutil
@@ -26,6 +27,24 @@ from .dashboard import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _read_manifest_version() -> str:
+    """Lettura bloccante del manifest: va eseguita in executor, MAI nell'event loop."""
+    try:
+        path = os.path.join(os.path.dirname(__file__), "manifest.json")
+        with open(path, encoding="utf-8") as fh:
+            return str(json.load(fh).get("version") or "")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+async def _integration_version(hass: HomeAssistant) -> str:
+    """Versione dell'integrazione, letta fuori dall'event loop."""
+    try:
+        return await hass.async_add_executor_job(_read_manifest_version)
+    except Exception:  # noqa: BLE001
+        return ""
 
 SERVICE_CLOSE_TRIP = "close_trip"
 SERVICE_RESET_COUNTERS = "reset_counters"
@@ -57,6 +76,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
+    # versione letta UNA volta, in executor: mai I/O nell'event loop
+    coordinator.version = await _integration_version(hass)
+
     # reattività: refresh immediato al cambio delle entità sorgente
     entry.async_on_unload(coordinator.start_source_listeners())
 
@@ -65,7 +87,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # foto del modello + dashboard automatica nella barra laterale
     if opts.get(CONF_CREATE_DASHBOARD, True):
         try:
-            await async_setup_dashboard(hass, entry, str(opts.get(CONF_NAME, "Renault")))
+            await async_setup_dashboard(hass, entry, str(opts.get(CONF_NAME, "Renault")),
+                                        coordinator.version)
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Dashboard automatica non creata: %s", err)
     try:
@@ -158,7 +181,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def handle_create_dashboard(call: ServiceCall) -> None:
         for coord in _all_coordinators(hass):
-            await async_setup_dashboard(hass, coord.entry, str(coord.opts.get(CONF_NAME, "Renault")))
+            await async_setup_dashboard(hass, coord.entry, str(coord.opts.get(CONF_NAME, "Renault")),
+                                        getattr(coord, "version", ""))
 
     async def handle_set_low_soc_days(call: ServiceCall) -> None:
         for coord in _all_coordinators(hass):

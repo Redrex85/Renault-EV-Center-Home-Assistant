@@ -5,6 +5,18 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.12 — Fix blocking call nell'event loop (dashboard rotta)
+
+### Bug critico (regressione 1.0.11)
+- La versione veniva letta con `open()` **dentro l'event loop** (chiamata da `extra_state_attributes`
+  di un sensore). Home Assistant la segnala come `Detected blocking call to open ... at
+  custom_components/renault_ev_center/const.py` e in pratica la piattaforma `sensor` non si
+  completava più → pannello vuoto.
+- Ora la versione è letta **una sola volta**, all'avvio della entry, dentro
+  `hass.async_add_executor_job(...)` e salvata su `coordinator.version`. I sensori leggono un
+  attributo in memoria: **zero I/O** a runtime.
+- `const.py` non contiene più I/O (il check [11] ora lo verifica).
+
 ## 1.0.11 — Panoramica: batteria/media, costo ricariche, auto-refresh via websocket
 
 ### Correzioni

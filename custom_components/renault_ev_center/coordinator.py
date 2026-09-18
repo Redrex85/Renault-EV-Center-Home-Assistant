@@ -260,6 +260,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.scad_revisione = str(opts.get(CONF_SCAD_REVISIONE) or "")
         self.scad_assicurazione = str(opts.get(CONF_SCAD_ASSICURAZIONE) or "")
         self.notify_service = str(opts.get(CONF_NOTIFY_SERVICE) or "")
+        # versione dell'integrazione (impostata da async_setup_entry, fuori dall'event loop):
+        # usata dagli attributi dei sensori per l'auto-refresh della card
+        self.version = ""
         self.notify_days = int(_f(opts.get(CONF_NOTIFY_DAYS), 30))
         self.tagliando_mode = str(opts.get(CONF_TAGLIANDO_MODE) or "km")
         self.tagliando_data = str(opts.get(CONF_TAGLIANDO_DATA) or "")

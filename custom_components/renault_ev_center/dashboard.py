@@ -109,21 +109,15 @@ def setup_car_image(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
         return None
 
 
-def _integration_version() -> str:
-    """Versione dell'integrazione dal manifest: la card la confronta col proprio JS."""
-    from .const import integration_version
-
-    return integration_version()
-
-
-def _panel_view(name: str, image: str | None, overrides: dict[str, Any] | None = None) -> dict[str, Any]:
+def _panel_view(name: str, image: str | None, overrides: dict[str, Any] | None = None,
+                version: str = "") -> dict[str, Any]:
     """Vista unica tipo panel: una sola card custom full-width."""
     card: dict[str, Any] = {
         "type": "custom:renault-ev-center-panel",
         "name": name,
         "car": slugify(name),
         "image": f"/local/{WWW_DIR}/auto.png",
-        "version": _integration_version(),
+        "version": version,
     }
     if image:
         card["image"] = image
@@ -224,7 +218,8 @@ async def _create_new_api(hass: HomeAssistant, dashboards: dict, url_path: str, 
         return None
 
 
-async def async_setup_dashboard(hass: HomeAssistant, entry: ConfigEntry, name: str) -> None:
+async def async_setup_dashboard(hass: HomeAssistant, entry: ConfigEntry, name: str,
+                                version: str = "") -> None:
     """Crea (una sola volta) la dashboard laterale con la vista panel."""
     url_path = f"renault-ev-center-{slugify(name)}"
     title = f"{name} EV Center"
@@ -245,7 +240,7 @@ async def async_setup_dashboard(hass: HomeAssistant, entry: ConfigEntry, name: s
         "wb_stop_switch": opts.get(CONF_WB_STOP_SWITCH),
     }
     overrides = {k: v for k, v in _ov.items() if v}
-    views = [_panel_view(name, None, overrides)]
+    views = [_panel_view(name, None, overrides, version)]
 
     async def piano_b() -> None:
         path = await hass.async_add_executor_job(_export_yaml_fallback, hass, name, views)
