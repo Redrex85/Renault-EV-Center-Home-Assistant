@@ -109,6 +109,15 @@ def setup_car_image(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
         return None
 
 
+def _integration_version() -> str:
+    """Versione dell'integrazione dal manifest: la card la confronta col proprio JS."""
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "manifest.json"), encoding="utf-8") as fh:
+            return str(json.load(fh).get("version") or "")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def _panel_view(name: str, image: str | None, overrides: dict[str, Any] | None = None) -> dict[str, Any]:
     """Vista unica tipo panel: una sola card custom full-width."""
     card: dict[str, Any] = {
@@ -116,6 +125,7 @@ def _panel_view(name: str, image: str | None, overrides: dict[str, Any] | None =
         "name": name,
         "car": slugify(name),
         "image": f"/local/{WWW_DIR}/auto.png",
+        "version": _integration_version(),
     }
     if image:
         card["image"] = image

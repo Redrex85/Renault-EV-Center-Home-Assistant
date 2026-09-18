@@ -20,31 +20,41 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.6.8";
+const REC_VER = "1.0.6.11";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
-  /** Se la risorsa servita ha una versione diversa, ricarica la pagina una volta. */
-  _checkVersion() {
+  /** Se la versione servita (config della card) differisce dalla mia, ricarica la pagina una volta. */
+  _checkVersion(serverVer) {
     if (_recVerChecked) return;
     _recVerChecked = true;
+    // 1) versione dichiarata dal server nella config della card: nessuna cache JS di mezzo
+    if (serverVer) {
+      if (serverVer !== REC_VER) this._reloadOnce(serverVer);
+      return;
+    }
+    // 2) ripiego (dashboard create da versioni precedenti, senza campo version)
     try {
       fetch(`/local/renault-ev-center/renault-ev-center-panel.js?ts=${Date.now()}`, { cache: "no-store" })
         .then((r) => (r.ok ? r.text() : ""))
         .then((t) => {
           const m = t && t.match(/const REC_VER = "([^"]+)"/);
-          if (!m || m[1] === REC_VER) return;
-          const key = "rec_ver_" + m[1];
-          if (sessionStorage.getItem(key)) return;
-          sessionStorage.setItem(key, "1");
-          location.reload();
+          if (m && m[1] !== REC_VER) this._reloadOnce(m[1]);
         })
         .catch(() => {});
     } catch (e) { /* ignore */ }
   }
+  _reloadOnce(ver) {
+    try {
+      const key = "rec_ver_" + ver;
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch (e) { /* storage negato: meglio ricaricare una volta in più che restare vecchi */ }
+    location.reload();
+  }
   setConfig(config) {
     if (!config) config = {};
-    this._checkVersion();
+    this._checkVersion(config.version);
     const name = config.name || "Megane";
     this._cfg = {
       name,
@@ -548,6 +558,10 @@ class RenaultEvCenterPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-cmd]").forEach((el) => {
       el.addEventListener("click", () => this._cmd(el.dataset.cmd, el));
     });
+    // filtri data viaggi: ricalcola subito la tabella
+    this.shadowRoot.querySelectorAll("[data-tfd]").forEach((inp) => {
+      inp.addEventListener("change", () => this._update());
+    });
     // click sui sensori KPI → apre il more-info di HA
     this.shadowRoot.addEventListener("click", (ev) => {
       const del = ev.target && ev.target.closest ? ev.target.closest("[data-mdel]") : null;
@@ -871,6 +885,14 @@ class RenaultEvCenterPanel extends HTMLElement {
         else this._call("button", "press", { entity_id: b.entity_id }, "💡 Luci lampeggianti");
         break;
       }
+      case "tfilter-reset": {
+        const f = this.shadowRoot.querySelector('[data-tfd="from"]');
+        const t = this.shadowRoot.querySelector('[data-tfd="to"]');
+        if (f) f.value = "";
+        if (t) t.value = "";
+        this._update();
+        break;
+      }
       case "charge_stop": {
         const b = this._st(this._ov("wb_stop_switch"), this._car("button", "stop_charge"), "button.wallbox_charger_stop");
         if (!b) { this._toast("⚠️ Stop carica non mappato (Configura → Wallbox)"); break; }
@@ -908,8 +930,6 @@ class RenaultEvCenterPanel extends HTMLElement {
       this._mapTs = Date.now();
       this._drawMap();
     }
-    if (root.querySelector("#kmchart") && !this._kmChart) this._drawKmChart();
-    if (this._kmChart) this._kmChart.hass = this._hass;
     root.querySelectorAll("[data-sw]").forEach((el) => {
       if (el.tagName === "INPUT") { const s = this._hass.states[el.dataset.ent]; el.checked = !!s && s.state === "on"; }
     });
@@ -1022,8 +1042,8 @@ class RenaultEvCenterPanel extends HTMLElement {
       const v = o ? o[sub] : null;
       el.textContent = v === undefined || v === null ? "—" : this._fmt(parseFloat(v), 1);
     });
-    // grafico 7 giorni
-    this._drawBars(root.querySelector('[data-c="bars7"]'), this._last7());
+    // grafico 7 giorni (apexcharts se installato, altrimenti barre native del pannello)
+    this._drawKmChart(root);
     // tabelle dati dinamici
     this._tableViaggi(root);
     this._tableRicariche(root);
@@ -1098,10 +1118,20 @@ class RenaultEvCenterPanel extends HTMLElement {
       box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Mappa non disponibile</div>`;
     }
   }
-  /** grafico km percorsi 7 giorni (apexcharts-card via Lovelace helpers) */
-  async _drawKmChart() {
-    const box = this.shadowRoot && this.shadowRoot.querySelector("#kmchart");
-    if (!box || this._kmChart) return;
+  /**
+   * Grafico "Km percorsi (7 giorni)".
+   * Con apexcharts-card installata rende il grafico completo (colonne km + linea consumi,
+   * come da config utente); altrimenti ripiega sulle barre native del pannello.
+   */
+  async _drawKmChart(root) {
+    const box = root.querySelector("#kmchart");
+    if (!box) return;
+    const hasApex = typeof customElements !== "undefined" && !!customElements.get("apexcharts-card");
+    if (!hasApex) { this._noApexNotice(box); return; }
+    if (this._kmChart) { this._kmChart.hass = this._hass; return; }
+    // se prima era attivo il fallback nativo, rimuovi la sua intestazione
+    box.parentElement && box.parentElement.querySelectorAll("[data-c='bars7-head']")
+      .forEach((el) => el.remove());
     if (typeof window.loadCardHelpers !== "function") return;
     try {
       const helpers = await window.loadCardHelpers();
@@ -1110,24 +1140,39 @@ class RenaultEvCenterPanel extends HTMLElement {
         graph_span: "7d",
         span: { end: "day" },
         update_interval: "10min",
-        apex_config: { chart: { height: 200 } },
+        apex_config: { enabled: true, autoScaleYaxis: false, chart: { height: "200px" } },
         yaxis: [
           { id: "first", min: 0, decimals: 0 },
-          { id: "second", opposite: true, min: 0, decimals: 1 },
+          { id: "second", opposite: true, decimals: 1 },
         ],
         series: [
           {
-            entity: this._sid("km_giornalieri"), name: "Km Percorsi", type: "column",
-            yaxis_id: "first", color: "#ff9933", stroke_width: 2, curve: "smooth",
-            float_precision: 0, extend_to: "end", min: 0,
-            group_by: { func: "max", fill: "zero", duration: "1d" },
+            entity: this._sid("km_giornalieri"),
+            name: "Km Percorsi",
+            type: "column",
+            yaxis_id: "first",
+            curve: "smooth",
+            stroke_width: 2,
+            fill_raw: "last",
+            color: "#ff9933",
+            extend_to: "end",
+            min: 0,
+            float_precision: 0,
+            group_by: { func: "max", fill: "zero", duration: "1day" },
             show: { legend_value: false },
           },
           {
-            entity: this._sid("kwh_per_100km"), name: "Media Consumi", type: "line",
-            yaxis_id: "second", color: "green", stroke_width: 3, curve: "smooth",
-            float_precision: 2, min: 0, extend_to: "end",
-            group_by: { func: "avg", fill: "last", duration: "1d" },
+            entity: this._sid("kwh_per_100km"),
+            name: "Media Consumi",
+            yaxis_id: "second",
+            curve: "smooth",
+            stroke_width: 3,
+            fill_raw: "last",
+            color: "green",
+            extend_to: "end",
+            float_precision: 2,
+            min: 0,
+            group_by: { func: "avg", fill: "last", duration: "1day" },
             show: { legend_value: false },
           },
         ],
@@ -1140,8 +1185,24 @@ class RenaultEvCenterPanel extends HTMLElement {
       box.appendChild(card);
       this._kmChart = card;
     } catch (e) {
-      box.innerHTML = `<div style="display:flex;min-height:180px;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center">Grafico non disponibile.<br>Installa <b>apexcharts-card</b> da HACS → Frontend.</div>`;
+      this._noApexNotice(box);
     }
+  }
+  /** apexcharts-card assente (o in errore): avviso + anteprima base */
+  _noApexNotice(box) {
+    box.style.cssText = "";
+    box.innerHTML =
+      `<div style="padding:14px;border:1px dashed var(--accent);border-radius:12px;background:rgba(255,255,255,.04)">
+        <div style="font-weight:700;margin-bottom:6px">📦 Serve la card «apexcharts-card»</div>
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.6">
+          Per il grafico completo (colonne km + linea consumi) installa da
+          <b>HACS → Frontend</b> → <code>apexcharts-card</code>, poi riavvia Home Assistant.<br>
+          Intanto qui sotto resta l'anteprima base del pannello.
+        </div></div>`;
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex;align-items:flex-end;gap:6px;height:110px;max-width:640px;margin-top:12px";
+    box.appendChild(wrap);
+    this._drawBars(wrap, this._last7());
   }
   _wb_state_txt() {
     const p = this._num(this._sid("wallbox_potenza"), "sensor.wallbox_instant_power", this._car("sensor", "battery_charger_power"));
@@ -1297,10 +1358,14 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     const fy = selY ? selY.value : "";
     const fm = selM ? selM.value : "";
+    const from = (root.querySelector('[data-tfd="from"]') || {}).value || "";
+    const to = (root.querySelector('[data-tfd="to"]') || {}).value || "";
     const vis = rows.filter((r) => {
       const dd = String(r.data || "");
       if (fy && dd.slice(0, 4) !== fy) return false;
       if (fm && dd.slice(5, 7) !== fm) return false;
+      if (from && dd < from) return false;
+      if (to && dd > to) return false;
       return true;
     });
     tb.innerHTML = vis.slice(0, 30).map((r) => {
@@ -1388,21 +1453,27 @@ class RenaultEvCenterPanel extends HTMLElement {
       (tree[y] = tree[y] || {})[m] = (tree[y][m] || []).concat(r);
     });
     const effOf = (day) => day.n_eff ? (day.peso_eff / day.n_eff) : NaN;
+    // stato aperto/chiuso ricordato per chiave: il re-render non riapre più i rami chiusi
+    const opened = (this._treeOpen = this._treeOpen || {});
+    const op = (k) => (opened[k] === false ? "" : "open");
     box.innerHTML = Object.entries(tree).sort((a, b) => b[0].localeCompare(a[0])).map(([y, mesi]) => {
       const tot = Object.values(mesi).flat();
       const km = tot.reduce((a, r) => a + r.km, 0);
-      return `<details class="anno" open>
+      return `<details class="anno" data-tk="${y}" ${op(y)}>
         <summary>▼ ${y} <span class="tr">${tot.length} giorni · <b>${this._i(km)} km</b></span></summary>
         ${Object.entries(mesi).sort((a, b) => b[0].localeCompare(a[0])).map(([m, rs]) => {
           const kmM = rs.reduce((a, r) => a + r.km, 0);
           const nm = NOMI_MESI[parseInt(m, 10) - 1] || m;
-          return `<details class="mese" open>
+          return `<details class="mese" data-tk="${y}-${m}" ${op(`${y}-${m}`)}>
             <summary>▼ ${nm} <span class="tr">${rs.length} giorni · <b>${this._i(kmM)} km</b></span></summary>
             ${rs.map((r) => `<div class="giorno">• <b>${this._d(r.data)}</b> — ${this._fmt(r.km, 1)} km <span class="badge">${this._fmt(effOf(r), 1)}</span> · ${this._fmt(r.costo, 2)} €</div>`).join("")}
           </details>`;
         }).join("")}
       </details>`;
     }).join("");
+    box.querySelectorAll("details[data-tk]").forEach((d) => {
+      d.addEventListener("toggle", () => { this._treeOpen[d.dataset.tk] = d.open; });
+    });
   }
   _tileStats(root) {
     const s = this._st(this._sid("statistiche_viaggi"));
@@ -1656,7 +1727,7 @@ const PAGES = {
 
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>📈 Km percorsi (7 giorni)</h3>
-      <div id="kmchart" style="min-height:210px"></div>
+      <div id="kmchart" style="min-height:150px"></div>
     </div>
     <div class="card"><h3>🤖 Automazioni attive</h3>
       <div data-c="autos-on"></div>
@@ -1696,8 +1767,6 @@ const PAGES = {
     </div>
   </div>
 
-  <div class="card" style="margin-top:16px"><h3>Km percorsi (7 giorni)</h3>
-    <div style="display:flex;align-items:flex-end;gap:6px;height:110px;max-width:640px" data-c="bars7"></div>
   </div>`,
 
   p2: `<h1>Viaggi</h1>
@@ -1708,9 +1777,14 @@ const PAGES = {
   </div>
   <div class="card tree"><h3>Archivio</h3><div data-c="tree">—</div></div>
   <div class="card" style="margin-top:16px"><h3>Dettaglio viaggi recenti</h3>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <select data-tf="year" style="width:auto"><option value="">Tutti gli anni</option></select>
       <select data-tfm="month" style="width:auto"><option value="">Tutti i mesi</option></select>
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">da
+        <input type="date" data-tfd="from" style="width:auto"></span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">a
+        <input type="date" data-tfd="to" style="width:auto"></span>
+      <span class="chip" data-cmd="tfilter-reset" style="cursor:pointer">✖ azzera date</span>
     </div>
     <table><tr><th>Data</th><th>Ora</th><th>Km</th><th>SoC</th><th>Consumata</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th><th>Partenza · via · paese</th><th>Arrivo · via · paese</th></tr>
     <tbody data-c="tab-viaggi"></tbody></table></div>`,

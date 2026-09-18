@@ -334,6 +334,22 @@ try:
 except Exception as e:
     bad(f"energia ricarica: {e}")
 
+print("\n[11] Auto-refresh pannello/card")
+try:
+    version = open(os.path.join(BASE, "VERSION"), encoding="utf-8").read().strip()
+    for fname, const in (("renault-ev-center-panel.js", "REC_VER"),
+                         ("renault-ev-center-card.js", "CARD_VER")):
+        js = open(os.path.join(CC, "www", fname), encoding="utf-8").read()
+        m = re.search(rf'const {const} = "([^"]+)"', js)
+        assert m, f"{const} non trovato in {fname}"
+        assert m.group(1) == version, f"{fname}: {const} {m.group(1)} != VERSION {version}"
+    dash = open(os.path.join(CC, "dashboard.py"), encoding="utf-8").read()
+    assert '"version": _integration_version()' in dash, \
+        "dashboard.py non dichiara la versione nella card: l'auto-refresh non scatta"
+    ok(f"REC_VER/CARD_VER = VERSION ({version}) e la card dichiara la versione")
+except Exception as e:
+    bad(f"auto-refresh: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

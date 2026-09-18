@@ -5,7 +5,7 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.6.8 — Fix notifiche ripetute, configurazione ampliata
+## 1.0.6.11 — Fix notifiche ripetute, configurazione ampliata
 
 ### Bug critico
 - **Notifiche ripetute (~2000 a notte)**: `persist()` e il salvataggio allo shutdown
@@ -23,6 +23,13 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
 - Nuovo sensore **Δ % Ultima Carica** (`soc_end − soc_start`).
 - I comandi `Avvia carica` del pannello sono dell'**auto** (app Renault); lo **stop** resta lato wallbox.
 
+### Auto-refresh (niente più Ctrl+F5)
+- La card dichiara la **versione dell'integrazione** (`version` nella config, letta dal manifest):
+  il pannello la confronta con il proprio JS e ricarica la pagina **una volta** se differiscono.
+  Prima il confronto rileggeva lo stesso file JS: con la cache di mezzo restava vecchio-con-vecchio
+  e non scattava nulla.
+- `check_status.py` [11]: fallisce se `REC_VER`/`CARD_VER` non corrispondono a `VERSION`.
+
 ### Configurazione
 - **Wallbox**: mappabili in *Configura → Wallbox* sia **avvio** sia **stop** carica (switch/button).
 - **Comandi**: mappabili **luci esterne** (light/switch/button) e **clacson** (button/switch).
@@ -34,8 +41,13 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
 - Card **"Automazioni create"** spostata in cima accanto a *Fine ricarica*, con **icona per tipo**.
 - Panoramica: i KPI dell'auto sono **box cliccabili** (aprono il sensore) con **% e kWh consumati oggi**
   al posto di €/km; **Efficienza** mostra %batteria/100km al posto dei duplicati.
-- Comandi: nuova riga **Indirizzo** (tracker/geocode, stesso dato della pagina Viaggi) e **Zona ricarica**.
-- Panoramica: **grafico Km percorsi 7 giorni** (apexcharts, colonne + linea consumi) e box **Automazioni attive**.
+- Comandi: **Avvia carica** ora è il comando dell'**auto** (app Renault), **Zona ricarica** e **Indirizzo**
+  (dai viaggi); il comando **stop** è lato wallbox, non Renault.
+- Panoramica: **grafico Km percorsi 7 giorni** (colonne km + linea consumi) accanto al box
+  **Automazioni attive**. Con `apexcharts-card` installata usa il grafico completo, altrimenti
+  mostra l'avviso "installa apexcharts-card" + anteprima base.
+- **Archivio viaggi**: i rami chiusi dall'utente **non si riaprono più** al refresh.
+- **Dettaglio viaggi**: aggiunto il filtro **da / a** (date), oltre a anno e mese.
 - Box KPI più leggibili; **Efficienza** con %batteria/100km (con ripiego calcolato se il sensore è a 0).
 - Risparmio netto e costi con **2 decimali**; **mappa** con zoom predefinito più ampio.
 - Rimossi i doppioni: box promemoria da *Automazioni* e la voce "Fine ricarica" duplicata.
