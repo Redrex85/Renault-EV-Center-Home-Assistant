@@ -27,7 +27,9 @@
             "data": {
               "charge_start_button": "Bouton démarrer la charge (Renault)",
               "ac_button_entity": "Bouton démarrer la clim (Renault)",
-              "climate_entity": "Climatisation (climate) Renault"
+              "climate_entity": "Climatisation (climate) Renault",
+              "light_entity": "Feux extérieurs (light/switch/button)",
+              "horn_entity": "Klaxon (button/switch)"
             }
           }
         }
@@ -49,7 +51,9 @@
               "wallbox_session_energy_entity": "Compteur énergie session (kWh)",
               "wallbox_total_energy_entity": "Compteur énergie total (kWh) — utilisé sans compteur session",
               "wallbox_max_current_entity": "Nombre courant max (optionnel)",
-              "wallbox_session_time_entity": "Temps de session wallbox (s/min/h) — optionnel, sinon compteur interne"
+              "wallbox_session_time_entity": "Temps de session wallbox (s/min/h) — optionnel, sinon compteur interne",
+              "wb_charge_switch": "Démarrage charge wallbox (switch ou bouton) — utilisé par « Démarrer la charge » et l'automatisation",
+              "wb_stop_switch": "Arrêt charge wallbox (switch ou bouton) — utilisé par « Arrêter la charge »"
             }
           },
           "solar": {
@@ -194,7 +198,9 @@
             "data": {
               "charge_start_button": "Bouton démarrer la charge (Renault)",
               "ac_button_entity": "Bouton démarrer la clim (Renault)",
-              "climate_entity": "Climatisation (climate) Renault"
+              "climate_entity": "Climatisation (climate) Renault",
+              "light_entity": "Feux extérieurs (light/switch/button)",
+              "horn_entity": "Klaxon (button/switch)"
             }
           },
           "wallbox": {
@@ -206,7 +212,9 @@
               "wallbox_session_energy_entity": "Compteur énergie session (kWh)",
               "wallbox_total_energy_entity": "Compteur énergie total (kWh) — utilisé sans compteur session",
               "wallbox_max_current_entity": "Nombre courant max (optionnel)",
-              "wallbox_session_time_entity": "Temps de session wallbox (s/min/h) — optionnel, sinon compteur interne"
+              "wallbox_session_time_entity": "Temps de session wallbox (s/min/h) — optionnel, sinon compteur interne",
+              "wb_charge_switch": "Démarrage charge wallbox (switch ou bouton) — utilisé par « Démarrer la charge » et l'automatisation",
+              "wb_stop_switch": "Arrêt charge wallbox (switch ou bouton) — utilisé par « Arrêter la charge »"
             }
           },
           "solar": {

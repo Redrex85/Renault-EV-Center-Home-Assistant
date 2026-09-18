@@ -5,6 +5,36 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.6.7 — Fix notifiche ripetute, configurazione ampliata
+
+### Bug critico
+- **Notifiche ripetute (~2000 a notte)**: `persist()` e il salvataggio allo shutdown
+  sovrascrivevano `counters`, cancellando `last_notify` / `last_low_notify` / `balance_last` /
+  `last_geocode`. Ora fanno **merge**: il riepilogo scadenze torna a inviarsi una sola volta al
+  giorno e la card "Bilanciamento solare" non resta più vuota.
+- **Riepilogo giornaliero** (21:30): aggiunti **kWh consumati** e **costo totale della giornata**
+  (energia × tariffa casa) con fallback "non disponibile".
+- **Consumo batteria di oggi**: differenza **reale** tra il SoC di inizio giornata e quello attuale
+  (dati dall'app Renault) — non più la sola somma dei viaggi.
+- **Energia di ricarica**: presa dal **delta misurato** della wallbox (contatore sessione **o** totale;
+  i reset di mezzanotte vengono scartati). La stima dal SoC si usa **solo per le ricariche fuori casa**;
+  a casa, se la misura manca, il record viene marcato `stima` e logga un avviso.
+
+### Configurazione
+- **Wallbox**: mappabili in *Configura → Wallbox* sia **avvio** sia **stop** carica (switch/button).
+- **Comandi**: mappabili **luci esterne** (light/switch/button) e **clacson** (button/switch).
+- **Promemoria batteria bassa**: soglia % e **fascia oraria con time picker** (prima testo libero).
+- Cleanup automatico delle **automazioni orfane** quando il nome dell'auto cambia (niente più
+  "Programma avvio ricarica" duplicato).
+
+### Pannello
+- Card **"Automazioni create"** spostata in cima accanto a *Fine ricarica*, con **icona per tipo**.
+- Panoramica: i KPI dell'auto sono **box cliccabili** (aprono il sensore) con **% e kWh consumati oggi**
+  al posto di €/km; **Efficienza** mostra %batteria/100km al posto dei duplicati.
+- Comandi: nuova riga **Indirizzo** (zona + via dal tracker/geocode) e **Ferma carica**.
+- Risparmio netto e costi con **2 decimali**; **mappa** con zoom predefinito 2 livelli più ampio.
+- Rimosso il box promemoria batteria bassa da *Automazioni* (ora tutto in *Configura*).
+
 ## 1.0.5 — Pannello EV Center, Wallbox e rifiniture
 
 ### Pannello Lovelace (`renault-ev-center-panel.js`)

@@ -34,6 +34,7 @@ L'integrazione **Renault** ti dà i numeri grezzi (% batteria, autonomia, odomet
 |---|---|
 | 🛣️ **Viaggi automatici** | Rileva ogni spostamento dall'odometro, calcola km, batteria consumata, kWh ed efficienza (kWh/100km), chiude il viaggio da solo dopo la sosta, con **costo stimato** e **fonte dell'ultima ricarica** prima della partenza |
 | ⚡ **Ricariche** | Sessioni con energia wallbox (AC) misurata, SoC iniziale→finale, durata, tipo (Casa/Fotovoltaico/Pubblica) e costo reale |
+| 🔌 **Wallbox** | Pagina dedicata: stato live, potenza, corrente, tensione, temperatura e motivo limite; **tempo e kWh di sessione** (con contatore interno di riserva); **limite di carica in A**; **avvio e stop carica** con entità mappabili in configurazione; **bilanciamento solare** a inseguimento del surplus |
 | 🔎 **Lista ricariche filtrabile** | Filtri per tipo e periodo (settimana/mese/anno/tutto) con **somma automatica** di kWh e € |
 | 💰 **Costi veri** | €/km, €/100km, costo ricariche giorno/settimana/mese/anno/totale, prezzi separati per casa/colonnina/fotovoltaico modificabili **dalla dashboard** |
 | 📊 **Statistiche e report** | Contatori con `last_period` (come utility_meter), tabelle **Generale/Settimanale/Mensile**, storico 365 giorni, report mensile |
@@ -159,7 +160,9 @@ Alla configurazione viene creata **da sola** la dashboard laterale con tutte le 
 | Impostazioni | Prezzi, batteria, reset, export |
 | Mobile | Vista compatta per il telefono |
 
-Card custom opzionali (HACS → Frontend): **bar-card**, **apexcharts-card**, **mini-graph-card**.
+Card custom opzionali (HACS → Frontend), usate **solo** dalle dashboard YAML in `dashboards/`:
+**apexcharts-card** e **mini-graph-card** (grafici in `01_panoramica.yaml` e `04_ricariche.yaml`).
+Il pannello laterale (`renault-ev-center-panel.js`) **non ne ha bisogno**: disegna tutto da sé.
 Foto dell'auto: scelta dal modello nel wizard o personale in `/config/www/renault-ev-center/auto.png`.
 
 > Se la tua auto non si chiama "Renault", sostituisci `sensor.renault_` con il prefisso giusto.
@@ -216,16 +219,6 @@ data: { mode: km, valore: "71218" }
 
 **Dove sono i miei dati?** In `.storage/renault_ev_center.<entry_id>` — restano tuoi, nessun invio esterno.
 
-## 🗺️ Roadmap / idee
-
-- [ ] Invio dati ad **ABRP** (A Better Route Planner)
-- [ ] Export unificato dello storico (JSON/CSV completo)
-- [ ] Entità `device_tracker` / `climate` native (oggi delegate all'integrazione Renault)
-
-**Già disponibili** (ex roadmap): SoH stimato dalle ricariche, *vampire drain*, Energy Dashboard,
-**card e pannello custom** (tema 3D + palette Renault), **consumi per stagione**,
-**creazione automazioni** direttamente dalla dashboard.
-
 Hai un'idea? Apri una issue!
 
 ## 🤝 Crediti e disclaimer
@@ -257,6 +250,7 @@ Renault EV Center is free and open-source, developed in spare time. If you find 
 
 - **Automatic trip detection** from the odometer: distance, battery used, kWh, efficiency, auto-close after idle timeout
 - **Charge sessions** with measured AC energy from your wallbox, SoC range, duration, type (Home/Solar/Public) and real cost
+- **Wallbox**: dedicated page with live state, power, current, voltage, temperature and limit reason; **session time & kWh** (with internal fallback counter); **charge limit in A**; **start and stop charging** with entities mapped in the config flow; **solar balancing** that tracks your surplus
 - **Costs**: €/km, €/100km, charge costs per day/week/month/year/all-time, separate home/public/solar tariffs
 - **Meters**: daily/weekly/monthly/yearly km & energy with `last_period` attribute (utility_meter style)
 - **Charging estimates**: time remaining, completion time, missing energy and estimated cost to your target SoC
@@ -299,6 +293,7 @@ L'intégration **Renault** donne les chiffres bruts (% batterie, autonomie, odom
 
 - **Détection automatique des trajets** depuis l'odomètre : km, batterie consommée, kWh, efficacité (kWh/100km), clôture automatique après l'arrêt, avec **coût estimé**
 - **Sessions de recharge** avec énergie AC mesurée par la wallbox, SoC initial→final, durée, type (Maison/Solaire/Public) et coût réel
+- **Wallbox** : page dédiée avec état, puissance, courant, tension, température et raison de limitation en direct ; **durée et kWh de session** (avec compteur interne de secours) ; **limite de charge en A** ; **démarrage et arrêt de la charge** avec entités mappées dans la configuration ; **équilibrage solaire** qui suit votre surplus
 - **Coûts réels** : €/km, €/100km, coûts par jour/semaine/mois/an/total, tarifs séparés maison/born publique/solaire modifiables **depuis le tableau de bord**
 - **Statistiques et rapports** : compteurs avec `last_period` (style utility_meter), tableaux Général/Hebdomadaire/Mensuel, historique 365 jours
 - **Estimations de recharge** : temps restant, heure de fin prévue, énergie manquante et coût estimé vers votre % cible

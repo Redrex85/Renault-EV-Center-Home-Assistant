@@ -14,6 +14,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import CONF_AC_BUTTON, CONF_CHARGE_START_BUTTON, CONF_CLIMATE_ENTITY
 from .const import (
+    CONF_LOCATION_ENTITY, CONF_LIGHT_ENTITY, CONF_HORN_ENTITY, CONF_WB_STOP_SWITCH,
     CONF_WB_POWER, CONF_WB_STATE, CONF_WB_SESSION_ENERGY, CONF_WB_TOTAL_ENERGY,
     CONF_WB_MAX_CURRENT, CONF_WB_CHARGE_SWITCH,
 )
@@ -224,12 +225,16 @@ async def async_setup_dashboard(hass: HomeAssistant, entry: ConfigEntry, name: s
         "start_charge": opts.get(CONF_CHARGE_START_BUTTON),
         "ac_button": opts.get(CONF_AC_BUTTON),
         "climate": opts.get(CONF_CLIMATE_ENTITY),
+        "light": opts.get(CONF_LIGHT_ENTITY),
+        "horn": opts.get(CONF_HORN_ENTITY),
+        "location": opts.get(CONF_LOCATION_ENTITY),
         "wallbox_power": opts.get(CONF_WB_POWER),
         "wallbox_state": opts.get(CONF_WB_STATE),
         "wallbox_session_energy": opts.get(CONF_WB_SESSION_ENERGY),
         "wallbox_total_energy": opts.get(CONF_WB_TOTAL_ENERGY),
         "wallbox_max_current": opts.get(CONF_WB_MAX_CURRENT),
         "wb_charge_switch": opts.get(CONF_WB_CHARGE_SWITCH),
+        "wb_stop_switch": opts.get(CONF_WB_STOP_SWITCH),
     }
     overrides = {k: v for k, v in _ov.items() if v}
     views = [_panel_view(name, None, overrides)]

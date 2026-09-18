@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.6.4";
+const REC_VER = "1.0.6.7";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -316,6 +316,9 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "costo_ric_tot": { const v = S._num(S._sid("costo_ricarica_totale")); if (v) return v; const st = S._st(S._sid("risparmio_totale_vs_diesel")); const e = st ? S._attrAny(st, ["elettrico_totale"]) : null; if (e !== null && e !== undefined && e !== 0) return e; return v === 0 ? 0 : (S._ov("costo_ric_tot") ? S._num(S._ov("costo_ric_tot")) : null); }
       // Extra
       case "drain": {
+        // sensore integrazione = max(scarica totale giornaliera, somma viaggi) → include anche il fermo
+        const v = S._num(S._sid("batteria_scaricata_oggi"), S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge");
+        if (v !== null && Math.abs(v) > 0) return Math.round(Math.abs(v) * 10) / 10;
         const rows = S._list(S._sid("percorrenza"));
         const r = rows.find((x) => S._slug(String(x.nome ?? "")) === "oggi");
         const p = r ? (parseFloat(r.pct) || 0) : 0;
@@ -323,9 +326,9 @@ class RenaultEvCenterPanel extends HTMLElement {
         const kwh = S._field("kwh_oggi_k");
         const cap = parseFloat(S._cfg.capacity) || 60;
         if (typeof kwh === "number" && kwh > 0) return Math.round(kwh / cap * 1000) / 10;
-        const v = S._num(S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge", S._sid("batteria_scaricata_oggi"));
-        return v === null ? null : Math.round(Math.abs(v) * 10) / 10;
+        return null;
       }
+      case "perc_100km": return S._num(S._sid("batteria_per_100km"), "sensor.megane_batteria_per_100_km");
       case "vampire": return S._num(S._sid("batteria_persa_da_fermo_oggi"));
       case "drain_mese_pct": return S._num(S._sid("batteria_persa_da_fermo_mese"));
       case "temp_est": {
@@ -400,6 +403,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       drain: [S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge", S._sid("batteria_scaricata_oggi")],
       km_per_kwh: [S._sid("km_per_kwh"), "sensor.megane_km_per_kwh"],
       kwh_100: [S._sid("kwh_per_100km"), "sensor.megane_kwh_per_100_km"],
+      perc_100km: [S._sid("batteria_per_100km"), "sensor.megane_batteria_per_100_km"],
       costo_km: [S._sid("costo_per_km"), "sensor.costo_per_km_megane"],
       costo_100: [S._sid("costo_per_100_km"), "sensor.costo_per_100_km_megane"],
       kwh_tot: [S._sid("kwh_totali_consumati"), "sensor.megane_kwh_totali"],
@@ -433,19 +437,38 @@ class RenaultEvCenterPanel extends HTMLElement {
     const v = this._slug(s.state);
     return s.state === "on" || (/(charg|carica)/.test(v) && !/(not|no_|non_|end|finit|terminat|stop)/.test(v));
   }
-  /** zona del device tracker dell'auto (attributo in_zones) */
+  /** zona dell'auto: tracker configurato o dell'integrazione (in_zones o state) */
   _zoneName() {
-    for (const id of [this._sid("posizione"), this._car("device_tracker", "location"), this._car("device_tracker", ""), this._ov("location")]) {
+    for (const id of [
+      this._ov("location"),
+      `device_tracker.${this._slug(this._cfg.name)}_posizione`,
+      this._car("device_tracker", "location"),
+      this._car("device_tracker", ""),
+    ]) {
       const s = id ? this._hass.states[id] : null;
-      const z = s && Array.isArray(s.attributes.in_zones) ? s.attributes.in_zones[0] : null;
-      if (z) {
-        const zn = this._hass.states[z];
-        return (zn && zn.attributes && zn.attributes.friendly_name)
-          || z.replace(/^zone\./, "").replace(/_/g, " ").replace(/^\w/, (m) => m.toUpperCase());
-      }
+      if (!s || s.state === "unavailable" || s.state === "unknown") continue;
+      const z = Array.isArray(s.attributes.in_zones) ? s.attributes.in_zones[0] : null;
+      if (z) return this._zn(String(z).replace(/^zone\./, ""));
+      if (s.state !== "not_home") return this._zn(s.state);
     }
     const z = this._st(this._sid("zona"), this._sid("zona_attuale"), "sensor.megane_zona_attuale");
     return z ? this._txt(z) : null;
+  }
+  /** indirizzo corrente: attributi del tracker (companion/Android) o geocode integrazione */
+  _addrName() {
+    for (const id of [
+      this._ov("location"),
+      `device_tracker.${this._slug(this._cfg.name)}_posizione`,
+      this._car("device_tracker", "location"),
+    ]) {
+      const s = id ? this._hass.states[id] : null;
+      if (!s) continue;
+      const v = this._attrAny(s, ["address", "geocoded_location", "place", "location_name", "street"]);
+      if (v) return String(v);
+    }
+    const p = this._hass.states[this._sid("posizione")];
+    const a = p && this._attrAny(p, ["indirizzo", "luogo", "address", "via"]);
+    return a ? String(a) : "";
   }
   /** prezzo diesel €/l: overrides.diesel_price (sensore live) → localStorage rec_diesel → default */
   _dieselPrice() {
@@ -697,6 +720,19 @@ class RenaultEvCenterPanel extends HTMLElement {
       : `<div style="color:var(--muted);font-size:12px">Nessuna automazione attiva (Renault/Wallbox/Bilanciamento).</div>`;
   }
   /** Toggle on/off delle automazioni create (pagina Automazioni). */
+  /** icona per automazione creata, dedotta dall'alias */
+  _autoIcon(txt) {
+    const t = String(txt).toLowerCase();
+    if (/scadenz|assicur|bollo|revision/.test(t)) return "🛡️";
+    if (/completat|fine ricarica/.test(t)) return "🔋";
+    if (/avvio|avvia/.test(t)) return "⚡";
+    if (/batteria bassa|low/.test(t)) return "⚠️";
+    if (/riassunt|giornalier/.test(t)) return "📊";
+    if (/clima|condizion|ac\b/.test(t)) return "❄️";
+    if (/bilanciament|solar/.test(t)) return "☀️";
+    if (/programma|ricarica/.test(t)) return "⏰";
+    return "🤖";
+  }
   _drawAutoToggles(root) {
     const host = root.querySelector('[data-c="autos-created"]');
     if (!host) return;
@@ -707,34 +743,14 @@ class RenaultEvCenterPanel extends HTMLElement {
       .sort((a, b) => String(a.attributes.friendly_name || a.entity_id)
         .localeCompare(String(b.attributes.friendly_name || b.entity_id), "it"));
     host.innerHTML = list.length
-      ? list.map((s) => `<div class="row"><span>${s.attributes.friendly_name || s.entity_id}</span><label class="switch"><input type="checkbox" ${s.state === "on" ? "checked" : ""} data-auto="${s.entity_id}"><span></span></label></div>`).join("")
+      ? list.map((s) => {
+        const nome = s.attributes.friendly_name || s.entity_id;
+        return `<div class="row"><span>${S._autoIcon(nome + " " + s.entity_id)} ${nome}</span><label class="switch"><input type="checkbox" ${s.state === "on" ? "checked" : ""} data-auto="${s.entity_id}"><span></span></label></div>`;
+      }).join("")
       : `<div style="color:var(--muted);font-size:12px">Nessuna automazione Renault trovata. Usa "Crea automazioni consigliate" in Impostazioni.</div>`;
     host.querySelectorAll("[data-auto]").forEach((el) => el.addEventListener("change", () =>
       S._call("homeassistant", el.checked ? "turn_on" : "turn_off", { entity_id: el.dataset.auto },
         el.checked ? "Automazione attivata" : "Automazione disattivata")));
-  }
-  /** Promemoria batteria bassa: entità dell'integrazione (nessuna automazione HA duplicata). */
-  _drawLowSoc(root) {
-    const host = root.querySelector('[data-c="lowsoc"]');
-    if (!host) return;
-    const S = this;
-    const sw = S._hass.states[S._swid("promemoria_batteria_bassa")];
-    if (!sw) {
-      host.innerHTML = `<div style="color:var(--muted);font-size:12px">Promemoria gestito dall'integrazione — attivalo dal dispositivo "Renault EV Center".</div>`;
-      return;
-    }
-    const n = S._hass.states[S._nid("batteria_minima_promemoria")];
-    const t1 = S._hass.states[S._tid("promemoria_inizio")];
-    const t2 = S._hass.states[S._tid("promemoria_fine")];
-    const hhmm = (s) => (s ? String(s.state).slice(0, 5) : "—");
-    host.innerHTML =
-      `<div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" ${sw.state === "on" ? "checked" : ""} data-ls-sw="${sw.entity_id}"><span></span></label></div>`
-      + (n ? `<div class="row"><span>% minima</span><b>${S._fmt(parseFloat(n.state), 0)}%</b></div>` : "")
-      + (t1 ? `<div class="row"><span>Fascia oraria</span><b>${hhmm(t1)} – ${hhmm(t2)}</b></div>` : "")
-      + `<div style="color:var(--muted);font-size:11.5px;margin-top:6px">Promemoria dell'integrazione: <b>una sola</b>, nessuna automazione duplicata. Soglia e orari in Configura.</div>`;
-    host.querySelectorAll("[data-ls-sw]").forEach((el) => el.addEventListener("change", () =>
-      S._call("homeassistant", el.checked ? "turn_on" : "turn_off",
-        { entity_id: el.dataset.lsSw }, el.checked ? "Promemoria attivo" : "Promemoria spento")));
   }
   _cmd(cmd, el) {
     const n = this._slug(this._cfg.name);
@@ -822,15 +838,26 @@ class RenaultEvCenterPanel extends HTMLElement {
         break;
       }
       case "horn": {
-        const b = this._st(this._ov("horn_button"), this._car("button", "sound_horn"), "button.megane_sound_horn");
+        const b = this._st(this._ov("horn"), this._ov("horn_button"), this._car("button", "sound_horn"), "button.megane_sound_horn");
         if (b) this._call("button", "press", { entity_id: b.entity_id }, "📣 Clacson");
-        else this._toast("⚠️ Pulsante clacson non trovato");
+        else this._toast("⚠️ Clacson non mappato (Configura → Comandi)");
         break;
       }
       case "flash": {
-        const b = this._st(this._ov("flash_button"), this._car("button", "flash_lights"), "button.megane_flash_lights");
-        if (b) this._call("button", "press", { entity_id: b.entity_id }, "💡 Luci lampeggianti");
-        else this._toast("⚠️ Pulsante luci non trovato");
+        const b = this._st(this._ov("light"), this._ov("flash_button"), this._car("button", "flash_lights"), "button.megane_flash_lights");
+        if (!b) { this._toast("⚠️ Luci non mappate (Configura → Comandi)"); break; }
+        const d = String(b.entity_id).split(".")[0];
+        if (d === "light") this._call("light", "toggle", { entity_id: b.entity_id }, "💡 Luci");
+        else if (d === "switch") this._call("switch", "toggle", { entity_id: b.entity_id }, "💡 Luci");
+        else this._call("button", "press", { entity_id: b.entity_id }, "💡 Luci lampeggianti");
+        break;
+      }
+      case "charge_stop": {
+        const b = this._st(this._ov("wb_stop_switch"), this._car("button", "stop_charge"), "button.wallbox_charger_stop");
+        if (!b) { this._toast("⚠️ Stop carica non mappato (Configura → Wallbox)"); break; }
+        const d = String(b.entity_id).split(".")[0];
+        if (d === "switch") this._call("switch", "turn_off", { entity_id: b.entity_id }, "⏹ Stop carica");
+        else this._call("button", "press", { entity_id: b.entity_id }, "⏹ Stop carica");
         break;
       }
     }
@@ -890,6 +917,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     setV("cmd_charge", this._chargeOn() ? "In carica" : "Non in carica");
     setV("cmd_plug", this._plugOn() ? "Collegata" : "Scollegata");
     setV("cmd_zona", this._zoneName() || "—");
+    setV("cmd_addr", this._addrName() || "—");
     setV("cmd_tipo", this._f("tipo_ric"));
     setV("cmd_tempo", this._f("tempo_ric"));
     setV("cmd_ora", this._f("ora_compl"));
@@ -940,7 +968,6 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._drawWallbox(root);
     this._drawAutos(root);
     this._drawAutoToggles(root);
-    this._drawLowSoc(root);
     // tabella scadenze (attributo scadenze di prossima_scadenza)
     const tbSc = root.querySelector('[data-c="tab-scadenze"]');
     if (tbSc) {
@@ -1037,7 +1064,8 @@ class RenaultEvCenterPanel extends HTMLElement {
         entities: [{ entity: loc }],
         hours_to_show: 48,
         theme_mode: "dark",
-        auto_fit: true,
+        auto_fit: false,
+        default_zoom: 13,
       });
       card.hass = this._hass;
       card.style.display = "block";
@@ -1523,11 +1551,12 @@ const PAGES = {
           </div>
         </div>
         <div style="margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--panel2);font-size:13px;display:flex;justify-content:space-between"><span data-c="chargestatus">Non in carica</span><b><span data-f="wb_potenza">—</span> kW</b></div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px">
-          <div class="kv"><b data-f="km_per_kwh">—</b><div>KM/KWH</div></div>
-          <div class="kv"><b data-f="kwh_100">—</b><div>KWH/100KM</div></div>
-          <div class="kv"><b data-f="km_oggi">—</b><div>KM OGGI</div></div>
-          <div class="kv"><b data-f="costo_km">—</b><div>€/KM</div></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:8px;margin-top:12px">
+          <div class="kv" data-more="km_per_kwh" style="cursor:pointer"><b data-f="km_per_kwh" data-dec="2">—</b><div>KM/KWH</div></div>
+          <div class="kv" data-more="kwh_100" style="cursor:pointer"><b data-f="kwh_100" data-dec="2">—</b><div>KWH/100KM</div></div>
+          <div class="kv" data-more="km_oggi" style="cursor:pointer"><b data-f="km_oggi" data-dec="1">—</b><div>KM OGGI</div></div>
+          <div class="kv" data-more="drain" style="cursor:pointer"><b data-f="drain" data-dec="1">—</b><div>% OGGI</div></div>
+          <div class="kv" data-more="kwh_oggi_k" style="cursor:pointer"><b data-f="kwh_oggi_k" data-dec="2">—</b><div>KWH OGGI</div></div>
         </div>
       </div>
     </div>
@@ -1535,9 +1564,11 @@ const PAGES = {
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
         <div class="cmd" data-more="charging"><span class="em">🔌</span>Carica<b data-v="cmd_charge">—</b></div>
         <div class="cmd" data-more="loc"><span class="em">📍</span>Zona<b data-v="cmd_zona">—</b></div>
+        <div class="cmd" data-more="loc"><span class="em">🏠</span>Indirizzo<b data-v="cmd_addr">—</b></div>
         <div class="cmd" data-more="plug"><span class="em">🔗</span>Presa<b data-v="cmd_plug">—</b></div>
         <div class="cmd" data-cmd="ac"><span class="em">🧊</span>Avvia A/C<b>Premi ▸</b></div>
         <div class="cmd" data-cmd="charge"><span class="em">⚡</span>Avvia carica<b>Premi ▸</b></div>
+        <div class="cmd" data-cmd="charge_stop"><span class="em">⏹</span>Ferma carica<b>Premi ▸</b></div>
         <div class="cmd" data-more="ora_compl"><span class="em">⏱</span>Fine ricarica<b data-v="cmd_ora">—</b></div>
         <div class="cmd" data-cmd="horn"><span class="em">📣</span>Clacson<b>Premi ▸</b></div>
         <div class="cmd" data-cmd="flash"><span class="em">💡</span>Lampeggia<b>Premi ▸</b></div>
@@ -1545,10 +1576,9 @@ const PAGES = {
     </div>
     <div class="card"><h3>Efficienza</h3>
       <div class="grid g2" style="gap:10px">
-        <div><div class="big" style="font-size:28px;color:var(--accent)" data-f="km_per_kwh">—</div><div style="color:var(--muted);font-size:11px">km/kWh</div></div>
-        <div><div class="big" style="font-size:28px" data-f="kwh_100">—</div><div style="color:var(--muted);font-size:11px">kWh/100km</div></div>
-        <div><div class="big" style="font-size:28px" data-f="costo_km">—</div><div style="color:var(--muted);font-size:11px">costo/km</div></div>
-        <div><div class="big" style="font-size:28px" data-f="costo_100">—</div><div style="color:var(--muted);font-size:11px">costo/100km</div></div>
+        <div><div class="big" style="font-size:28px;color:var(--accent)" data-f="perc_100km" data-dec="1">—</div><div style="color:var(--muted);font-size:11px">% batteria/100km</div></div>
+        <div><div class="big" style="font-size:28px" data-f="costo_km" data-dec="3">—</div><div style="color:var(--muted);font-size:11px">costo/km</div></div>
+        <div><div class="big" style="font-size:28px" data-f="costo_100" data-dec="2">—</div><div style="color:var(--muted);font-size:11px">costo/100km</div></div>
       </div>
       <div style="margin-top:10px">
         <div class="row"><span>Viaggio in corso</span><b data-f="trip_attivo">—</b></div>
@@ -1575,7 +1605,7 @@ const PAGES = {
       <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)"><span data-f="risp_tot">—</span> €</b></div>
       <div class="row"><span>+ Tagliandi</span><b><span data-f="risp_tagliandi">—</span> €</b></div>
       <div class="row"><span>+ Bollo</span><b><span data-f="risp_bollo">—</span> €</b></div>
-      <div class="row" style="border-top:2px solid var(--accent)"><span><b>★ NETTO</b></span><b style="color:var(--accent);font-size:17px"><span data-f="risp_netto_tot">—</span> €</b></div>
+      <div class="row" style="border-top:2px solid var(--accent)"><span><b>★ NETTO</b></span><b style="color:var(--accent);font-size:17px"><span data-f="risp_netto_tot" data-dec="2">—</span> €</b></div>
       <div style="text-align:center;margin-top:10px"><span class="chip acc">📄 dettaglio completo → Risparmi</span></div>
     </div>
   </div>
@@ -1589,8 +1619,8 @@ const PAGES = {
       </div>
       <div>
         <div class="row"><span>⚡ Ricaricati oggi</span><b><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh · <span data-f="ricarica_oggi_pct" data-dec="0">—</span>%</b></div>
-        <div class="row"><span>💰 Ricariche oggi</span><b><span data-f="costo_oggi">—</span> €</b></div>
-        <div class="row"><span>💰 Ricariche mensili</span><b><span data-f="costo_mese">—</span> €</b></div>
+        <div class="row"><span>💰 Ricariche oggi</span><b><span data-f="costo_oggi" data-dec="2">—</span> €</b></div>
+        <div class="row"><span>💰 Ricariche mensili</span><b><span data-f="costo_mese" data-dec="2">—</span> €</b></div>
       </div>
     </div>
   </div>
@@ -1776,7 +1806,12 @@ const PAGES = {
     <div class="card"><h3>Notifiche</h3>
       <div class="row"><span>🔋 Fine ricarica (kWh, SoC, costo)</span><label class="switch"><input type="checkbox" data-sw="sw_end"><span></span></label></div>
       <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Avvio ricarica e promemoria batteria bassa si gestiscono nelle card qui sotto.</div></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Avvio ricarica e promemoria batteria bassa si configurano in <b>Configura</b>.</div>
+      <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+        <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🤖 Automazioni create — attiva/disattiva</div>
+        <div data-c="autos-created" style="display:flex;flex-direction:column;gap:2px"></div>
+        <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Sono le automazioni create in Home Assistant (Impostazioni → Automazioni). Accendile/spegni da qui, senza YAML.</div>
+      </div></div>
     <div class="card"><h3>⏰ Programma ricarica</h3>
       <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="ricarica"><span></span></label></div>
       <div class="row"><span>Inizio</span><input type="time" data-sch="ricarica" data-k="inizio" value="23:30"></div>
@@ -1796,12 +1831,7 @@ const PAGES = {
       <div class="btn" data-cmd="schsave_clima" style="margin-top:10px">💾 Salva programma clima</div>
       <div style="color:var(--muted);font-size:11px;margin-top:6px">Premе il tasto Avvia A/C all'orario scelto (modo/temperatura non sono inviabili coi button Renault).</div>
     </div>
-    <div class="card"><h3>🔔 Promemoria batteria bassa</h3>
-      <div data-c="lowsoc"></div></div>
   </div>
-  <div class="card" style="margin-top:16px"><h3>🤖 Automazioni create — attiva/disattiva</h3>
-    <div data-c="autos-created" style="display:flex;flex-direction:column;gap:2px"></div>
-    <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Sono le automazioni create in Home Assistant (Impostazioni → Automazioni). Accendile/spegni da qui, senza YAML.</div></div>
   <div class="card" style="margin-top:16px"><h3>🏠 Priorità batteria casa</h3>
     <div class="inp"><span>Priorità batteria casa</span><input data-n="n_prio"><span class="u">%</span></div>
     <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Sotto questa % la batteria di casa ha la precedenza sull'auto nel bilanciamento solare.</div></div>

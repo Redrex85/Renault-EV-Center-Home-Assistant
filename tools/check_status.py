@@ -5,6 +5,7 @@ Esce con codice 0 se tutto ok, 1 se ci sono problemi.
 """
 import glob
 import os
+import ast
 import py_compile
 import re
 import sys
@@ -105,7 +106,8 @@ for path in (
     + sorted(glob.glob(os.path.join(BASE, "examples", "*.yaml")))
     + [os.path.join(CC, "services.yaml"), os.path.join(CC, "manifest.json"),
        os.path.join(CC, "strings.json"), os.path.join(CC, "translations", "it.json"),
-       os.path.join(CC, "translations", "en.json"), os.path.join(BASE, "hacs.json")]
+       os.path.join(CC, "translations", "en.json"), os.path.join(CC, "translations", "fr.json"),
+       os.path.join(BASE, "hacs.json")]
 ):
     nome = os.path.basename(path)
     try:
@@ -278,6 +280,57 @@ try:
     ok("riepilogo: consumo, costo, valori zero e dati mancanti")
 except Exception as e:
     bad(f"riepilogo giornaliero: {e}")
+
+print("\n[8] Contatori persistenti")
+try:
+    with open(os.path.join(CC, "coordinator.py"), encoding="utf-8") as fh:
+        linee = fh.readlines()
+    colpevoli = [i + 1 for i, l in enumerate(linee)
+                 if re.search(r'self\.store\.data\["counters"\]\s*=', l)]
+    assert not colpevoli, (
+        "assegnazione che azzera i contatori (perde last_notify/balance_last): "
+        f"coordinator.py:{colpevoli}")
+    assert any('counters", {}).update(c)' in l for l in linee)
+    ok("nessuna sovrascrittura di counters (last_notify/balance_last sopravvivono)")
+except Exception as e:
+    bad(f"contatori: {e}")
+
+print("\n[9] Campi Configura tradotti")
+try:
+    const_src = open(os.path.join(CC, "const.py"), encoding="utf-8").read()
+    valori = dict(re.findall(r'^(CONF_[A-Z0-9_]+)\s*=\s*"([^"]+)"', const_src, re.M))
+    flow_src = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    usati = {valori[c] for c in re.findall(r'vol\.(?:Optional|Required)\(\s*(CONF_[A-Z0-9_]+)', flow_src)
+             if c in valori}
+    for nome in ("strings.json",) + tuple(f"translations/{l}.json" for l in ("it", "en", "fr")):
+        testo = open(os.path.join(CC, nome), encoding="utf-8").read()
+        mancanti = sorted(k for k in usati if f'"{k}"' not in testo)
+        assert not mancanti, f"{nome}: non tradotti {mancanti}"
+    ok(f"{len(usati)} campi Configura presenti nelle 4 traduzioni")
+except Exception as e:
+    bad(f"traduzioni config: {e}")
+
+print("\n[10] Energia ricarica misurata")
+try:
+    with open(os.path.join(CC, "coordinator.py"), encoding="utf-8") as fh:
+        tree10 = ast.parse(fh.read())
+    ns10: dict = {"_f": lambda v, d=0.0: float(v) if v not in (None, "") else d}
+    for nome in ("_best_measured_delta", "_charge_energy"):
+        fnn = next(n for n in tree10.body if isinstance(n, ast.FunctionDef) and n.name == nome)
+        exec(compile(ast.Module(body=[fnn], type_ignores=[]), f"<{nome}>", "exec"), ns10)
+    delta = ns10["_best_measured_delta"]
+    assert delta([(10.0, 20.0), (5.0, 8.0)]) == 10.0
+    assert round(delta([(100.0, 2.0), (50.0, 88.24)]), 2) == 38.24  # contatore sessione azzerato
+    assert delta([(None, 5.0), (None, None)]) == 0.0
+    assert delta([]) == 0.0
+    en = ns10["_charge_energy"]
+    assert en(38.24, "Casa", 20, 80, 60) == (38.24, None)  # misurata: vince sempre
+    assert (round(en(0.0, "Pubblica", 20, 50, 60)[0], 2), en(0.0, "Pubblica", 20, 50, 60)[1]) \
+        == (18.0, "fuori_casa")  # stima dal SoC: caso normale fuori casa
+    assert en(0.0, "Casa", 20, 50, 60)[1] == "casa_senza_misura"  # a casa: ripiego da segnalare
+    ok("energia ricarica: misurata, stima fuori casa, ripiego a casa")
+except Exception as e:
+    bad(f"energia ricarica: {e}")
 
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)

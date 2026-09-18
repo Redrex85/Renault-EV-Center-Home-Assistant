@@ -19,6 +19,7 @@ from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
     TextSelector,
+    TimeSelector,
     DateSelector,
 )
 
@@ -41,6 +42,9 @@ from .const import (
     CONF_CHARGE_TARGET_NUMBER,
     CONF_CREATE_DASHBOARD,
     CONF_WB_CHARGE_SWITCH,
+    CONF_WB_STOP_SWITCH,
+    CONF_LIGHT_ENTITY,
+    CONF_HORN_ENTITY,
     CONF_HAS_PV,
     CONF_BALANCE_GRID_SENSOR,
     CONF_BALANCE_BATTERY_SENSOR,
@@ -186,6 +190,12 @@ def _car_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(
                 CONF_CLIMATE_ENTITY, description={"suggested_value": defaults.get(CONF_CLIMATE_ENTITY)}
             ): EntitySelector(EntitySelectorConfig(domain="climate")),
+            vol.Optional(
+                CONF_LIGHT_ENTITY, description={"suggested_value": defaults.get(CONF_LIGHT_ENTITY)}
+            ): EntitySelector(EntitySelectorConfig(domain=["light", "switch", "button"])),
+            vol.Optional(
+                CONF_HORN_ENTITY, description={"suggested_value": defaults.get(CONF_HORN_ENTITY)}
+            ): EntitySelector(EntitySelectorConfig(domain=["button", "switch"])),
         }), {"collapsed": True}),
     })
 
@@ -211,7 +221,13 @@ def _wallbox_schema(defaults: dict[str, Any]) -> vol.Schema:
             ): EntitySelector(EntitySelectorConfig(domain=["number"])),
             vol.Optional(
                 CONF_WB_SESSION_TIME, description={"suggested_value": defaults.get(CONF_WB_SESSION_TIME)}
-            ): EntitySelector(EntitySelectorConfig(domain=["sensor"])),
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            vol.Optional(
+                CONF_WB_CHARGE_SWITCH, description={"suggested_value": defaults.get(CONF_WB_CHARGE_SWITCH)}
+            ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
+            vol.Optional(
+                CONF_WB_STOP_SWITCH, description={"suggested_value": defaults.get(CONF_WB_STOP_SWITCH)}
+            ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
         }), {"collapsed": False}),
         vol.Required("solar"): section(vol.Schema({
             vol.Required(CONF_HAS_PV, default=defaults.get(CONF_HAS_PV, False)): BooleanSelector(),
@@ -293,8 +309,8 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_LOW_SOC_ENABLED, default=defaults.get(CONF_LOW_SOC_ENABLED, True)): BooleanSelector(),
             vol.Optional(CONF_LOW_SOC_THRESHOLD, default=defaults.get(CONF_LOW_SOC_THRESHOLD, DEFAULT_LOW_SOC_THRESHOLD)): NumberSelector(
                 NumberSelectorConfig(min=5, max=80, step=1, unit_of_measurement="%")),
-            vol.Optional(CONF_LOW_SOC_START, default=defaults.get(CONF_LOW_SOC_START, DEFAULT_LOW_SOC_START)): TextSelector(),
-            vol.Optional(CONF_LOW_SOC_END, default=defaults.get(CONF_LOW_SOC_END, DEFAULT_LOW_SOC_END)): TextSelector(),
+            vol.Optional(CONF_LOW_SOC_START, default=defaults.get(CONF_LOW_SOC_START, DEFAULT_LOW_SOC_START)): TimeSelector(),
+            vol.Optional(CONF_LOW_SOC_END, default=defaults.get(CONF_LOW_SOC_END, DEFAULT_LOW_SOC_END)): TimeSelector(),
         }), {"collapsed": True}),
         vol.Required("schedule"): section(vol.Schema({
             vol.Required(CONF_CHARGE_SCHED_ENABLED, default=defaults.get(CONF_CHARGE_SCHED_ENABLED, False)): BooleanSelector(),
@@ -306,10 +322,6 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                 NumberSelectorConfig(min=5, max=80, step=1, unit_of_measurement="%")),
             vol.Optional(CONF_CHARGE_STOP_SOC, default=defaults.get(CONF_CHARGE_STOP_SOC, 80)): NumberSelector(
                 NumberSelectorConfig(min=50, max=100, step=1, unit_of_measurement="%")),
-            vol.Optional(
-                CONF_WB_CHARGE_SWITCH,
-                description={"suggested_value": defaults.get(CONF_WB_CHARGE_SWITCH)},
-            ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
             vol.Optional(
                 CONF_CHARGE_TARGET_NUMBER,
                 description={"suggested_value": defaults.get(CONF_CHARGE_TARGET_NUMBER)},

@@ -23,7 +23,9 @@
             "data": {
               "charge_start_button": "Pulsante Avvia carica (Renault)",
               "ac_button_entity": "Pulsante Avvia A/C (Renault)",
-              "climate_entity": "Climatizzatore (climate) Renault"
+              "climate_entity": "Climatizzatore (climate) Renault",
+              "light_entity": "Luci esterne (light/switch/button)",
+              "horn_entity": "Clacson (button/switch)"
             }
           }
         }
@@ -41,7 +43,9 @@
               "wallbox_session_energy_entity": "Contatore energia sessione (kWh)",
               "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
               "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
-              "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno"
+              "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
+              "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione",
+              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»"
             }
           },
           "solar": {
@@ -186,7 +190,9 @@
             "data": {
               "charge_start_button": "Pulsante avvio carica (Renault)",
               "ac_button_entity": "Pulsante Avvia A/C (Renault)",
-              "climate_entity": "Climatizzatore (climate) Renault"
+              "climate_entity": "Climatizzatore (climate) Renault",
+              "light_entity": "Luci esterne (light/switch/button)",
+              "horn_entity": "Clacson (button/switch)"
             }
           },
           "wallbox": {
@@ -198,7 +204,9 @@
               "wallbox_session_energy_entity": "Contatore energia sessione (kWh)",
               "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
               "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
-              "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno"
+              "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
+              "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione",
+              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»"
             }
           },
           "solar": {

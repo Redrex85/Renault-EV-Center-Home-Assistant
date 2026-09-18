@@ -156,6 +156,31 @@ def _in_window(hhmm: str, start: str, stop: str) -> bool:
     return hhmm >= start or hhmm < stop
 
 
+def _best_measured_delta(pairs):
+    """Maggiore tra i delta misurati di una ricarica.
+
+    Ogni coppia è (inizio, fine) di un contatore. I delta negativi vengono scartati:
+    il contatore azzerato a metà sessione (es. reset di mezzanotte) non è una misura valida.
+    """
+    vals = [fine - inizio for inizio, fine in pairs
+            if inizio is not None and fine is not None and fine >= inizio]
+    return max(vals) if vals else 0.0
+
+
+def _charge_energy(measured: float, tipo: str, soc_start, battery, capacity):
+    """Energia di una ricarica: misura wallbox se c'è, altrimenti stima dal SoC.
+
+    Ritorna (kWh, origine): origine è None se misurata, altrimenti
+    "fuori_casa" (caso normale per le colonnine pubbliche) o
+    "casa_senza_misura" (ripiego da segnalare: manca la mappatura del contatore wallbox).
+    """
+    if measured > 0:
+        return measured, None
+    delta = max(_f(battery) - _f(soc_start), 0.0)
+    kwh = delta * _f(capacity, 60.0) / 100.0
+    return kwh, "fuori_casa" if tipo != "Casa" else "casa_senza_misura"
+
+
 def _num(hass: HomeAssistant, entity_id: str | None, default: float = 0.0) -> float:
     if not entity_id:
         return default
@@ -386,8 +411,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             c["pct_down"] = self.pct_daily["down"].to_dict()
             c["drain_down"] = self.drain_meter.to_dict()
             c["drain_month_down"] = self.drain_mesi.to_dict()
-            self.store.data["counters"] = c
-            await self.store._store.async_save(c | {"trips": self.store.data["trips"][-2000:], "charges": self.store.data["charges"][-2000:], "daily": self.store.data["daily"][-365:], "health": self.store.data.get("health", {}), "maintenance": self.store.data.get("maintenance", [])[-200:], "monthly_km": self.store.data.get("monthly_km", {}), "scadenze": self.store.data.get("scadenze", {})})
+            self.store.data.setdefault("counters", {}).update(c)
+            await self.store._store.async_save(self.store.data["counters"] | {"trips": self.store.data["trips"][-2000:], "charges": self.store.data["charges"][-2000:], "daily": self.store.data["daily"][-365:], "health": self.store.data.get("health", {}), "maintenance": self.store.data.get("maintenance", [])[-200:], "monthly_km": self.store.data.get("monthly_km", {}), "scadenze": self.store.data.get("scadenze", {})})
         except Exception:  # noqa: BLE001
             pass
 
@@ -408,7 +433,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         c["pct_down"] = self.pct_daily["down"].to_dict()
         c["drain_down"] = self.drain_meter.to_dict()
         c["drain_month_down"] = self.drain_mesi.to_dict()
-        self.store.data["counters"] = c
+        self.store.data.setdefault("counters", {}).update(c)
         self.store.save()
 
     # ------------------------------------------------------------------ helpers
@@ -520,6 +545,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             if st is not None and st.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
                 return _f(st.state)
         return None
+
+    def _wb_total_counter(self) -> float | None:
+        """Contatore energia TOTALE wallbox (indipendente dalla sessione)."""
+        tot = self.opts.get(CONF_WB_TOTAL_ENERGY)
+        if not tot:
+            return None
+        st = self.hass.states.get(str(tot))
+        if st is None or st.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return None
+        return _f(st.state)
 
     def _wb_power_kw(self) -> float:
         entity = self.opts.get(CONF_WB_POWER)
@@ -787,6 +822,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     "zone": location or "unknown",
                     "soc_start": battery,
                     "counter_start": self._wb_counter(),
+                    "total_start": self._wb_total_counter(),
                     "odometro_inizio": odometer,
                     "prezzo": self._price_for_zone(location or "home"),
                 }
@@ -812,7 +848,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     history.append(prev)
                 history.sort(key=lambda d: d.get("data", ""))
                 del history[:-365]
-            self.today_rec = {"data": today_key, "km": 0.0, "kwh": 0.0, "pct": 0.0, "eff": 0.0}
+            self.today_rec = {"data": today_key, "km": 0.0, "kwh": 0.0, "pct": 0.0, "eff": 0.0,
+                              "soc_start": None}
+        # baseline reale (SoC dall'app Renault): primo campione del giorno NON in carica
+        if self.today_rec.get("soc_start") is None and not charging:
+            self.today_rec["soc_start"] = round(_f(battery), 1)
         km_oggi = _f(self.km_meters["daily"].value)
         kwh_oggi = _f(self.kwh_meters["daily"]["down"].value)
         self.today_rec.update({
@@ -1157,6 +1197,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "available": sources_ok,
             "odometer": round(odometer, 1),
             "battery": round(battery, 1),
+            "soc_start_oggi": self.today_rec.get("soc_start"),
             "range": round(rng, 1),
             "charging": charging,
             "charging_state": charging_raw,
@@ -1267,12 +1308,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         assert s is not None
         durata_min = int((time.time() - s["start_ts"]) / 60)
         counter_end = self._wb_counter()
-        kwh = 0.0
-        if s.get("counter_start") is not None and counter_end is not None:
-            kwh = max(counter_end - s["counter_start"], 0.0)
-        if kwh <= 0:
-            soc_gain = max(battery - s["soc_start"], 0.0)
-            kwh = soc_gain * self.capacity / 100.0
+        total_end = self._wb_total_counter()
         z = (s.get("zone") or zone or "unknown").lower()
         if z == "home":
             tipo = "Casa"
@@ -1280,6 +1316,19 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             tipo = "Fotovoltaico"
         else:
             tipo = "Pubblica"
+        # delta misurati (i contatori azzerati a metà sessione, es. mezzanotte, vengono scartati)
+        kwh, origine = _charge_energy(
+            _best_measured_delta((
+                (s.get("counter_start"), counter_end),
+                (s.get("total_start"), total_end),
+            )),
+            tipo, s.get("soc_start"), battery, self.capacity,
+        )
+        if origine == "casa_senza_misura":
+            _LOGGER.warning(
+                "Ricarica a casa senza misura wallbox: energia stimata dal SoC "
+                "(mappa i contatori in Configura → Wallbox)"
+            )
         costo = round(kwh * _f(s.get("prezzo"), self._price_for_zone(z)), 2)
         ts_start = datetime.fromtimestamp(s["start_ts"])
         record = {
@@ -1295,10 +1344,12 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "costo": costo,
             "tipo": tipo,
         }
+        if origine is not None:
+            record["stima"] = origine
 
         # --- salute batteria (solo ricariche a casa misurate dalla wallbox) -------
         delta_pct = battery - _f(s.get("soc_start"))
-        wb_misurato = s.get("counter_start") is not None and counter_end is not None and kwh > 0
+        wb_misurato = origine is None and kwh > 0
         if tipo == "Casa" and wb_misurato and delta_pct > 0.2:
             soh_ufficiale = max(self._setting_num("soh_official", 100.0), 50.0)
             teorica = delta_pct * self.capacity * (soh_ufficiale / 100.0) / 100.0
@@ -1864,6 +1915,21 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         from homeassistant.util.yaml import dump as _yaml_dump
         from homeassistant.util.yaml import load_yaml as _yaml_load
 
+        from .dashboard import slugify
+
+        nome = slugify(str(self.opts.get(CONF_NAME, "Renault")))
+        # suffissi gestiti dall'integrazione: un id con slug diverso è un orfano (nome auto cambiato)
+        gestiti = ("_ricarica_completata", "_avvio_ricarica", "_batteria_bassa",
+                   "_riassunto_giornaliero", "_promemoria", "_programma_ricarica",
+                   "_programma_clima", "_scadenze", "_promemoria_batteria")
+
+        def _orfana(aid: object) -> bool:
+            if not isinstance(aid, str) or not aid.startswith("renault_ev_center_"):
+                return False
+            if any(aid == f"renault_ev_center_{nome}{s}" for s in gestiti):
+                return False
+            return any(aid.endswith(s) for s in gestiti)
+
         path = self.hass.config.path(AUTOMATION_CONFIG_PATH)
         rmset = set(removes)
 
@@ -1875,6 +1941,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             if not isinstance(data, list):
                 data = []
             data = [d for d in data if not (isinstance(d, dict) and d.get("id") in rmset)]
+            data = [d for d in data if not (isinstance(d, dict) and _orfana(d.get("id")))]
             byid = {d.get("id"): i for i, d in enumerate(data) if isinstance(d, dict) and d.get("id")}
             made: list[str] = []
             for aid, cfg in upserts.items():

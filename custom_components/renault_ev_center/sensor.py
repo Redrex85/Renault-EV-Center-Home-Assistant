@@ -301,13 +301,20 @@ class PctBatteriaOggi(MateSensor):
 
     @property
     def native_value(self):
-        val = abs(self.coordinator.data["pct_daily"][self._direction]["value"])
         if self._direction == "down":
+            # dato reale dall'app Renault: SoC di inizio giornata − SoC attuale
+            start = self.coordinator.data.get("soc_start_oggi")
+            batt = self.coordinator.data.get("battery")
+            if start is not None and batt is not None:
+                return round(max(float(start) - float(batt), 0.0), 1)
+            # ripiego: scarica cumulata della giornata / somma dei viaggi
+            val = abs(self.coordinator.data["pct_daily"]["down"]["value"])
             rows = self.coordinator.data.get("percorrenza", []) or []
             r = next((x for x in rows if str(x.get("nome", "")).lower() == "oggi"), None)
             if r:
                 val = max(val, float(r.get("pct") or 0))
-        return round(val, 1)
+            return round(val, 1)
+        return round(abs(self.coordinator.data["pct_daily"]["up"]["value"]), 1)
 
     @property
     def extra_state_attributes(self):
