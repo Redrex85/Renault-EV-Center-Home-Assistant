@@ -350,6 +350,18 @@ try:
 except Exception as e:
     bad(f"auto-refresh: {e}")
 
+print("\n[12] Bilanciamento tag <div> nel pannello")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    aperti = len(re.findall(r"<div\b", js))
+    chiusi = len(re.findall(r"</div>", js))
+    assert aperti == chiusi, (
+        f"<div> sbilanciati: {aperti} aperti vs {chiusi} chiusi "
+        "(un </div> orfano sposta tutte le pagine)/")
+    ok(f"markup pannello bilanciato ({aperti} div)")
+except Exception as e:
+    bad(f"markup pannello: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

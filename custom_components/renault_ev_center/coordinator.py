@@ -1856,6 +1856,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.persist(force=True)
         return mode
 
+    def service_set_low_soc_days(self, days: list[str]) -> list[str]:
+        """Imposta i giorni della settimana dell'avviso batteria bassa."""
+        validi = [d for d in (days or []) if d in WEEKDAYS]
+        opts = dict(self.entry.options)
+        opts[CONF_LOW_SOC_DAYS] = validi
+        self.hass.config_entries.async_update_entry(self.entry, options=opts)
+        self.low_soc_days = validi
+        return validi
+
     async def service_create_automations(self) -> list[str]:
         """Crea (solo se assenti) le automazioni consigliate in automations.yaml."""
         from .dashboard import slugify

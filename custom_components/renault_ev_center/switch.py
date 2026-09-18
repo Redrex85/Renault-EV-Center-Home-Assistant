@@ -61,6 +61,16 @@ class MateSwitch(CoordinatorEntity[RenaultMateCoordinator], RestoreEntity, Switc
     def is_on(self) -> bool:
         return bool(self._attr_is_on)
 
+    @property
+    def extra_state_attributes(self):
+        if self._key == "low_soc":
+            # usati dalla vista Automazioni per mostrare soglia/orari/giorni correnti
+            return {"giorni": list(getattr(self.coordinator, "low_soc_days", [])),
+                    "soglia": getattr(self.coordinator, "low_soc_threshold", None),
+                    "dalle": getattr(self.coordinator, "low_soc_start", None),
+                    "alle": getattr(self.coordinator, "low_soc_end", None)}
+        return {}
+
     async def async_turn_on(self, **kwargs) -> None:
         self._attr_is_on = True
         self.async_write_ha_state()

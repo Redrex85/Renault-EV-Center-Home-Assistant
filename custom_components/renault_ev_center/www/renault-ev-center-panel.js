@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.6.11";
+const REC_VER = "1.0.6.12";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -378,6 +378,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "n_soh": return S._nid("soh_ufficiale");
       case "n_assic": return S._nid("costo_assicurazione");
       case "n_prio": return S._nid("priorita_batteria_casa");
+      case "n_low_soc": return S._nid("batteria_minima_promemoria");
       case "sw_start": return S._swid("notifica_avvio_ricarica");
       case "sw_end": return S._swid("notifica_fine_ricarica");
       case "sw_low": return S._swid("promemoria_batteria_bassa");
@@ -885,6 +886,11 @@ class RenaultEvCenterPanel extends HTMLElement {
         else this._call("button", "press", { entity_id: b.entity_id }, "💡 Luci lampeggianti");
         break;
       }
+      case "lowsave": {
+        const giorni = [...this.shadowRoot.querySelectorAll("[data-lowday].on")].map((e) => e.dataset.lowday);
+        this._call("renault_ev_center", "set_low_soc_days", { giorni }, "🔔 Giorni avviso salvati");
+        break;
+      }
       case "tfilter-reset": {
         const f = this.shadowRoot.querySelector('[data-tfd="from"]');
         const t = this.shadowRoot.querySelector('[data-tfd="to"]');
@@ -932,6 +938,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     root.querySelectorAll("[data-sw]").forEach((el) => {
       if (el.tagName === "INPUT") { const s = this._hass.states[el.dataset.ent]; el.checked = !!s && s.state === "on"; }
+    });
+    // avviso batteria bassa: giorni correnti dall'attributo dello switch
+    const _lowSw = this._hass.states[this._field("sw_low")];
+    const _lowDays = (_lowSw && Array.isArray(_lowSw.attributes.giorni)) ? _lowSw.attributes.giorni : [];
+    root.querySelectorAll("[data-lowday]").forEach((el) => {
+      el.classList.toggle("on", _lowDays.includes(el.dataset.lowday));
     });
     // chips stato
     const chipLoc = root.querySelector('[data-c="loc"]');
@@ -1188,21 +1200,16 @@ class RenaultEvCenterPanel extends HTMLElement {
       this._noApexNotice(box);
     }
   }
-  /** apexcharts-card assente (o in errore): avviso + anteprima base */
+  /** apexcharts-card assente (o in errore): solo avviso, nessun grafico alternativo */
   _noApexNotice(box) {
     box.style.cssText = "";
     box.innerHTML =
-      `<div style="padding:14px;border:1px dashed var(--accent);border-radius:12px;background:rgba(255,255,255,.04)">
+      `<div style="padding:16px;border:1px dashed var(--accent);border-radius:12px;background:rgba(255,255,255,.04)">
         <div style="font-weight:700;margin-bottom:6px">📦 Serve la card «apexcharts-card»</div>
-        <div style="font-size:12.5px;color:var(--muted);line-height:1.6">
-          Per il grafico completo (colonne km + linea consumi) installa da
-          <b>HACS → Frontend</b> → <code>apexcharts-card</code>, poi riavvia Home Assistant.<br>
-          Intanto qui sotto resta l'anteprima base del pannello.
+        <div style="font-size:13px;color:var(--muted);line-height:1.7">
+          Per vedere questo grafico installa da <b>HACS → Frontend</b> → <code>apexcharts-card</code>,
+          poi riavvia Home Assistant e ricarica la pagina.
         </div></div>`;
-    const wrap = document.createElement("div");
-    wrap.style.cssText = "display:flex;align-items:flex-end;gap:6px;height:110px;max-width:640px;margin-top:12px";
-    box.appendChild(wrap);
-    this._drawBars(wrap, this._last7());
   }
   _wb_state_txt() {
     const p = this._num(this._sid("wallbox_potenza"), "sensor.wallbox_instant_power", this._car("sensor", "battery_charger_power"));
@@ -1765,8 +1772,6 @@ const PAGES = {
         <div class="row"><span>💰 Ricariche mensili</span><b><span data-f="costo_mese" data-dec="2">—</span> €</b></div>
       </div>
     </div>
-  </div>
-
   </div>`,
 
   p2: `<h1>Viaggi</h1>
@@ -1974,6 +1979,17 @@ const PAGES = {
       </div>
       <div class="btn" data-cmd="schsave_clima" style="margin-top:10px">💾 Salva programma clima</div>
       <div style="color:var(--muted);font-size:11px;margin-top:6px">Premе il tasto Avvia A/C all'orario scelto (modo/temperatura non sono inviabili coi button Renault).</div>
+    </div>
+    <div class="card"><h3>🔔 Avviso batteria bassa</h3>
+      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-sw="sw_low"><span></span></label></div>
+      <div class="row"><span>Soglia</span><input type="number" data-n="n_low_soc" min="5" max="80" step="1" style="width:80px"><span class="u">%</span></div>
+      <div class="row"><span>Dalle</span><input type="time" data-time="t_low_start"></div>
+      <div class="row"><span>Alle</span><input type="time" data-time="t_low_end"></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span>Giorni</span>
+        <span><span class="chip dchip" data-lowday="mon">Lun</span><span class="chip dchip" data-lowday="tue">Mar</span><span class="chip dchip" data-lowday="wed">Mer</span><span class="chip dchip" data-lowday="thu">Gio</span><span class="chip dchip" data-lowday="fri">Ven</span><span class="chip dchip" data-lowday="sat">Sab</span><span class="chip dchip" data-lowday="sun">Dom</span></span>
+      </div>
+      <div class="btn" data-cmd="lowsave" style="margin-top:10px">💾 Salva giorni</div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Una notifica al giorno quando l'auto è <b>a casa</b>, sotto la soglia, nella fascia oraria e nei giorni scelti.</div>
     </div>
   </div>
   <div class="card" style="margin-top:16px"><h3>🏠 Priorità batteria casa</h3>

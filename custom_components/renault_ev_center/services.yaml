@@ -116,6 +116,14 @@ create_automations:
 create_dashboard:
   name: Crea dashboard
   description: (Ri)crea la dashboard laterale "«Nome» EV Center" con tutte le viste.
+set_low_soc_days:
+  name: Giorni avviso batteria bassa
+  description: Imposta in quali giorni della settimana inviare l'avviso di batteria bassa.
+  fields:
+    giorni:
+      name: Giorni
+      description: "Elenco: mon, tue, wed, thu, fri, sat, sun"
+      example: '["mon", "tue", "wed", "thu", "fri"]'
 set_schedule:
   name: Imposta schedulazione
   description: Crea/aggiorna l'automazione di ricarica o clima programmato (orario + giorni).

@@ -14,7 +14,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_CREATE_DASHBOARD, CONF_NAME, DOMAIN, PLATFORMS
+from .const import CONF_CREATE_DASHBOARD, CONF_NAME, DOMAIN, PLATFORMS, WEEKDAYS
 from .coordinator import RenaultMateCoordinator
 from .dashboard import (
     async_remove_dashboard,
@@ -39,6 +39,7 @@ SERVICE_SET_SCADENZA = "set_scadenza"
 SERVICE_SET_TAGLIANDO = "set_tagliando"
 SERVICE_CREATE_DASHBOARD = "create_dashboard"
 SERVICE_CREATE_AUTOMATIONS = "create_automations"
+SERVICE_SET_LOW_SOC_DAYS = "set_low_soc_days"
 
 RESET_SCOPES = ["km", "energia", "costi", "viaggi", "ricariche", "all"]
 
@@ -159,6 +160,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for coord in _all_coordinators(hass):
             await async_setup_dashboard(hass, coord.entry, str(coord.opts.get(CONF_NAME, "Renault")))
 
+    async def handle_set_low_soc_days(call: ServiceCall) -> None:
+        for coord in _all_coordinators(hass):
+            giorni = coord.service_set_low_soc_days(list(call.data.get("giorni", []) or []))
+            _LOGGER.info("Avviso batteria bassa — giorni: %s", giorni)
+
     async def handle_create_automations(call: ServiceCall) -> None:
         for coord in _all_coordinators(hass):
             created = await coord.service_create_automations()
@@ -235,6 +241,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
               }))
     _register(SERVICE_CREATE_DASHBOARD, handle_create_dashboard)
     _register(SERVICE_CREATE_AUTOMATIONS, handle_create_automations)
+    _register(SERVICE_SET_LOW_SOC_DAYS, handle_set_low_soc_days,
+              vol.Schema({vol.Optional("giorni"): vol.All(list, [vol.In(WEEKDAYS)])}))
     _register("set_schedule", handle_set_schedule, schema=vol.Schema({
         vol.Required("tipo"): vol.In(["ricarica", "clima", "promemoria"]),
         vol.Optional("attivo", default=True): cv.boolean,
@@ -268,7 +276,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 SERVICE_ADD_CHARGE, SERVICE_DELETE_TRIP, SERVICE_ADD_MAINTENANCE,
                 SERVICE_DELETE_MAINTENANCE, SERVICE_RENEW_INSURANCE,
                 SERVICE_SET_SCADENZA, SERVICE_SET_TAGLIANDO, SERVICE_CREATE_DASHBOARD,
-                SERVICE_CREATE_AUTOMATIONS,
+                SERVICE_CREATE_AUTOMATIONS, SERVICE_SET_LOW_SOC_DAYS,
             ):
                 hass.services.async_remove(DOMAIN, name)
     return unload_ok

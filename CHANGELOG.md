@@ -5,7 +5,7 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.6.11 — Fix notifiche ripetute, configurazione ampliata
+## 1.0.6.12 — Fix notifiche ripetute, configurazione ampliata
 
 ### Bug critico
 - **Notifiche ripetute (~2000 a notte)**: `persist()` e il salvataggio allo shutdown
@@ -38,6 +38,11 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
   "Programma avvio ricarica" duplicato).
 
 ### Pannello
+- **Fix layout**: un `</div>` orfano in Panoramica spostava tutte le altre pagine a sinistra;
+  `check_status.py` [12] ora verifica il bilanciamento dei `<div>`.
+- **Avviso batteria bassa**: tornata la configurazione in *Automazioni* — attivo, soglia %,
+  dalle/alle e **giorni della settimana** (nuovo servizio `set_low_soc_days`).
+- Grafico Km percorsi: senza `apexcharts-card` compare **solo** l'avviso d'installazione.
 - Card **"Automazioni create"** spostata in cima accanto a *Fine ricarica*, con **icona per tipo**.
 - Panoramica: i KPI dell'auto sono **box cliccabili** (aprono il sensore) con **% e kWh consumati oggi**
   al posto di €/km; **Efficienza** mostra %batteria/100km al posto dei duplicati.
@@ -45,7 +50,7 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
   (dai viaggi); il comando **stop** è lato wallbox, non Renault.
 - Panoramica: **grafico Km percorsi 7 giorni** (colonne km + linea consumi) accanto al box
   **Automazioni attive**. Con `apexcharts-card` installata usa il grafico completo, altrimenti
-  mostra l'avviso "installa apexcharts-card" + anteprima base.
+  mostra l'avviso d'installazione.
 - **Archivio viaggi**: i rami chiusi dall'utente **non si riaprono più** al refresh.
 - **Dettaglio viaggi**: aggiunto il filtro **da / a** (date), oltre a anno e mese.
 - Box KPI più leggibili; **Efficienza** con %batteria/100km (con ripiego calcolato se il sensore è a 0).
