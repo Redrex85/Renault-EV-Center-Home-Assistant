@@ -5,7 +5,23 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.7 — HACS: versione a 3 numeri, fix layout e avviso batteria
+## 1.0.9 — Auto-refresh, costo ricariche, layout Extra
+
+### Auto-refresh (niente più Ctrl+F5)
+- Il controllo versione ora gira **anche periodicamente** (ogni 2 minuti + 5 s dopo l'apertura):
+  prima girava solo in `setConfig`, quindi una pagina **già aperta** durante un aggiornamento
+  non se ne accorgeva mai.
+- Il reload usa un **cache-bust** nell'URL (`?_recv=<versione>`) e logga in console
+  `JS <mia> · integrazione <server>` per diagnosticare al volo.
+- La versione arriva dalla config della card (letta dal `manifest.json`), non dal file JS:
+  la cache non può più mascherare l'aggiornamento.
+
+### Correzioni
+- **Costo totale ricariche a 0**: `cost_total` è ora ricalcolato come **somma delle ricariche
+  registrate** (fonte di verità), non solo accumulato dal contatore live della wallbox.
+- **Extra**: "Meteo vs consumi" e "Top & Stop · mese" ora affiancati; le Note sono una card a parte.
+- **Automazioni**: rimossa la card "Priorità batteria casa" (resta come `number` tra i dispositivi).
+- **Versioning**: `collapse-release.yml` accorpa più serie in un colpo (`1.0.5,1.0.6`).
 
 ### Bug critico
 - **Notifiche ripetute (~2000 a notte)**: `persist()` e il salvataggio allo shutdown
@@ -23,8 +39,7 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
 - Nuovo sensore **Δ % Ultima Carica** (`soc_end − soc_start`).
 - I comandi `Avvia carica` del pannello sono dell'**auto** (app Renault); lo **stop** resta lato wallbox.
 
-### HACS — perché non vedeva più gli aggiornamenti
-- HACS prende come "versione disponibile" la **prima release dell'elenco GitHub**, senza ordinarla.
+### HACS — perché non vedeva più gli aggiornamenti- HACS prende come "versione disponibile" la **prima release dell'elenco GitHub**, senza ordinarla.
   Con tag a 4 numeri (`1.0.6.8` vs `1.0.6.12`) l'ordine si rompe: GitHub metteva in testa `1.0.6.8`,
   cioè la stessa versione installata → nessun aggiornamento proposto.
 - Da qui in avanti la versione è **semver a 3 numeri** (`1.0.7`, poi `1.0.8`, `1.0.9`, `1.1.0`, …).

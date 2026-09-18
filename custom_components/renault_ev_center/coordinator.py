@@ -1399,6 +1399,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             del sessions[:-100]
 
         self.store.data["charges"].append(record)
+        # costo totale = somma delle ricariche registrate (fonte di verità, niente doppi conteggi)
+        self.cost_total = round(
+            sum(_f(c.get("costo")) for c in self.store.data["charges"]), 2
+        )
         self.charge_session = None
         self._charge_off_polls = 0
         self.persist(force=True)
@@ -1758,7 +1762,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "tipo": tipo or "Manuale",
         }
         self.store.data["charges"].append(record)
-        self.cost_total += record["costo"]
+        self.cost_total = round(
+            sum(_f(c.get("costo")) for c in self.store.data["charges"]), 2
+        )
         self.persist(force=True)
         return record
 

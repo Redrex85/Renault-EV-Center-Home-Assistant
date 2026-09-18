@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.7";
+const REC_VER = "1.0.9";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -28,6 +28,7 @@ class RenaultEvCenterPanel extends HTMLElement {
   _checkVersion(serverVer) {
     if (_recVerChecked) return;
     _recVerChecked = true;
+    console.info(`Renault EV Center: JS ${REC_VER} · integrazione ${serverVer || "non dichiarata"}`);
     // 1) versione dichiarata dal server nella config della card: nessuna cache JS di mezzo
     if (serverVer) {
       if (serverVer !== REC_VER) this._reloadOnce(serverVer);
@@ -44,17 +45,45 @@ class RenaultEvCenterPanel extends HTMLElement {
         .catch(() => {});
     } catch (e) { /* ignore */ }
   }
+  /**
+   * Controllo periodico della versione servita.
+   * setConfig gira una volta sola: senza questo, una pagina già aperta durante un
+   * aggiornamento non se ne accorgerebbe mai (servirebbe F5 a mano).
+   */
+  _startVersionWatch() {
+    if (this._verTimer) return;
+    const tick = () => {
+      fetch(`/local/renault-ev-center/renault-ev-center-panel.js?ts=${Date.now()}`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.text() : ""))
+        .then((t) => {
+          const m = t && t.match(/const REC_VER = "([^"]+)"/);
+          if (m && m[1] !== REC_VER) this._reloadOnce(m[1]);
+        })
+        .catch(() => {});
+    };
+    this._verTimer = setInterval(tick, 120000); // 2 minuti
+    setTimeout(tick, 5000);                      // primo controllo poco dopo l'apertura
+  }
   _reloadOnce(ver) {
     try {
       const key = "rec_ver_" + ver;
       if (sessionStorage.getItem(key)) return;
       sessionStorage.setItem(key, "1");
     } catch (e) { /* storage negato: meglio ricaricare una volta in più che restare vecchi */ }
+    console.info(`Renault EV Center: aggiorno da ${REC_VER} a ${ver}`);
+    // cache-bust: cambia l'URL, così il browser non ripesca la pagina dalla cache
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set("_recv", ver);
+      location.replace(u.toString());
+      return;
+    } catch (e) { /* URL non manipolabile: fallback */ }
     location.reload();
   }
   setConfig(config) {
     if (!config) config = {};
     this._checkVersion(config.version);
+    this._startVersionWatch();
     const name = config.name || "Megane";
     this._cfg = {
       name,
@@ -1935,21 +1964,21 @@ const PAGES = {
       <div style="color:var(--muted);font-size:11.5px;margin-top:4px">evitata = termica − rete</div></div>
     <div class="card"><h3>📅 Scadenze</h3>
       <table><tr><th>Tipo</th><th>Giorni</th></tr><tbody data-c="tab-scadenze"></tbody></table></div></div>
-  <div style="margin-top:16px">
+  <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>🌦️ Meteo vs consumi</h3>
       <div class="row"><span>Temperatura esterna</span><b><span data-f="temp_est">—</span> °C</b></div>
       <div class="row"><span>Consumo attuale</span><b><span data-f="kwh_100">—</span> kWh/100km</b></div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Media per stagione</div>
         <div data-c="stagioni"></div>
-      </div></div></div>
-  <div class="grid g2" style="margin-top:16px">
+      </div></div>
     <div class="card"><h3>🏆 Top &amp; Stop · mese</h3>
       <div class="row"><span>Migliore</span><b><span data-topstop="migliore|kwh_per_100km">—</span> kWh/100km</b></div>
       <div class="row"><span>Peggiore</span><b><span data-topstop="peggiore|kwh_per_100km">—</span> kWh/100km</b></div>
       <div class="row"><span>Energia casa (totale)</span><b><span data-f="energia_casa">—</span> kWh</b></div></div>
-    <div class="card"><h3>ℹ️ Note</h3>
-      <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2 evitata vs termica (termica − rete).<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div></div>`,
+  </div>
+  <div class="card" style="margin-top:16px"><h3>ℹ️ Note</h3>
+    <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2 evitata vs termica (termica − rete).<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div>`,
 
   p9: `<h1>Automazioni</h1>
   <div class="grid g2">
@@ -1992,9 +2021,6 @@ const PAGES = {
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Una notifica al giorno quando l'auto è <b>a casa</b>, sotto la soglia, nella fascia oraria e nei giorni scelti.</div>
     </div>
   </div>
-  <div class="card" style="margin-top:16px"><h3>🏠 Priorità batteria casa</h3>
-    <div class="inp"><span>Priorità batteria casa</span><input data-n="n_prio"><span class="u">%</span></div>
-    <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Sotto questa % la batteria di casa ha la precedenza sull'auto nel bilanciamento solare.</div></div>
   <div style="color:var(--muted);font-size:11.5px;margin-top:8px">La schedulazione crea/aggiorna un'<b>automazione</b> in Home Assistant (orario + giorni) che preme il tasto di avvio.</div>
   <div class="card" style="margin-top:16px"><h3>Come si cambiano i parametri</h3>
     <div style="color:var(--muted);font-size:13px;line-height:1.8">
