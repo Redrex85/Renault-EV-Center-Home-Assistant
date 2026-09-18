@@ -51,8 +51,6 @@ Tutto è calcolato **localmente nel tuo Home Assistant** e salvato in `.storage`
 
 ## 🖼️ Anteprima
 
-Apri **[`preview/index.html`](preview/index.html)** nel browser per vedere come appariranno le dashboard (dati fittizi).
-
 | Panoramica | Viaggi | Statistiche | Ricariche |
 |---|---|---|---|
 | Batteria, autonomia, carica live, ultima ricarica, viaggi recenti | Riepilogo periodi, grafici giornalieri, tabella dettagliata | Mese/anno, trend 30gg e 12 mesi, report mensile, risparmi | Wallbox, energie caricate, spese, storico sessioni |
@@ -265,7 +263,7 @@ Renault EV Center is free and open-source, developed in spare time. If you find 
 3. Pick your Renault entities (odometer, battery %, range, charging, GPS) and wallbox entities (power, state, energy counter)
 4. Import the dashboards from [`dashboards/`](dashboards/)
 
-See the Italian section above for the full entity reference, services and FAQ — screenshots live in [`preview/index.html`](preview/index.html).
+See the Italian section above for the full entity reference, services and FAQ.
 
 ---
 
@@ -306,8 +304,6 @@ L'intégration **Renault** donne les chiffres bruts (% batterie, autonomie, odom
 Tout est calculé **localement dans votre Home Assistant** et sauvegardé dans `.storage`. Aucun envoi externe.
 
 ## 🖼️ Aperçu
-
-Ouvrez **[`preview/index.html`](preview/index.html)** dans le navigateur pour voir les tableaux de bord (données fictives).
 
 *(Captures d'écran réelles à venir — PR bienvenues !)*
 
