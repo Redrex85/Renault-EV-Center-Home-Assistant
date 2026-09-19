@@ -5,6 +5,26 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.14 — Ricariche: costi/energia dai record, km dall'odometro, indirizzo
+
+### Correzioni
+- **Ricariche oggi/settimana/mese/anno a 0**: energia e costo per periodo erano letti dai
+  *meter live*, che si aggiornano **solo** se nel polling lo stato wallbox è esattamente
+  `charging` (con contatore presente). Ora sono **sommati dai record** delle ricariche
+  (fonte di verità): `data["cost"]`, `data["wb_energy"]` e la tabella **Percorrenza → Caricati**.
+- **Percorrenza**: la colonna "Caricati" mostrava 0 per lo stesso motivo; ora usa i record.
+- **Km oggi (64 vs 58)**: il dato veniva dai **viaggi** (che si chiudono ~20 min dopo la sosta).
+  Ora ha priorità il **delta odometro giornaliero** (`sensor.<auto>_km_giornalieri`), il dato reale
+  dell'auto; i viaggi restano come ripiego.
+- **Indirizzo**: leggeva chiavi che non esistono sul tracker. Ora usa **via + città + paese**
+  dell'ultimo viaggio (stessa fonte della pagina Viaggi), con fallback sul geocode dell'integrazione.
+- **Etichetta**: "Colonnine fuori casa" → **"Colonnine"**.
+- **Efficienza su mobile**: i tre valori (%batt/100km, costo/km, costo/100km) ora stanno
+  **sulla stessa riga** (griglia a 3 colonne fisse), non più impilati.
+
+### Controlli
+- `check_status.py` **[15]**: fallisce se costi/energia delle ricariche tornano a usare i meter live.
+
 ## 1.0.13 — Fix pannello morto (setConfig usava _cfg prima di crearlo)
 
 ### Bug critico (regressione 1.0.11)

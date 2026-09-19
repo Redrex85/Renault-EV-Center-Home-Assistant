@@ -398,6 +398,23 @@ try:
 except Exception as e:
     bad(f"setConfig: {e}")
 
+print("\n[15] Costi/energia ricariche derivati dai record")
+try:
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    # il bug: percorrenza/cost/wb_energy letti dai meter live (che restano 0 se lo stato
+    # wallbox non è "charging" nel polling). Devono venire dai record salvati.
+    assert "def _chg_sum(" in src, "manca _chg_sum: costi/energia non derivano dalle ricariche"
+    assert '"wb_energy": {p: {"value": chg[p][0]' in src, "wb_energy non usa i record"
+    assert '"cost": {p: {"value": chg[p][1]' in src, "cost non usa i record"
+    assert 'chg["daily"][0]' in src and 'chg["monthly"][0]' in src, \
+        "percorrenza.caricati non usa i record"
+    # la vecchia fonte (meter live) non deve più comparire in percorrenza
+    assert 'self.wb_meters["daily"].value' not in src, \
+        "percorrenza.caricati usa ancora il meter live (resta 0)"
+    ok("costi/energia ricariche sommati dai record (percorrenza, cost, wb_energy)")
+except Exception as e:
+    bad(f"costi ricariche: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

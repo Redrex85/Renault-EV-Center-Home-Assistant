@@ -1176,23 +1176,58 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             # priorità al delta batteria reale dei viaggi, altrimenti kWh/capacità
             return trip_pct if trip_pct > 0 else _pct_from_kwh(kwh)
 
+        # --- ricariche per periodo, derivate dai RECORD (fonte di verità) ----------
+        # I meter live dipendono dallo stato wallbox "charging" nel polling: se salta,
+        # costi ed energia restavano a 0. Qui si somma direttamente l'archivio ricariche.
+        def _chg_sum(pred) -> tuple[float, float]:
+            kwh = costo = 0.0
+            for c in charges:
+                if pred(str(c.get("data", ""))):
+                    kwh += _f(c.get("kwh"))
+                    costo += _f(c.get("costo"))
+            return round(kwh, 2), round(costo, 2)
+
+        def _prev_week_key() -> str:
+            iso = (now.date() - timedelta(days=7)).isocalendar()
+            return "%s-W%02d" % (iso[0], iso[1])
+
+        _pk = keys["monthly"]
+        _prev_month = (now.replace(day=1) - timedelta(days=1)).strftime("%Y-%m")
+        _prev_year = str(now.year - 1)
+
+        chg = {
+            "daily": _chg_sum(lambda d: d == today_key),
+            "yday": _chg_sum(lambda d: d == yday),
+            "weekly": _chg_sum(lambda d: _week_key(d) == keys["weekly"]),
+            "prev_week": _chg_sum(lambda d: _week_key(d) == _prev_week_key()),
+            "monthly": _chg_sum(lambda d: d[:7] == _pk),
+            "prev_month": _chg_sum(lambda d: d[:7] == _prev_month),
+            "yearly": _chg_sum(lambda d: d[:4] == keys["yearly"]),
+            "prev_year": _chg_sum(lambda d: d[:4] == _prev_year),
+        }
+        _prev_key = {"daily": "yday", "weekly": "prev_week",
+                     "monthly": "prev_month", "yearly": "prev_year"}
+
+        def _prev_of(p: str) -> tuple[float, float]:
+            return chg[_prev_key[p]]
+
         percorrenza = [
             {"nome": "Oggi", "pct": _pct(o_pct, o_kwh), "usati": o_kwh,
-             "caricati": round(_f(self.wb_meters["daily"].value), 2), "km": o_km},
+             "caricati": chg["daily"][0], "km": o_km},
             {"nome": "Ieri", "pct": _pct(i_pct, i_kwh), "usati": i_kwh,
-             "caricati": round(_f(self.wb_meters["daily"].last), 2), "km": i_km},
+             "caricati": chg["yday"][0], "km": i_km},
             {"nome": "Settimana", "usati": w_kwh,
-             "caricati": round(_f(self.wb_meters["weekly"].value), 2), "km": w_km},
+             "caricati": chg["weekly"][0], "km": w_km},
             {"nome": "Settimana prec.", "usati": 0.0,
-             "caricati": round(_f(self.wb_meters["weekly"].last), 2), "km": 0.0},
+             "caricati": chg["prev_week"][0], "km": 0.0},
             {"nome": "Mese", "usati": m_kwh,
-             "caricati": round(_f(self.wb_meters["monthly"].value), 2), "km": m_km},
+             "caricati": chg["monthly"][0], "km": m_km},
             {"nome": "Mese prec.", "usati": 0.0,
-             "caricati": round(_f(self.wb_meters["monthly"].last), 2), "km": 0.0},
+             "caricati": chg["prev_month"][0], "km": 0.0},
             {"nome": "Anno", "usati": y_kwh,
-             "caricati": round(_f(self.wb_meters["yearly"].value), 2), "km": y_km},
+             "caricati": chg["yearly"][0], "km": y_km},
             {"nome": "Anno prec.", "usati": 0.0,
-             "caricati": round(_f(self.wb_meters["yearly"].last), 2), "km": 0.0},
+             "caricati": chg["prev_year"][0], "km": 0.0},
         ]
 
         # --- storico mensile multi-anno (costo, ricaricati kWh, km) ---------------
@@ -1237,8 +1272,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "eff_km_per_kwh": eff_km_kwh,
             "eff_kwh_100km": eff_kwh_100,
             "km": {p: self.km_meters[p].to_dict() for p in PERIODS},
-            "wb_energy": {p: self.wb_meters[p].to_dict() for p in PERIODS},
-            "cost": {p: dict(self.cost_meters[p]) for p in PERIODS},
+            # energia/costo per periodo dai RECORD: i meter live restano come "last"
+            "wb_energy": {p: {"value": chg[p][0], "last": _prev_of(p)[0]} for p in PERIODS},
+            "cost": {p: {"value": chg[p][1], "last": _prev_of(p)[1]} for p in PERIODS},
             "cost_total": round(self.cost_total, 2),
             "pct_daily": {k: v.to_dict() for k, v in self.pct_daily.items()},
             "kwh_batt": {

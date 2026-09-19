@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.13";
+const REC_VER = "1.0.14";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -215,11 +215,15 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "plug": return S._st(S._car("binary_sensor", "plug_status"), S._car("binary_sensor", "plugged_in"), S._sid("stato_della_spina"), `binary_sensor.wallbox_${c}`);
       case "batt_kwh": return S._num(S._sid("batteria_kwh_disponibili"), "sensor.megane_battery_available_energy_2", S._car("sensor", "battery_remaining_capacity"));
       case "km_oggi": {
+        // priorità all'ODOMETRO (delta km giornaliero): è il dato reale dell'auto.
+        // I km dei viaggi possono essere meno (trip non ancora chiusi).
+        const odo = S._num(S._sid("km_giornalieri"), "sensor.km_giornalieri", "sensor.megane_km_giornalieri");
+        if (odo !== null && odo > 0) return odo;
         const rows = S._list(S._sid("percorrenza"));
         const r = rows.find((x) => S._slug(String(x.nome ?? "")) === "oggi");
         const v = r ? (parseFloat(r.km) || 0) : null;
         if (v !== null && v > 0) return v;
-        return S._num("sensor.km_giornalieri", S._sid("km_giornalieri"), S._sid("km_oggi_trip"));
+        return S._num(S._sid("km_oggi_trip"));
       }
       case "kwh_oggi_k": {
         const rows = S._list(S._sid("percorrenza"));
@@ -505,32 +509,45 @@ class RenaultEvCenterPanel extends HTMLElement {
     const z = this._st(this._sid("zona"), this._sid("zona_attuale"), "sensor.megane_zona_attuale");
     return z ? this._txt(z) : null;
   }
-  /** indirizzo corrente: attributi del tracker (companion/Android) o stessi dati della pagina Viaggi */
+  /** indirizzo corrente: dal geocode dei viaggi (via + città), come nella pagina Viaggi */
   _addrName() {
+    // 1) attributi espliciti del tracker, se presenti
     for (const id of [
       this._ov("location"),
       `device_tracker.${this._slug(this._cfg.name)}_posizione`,
       this._car("device_tracker", "location"),
-      this._car("device_tracker", ""),
     ]) {
       const s = id ? this._hass.states[id] : null;
       if (!s) continue;
-      const v = this._attrAny(s, ["address", "geocoded_location", "place", "location_name", "street"]);
+      const v = this._attrAny(s, ["address", "geocoded_location"]);
       if (v) return String(v);
     }
-    // ripiego: ultimo luogo noto dai viaggi (stessa fonte usata nella pagina Viaggi)
-    for (const id of [this._sid("ultimo_trip"), this._sid("viaggi_recenti"), this._sid("archivio_viaggi")]) {
+    // 2) ultimo viaggio: luogo/via di arrivo, altrimenti partenza (stessa fonte della pagina Viaggi)
+    const tripSources = [
+      this._sid("ultimo_trip"),
+      this._sid("viaggi_recenti"),
+      this._sid("archivio_viaggi"),
+    ];
+    for (const id of tripSources) {
       const s = this._hass.states[id];
       if (!s) continue;
-      const trips = Array.isArray(s.attributes.trips) ? s.attributes.trips : [];
-      const t = trips.length ? trips[trips.length - 1] : s.attributes;
-      const v = this._attrAny(s, ["luogo_arrivo", "luogo_partenza", "indirizzo", "via"])
-        || (t && (t.luogo_arrivo || t.luogo_partenza));
+      const list = Array.isArray(s.attributes.trips) ? s.attributes.trips : [];
+      const t = list.length ? list[list.length - 1] : s.attributes;
+      if (!t) continue;
+      const via = t.luogo_arrivo || t.luogo_partenza;
+      const citta = t.citta_arrivo || t.citta_partenza;
+      const paese = t.paese_arrivo || t.paese_partenza;
+      const txt = [via, citta, paese].filter(Boolean).join(", ");
+      if (txt) return txt;
+    }
+    // 3) sensore posizione dell'integrazione (device_tracker) con via/città
+    const p = this._hass.states[this._sid("posizione")]
+      || this._hass.states[this._car("device_tracker", "")];
+    if (p) {
+      const v = this._attrAny(p, ["via", "citta", "address", "indirizzo", "luogo"]);
       if (v) return String(v);
     }
-    const p = this._hass.states[this._sid("posizione")];
-    const a = p && this._attrAny(p, ["indirizzo", "luogo", "address", "via"]);
-    return a ? String(a) : "";
+    return "";
   }
   /** prezzo diesel €/l: overrides.diesel_price (sensore live) → localStorage rec_diesel → default */
   _dieselPrice() {
@@ -1752,10 +1769,10 @@ const PAGES = {
       </div>
     </div>
     <div class="card"><h3>Efficienza</h3>
-      <div class="grid g2" style="gap:10px">
-        <div><div class="big" style="font-size:28px;color:var(--accent)" data-f="perc_100km" data-dec="1">—</div><div style="color:var(--muted);font-size:11px">% batteria/100km</div></div>
-        <div><div class="big" style="font-size:28px" data-f="costo_km" data-dec="3">—</div><div style="color:var(--muted);font-size:11px">costo/km</div></div>
-        <div><div class="big" style="font-size:28px" data-f="costo_100" data-dec="2">—</div><div style="color:var(--muted);font-size:11px">costo/100km</div></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="text-align:center"><div class="big" style="font-size:24px;color:var(--accent)" data-f="perc_100km" data-dec="1">—</div><div style="color:var(--muted);font-size:10.5px">% batt./100km</div></div>
+        <div style="text-align:center"><div class="big" style="font-size:24px" data-f="costo_km" data-dec="3">—</div><div style="color:var(--muted);font-size:10.5px">costo/km</div></div>
+        <div style="text-align:center"><div class="big" style="font-size:24px" data-f="costo_100" data-dec="2">—</div><div style="color:var(--muted);font-size:10.5px">costo/100km</div></div>
       </div>
       <div style="margin-top:10px">
         <div class="row"><span>Viaggio in corso</span><b data-f="trip_attivo">—</b></div>
@@ -1841,7 +1858,7 @@ const PAGES = {
     <div class="card"><h3>Energia caricata differenziata</h3>
       <div class="row"><span>🏠 Casa (wallbox)</span><b><span data-f="energia_casa">—</span> kWh</b></div>
       <div class="row"><span>☀️ Fotovoltaico</span><b><span data-f="fv_tot">—</span> kWh</b></div>
-      <div class="row"><span>⚡ Colonnine fuori casa</span><b data-attr="statistiche_viaggi|caricata_pubblica">—</b></div></div>
+      <div class="row"><span>⚡ Colonnine</span><b data-attr="statistiche_viaggi|caricata_pubblica">—</b></div></div>
     <div class="card"><h3>Percorrenza</h3>
       <table><tr><th>Periodo</th><th>Usati</th><th>Caricati</th><th>KM</th></tr>
         <tr><td><b>OGGI</b></td><td data-per="oggi|usati">—</td><td data-per="oggi|caricati">—</td><td data-per="oggi|km">—</td></tr>
