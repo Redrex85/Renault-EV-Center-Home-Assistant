@@ -121,6 +121,19 @@ class MateSensor(CoordinatorEntity[RenaultMateCoordinator], SensorEntity):
 
     _attr_has_entity_name = False
 
+    # Attributi SOLO per la UI, NON salvati nel database del recorder.
+    # Sono liste/archivi grandi (fino a ~650 KB per ArchivioViaggi) che cambiano a ogni ciclo:
+    # senza questa esclusione gonfiano il DB di Home Assistant a ogni aggiornamento.
+    _unrecorded_attributes = frozenset({
+        # liste/archivi
+        "days", "mesi", "trips", "consumi_temp", "items", "righe", "rotte",
+        "zone_routes", "report", "stats", "scadenze", "sessions", "list",
+        # statistiche viaggi
+        "ultimi_7_giorni", "ultimi_30_giorni", "ultimi_90_giorni",
+        # report generale (tabelle)
+        "generale", "settimanale", "mensile", "solare", "anno", "anno_corrente",
+    })
+
     def __init__(self, coordinator: RenaultMateCoordinator, name: str) -> None:
         super().__init__(coordinator)
         self._attr_device_info = coordinator.device_info
@@ -842,7 +855,7 @@ class ArchivioViaggi(MateSensor):
             reverse=True,
         )
         # 1000 trips per annuale (~150KB), storico completo via servizio export_trips_csv
-        return {"trips": trips[:1000], "total": len(trips)}
+        return {"trips": trips[:600], "total": len(trips)}
 
 
 class ListaRicariche(MateSensor):

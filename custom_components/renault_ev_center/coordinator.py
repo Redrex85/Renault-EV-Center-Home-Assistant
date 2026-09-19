@@ -444,7 +444,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
     def persist(self, force: bool = False) -> None:
         now = time.time()
-        if not force and (now - self._last_save) < 300:
+        # salvataggio periodico ogni 15 min (i viaggi/ricariche si salvano subito con force=True)
+        if not force and (now - self._last_save) < 900:
             return
         self._last_save = now
         c: dict[str, Any] = {"cost_total": round(self.cost_total, 4),

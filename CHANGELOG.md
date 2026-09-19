@@ -25,6 +25,17 @@ somma dei viaggi di quel periodo. Vale per RadiciFuel/Risparmi mese, anno e tota
 - `check_status.py` **[18]**: verifica la struttura del confronto e che il costo del periodo
   **non** torni a usare i meter live.
 
+### Peso su Home Assistant (recorder)
+- Gli attributi "archivio" (viaggi, storico giornaliero/mensile, liste ricariche, consumi/temp,
+  report) finivano **nel database del recorder** a ogni aggiornamento: fino a **~750 KB per ciclo**
+  (solo `ArchivioViaggi` ~650 KB con 1000 viaggi). Con polling 30 s/120 s diventano centinaia di MB.
+- Ora sono esclusi dal recorder con `_unrecorded_attributes`: restano **disponibili nella UI**,
+  ma **non vengono più salvati** nel DB. Nessun dato perso (l'archivio vero è in `.storage`).
+- **`ArchivioViaggi` 1000 → 600 viaggi**: ~650 KB → ~390 KB per ciclo nel websocket.
+- **Salvataggio su disco: ogni 5 → 15 minuti** (`persist()` non forzato). Viaggi e ricariche
+  si salvano comunque **subito** (`force=True`); al massimo un crash perde i contatori di 15 min.
+- `check_status.py` **[19]** blocca la regressione.
+
 ## 1.0.16 — Riordino Panoramica, ricarica manuale, selettore anno
 
 ### Panoramica (p1) — nuovo ordine

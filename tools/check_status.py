@@ -472,6 +472,19 @@ try:
 except Exception as e:
     bad(f"risparmi: {e}")
 
+print("\n[19] Peso sul database (recorder)")
+try:
+    sen = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
+    assert "_unrecorded_attributes" in sen, (
+        "nessuna esclusione dal recorder: gli archivi grandi (fino a ~650 KB) "
+        "finiscono nel database a ogni aggiornamento"
+    )
+    for chiave in ("trips", "days", "mesi", "consumi_temp", "items", "report"):
+        assert f'"{chiave}"' in sen, f"{chiave} non escluso dal recorder"
+    ok("attributi grandi esclusi dal recorder (restano solo per la UI)")
+except Exception as e:
+    bad(f"peso database: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:
