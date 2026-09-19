@@ -107,6 +107,20 @@ WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 # profili installazione: minimal (solo auto) · pro (auto+wallbox) · enterprise (+FV)
 CONF_HAS_PV = "has_pv"
 
+# --- sperimentazione GSE (limite di potenza a fasce orarie) -------------------
+CONF_GSE_WPA = "gse_wpa"                  # watt per ampere della wallbox (230 mono, 690 trifase)
+CONF_GSE_KW_MAX = "gse_kw_max"            # potenza consentita nella fascia (es. 6 kW)
+CONF_GSE_KW_RIDOTTA = "gse_kw_ridotta"    # potenza fuori fascia (es. 3 kW)
+CONF_GSE_START = "gse_start"              # inizio fascia consentita (es. 23:00)
+CONF_GSE_END = "gse_end"                  # fine fascia consentita (es. 07:00)
+CONF_GSE_DOMENICA = "gse_domenica"        # domenica: tutto il giorno a potenza piena
+CONF_GSE_HOLIDAY = "gse_holiday_entity"   # binary_sensor festivi (opzionale)
+DEFAULT_GSE_WPA = 230.0
+DEFAULT_GSE_KW_MAX = 6.0
+DEFAULT_GSE_KW_RIDOTTA = 3.0
+DEFAULT_GSE_START = "23:00"
+DEFAULT_GSE_END = "07:00"
+
 # bilanciamento solare
 CONF_BALANCE_GRID_SENSOR = "balance_grid_sensor"
 CONF_BALANCE_BATTERY_SENSOR = "balance_battery_sensor"

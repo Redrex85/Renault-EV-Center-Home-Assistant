@@ -75,6 +75,7 @@ async def async_setup_entry(
         ConsumoZona(coordinator, name),
         CO2Risparmiata(coordinator, name),
         Scadenze(coordinator, name),
+        Programmazione(coordinator, name),
         ViaggioEstremo(coordinator, name),
         EnergiaCasaTotale(coordinator, name),
         Percorrenza(coordinator, name),
@@ -1224,6 +1225,26 @@ class EnergiaCasaTotale(MateSensor):
 
 
 # --------------------------------------------------------- percorrenza / assicurazione
+class Programmazione(MateSensor):
+    """Programmazioni salvate (ricarica/clima/promemoria) — il pannello le usa per il form."""
+
+    def __init__(self, coordinator, name):
+        super().__init__(coordinator, name)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_programmazione"
+        self._attr_name = f"{name} Programmazione"
+        self._attr_icon = "mdi:calendar-clock"
+
+    @property
+    def native_value(self):
+        sch = self.coordinator.data.get("schedule", {}) or {}
+        return sum(1 for v in sch.values() if isinstance(v, dict) and v.get("attivo"))
+
+    @property
+    def extra_state_attributes(self):
+        return {"schedule": self.coordinator.data.get("schedule", {}),
+                "gse": self.coordinator.data.get("gse", {})}
+
+
 class Percorrenza(MateSensor):
     """Tabella Percorrenza: % usata, kWh usati/caricati e km per ogni periodo."""
 

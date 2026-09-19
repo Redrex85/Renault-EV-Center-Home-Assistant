@@ -108,6 +108,18 @@ from .const import (
     CONF_TRIP_TIMEOUT,
     CONF_WALLBOX_ENABLED,
     CONF_WB_MAX_CURRENT,
+    CONF_GSE_WPA,
+    CONF_GSE_KW_MAX,
+    CONF_GSE_KW_RIDOTTA,
+    CONF_GSE_START,
+    CONF_GSE_END,
+    CONF_GSE_DOMENICA,
+    CONF_GSE_HOLIDAY,
+    DEFAULT_GSE_WPA,
+    DEFAULT_GSE_KW_MAX,
+    DEFAULT_GSE_KW_RIDOTTA,
+    DEFAULT_GSE_START,
+    DEFAULT_GSE_END,
     CONF_WB_POWER,
     CONF_WB_SESSION_ENERGY,
     CONF_WB_SESSION_TIME,
@@ -172,6 +184,9 @@ def _flat(data: dict[str, Any]) -> dict[str, Any]:
 def _car_schema(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema({
         vol.Required("car"): section(vol.Schema({
+            # PRIMO campo: il modello decide la foto dell'auto (e la dashboard)
+            vol.Required(CONF_MODEL, default=defaults.get(CONF_MODEL, MODELS[0])): SelectSelector(
+                SelectSelectorConfig(options=MODELS)),
             vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, DEFAULT_NAME)): str,
             vol.Required(
                 CONF_ODOMETER, description={"suggested_value": defaults.get(CONF_ODOMETER)}
@@ -241,6 +256,22 @@ def _wallbox_schema(defaults: dict[str, Any]) -> vol.Schema:
                 CONF_WB_STOP_SWITCH, description={"suggested_value": defaults.get(CONF_WB_STOP_SWITCH)}
             ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
         }), {"collapsed": False}),
+        vol.Required("gse"): section(vol.Schema({
+            vol.Optional(CONF_GSE_KW_MAX, default=defaults.get(CONF_GSE_KW_MAX, DEFAULT_GSE_KW_MAX)): NumberSelector(
+                NumberSelectorConfig(min=1, max=50, step=0.1, unit_of_measurement="kW",
+                                     mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_GSE_KW_RIDOTTA, default=defaults.get(CONF_GSE_KW_RIDOTTA, DEFAULT_GSE_KW_RIDOTTA)): NumberSelector(
+                NumberSelectorConfig(min=1, max=50, step=0.1, unit_of_measurement="kW",
+                                     mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_GSE_START, default=defaults.get(CONF_GSE_START, DEFAULT_GSE_START)): TimeSelector(),
+            vol.Optional(CONF_GSE_END, default=defaults.get(CONF_GSE_END, DEFAULT_GSE_END)): TimeSelector(),
+            vol.Optional(CONF_GSE_DOMENICA, default=defaults.get(CONF_GSE_DOMENICA, True)): BooleanSelector(),
+            vol.Optional(CONF_GSE_HOLIDAY, description={"suggested_value": defaults.get(CONF_GSE_HOLIDAY)}): EntitySelector(
+                EntitySelectorConfig(domain=["binary_sensor", "input_boolean"])),
+            vol.Optional(CONF_GSE_WPA, default=defaults.get(CONF_GSE_WPA, DEFAULT_GSE_WPA)): NumberSelector(
+                NumberSelectorConfig(min=100, max=800, step=10, unit_of_measurement="W/A",
+                                     mode=NumberSelectorMode.BOX)),
+        }), {"collapsed": True}),
         vol.Required("solar"): section(vol.Schema({
             vol.Required(CONF_HAS_PV, default=defaults.get(CONF_HAS_PV, False)): BooleanSelector(),
             vol.Optional(
@@ -395,8 +426,6 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema({
                 **_car_schema({}).schema,
-                vol.Required(CONF_MODEL, default=MODELS[0]): SelectSelector(
-                    SelectSelectorConfig(options=MODELS)),
                 vol.Required(CONF_CREATE_DASHBOARD, default=True): BooleanSelector(),
             }),
             errors=errors,

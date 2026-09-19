@@ -6,7 +6,7 @@
         "title": "🚗 Renault EV Center — Votre voiture",
         "description": "**Bienvenue !** Sélectionnez vos entités Renault (intégration officielle).\n\n- Donnez un **nom court** à la voiture (ex. `Mégane`) : il devient le préfixe de toutes les nouvelles entités.\n- Le **modèle** définit l'image de la voiture.\n- Vous pouvez créer le **tableau de bord** dans la barre latérale automatiquement.",
         "data": {
-          "model": "Modèle de voiture (définit l'image)",
+              "model": "Modèle — 1er choix : définit l'image",
           "create_dashboard": "Créer automatiquement le tableau de bord"
         },
         "sections": {
@@ -56,6 +56,18 @@
               "wb_stop_switch": "Arrêt charge wallbox (switch ou bouton) — utilisé par « Arrêter la charge »"
             }
           },
+          "gse": {
+            "name": "⚡ Expérimentation GSE",
+            "data": {
+              "gse_kw_max": "Puissance autorisée dans la plage (kW)",
+              "gse_kw_ridotta": "Puissance hors plage (kW)",
+              "gse_start": "Début de la plage autorisée",
+              "gse_end": "Fin de la plage autorisée",
+              "gse_domenica": "Dimanche : pleine puissance toute la journée",
+              "gse_holiday_entity": "Capteur jours fériés (binary_sensor, optionnel)",
+              "gse_wpa": "Watts par ampère de la wallbox (230 mono, 690 triphasé)"
+            }
+          },
           "solar": {
             "name": "☀️ Solaire et équilibrage",
             "data": {
@@ -76,7 +88,7 @@
         "description": "Capacité batterie, tarifs énergie et préférences. Tout est modifiable ensuite dans Options.",
         "data": {
           "charge_start_button": "Bouton démarrer la charge (Renault)",
-          "model": "Modèle (définit l'image)",
+              "model": "Modèle — 1er choix : définit l'image",
           "create_dashboard": "Créer le tableau de bord automatiquement"
         },
         "sections": {
@@ -180,7 +192,7 @@
         "title": "Renault EV Center — Options",
         "description": "Modifier les entités et paramètres.",
         "data": {
-          "model": "Modèle (définit l'image)",
+              "model": "Modèle — 1er choix : définit l'image",
           "create_dashboard": "Créer le tableau de bord automatiquement"
         },
         "sections": {
@@ -218,6 +230,18 @@
               "wallbox_session_time_entity": "Temps de session wallbox (s/min/h) — optionnel, sinon compteur interne",
               "wb_charge_switch": "Démarrage charge wallbox (switch ou bouton) — utilisé par « Démarrer la charge » et l'automatisation",
               "wb_stop_switch": "Arrêt charge wallbox (switch ou bouton) — utilisé par « Arrêter la charge »"
+            }
+          },
+          "gse": {
+            "name": "⚡ Expérimentation GSE",
+            "data": {
+              "gse_kw_max": "Puissance autorisée dans la plage (kW)",
+              "gse_kw_ridotta": "Puissance hors plage (kW)",
+              "gse_start": "Début de la plage autorisée",
+              "gse_end": "Fin de la plage autorisée",
+              "gse_domenica": "Dimanche : pleine puissance toute la journée",
+              "gse_holiday_entity": "Capteur jours fériés (binary_sensor, optionnel)",
+              "gse_wpa": "Watts par ampère de la wallbox (230 mono, 690 triphasé)"
             }
           },
           "solar": {

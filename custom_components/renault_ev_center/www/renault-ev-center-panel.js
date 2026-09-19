@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.18";
+const REC_VER = "1.0.19";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -421,6 +421,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "sw_low": return S._swid("promemoria_batteria_bassa");
       case "sw_sched": return S._swid("carica_programmata");
       case "sw_bal": return S._swid("bilanciamento_solare");
+      case "sw_gse": return S._swid("sperimentazione_gse");
       case "t_start": return S._tid("carica_orario_avvio");
       case "t_start_v": { const s = S._st(S._tid("carica_orario_avvio")); return s && typeof s.state === "string" ? s.state.slice(0, 5) : null; }
       case "t_stop": return S._tid("carica_orario_stop");
@@ -675,9 +676,17 @@ class RenaultEvCenterPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-tf], [data-tfm], [data-rf], [data-rfm], [data-myear], [data-trend]").forEach((sel) => {
       sel.addEventListener("change", () => this._update());
     });
-    // chip giorni schedulazione
+    // chip giorni: schedulazione e avviso batteria bassa (segna "toccato" per non sovrascrivere)
     this.shadowRoot.querySelectorAll(".dchip").forEach((el) => {
-      el.addEventListener("click", () => el.classList.toggle("on"));
+      el.addEventListener("click", () => {
+        el.classList.toggle("on");
+        if (el.dataset.schday) {
+          const t = el.dataset.schday.split("|")[0];
+          this._schTouched = this._schTouched || {};
+          this._schTouched[t] = true;
+        }
+        if (el.dataset.lowday) this._lowTouched = true;
+      });
     });
     // input locali (localStorage): prezzo diesel, consumo equivalente, notify, preavviso
     this.shadowRoot.querySelectorAll("input[data-ls]").forEach((inp) => {
@@ -721,6 +730,16 @@ class RenaultEvCenterPanel extends HTMLElement {
       suspended: "Pausa", finishing: "Completamento", faulted: "Errore", idle: "Inattiva",
       connected: "Connesso", disconnected: "Disconnesso", completed: "Completa",
       error: "Errore", need_auth: "Connesso, attesa", paused: "Pausa", locked: "Bloccata" };
+
+    // sperimentazione GSE: fascia e limite di potenza attuale
+    const _pg = S._sensorByPrefix("programmazione");
+    const _gse = (_pg && _pg.attributes) ? _pg.attributes.gse : null;
+    if (_gse) {
+      set("gse_fascia", _gse.fascia + (_gse.domenica ? " · Dom 24h" : ""));
+      set("gse_now", _gse.attivo
+        ? `${S._fmt(_gse.kw_adesso === undefined ? 0 : _gse.kw_adesso, 1)} kW ${_gse.in_fascia ? "(piena)" : "(ridotta)"}`
+        : "non attiva");
+    }
 
     const stateEnt = S._st(S._ov("wallbox_state"), "sensor.wallbox_charger_state");
     set("state", stateEnt ? (stMap[stateEnt.state] || stateEnt.state) : "—");
@@ -828,15 +847,26 @@ class RenaultEvCenterPanel extends HTMLElement {
         && /renault_ev_center|renault|wallbox|bilanc/i.test(s.entity_id + " " + (s.attributes.friendly_name || "")))
       .sort((a, b) => String(a.attributes.friendly_name || a.entity_id)
         .localeCompare(String(b.attributes.friendly_name || b.entity_id), "it"));
-    host.innerHTML = list.length
-      ? list.map((s) => {
-        const nome = s.attributes.friendly_name || s.entity_id;
-        return `<div class="row"><span>${S._autoIcon(nome + " " + s.entity_id)} ${nome}</span><label class="switch"><input type="checkbox" ${s.state === "on" ? "checked" : ""} data-auto="${s.entity_id}"><span></span></label></div>`;
-      }).join("")
-      : `<div style="color:var(--muted);font-size:12px">Nessuna automazione Renault trovata. Usa "Crea automazioni consigliate" in Impostazioni.</div>`;
-    host.querySelectorAll("[data-auto]").forEach((el) => el.addEventListener("change", () =>
-      S._call("homeassistant", el.checked ? "turn_on" : "turn_off", { entity_id: el.dataset.auto },
-        el.checked ? "Automazione attivata" : "Automazione disattivata")));
+    // ricostruisco la lista SOLO se è cambiata: così il refresh periodico non
+    // ricrea i checkbox (niente flicker, niente stato "spento" transitorio)
+    const sig = list.map((s) => s.entity_id).join("|");
+    if (host.dataset.sig !== sig) {
+      host.dataset.sig = sig;
+      host.innerHTML = list.length
+        ? list.map((s) => {
+          const nome = s.attributes.friendly_name || s.entity_id;
+          return `<div class="row"><span>${S._autoIcon(nome + " " + s.entity_id)} ${nome}</span><label class="switch"><input type="checkbox" ${s.state === "on" ? "checked" : ""} data-auto="${s.entity_id}"><span></span></label></div>`;
+        }).join("")
+        : `<div style="color:var(--muted);font-size:12px">Nessuna automazione Renault trovata. Usa "Crea automazioni consigliate" in Impostazioni.</div>`;
+      host.querySelectorAll("[data-auto]").forEach((el) => el.addEventListener("change", () =>
+        S._call("homeassistant", el.checked ? "turn_on" : "turn_off", { entity_id: el.dataset.auto },
+          el.checked ? "Automazione attivata" : "Automazione disattivata")));
+    }
+    // stato sempre allineato a HA, senza toccare quello che l'utente sta cliccando
+    list.forEach((s) => {
+      const el = host.querySelector(`[data-auto="${s.entity_id}"]`);
+      if (el && document.activeElement !== el) el.checked = s.state === "on";
+    });
   }
   _cmd(cmd, el) {
     const n = this._slug(this._cfg.name);
@@ -904,8 +934,9 @@ class RenaultEvCenterPanel extends HTMLElement {
         break;
       }
       case "wb_stop": {
-        const b = this._st("button.wallbox_charge_stop", this._ov("wb_charge_switch"));
-        if (!b) { this._toast("⚠️ Comando stop wallbox non trovato"); break; }
+        const b = this._st(this._ov("wb_stop_switch"), this._car("button", "stop_charge"),
+                            "button.wallbox_charger_stop", "button.wallbox_charge_stop");
+        if (!b) { this._toast("⚠️ Stop wallbox non mappato (Configura → Wallbox → Stop carica)"); break; }
         if (b.entity_id.startsWith("switch.")) this._call("switch", "turn_off", { entity_id: b.entity_id }, "⏹️ Ricarica fermata");
         else this._call("button", "press", { entity_id: b.entity_id }, "⏹️ Ricarica fermata");
         break;
@@ -942,6 +973,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "lowsave": {
         const giorni = [...this.shadowRoot.querySelectorAll("[data-lowday].on")].map((e) => e.dataset.lowday);
         this._call("renault_ev_center", "set_low_soc_days", { giorni }, "🔔 Giorni avviso salvati");
+        this._lowTouched = false;  // da ora li gestisce lo switch
         break;
       }
       case "add_charge_manual": {
@@ -1008,11 +1040,37 @@ class RenaultEvCenterPanel extends HTMLElement {
       if (el.tagName === "INPUT") { const s = this._hass.states[el.dataset.ent]; el.checked = !!s && s.state === "on"; }
     });
     // avviso batteria bassa: giorni correnti dall'attributo dello switch
-    const _lowSw = this._hass.states[this._field("sw_low")];
-    const _lowDays = (_lowSw && Array.isArray(_lowSw.attributes.giorni)) ? _lowSw.attributes.giorni : [];
-    root.querySelectorAll("[data-lowday]").forEach((el) => {
-      el.classList.toggle("on", _lowDays.includes(el.dataset.lowday));
-    });
+    // (non sovrascrivere se l'utente li sta scegliendo: aspettiamo il salvataggio)
+    if (!this._lowTouched) {
+      const _lowSw = this._hass.states[this._field("sw_low")];
+      const _lowDays = (_lowSw && Array.isArray(_lowSw.attributes.giorni)) ? _lowSw.attributes.giorni : [];
+      root.querySelectorAll("[data-lowday]").forEach((el) => {
+        el.classList.toggle("on", _lowDays.includes(el.dataset.lowday));
+      });
+    }
+    // schedulazioni: ripopola i campi dai valori salvati (store → sensore Programmazione)
+    const _prog = this._sensorByPrefix("programmazione");
+    const _sch = _prog && _prog.attributes ? _prog.attributes.schedule : null;
+    if (_sch) {
+      for (const tipo of ["ricarica", "clima", "promemoria"]) {
+        const v = _sch[tipo];
+        if (!v) continue;
+        const onEl = root.querySelector(`input[data-schon="${tipo}"]`);
+        if (onEl && document.activeElement !== onEl) onEl.checked = !!v.attivo;
+        for (const k of ["inizio", "fine", "soc", "modo", "temperatura"]) {
+          const el = root.querySelector(`[data-sch="${tipo}"][data-k="${k}"]`);
+          if (el && document.activeElement !== el && v[k] !== undefined && v[k] !== null && v[k] !== "") {
+            el.value = v[k];
+          }
+        }
+        if (!(this._schTouched || {})[tipo]) {
+          const gg = Array.isArray(v.giorni) ? v.giorni : [];
+          root.querySelectorAll(`[data-schday^="${tipo}|"]`).forEach((chip) => {
+            chip.classList.toggle("on", gg.includes(chip.dataset.schday.split("|")[1]));
+          });
+        }
+      }
+    }
     // chips stato
     const chipLoc = root.querySelector('[data-c="loc"]');
     if (chipLoc) chipLoc.textContent = `📍 ${this._f("loc")}`;
@@ -1192,6 +1250,9 @@ class RenaultEvCenterPanel extends HTMLElement {
       giorni,
     };
     this._call("renault_ev_center", "set_schedule", d, `⏰ Schedulazione ${tipo} salvata`);
+    // da qui in poi i valori li gestisce il sensore Programmazione
+    this._schTouched = this._schTouched || {};
+    this._schTouched[tipo] = false;
   }
   async _drawMap() {
     const box = this.shadowRoot && this.shadowRoot.querySelector("#evmap");
@@ -2528,6 +2589,12 @@ const PAGES = {
       <div class="row"><span>Ampere impostati</span><b><span data-wb="bal_amps">—</span> A</b></div>
       <div class="row"><span>Ultimo aggiustamento</span><b><span data-wb="bal_ts">—</span></b></div>
       <div class="note">Adatta gli ampere per tenere il prelievo da rete ~0. Sensori rete/batteria e W per A in <b>Configura → Bilanciamento</b>.</div></div></div>
+  <div class="card" style="margin-top:16px"><h3>⚡ Sperimentazione GSE</h3>
+    <div class="row"><span>Attiva</span><label class="switch"><input type="checkbox" data-sw="sw_gse"><span></span></label></div>
+    <div class="row"><span>Limite adesso</span><b data-wb="gse_now">—</b></div>
+    <div class="row"><span>Fascia a potenza piena</span><b><span data-wb="gse_fascia">—</span></b></div>
+    <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Fuori fascia la wallbox viene limitata alla potenza ridotta.
+      Orari e potenze in <b>Configura → Sperimentazione GSE</b>.</div></div>
   <div class="card" style="margin-top:16px"><h3>🏠 Bilanciamento casalingo</h3>
     <div class="note">Se la wallbox non fa da sé il bilanciamento domestico (non superare il contatore di casa), usa automazioni Home Assistant — es. quelle che riducono gli ampere quando il consumo sale. Trovo per nome:</div>
     <div data-c="wb-home-autos" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div></div>`,

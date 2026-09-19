@@ -155,7 +155,7 @@ friendly = [
     f"{NAME} Tagliandi",
     *[f"{NAME} Risparmio {l} vs Diesel" for l in ("Tagliandi", "Bollo", "Netto")],
     f"{NAME} Batteria Persa da Fermo Oggi", f"{NAME} Consumo per Zona",
-    f"{NAME} CO2 Risparmiata", f"{NAME} Prossima Scadenza",
+    f"{NAME} CO2 Risparmiata", f"{NAME} Prossima Scadenza", f"{NAME} Programmazione",
     f"{NAME} Viaggio Top/Stop del Mese", f"{NAME} Energia Caricata Casa (totale)",
     f"{NAME} Percorrenza", f"{NAME} Assicurazione", f"{NAME} Ricaricato Fotovoltaico Mese",
     f"{NAME} Energia Caricata Fotovoltaico (totale)",
@@ -491,6 +491,65 @@ try:
     ok("attributi grandi esclusi dal recorder (restano solo per la UI)")
 except Exception as e:
     bad(f"peso database: {e}")
+
+print("\n[20] Automazioni: entita', date e schedulazioni")
+try:
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    # il trigger della fine ricarica deve usare il NOSTRO binary_sensor (sempre on/off)
+    assert 'charging = f"binary_sensor.{n}_in_carica"' in src, \
+        "il trigger fine ricarica usa l'entità sorgente (può essere testuale: non scatterebbe)"
+    # niente condizione sulla data: scartava le ricariche notturne
+    assert "state_attr('sensor.\" + n + \"_ultima_ricarica', 'data') == now()" not in src, \
+        "la fine ricarica ha ancora la condizione sulla data (ricariche notturne perse)"
+    # date gg-mm-aaaa nelle notifiche
+    assert "%d-%m-%Y" in src, "le date nelle notifiche non sono gg-mm-aaaa"
+    # schedulazioni persistite
+    assert 'setdefault("schedule", {})[tipo]' in src, "le schedulazioni non vengono salvate"
+    assert '"schedule": dict(self.store.data' in src, "le schedulazioni non sono esposte nei dati"
+    sen = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
+    assert "class Programmazione(" in sen, "manca il sensore Programmazione"
+    st = open(os.path.join(CC, "store.py"), encoding="utf-8").read()
+    assert '"schedule"' in st, "lo store non persiste le schedulazioni"
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert 'this._ov("wb_stop_switch")' in js, "il tasto stop wallbox usa ancora l'entità sbagliata"
+    assert "_schTouched" in js and "_lowTouched" in js, \
+        "i campi giorni verrebbero sovrascritti durante la scelta"
+    ok("trigger on/off, date gg-mm-aaaa, schedulazioni persistite, stop wallbox corretto")
+except Exception as e:
+    bad(f"automazioni: {e}")
+
+print("\n[21] Sperimentazione GSE (fasce orarie)")
+try:
+    from datetime import datetime as _dt21
+
+    with open(os.path.join(CC, "coordinator.py"), encoding="utf-8") as fh:
+        tree21 = ast.parse(fh.read())
+    fn21 = next(n for n in ast.walk(tree21)
+                if isinstance(n, ast.FunctionDef) and n.name == "_gse_limite_kw")
+    ns21: dict = {}
+    exec(compile(ast.Module(body=[fn21], type_ignores=[]), "<gse>", "exec"), ns21)
+
+    class _Fake:
+        gse_domenica = True
+        gse_kw_max = 6.0
+        gse_kw_ridotta = 3.0
+        gse_start = "23:00"
+        gse_end = "07:00"
+        gse_holiday = ""
+        hass = None
+
+    f = ns21["_gse_limite_kw"].__get__(_Fake())
+    assert f(_dt21(2026, 9, 20, 12, 0)) == 6.0, "domenica: deve essere piena potenza"   # domenica
+    assert f(_dt21(2026, 9, 21, 23, 30)) == 6.0, "feriale in fascia: piena potenza"
+    assert f(_dt21(2026, 9, 21, 6, 0)) == 6.0, "feriale dopo mezzanotte: piena potenza"
+    assert f(_dt21(2026, 9, 21, 12, 0)) == 3.0, "feriale fuori fascia: potenza ridotta"
+    assert f(_dt21(2026, 9, 21, 22, 59)) == 3.0, "un minuto prima della fascia: ridotta"
+    src21 = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert 'self._switch_on("gse")' in src21, "lo switch GSE non è controllato"
+    assert "class Programmazione(" in open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
+    ok("GSE: domenica 24h, fascia 23–07 piena, fuori fascia ridotta")
+except Exception as e:
+    bad(f"GSE: {e}")
 
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)

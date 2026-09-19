@@ -34,6 +34,8 @@ async def async_setup_entry(
                    False, "mdi:calendar-clock"),
         MateSwitch(coordinator, "balance", f"{name} Bilanciamento Solare",
                    False, "mdi:solar-power"),
+        MateSwitch(coordinator, "gse", f"{name} Sperimentazione GSE",
+                   False, "mdi:transmission-tower"),
     ])
 
 

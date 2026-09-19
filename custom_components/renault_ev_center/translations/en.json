@@ -6,7 +6,7 @@
         "title": "🚗 Renault EV Center — Your car",
         "description": "**Welcome!** Select your Renault EV entities (official Renault integration).\n\n- Give the car a **short name** (e.g. `Megane`): it becomes the prefix of all new entities.\n- The **model** sets the car picture.\n- You can create the **dashboard** in the sidebar automatically.",
         "data": {
-          "model": "Car model (sets the picture)",
+              "model": "Car model — 1st choice: sets the picture",
           "create_dashboard": "Create the dashboard automatically in the sidebar"
         },
         "sections": {
@@ -56,6 +56,18 @@
               "wb_stop_switch": "Wallbox charge stop (switch or button) — used by Stop charge"
             }
           },
+          "gse": {
+            "name": "⚡ GSE pilot scheme",
+            "data": {
+              "gse_kw_max": "Allowed power inside the window (kW)",
+              "gse_kw_ridotta": "Power outside the window (kW)",
+              "gse_start": "Allowed window start",
+              "gse_end": "Allowed window end",
+              "gse_domenica": "Sunday: full power all day",
+              "gse_holiday_entity": "Holiday sensor (binary_sensor, optional)",
+              "gse_wpa": "Wallbox watts per amp (230 single-phase, 690 three-phase)"
+            }
+          },
           "solar": {
             "name": "☀️ Solar & balancing",
             "data": {
@@ -76,7 +88,7 @@
         "description": "Battery capacity, energy prices and preferences. Everything can be changed later in Options.",
         "data": {
           "charge_start_button": "Start charge button (Renault)",
-          "model": "Car model (sets the picture)",
+              "model": "Car model — 1st choice: sets the picture",
           "create_dashboard": "Create the dashboard in the sidebar automatically"
         },
         "sections": {
@@ -180,7 +192,7 @@
         "title": "Renault EV Center — Options",
         "description": "Change mapped entities and settings.",
         "data": {
-          "model": "Car model (sets the picture)",
+              "model": "Car model — 1st choice: sets the picture",
           "create_dashboard": "Create the dashboard in the sidebar automatically"
         },
         "sections": {
@@ -218,6 +230,18 @@
               "wallbox_session_time_entity": "Wallbox session time (s/min/h) — optional, else internal timer",
               "wb_charge_switch": "Wallbox charge start (switch or button) — used by Start charge and the automation",
               "wb_stop_switch": "Wallbox charge stop (switch or button) — used by Stop charge"
+            }
+          },
+          "gse": {
+            "name": "⚡ GSE pilot scheme",
+            "data": {
+              "gse_kw_max": "Allowed power inside the window (kW)",
+              "gse_kw_ridotta": "Power outside the window (kW)",
+              "gse_start": "Allowed window start",
+              "gse_end": "Allowed window end",
+              "gse_domenica": "Sunday: full power all day",
+              "gse_holiday_entity": "Holiday sensor (binary_sensor, optional)",
+              "gse_wpa": "Wallbox watts per amp (230 single-phase, 690 three-phase)"
             }
           },
           "solar": {

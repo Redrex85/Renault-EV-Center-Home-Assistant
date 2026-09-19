@@ -51,6 +51,18 @@ from .const import (
     CONF_LOW_SOC_DAYS,
     DEFAULT_LOW_SOC_DAYS,
     WEEKDAYS,
+    CONF_GSE_WPA,
+    CONF_GSE_KW_MAX,
+    CONF_GSE_KW_RIDOTTA,
+    CONF_GSE_START,
+    CONF_GSE_END,
+    CONF_GSE_DOMENICA,
+    CONF_GSE_HOLIDAY,
+    DEFAULT_GSE_WPA,
+    DEFAULT_GSE_KW_MAX,
+    DEFAULT_GSE_KW_RIDOTTA,
+    DEFAULT_GSE_START,
+    DEFAULT_GSE_END,
     CONF_CHARGE_SCHED_ENABLED,
     CONF_CHARGE_SCHED_MODE,
     CONF_CHARGE_START_TIME,
@@ -293,6 +305,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         _days = opts.get(CONF_LOW_SOC_DAYS)
         self.low_soc_days = [str(d) for d in _days] if isinstance(_days, (list, tuple)) and _days \
             else list(DEFAULT_LOW_SOC_DAYS)
+        # --- sperimentazione GSE -------------------------------------------------
+        self.gse_wpa = max(_f(opts.get(CONF_GSE_WPA), DEFAULT_GSE_WPA), 1.0)
+        self.gse_kw_max = _f(opts.get(CONF_GSE_KW_MAX), DEFAULT_GSE_KW_MAX)
+        self.gse_kw_ridotta = _f(opts.get(CONF_GSE_KW_RIDOTTA), DEFAULT_GSE_KW_RIDOTTA)
+        self.gse_start = str(opts.get(CONF_GSE_START) or DEFAULT_GSE_START)
+        self.gse_end = str(opts.get(CONF_GSE_END) or DEFAULT_GSE_END)
+        self.gse_domenica = bool(opts.get(CONF_GSE_DOMENICA, True))
+        self.gse_holiday = str(opts.get(CONF_GSE_HOLIDAY) or "")
         self.charge_sched_enabled = bool(opts.get(CONF_CHARGE_SCHED_ENABLED, False))
         self.charge_sched_mode = str(opts.get(CONF_CHARGE_SCHED_MODE) or "orario")
         self.charge_start_time = str(opts.get(CONF_CHARGE_START_TIME) or "23:30")
@@ -1468,6 +1488,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "charges_filtered": charges_filtered,
             "charges_stats": cstats,
             "consumi_temp": consumi_temp,
+            "schedule": dict(self.store.data.get("schedule", {})),
+            "gse": self._gse_info(),
             "report": report,
             "temp_out": temp_out,
             "drain_oggi_pct": round(self.drain_meter.value, 1),
@@ -1500,6 +1522,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self._maybe_backfill_geocode()
         await self._handle_charge_events(data["events"], data, now)
         await self._balance_solar(data, wb_state)
+        await self._apply_gse(wb_state, bool(data.get("charging")))
         data["balance"] = dict(self.store.data.get("counters", {}).get("balance_last", {}))
         return data
 
@@ -2071,7 +2094,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         n = slugify(str(self.opts.get(CONF_NAME, "Renault")))
         batt = str(self.opts.get("battery_level_entity") or f"sensor.{n}_batteria")
         range_e = str(self.opts.get("range_entity") or f"sensor.{n}_autonomia_della_batteria")
-        charging = str(self.opts.get("charging_entity") or f"binary_sensor.{n}_in_carica")
+        # il nostro binary_sensor è SEMPRE on/off: l'entità sorgente può essere un sensore
+        # testuale ("charging"/"not_charging") e il trigger from on → off non scatterebbe mai
+        charging = f"binary_sensor.{n}_in_carica"
         loc = str(self.opts.get("location_entity") or "")
         wb_state_e = str(self.opts.get(CONF_WB_STATE) or "sensor.wallbox_charger_state")
         target = ""
@@ -2089,8 +2114,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 "alias": f"Renault EV Center — Ricarica completata ({n})",
                 "trigger": [{"trigger": "state", "entity_id": charging,
                               "from": "on", "to": "off", "for": {"minutes": 3}}],
-                "condition": [{"condition": "template",
-                                "value_template": "{{ state_attr('sensor." + n + "_ultima_ricarica', 'data') == now().strftime('%Y-%m-%d') }}"}],
+                # NIENTE condizione sulla data: una ricarica notturna inizia ieri e finisce oggi,
+                # quindi il confronto con la data di OGGI la scartava (notifica mai inviata).
                 "action": [_pn(f"rec_ric_{n}", "🔋 Ricarica completata",
                                 "⚡ {{ states('sensor." + n + "_ultima_ricarica') }} kWh · "
                                 "🔋 {{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_end') }}% · "
@@ -2102,7 +2127,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 "trigger": [{"trigger": "state", "entity_id": wb_state_e, "to": "charging"}],
                 "condition": [],
                 "action": [_pn(f"rec_start_{n}", "🔋 Ricarica avviata",
-                                "La ricarica è iniziata alle {{ now().strftime('%Y-%m-%d %H:%M:%S') }}")],
+                                "La ricarica è iniziata alle {{ now().strftime('%d-%m-%Y %H:%M') }}")],
                 "mode": "single",
             },
             f"renault_ev_center_{n}_riassunto_giornaliero": {
@@ -2192,6 +2217,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
         n = slugify(str(self.opts.get(CONF_NAME, "Renault")))
         aid = f"renault_ev_center_{n}_programma_{tipo}"
+        # memorizzo i valori: il pannello li usa per ripopolare il form dopo un refresh
+        self.store.data.setdefault("schedule", {})[tipo] = {
+            "attivo": bool(attivo), "inizio": str(inizio), "fine": str(fine),
+            "soc": int(soc or 0), "modo": str(modo), "temperatura": int(temperatura or 0),
+            "giorni": list(giorni or []),
+        }
+        self.persist(force=True)
         if not attivo:
             return await self._automations_apply({}, [aid])
 
@@ -2317,6 +2349,61 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 _LOGGER.info("Carica programmata: target Renault impostato a %s%%", int(battery))
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Comando carica programmata fallito: %s", err)
+
+    def _gse_info(self) -> dict[str, Any]:
+        """Stato della sperimentazione GSE per il pannello."""
+        attivo = self._switch_on("gse")
+        info: dict[str, Any] = {
+            "attivo": attivo,
+            "fascia": f"{self.gse_start}–{self.gse_end}",
+            "kw_piena": self.gse_kw_max,
+            "kw_ridotta": self.gse_kw_ridotta,
+            "domenica": self.gse_domenica,
+        }
+        if attivo:
+            kw = self._gse_limite_kw(dt_util.now())
+            info["kw_adesso"] = kw
+            info["in_fascia"] = kw >= self.gse_kw_max
+        return info
+
+    def _gse_limite_kw(self, now) -> float:
+        """Potenza consentita dalla sperimentazione GSE in questo momento."""
+        if self.gse_domenica and now.weekday() == 6:      # domenica
+            return self.gse_kw_max
+        if self.gse_holiday:
+            st = self.hass.states.get(self.gse_holiday)
+            if st is not None and st.state == "on":       # festivo
+                return self.gse_kw_max
+        hhmm = now.strftime("%H:%M")
+        s, e = self.gse_start, self.gse_end
+        dentro = (s <= hhmm or hhmm < e) if s > e else (s <= hhmm < e)
+        return self.gse_kw_max if dentro else self.gse_kw_ridotta
+
+    async def _apply_gse(self, wb_state: str, charging: bool) -> None:
+        """Sperimentazione GSE: fuori fascia abbassa la corrente della wallbox.
+
+        Fascia a potenza piena: da `gse_start` a `gse_end` nei feriali, tutta la domenica
+        (e i festivi se mappati). Fuori fascia: potenza ridotta (es. 3 kW).
+        """
+        if not self._switch_on("gse"):
+            return
+        ent = self.opts.get(CONF_WB_MAX_CURRENT)
+        if not ent:
+            return
+        if wb_state not in WALLBOX_CHARGING_STATES and not charging:
+            return
+        kw = self._gse_limite_kw(dt_util.now())
+        amps = int(round(kw * 1000.0 / self.gse_wpa))
+        amps = max(amps, 6)                               # minimo di una wallbox
+        cur = _num(self.hass, str(ent), None)
+        if cur is not None and abs(cur - amps) < 0.5:
+            return                                        # già corretto: nessuna chiamata
+        try:
+            await self.hass.services.async_call(
+                "number", "set_value", {"entity_id": ent, "value": amps}, blocking=False)
+            _LOGGER.info("Sperimentazione GSE: %.1f kW → %s A", kw, amps)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("GSE: impostazione corrente fallita: %s", err)
 
     async def _balance_solar(self, data: dict[str, Any], wb_state: str) -> None:
         """Bilanciamento solare dinamico (adattato dall'automazione utente).

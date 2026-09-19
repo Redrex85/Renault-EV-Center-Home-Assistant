@@ -5,6 +5,45 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.19 — Sperimentazione GSE + automazioni
+
+### Nuova funzione: limite di potenza a fasce orarie (GSE)
+Interruttore **Sperimentazione GSE** (tra i dispositivi, o nella pagina *Wallbox*). Quando è
+**attivo**, durante la carica la wallbox viene limitata automaticamente:
+
+| Momento | Potenza |
+|---|---|
+| Feriali **23:00 → 07:00** | **piena** (default 6 kW) |
+| **Domenica** (e festivi, se mappati) | **piena** 24 h |
+| Tutti gli altri orari | **ridotta** (default 3 kW) |
+
+- Configurazione in *Configura → ⚡ Sperimentazione GSE*: potenza piena, potenza ridotta,
+  inizio/fine fascia, "domenica 24 h", sensore **festivi** opzionale, e **W/A della wallbox**
+  (230 monofase · 690 trifase) per convertire kW → ampere.
+- Agisce sul `number` **corrente massima wallbox** già mappato; non fa nulla se è già corretto.
+- Nel pannello (*Wallbox*) vedi **limite adesso** (piena/ridotta) e la fascia configurata.
+- Controllo `check_status.py` **[21]**: domenica, in fascia, dopo mezzanotte, fuori fascia.
+
+### Correzioni (automazioni)
+- **"Messaggio fine carica" mai inviato**: l'automazione aveva una condizione che confrontava la
+  **data d'inizio** della ricarica con **oggi** → una carica notturna (inizia ieri, finisce oggi)
+  veniva **scartata**. Condizione rimossa.
+- **Trigger su entità sbagliata**: l'automazione scattava sull'entità *sorgente* (che può essere un
+  sensore testuale `charging`/`not_charging`, quindi `from: on → to: off` non scattava mai). Ora usa
+  il **nostro `binary_sensor.<auto>_in_carica`**, sempre `on`/`off`.
+- **Tasto "Ferma carica" (Wallbox)**: usava `button.wallbox_charge_stop` e ripiegava sullo switch di
+  **avvio** → non fermava nulla. Ora usa **`wb_stop_switch`** (Configura → Wallbox → Stop carica).
+- **Schedulazione ricarica non si salvava**: i campi tornavano ai default a ogni refresh. Ora i
+  valori sono **salvati nello store** ed esposti dal nuovo sensore **`Programmazione`**; il pannello
+  li **ripopola** (senza sovrascrivere quello che stai scegliendo: flag "toccato").
+- **Date nelle notifiche**: `2026-09-19 19:42:09` → **`19-09-2026 19:42`**.
+- **Automazioni mostrate "spente"**: la lista veniva **ricostruita** a ogni aggiornamento (stato
+  transitorio/unavailable). Ora si ricostruisce solo se la lista cambia e lo stato si allinea a HA
+  senza toccare il checkbox che stai cliccando.
+
+### Controlli
+- `check_status.py` **[20]** (automazioni) e **[21]** (GSE).
+
 ## 1.0.18 — Due confronti di risparmio + guida
 
 ### Il problema dei km
@@ -16,6 +55,12 @@ Due domande diverse richiedono due risposte: le ho rese **entrambe esplicite**.
   contro **solo ricariche registrate** → entrambi da dati reali, zero stime.
 - Il confronto **"da sempre"** resta e usa i **valori dichiarati** (`pre_kwh` / `pre_eur`).
 - In *Risparmi* nuova card **🎯 Affidabilità del confronto** con i due numeri, km e data d'installazione.
+
+### Configurazione
+- **Modello auto come 1° campo** della schermata "L'auto": prima di nome, odometro e sensori.
+  È quello che imposta la foto del veicolo e la dashboard. Spostato dentro la sezione, quindi
+  ora è modificabile anche dal *Configura* successivo.
+- Etichette aggiornate (IT/EN/FR): "Modello dell'auto — 1ª scelta: imposta la foto".
 
 ### Guida
 - Nuova sezione **§5.2 (IT)** / **§4.2 (EN/FR)**: "Risparmi con un'auto già percorsa", con la tabella

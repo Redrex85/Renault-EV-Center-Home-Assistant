@@ -48,6 +48,18 @@
               "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»"
             }
           },
+          "gse": {
+            "name": "⚡ Sperimentazione GSE",
+            "data": {
+              "gse_kw_max": "Potenza consentita nella fascia (kW)",
+              "gse_kw_ridotta": "Potenza fuori fascia (kW)",
+              "gse_start": "Inizio fascia consentita",
+              "gse_end": "Fine fascia consentita",
+              "gse_domenica": "Domenica: tutto il giorno a potenza piena",
+              "gse_holiday_entity": "Sensore festivi (binary_sensor, opzionale)",
+              "gse_wpa": "Watt per ampere della wallbox (230 monofase, 690 trifase)"
+            }
+          },
           "solar": {
             "name": "☀️ Fotovoltaico e bilanciamento",
             "data": {
@@ -68,7 +80,7 @@
         "description": "Capacità batteria, prezzi dell'energia e preferenze. Tutto modificabile dopo dalle opzioni.",
         "data": {
           "charge_start_button": "Pulsante avvio carica (Renault)",
-          "model": "Modello dell'auto (imposta la foto)",
+              "model": "Modello dell'auto — 1ª scelta: imposta la foto",
           "create_dashboard": "Crea automaticamente la dashboard nella barra laterale"
         },
         "sections": {
@@ -172,7 +184,7 @@
         "title": "Renault EV Center — Opzioni",
         "description": "Modifica entità mappate e impostazioni.",
         "data": {
-          "model": "Modello dell'auto (imposta la foto)",
+              "model": "Modello dell'auto — 1ª scelta: imposta la foto",
           "create_dashboard": "Crea automaticamente la dashboard nella barra laterale"
         },
         "sections": {
@@ -210,6 +222,18 @@
               "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
               "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione",
               "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»"
+            }
+          },
+          "gse": {
+            "name": "⚡ Sperimentazione GSE",
+            "data": {
+              "gse_kw_max": "Potenza consentita nella fascia (kW)",
+              "gse_kw_ridotta": "Potenza fuori fascia (kW)",
+              "gse_start": "Inizio fascia consentita",
+              "gse_end": "Fine fascia consentita",
+              "gse_domenica": "Domenica: tutto il giorno a potenza piena",
+              "gse_holiday_entity": "Sensore festivi (binary_sensor, opzionale)",
+              "gse_wpa": "Watt per ampere della wallbox (230 monofase, 690 trifase)"
             }
           },
           "solar": {
