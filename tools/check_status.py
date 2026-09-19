@@ -466,6 +466,13 @@ try:
         "il risparmio per periodo usa ancora i meter live (restano a 0)"
     assert 'def _chg_cost(' in src, "manca _chg_cost: costo ricariche dai record"
     assert 'def _periodo(' in src, "manca _periodo: km con ripiego sui viaggi"
+    # ricariche dichiarate prima dell'installazione
+    assert 'CONF_PRE_KWH' in src and 'CONF_PRE_EUR' in src, "mancano i valori pre-installazione"
+    assert 'ricariche_pre' in src, "il valore pre-installazione non è esposto separatamente"
+    # base odometro all'installazione e confronto "da installazione"
+    assert 'savings["da_installazione"]' in src, "manca il confronto da installazione"
+    st = open(os.path.join(CC, "store.py"), encoding="utf-8").read()
+    assert '"install"' in st and 'install' in st, "la base odometro non è persistita"
     sen = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
     assert 'return savings' in sen, "il sensore risparmio non espone il dettaglio completo"
     ok("risparmi: termica/elettrica + differenza + FV in €, costi dai record")

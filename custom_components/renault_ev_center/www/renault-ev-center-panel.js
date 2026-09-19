@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.17";
+const REC_VER = "1.0.18";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -1515,7 +1515,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       el.textContent = (v === null || v === undefined || isNaN(v)) ? "—" : this._fmt(v, 2);
     });
     const bar = root.querySelector('[data-c="bar-risp"]');
-    const keys = ["t_carb", "e_ric", "d_carb", "t_tag", "e_tag", "d_tag",
+    const keys = ["t_carb", "e_ric", "d_carb", "e_pre", "pre_kwh", "t_tag", "e_tag", "d_tag",
                   "t_bollo", "e_bollo", "d_bollo", "t_tot", "e_tot", "d_tot", "fv_eur", "fv_kwh"];
     if (!a || !a.termica || !a.elettrica) {
       keys.forEach((k) => money(k, null));
@@ -1526,13 +1526,30 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     const t = a.termica, e = a.elettrica;
     money("t_carb", t.carburante); money("e_ric", e.ricariche);
-    money("d_carb", (t.carburante || 0) - (e.ricariche || 0));
+    money("e_pre", e.ricariche_pre);
+    root.querySelectorAll('[data-sv="pre_kwh"]').forEach((el) => { el.textContent = this._fmt(a.pre_kwh || 0, 1); });
+    money("d_carb", (t.carburante || 0) - ((e.ricariche || 0) + (e.ricariche_pre || 0)));
     money("t_tag", t.tagliandi); money("e_tag", e.tagliandi);
     money("d_tag", (t.tagliandi || 0) - (e.tagliandi || 0));
     money("t_bollo", t.bollo); money("e_bollo", e.bollo);
     money("d_bollo", (t.bollo || 0) - (e.bollo || 0));
     money("t_tot", t.totale); money("e_tot", e.totale); money("d_tot", a.differenza);
     money("fv_eur", a.fv_eur); money("fv_kwh", a.fv_kwh);
+    // confronto "da installazione" (solo dati reali)
+    const di = a.da_installazione;
+    money("i_diff", di ? di.differenza : null);
+    money("i_term", di ? di.termica : null);
+    money("i_ele", di ? di.elettrica : null);
+    root.querySelectorAll('[data-sv="i_km"]').forEach((el) => { el.textContent = di ? this._i(di.km) : "—"; });
+    root.querySelectorAll('[data-sv="i_date"]').forEach((el) => { el.textContent = a.install_date || "—"; });
+    // avviso: senza i valori dichiarati il confronto "da sempre" è gonfiato
+    root.querySelectorAll('[data-sv="warn_sempre"]').forEach((el) => {
+      const senzaDichiarati = !a.pre_eur || a.pre_eur <= 0;
+      const autoGiaPercorsa = !!(a.install_odometer && a.install_odometer > 0);
+      el.textContent = (senzaDichiarati && autoGiaPercorsa)
+        ? "⚠️ Mancano i kWh/€ caricati prima: questo valore è gonfiato (le ricariche fatte prima non sono contate). Compila Configura → Prezzi."
+        : "";
+    });
     root.querySelectorAll('[data-sv="km"]').forEach((el) => { el.textContent = this._i(a.km_totali); });
     root.querySelectorAll('[data-sv="prezzo"]').forEach((el) => {
       el.textContent = (a.prezzo_termico === null || a.prezzo_termico === undefined)
@@ -2029,7 +2046,7 @@ select,input{background:var(--panel2);color:var(--txt);border:1px solid var(--li
 .carbox{position:relative;border-radius:14px;overflow:hidden;border:1px dashed var(--accent);background:radial-gradient(ellipse at 50% 115%,var(--accent-soft),transparent 60%),var(--panel);display:flex;align-items:center;justify-content:center;min-height:210px;flex-direction:column;gap:8px}
 .carbox .ph{font-size:52px}
 .carbox img{max-height:190px;max-width:90%;object-fit:contain}
-.mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);height:100%;min-height:260px}
+.mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);height:280px}
 .mapbox ha-map{display:block;width:100%;height:100%}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel);color:var(--txt);border:1px solid var(--accent);border-radius:12px;padding:12px 20px;font-size:14px;opacity:0;transition:.3s;z-index:999}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -2302,6 +2319,7 @@ const PAGES = {
     <table style="width:100%">
       <tr><th>Voce</th><th style="text-align:right">🔴 Auto termica</th><th style="text-align:right">🟢 Auto elettrica</th><th style="text-align:right">💚 Differenza</th></tr>
       <tr><td>⛽ Carburante</td><td style="text-align:right"><span data-sv="t_carb">—</span> €</td><td style="text-align:right"><span data-sv="e_ric">—</span> €</td><td style="text-align:right"><b data-sv="d_carb">—</b> €</td></tr>
+      <tr><td>🕘 Ricariche prima<span style="color:var(--muted);font-size:11px"> (dichiarate, <span data-sv="pre_kwh">—</span> kWh)</span></td><td style="text-align:right">—</td><td style="text-align:right"><span data-sv="e_pre">—</span> €</td><td style="text-align:right">—</td></tr>
       <tr><td>🔧 Tagliandi</td><td style="text-align:right"><span data-sv="t_tag">—</span> €</td><td style="text-align:right"><span data-sv="e_tag">—</span> €</td><td style="text-align:right"><b data-sv="d_tag">—</b> €</td></tr>
       <tr><td>📄 Bollo</td><td style="text-align:right"><span data-sv="t_bollo">—</span> €</td><td style="text-align:right"><span data-sv="e_bollo">—</span> €</td><td style="text-align:right"><b data-sv="d_bollo">—</b> €</td></tr>
       <tr style="border-top:2px solid var(--accent)"><td><b>TOTALE</b></td>
@@ -2333,10 +2351,23 @@ const PAGES = {
     <div class="card"><h3>ℹ️ Come si calcola</h3>
       <div style="color:var(--muted);font-size:12.5px;line-height:1.8">
         <b>Termica</b>: km × consumo × prezzo carburante + tagliandi + bollo.<br>
-        <b>Elettrica</b>: ricariche registrate + spesa tagliandi reale + bollo EV.<br>
-        <b>Risparmio</b>: termica − elettrica.<br>
-        Periodi (mese/anno) usano i km e le ricariche di quel periodo.</div></div>
+        <b>Elettrica</b>: ricariche registrate + quelle dichiarate + tagliandi reali + bollo EV.<br>
+        <b>Risparmio</b>: termica − elettrica. Periodi (mese/anno) usano i dati di quel periodo.</div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px"><h3>🎯 Affidabilità del confronto</h3>
+    <div class="row"><span><b>Da installazione</b> — solo dati reali ✅</span><b style="color:var(--good);font-size:17px"><span data-sv="i_diff">—</span> €</b></div>
+    <div style="color:var(--muted);font-size:11.5px;margin-bottom:10px">
+      <span data-sv="i_km">—</span> km dal <span data-sv="i_date">—</span> ·
+      termica <span data-sv="i_term">—</span> € vs elettrica <span data-sv="i_ele">—</span> €</div>
+    <div class="row" style="border-top:1px solid var(--line);padding-top:10px"><span><b>Da sempre</b> — include i valori dichiarati</span><b style="color:var(--accent);font-size:17px"><span data-sv="d_tot">—</span> €</b></div>
+    <div style="color:var(--muted);font-size:11.5px"><span data-sv="km">—</span> km totali (odometro)</div>
+    <div data-sv="warn_sempre" style="color:var(--warn);font-size:11.5px;margin-top:6px"></div>
+    <div class="note">Il confronto <b>da installazione</b> è il più attendibile: entrambi i lati nascono da dati reali
+      (km percorsi con l'integrazione attiva contro ricariche registrate). Quello <b>da sempre</b> dipende dai
+      kWh/€ che hai inserito in Configura → Prezzi.</div>
   </div>`,
+
 
   p8: `<h1>Extra</h1>
   <div class="grid g3">

@@ -94,7 +94,9 @@
               "price_home": "Home energy price",
               "price_public": "Public charger price",
               "price_solar": "Solar/PV charging price (0 = free)",
-              "solar_zone": "Solar/BEB zone name (empty = none)"
+              "solar_zone": "Solar/BEB zone name (empty = none)",
+              "pre_kwh": "kWh charged BEFORE using the integration (for savings)",
+              "pre_eur": "€ already spent on charging before the integration (takes priority over kWh)"
             }
           },
           "fuel": {
@@ -245,7 +247,9 @@
               "price_home": "Home energy price",
               "price_public": "Public charger price",
               "price_solar": "Solar cost (0 = free)",
-              "solar_zone": "Solar/BEB zone name (empty = none)"
+              "solar_zone": "Solar/BEB zone name (empty = none)",
+              "pre_kwh": "kWh charged BEFORE using the integration (for savings)",
+              "pre_eur": "€ already spent on charging before the integration (takes priority over kWh)"
             }
           },
           "fuel": {

@@ -94,7 +94,9 @@
               "price_home": "Tarif domicile",
               "price_public": "Tarif bornes publiques",
               "price_solar": "Tarif solaire/PV (0 = gratuit)",
-              "solar_zone": "Nom zone solaire/BEB (vide = aucun)"
+              "solar_zone": "Nom zone solaire/BEB (vide = aucun)",
+              "pre_kwh": "kWh rechargés AVANT d'utiliser l'intégration (pour les économies)",
+              "pre_eur": "€ déjà dépensés en recharge avant l'intégration (prioritaire sur les kWh)"
             }
           },
           "fuel": {

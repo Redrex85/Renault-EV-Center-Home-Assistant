@@ -31,6 +31,8 @@ No wallbox? Leave everything off — public charges can be logged manually via t
 ### Step 3 — Settings
 Battery capacity (60 kWh for Megane EV60), target SoC, home/public/solar prices per kWh,
 solar zone name, poll interval, trip timeout, optional fuel comparison.
+If the car was **already driven** before you installed the integration, also fill
+**"kWh charged before"** and/or **"€ spent before"** (see §4.2 — otherwise savings look inflated).
 
 Everything can be changed later from the integration's Configure dialog.
 
@@ -68,6 +70,51 @@ derived from the GPS coordinates via **OpenStreetMap (Nominatim)**.
 - **"Average speed estimate for trip departure time"** (default 30 km/h): used only to estimate
   the departure time when the car has been parked for a long time (the Renault cloud updates
   odometer/GPS on ignition off). Raise it if your trips are faster.
+
+## 4.2 Savings on an **already-driven** car (important)
+
+The saving compares **what you would have spent on petrol/diesel** with **what you spent charging**.
+The catch: kilometres come from the **odometer** (so they count **all** of them, including the
+40.000 done before), but charges are recorded **only since you installed the integration**. Without
+a correction the saving would be **inflated**.
+
+There are **two comparisons**, and the panel (Savings → *🎯 Confronto affidabilità*) shows both:
+
+### A) Since installation — the most reliable ✅
+Both sides come from **real data**:
+- **km driven since you installed** (today's odometer − the odometer at first start, saved automatically);
+- **charges recorded** from then on.
+
+Nothing to type, no estimates. This is the number to trust if you want the "mathematical" truth.
+
+### B) All time — needs declared values
+Uses the **whole odometer** against **recorded charges + the ones you declare**.
+Go to *Configure → Prices* and fill **at least one** of the two fields:
+
+| Field | When to use it |
+|---|---|
+| **€ spent before** | if you already know how much you spent charging (it takes **priority** over kWh) |
+| **kWh charged before** | if you know the kWh (e.g. the **wallbox total**); converted to € using *Home energy price* |
+
+Example: the car has 40.000 km and the wallbox reads **8,326.4 kWh** → put `8326.4` in
+*kWh charged before*. In Savings you'll see a **"🕘 Ricariche prima (declared)"** row folded into
+the electric total.
+
+### Which one to pick?
+| Goal | Use |
+|---|---|
+| A saving that is **verifiable** (no estimates) | **A) Since installation** |
+| Saving **since you own the car** | **B) All time**, with declared values |
+
+**You don't have to choose anything up front**: the panel always computes and shows **both**.
+- **A** works on its own from the first start, no configuration.
+- **B** comes alive when you fill the fields above. As long as they stay `0` and the car already
+  had mileage, the panel shows a **warning** (`⚠️ Mancano i kWh/€ caricati prima…`): it means the
+  "all time" comparison is not usable yet.
+
+> If you fill the declared values and then look at comparison **A**, the two numbers differ by
+> definition: A covers only the period after installation, B covers the car's whole life.
+> It is not an error: they answer two different questions.
 
 ## 5. Troubleshooting
 

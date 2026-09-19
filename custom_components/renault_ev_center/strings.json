@@ -86,7 +86,9 @@
               "price_home": "Prezzo energia a casa",
               "price_public": "Prezzo colonnine pubbliche",
               "price_solar": "Costo fotovoltaico (0 = gratis)",
-              "solar_zone": "Nome della zona fotovoltaico/BEB (vuoto = nessuna)"
+              "solar_zone": "Nome della zona fotovoltaico/BEB (vuoto = nessuna)",
+              "pre_kwh": "kWh caricati PRIMA di usare l'integrazione (per il calcolo dei risparmi)",
+              "pre_eur": "€ già spesi in ricariche prima dell'integrazione (ha priorità sui kWh)"
             }
           },
           "fuel": {
@@ -237,7 +239,9 @@
               "price_home": "Prezzo energia a casa",
               "price_public": "Prezzo colonnine pubbliche",
               "price_solar": "Costo fotovoltaico (0 = gratis)",
-              "solar_zone": "Nome della zona fotovoltaico/BEB (vuoto = nessuna)"
+              "solar_zone": "Nome della zona fotovoltaico/BEB (vuoto = nessuna)",
+              "pre_kwh": "kWh caricati PRIMA di usare l'integrazione (per il calcolo dei risparmi)",
+              "pre_eur": "€ già spesi in ricariche prima dell'integrazione (ha priorità sui kWh)"
             }
           },
           "fuel": {

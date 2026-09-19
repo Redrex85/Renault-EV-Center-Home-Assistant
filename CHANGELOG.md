@@ -5,6 +5,23 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.18 — Due confronti di risparmio + guida
+
+### Il problema dei km
+I km termici usano **tutto l'odometro**, le ricariche solo da quando installi l'integrazione.
+Due domande diverse richiedono due risposte: le ho rese **entrambe esplicite**.
+
+- **Base odometro automatica**: al primo avvio salvo l'odometro in `install` (store). Nessun input.
+- **Nuovo confronto "da installazione"** (il più attendibile): km **dal giorno dell'installazione**
+  contro **solo ricariche registrate** → entrambi da dati reali, zero stime.
+- Il confronto **"da sempre"** resta e usa i **valori dichiarati** (`pre_kwh` / `pre_eur`).
+- In *Risparmi* nuova card **🎯 Affidabilità del confronto** con i due numeri, km e data d'installazione.
+
+### Guida
+- Nuova sezione **§5.2 (IT)** / **§4.2 (EN/FR)**: "Risparmi con un'auto già percorsa", con la tabella
+  dei due confronti e l'esempio wallbox `8.326,4 kWh`.
+- Aggiunti i due campi anche alle tabelle di configurazione delle 3 guide.
+
 ## 1.0.17 — Risparmi ridisegnati (termica vs elettrica)
 
 ### Perché "Risparmiato MESE/ANNO" era 0
@@ -24,6 +41,16 @@ somma dei viaggi di quel periodo. Vale per RadiciFuel/Risparmi mese, anno e tota
 ### Controlli
 - `check_status.py` **[18]**: verifica la struttura del confronto e che il costo del periodo
   **non** torni a usare i meter live.
+
+### Ricariche fatte prima dell'integrazione (risparmi corretti)
+Problema: i km termici usano **tutto l'odometro**, ma le ricariche registrate partono da quando
+installi l'integrazione → il risparmio risultava gonfiato.
+- In *Configura → Prezzi* due nuovi campi:
+  - **kWh caricati prima** (es. `8326,4`);
+  - **€ già spesi in ricariche prima** (ha priorità sui kWh).
+- I kWh vengono convertiti in € col prezzo casa se non indichi gli €.
+- In *Risparmi* la voce appare come **"🕘 Ricariche prima (dichiarate)"** con i kWh usati, ed è
+  inclusa nel totale elettrico. Differenza e barre tornano coerenti.
 
 ### Peso su Home Assistant (recorder)
 - Gli attributi "archivio" (viaggi, storico giornaliero/mensile, liste ricariche, consumi/temp,

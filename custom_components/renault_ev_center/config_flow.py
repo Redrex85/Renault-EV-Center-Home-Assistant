@@ -90,6 +90,8 @@ from .const import (
     CONF_PRICE_HOME,
     CONF_PRICE_PUBLIC,
     CONF_PRICE_SOLAR,
+    CONF_PRE_KWH,
+    CONF_PRE_EUR,
     CONF_RANGE,
     CONF_SCAD_ASSICURAZIONE,
     CONF_SCAD_BOLLO,
@@ -278,6 +280,12 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_PRICE_SOLAR, default=defaults.get(CONF_PRICE_SOLAR, DEFAULT_PRICE_SOLAR)): NumberSelector(
                 NumberSelectorConfig(min=0, max=10, step=0.001, unit_of_measurement="€/kWh", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_SOLAR_ZONE, default=defaults.get(CONF_SOLAR_ZONE, DEFAULT_SOLAR_ZONE)): TextSelector(),
+            vol.Optional(CONF_PRE_KWH, default=defaults.get(CONF_PRE_KWH, 0.0)): NumberSelector(
+                NumberSelectorConfig(min=0, max=200000, step=0.1, unit_of_measurement="kWh",
+                                     mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_PRE_EUR, default=defaults.get(CONF_PRE_EUR, 0.0)): NumberSelector(
+                NumberSelectorConfig(min=0, max=200000, step=1, unit_of_measurement="€",
+                                     mode=NumberSelectorMode.BOX)),
         }), {"collapsed": True}),
         vol.Required("fuel"): section(vol.Schema({
             vol.Required(CONF_FUEL_ENABLED, default=defaults.get(CONF_FUEL_ENABLED, False)): BooleanSelector(),

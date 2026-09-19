@@ -85,6 +85,8 @@ Se non hai una wallbox lascia tutto disattivato: le ricariche pubbliche potranno
 | Prezzo colonnine | €/kWh media pubblica | 0.45 |
 | Costo fotovoltaico | €/kWh solare (0 = gratis) | 0.00 |
 | Zona fotovoltaico | Nome zona HA dove carichi col solare | `beb` |
+| **kWh caricati prima** | kWh caricati **prima** di usare l'integrazione (vedi §5.2) | 0 |
+| **€ spesi prima** | € già spesi in ricariche prima dell'integrazione (priorità sui kWh) | 0 |
 | Intervallo aggiornamento | Frequenza lettura sensori | 30 s |
 | Timeout viaggi | Minuti di odometro fermo = fine viaggio | 20 min |
 | Confronto termica | Risparmi vs diesel/benzina (tagliando medio 450 €) | opzionale |
@@ -141,6 +143,52 @@ coordinate GPS con **OpenStreetMap (Nominatim)**.
 - **"Velocità media stimata nei viaggi"** (default 30 km/h): serve solo a **stimare l'orario di
   partenza** quando l'auto è rimasta ferma a lungo (il cloud Renault aggiorna odometro/GPS a
   motore spento). Alzatela se i tuoi viaggi sono più veloci.
+
+## 5.2 Risparmi con un'auto **già percorsa** (importante)
+
+Il risparmio confronta **quello che avresti speso a benzina/diesel** con **quello che hai speso
+in ricariche**. Il problema: i km li prendo dall'**odometro** (quindi contano **tutti**, anche i
+40.000 fatti prima), ma le ricariche le registro **solo da quando usi l'integrazione**. Senza
+correzione il risparmio risulterebbe **gonfiato**.
+
+Ci sono **due confronti**, e il pannello (Risparmi → *🎯 Affidabilità del confronto*) li mostra
+entrambi:
+
+### A) Da installazione — il più attendibile ✅
+Entrambi i lati nascono da **dati reali**:
+- **km percorsi da quando hai installato** (odometro di oggi − odometro del primo avvio, salvato in automatico);
+- **ricariche registrate** da lì in poi.
+
+Nessun valore da inserire, nessuna stima. È il numero da guardare se vuoi la verità "matematica".
+
+### B) Da sempre — richiede i valori dichiarati
+Usa **tutto l'odometro** contro **ricariche registrate + quelle che dichiari tu**.
+Vai in *Configura → Prezzi* e compila **almeno uno** dei due campi:
+
+| Campo | Quando usarlo |
+|---|---|
+| **€ spesi prima** | se sai già quanto hai speso in ricariche (ha **priorità** sui kWh) |
+| **kWh caricati prima** | se conosci i kWh (es. il **totale della wallbox**); vengono convertiti in € col *Prezzo energia casa* |
+
+Esempio: hai l'auto da 40.000 km e la wallbox segna **8.326,4 kWh** → metti `8326,4` in
+*kWh caricati prima*. In Risparmi vedrai la voce **"🕘 Ricariche prima (dichiarate)"** inserita nel
+totale elettrico.
+
+### Quale scegliere?
+| Obiettivo | Confronto da usare |
+|---|---|
+| Risparmio **verificabile** (nessuna stima) | **A) Da installazione** |
+| Risparmio **da quando hai l'auto** | **B) Da sempre**, con i valori dichiarati |
+
+**Non devi scegliere nulla all'inizio**: il pannello calcola e mostra **entrambi** sempre.
+- **A** funziona da sola dal primo avvio, senza configurazione.
+- **B** si attiva quando compili i campi qui sopra. Finché restano a `0` e l'auto aveva già
+  chilometri, il pannello mostra un **avviso** (`⚠️ Mancano i kWh/€ caricati prima: questo valore
+  è gonfiato`): significa che il confronto "da sempre" non è utilizzabile.
+
+> Se compili i valori dichiarati e poi guardi il confronto **A**, i due numeri sono diversi per
+> definizione: A copre solo il periodo dall'installazione, B copre tutta la vita dell'auto.
+> Non è un errore: sono due domande diverse.
 
 ## 6. Problemi comuni
 

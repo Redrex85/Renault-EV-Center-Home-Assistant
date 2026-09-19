@@ -77,6 +77,8 @@ DEFAULT_WB_START_W,
     CONF_PRICE_HOME,
     CONF_PRICE_PUBLIC,
     CONF_PRICE_SOLAR,
+    CONF_PRE_KWH,
+    CONF_PRE_EUR,
     CONF_RANGE,
     CONF_SCAD_ASSICURAZIONE,
     CONF_SCAD_BOLLO,
@@ -878,6 +880,12 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # --- storico giornaliero ---------------------------------------------------
         history = self.store.data["daily"]
         today_key = keys["daily"]
+        # --- base odometro all'installazione: serve al confronto "km da quando usi l'integrazione"
+        if odometer and odometer > 0:
+            _inst = self.store.data.setdefault("install", {})
+            if not _inst.get("odometer"):
+                _inst["odometer"] = round(odometer, 1)
+                _inst["date"] = today_key
         if not self.today_rec or self.today_rec.get("data") != today_key:
             if self.today_rec.get("data"):
                 prev = dict(self.today_rec)
@@ -1032,17 +1040,47 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 savings["tagliandi_n"] = tagliandi_termici
                 savings["bollo"] = round(bollo_termica - bollo_ev, 2)
 
+            # --- ricariche fatte PRIMA dell'installazione (dichiarate dall'utente) -----
+            # Senza, il risparmio sarebbe falsato: i km totali (odometro) contano tutti,
+            # ma le ricariche registrate solo da quando usi l'integrazione.
+            pre_kwh = _f(self.opts.get(CONF_PRE_KWH), 0.0)
+            pre_eur = _f(self.opts.get(CONF_PRE_EUR), 0.0)
+            if pre_eur <= 0 and pre_kwh > 0:
+                pre_eur = pre_kwh * self.price_home
+            ric_reg = carb_ev  # ricariche registrate dall'integrazione
+            savings["pre_kwh"] = round(pre_kwh, 2)
+            savings["pre_eur"] = round(pre_eur, 2)
+
             savings["termica"] = {"carburante": round(carb_termica, 2),
                                   "tagliandi": round(tag_termica, 2),
                                   "bollo": round(bollo_termica, 2),
                                   "totale": round(carb_termica + tag_termica + bollo_termica, 2)}
-            savings["elettrica"] = {"ricariche": round(carb_ev, 2),
+            savings["elettrica"] = {"ricariche": round(ric_reg, 2),
+                                    "ricariche_pre": round(pre_eur, 2),
                                     "tagliandi": round(tag_ev, 2),
                                     "bollo": round(bollo_ev, 2),
-                                    "totale": round(carb_ev + tag_ev + bollo_ev, 2)}
+                                    "totale": round(ric_reg + pre_eur + tag_ev + bollo_ev, 2)}
             savings["differenza"] = round(savings["termica"]["totale"]
                                           - savings["elettrica"]["totale"], 2)
             savings["netto"] = savings["differenza"]
+
+            # --- confronto "da installazione": km reali dal primo avvio, senza stime --------
+            # È il numero PIÙ AFFIDABILE: entrambi i lati nascono da dati reali
+            # (km percorsi con l'integrazione attiva vs ricariche registrate), zero input manuale.
+            _inst = self.store.data.get("install", {})
+            _odo_base = _f(_inst.get("odometer"))
+            savings["install_odometer"] = round(_odo_base, 1) if _odo_base > 0 else None
+            savings["install_date"] = _inst.get("date") or None
+            if _odo_base > 0 and odometer > _odo_base:
+                km_i = odometer - _odo_base
+                termica_i = km_i * litri_100 * prezzo_l / 100.0
+                elettrica_i = _f(savings.get("elettrico_totale"))  # solo ricariche registrate
+                savings["da_installazione"] = {
+                    "km": round(km_i, 1),
+                    "termica": round(termica_i, 2),
+                    "elettrica": round(elettrica_i, 2),
+                    "differenza": round(termica_i - elettrica_i, 2),
+                }
 
             # --- fotovoltaico: quanto hai risparmiato caricando col sole -----------
             kwh_fv = sum(_f(c.get("kwh")) for c in charges if c.get("tipo") == "Fotovoltaico")
