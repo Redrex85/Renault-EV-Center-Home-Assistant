@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.14";
+const REC_VER = "1.0.15";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -428,6 +428,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "t_low_end": return S._tid("promemoria_fine");
       case "sel_tipo": return S._selid("filtro_tipo_ricarica");
       case "sel_periodo": return S._selid("filtro_periodo_ricariche");
+      case "sel_mese": return S._selid("filtro_mese_ricariche");
       case "sel_anno": return S._selid("filtro_anno_ricariche");
       default: return null;
     }
@@ -522,7 +523,8 @@ class RenaultEvCenterPanel extends HTMLElement {
       const v = this._attrAny(s, ["address", "geocoded_location"]);
       if (v) return String(v);
     }
-    // 2) ultimo viaggio: luogo/via di arrivo, altrimenti partenza (stessa fonte della pagina Viaggi)
+    // 2) ULTIMO viaggio (le liste sono ordinate newest-first → indice 0).
+    //    Stessa fonte e stesse chiavi della tabella "Dettaglio viaggi recenti".
     const tripSources = [
       this._sid("ultimo_trip"),
       this._sid("viaggi_recenti"),
@@ -532,8 +534,9 @@ class RenaultEvCenterPanel extends HTMLElement {
       const s = this._hass.states[id];
       if (!s) continue;
       const list = Array.isArray(s.attributes.trips) ? s.attributes.trips : [];
-      const t = list.length ? list[list.length - 1] : s.attributes;
+      const t = list.length ? list[0] : s.attributes;
       if (!t) continue;
+      // arrivo preferito (dove sei ora); se manca, partenza
       const via = t.luogo_arrivo || t.luogo_partenza;
       const citta = t.citta_arrivo || t.citta_partenza;
       const paese = t.paese_arrivo || t.paese_partenza;
@@ -1885,6 +1888,7 @@ const PAGES = {
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <select data-sel="sel_tipo"></select>
       <select data-sel="sel_periodo"></select>
+      <select data-sel="sel_mese"></select>
       <select data-sel="sel_anno"></select></div></div>
   <div class="card"><h3>Storico ricariche</h3>
     <table><tr><th>Data</th><th>Tipo</th><th>Durata</th><th>Δ SoC</th><th>kWh</th><th>Ø kW</th><th>€/kWh</th><th>Costo</th></tr>
@@ -2070,18 +2074,18 @@ const PAGES = {
         <div class="btn" data-cmd="reset_energia">🔄 Reset contatori Energia</div>
         <div class="btn" data-cmd="reset_costi">🔄 Reset contatori Costi</div>
         <div class="btn" data-cmd="csv">📥 Esporta viaggi CSV</div></div></div></div>
-  <div class="card palette" style="margin-top:16px"><h3>🎨 Palette (colori Renault)</h3>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">${THEMES.map(([id, dot, label]) => `<button class="btn" data-palette="${id}"><span class="sw" style="background:${dot}"></span> ${label}</button>`).join("")}</div>
-    <div style="color:var(--muted);font-size:11.5px;margin-top:10px">Temi HA equivalenti in /themes: renault-blu, renault-giallo, renault-verde, renault-aviation</div></div>
-  <div class="card" style="margin-top:16px"><h3>🔔 Notifiche</h3>
-    <div class="inp"><span>Servizio notify (es. notify.michele)</span><input data-ls="rec_notify" data-f="notify" style="width:170px"><span class="u"></span></div>
-    <div class="inp"><span>Giorni preavviso scadenze</span><input data-ls="rec_preavviso" value="30"><span class="u">gg</span></div></div>
-  <div class="card" style="margin-top:16px"><h3>🤖 Automazioni</h3>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <div class="btn" data-cmd="create_automations">✨ Crea automazioni consigliate</div></div>
-    <div class="note">Crea in Home Assistant 3 automazioni pronte: <b>ricarica completata</b> (kWh, SoC, costo),
-      <b>batteria bassa fuori casa</b>, <b>riassunto giornaliero</b> alle 21:30. Sono modificabili da
-      Impostazioni → Automazioni. Notifiche via persistent_notification se nessun servizio notify configurato.</div></div>`,
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card palette"><h3>🎨 Palette (colori Renault)</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${THEMES.map(([id, dot, label]) => `<button class="btn" data-palette="${id}"><span class="sw" style="background:${dot}"></span> ${label}</button>`).join("")}</div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:10px">Temi HA in /themes: renault-blu, giallo, verde, aviation</div></div>
+    <div class="card"><h3>🔔 Notifiche</h3>
+      <div class="inp"><span>Servizio notify</span><input data-ls="rec_notify" data-f="notify" style="width:140px"><span class="u"></span></div>
+      <div class="inp"><span>Preavviso scadenze</span><input data-ls="rec_preavviso" value="30"><span class="u">gg</span></div></div>
+    <div class="card"><h3>🤖 Automazioni</h3>
+      <div class="btn" data-cmd="create_automations">✨ Crea automazioni consigliate</div>
+      <div class="note" style="margin-top:8px">Crea in HA: <b>ricarica completata</b> (kWh, SoC, costo),
+        <b>avvio ricarica</b> e <b>riassunto giornaliero</b>. Modificabili da Impostazioni → Automazioni.</div></div>
+  </div>`,
 
   p11: `<h1>Wallbox</h1>
   <div class="grid g2">

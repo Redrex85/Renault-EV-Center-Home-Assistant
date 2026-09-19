@@ -5,6 +5,21 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.15 — Automazioni duplicate, filtro mese, indirizzo, layout Impostazioni
+
+### Correzioni
+- **Automazione "Batteria bassa fuori casa" rimossa**: era un doppione della notifica nativa
+  dell'integrazione (soglia/fascia/giorni configurabili dalla vista Automazioni). Alla prossima
+  "Crea automazioni consigliate" viene cancellata; restano solo ricarica completata, avvio ricarica
+  e riassunto giornaliero.
+- **Indirizzo (Panoramica)**: prendeva `list[length-1]`, cioè il viaggio **più vecchio** (le liste
+  sono ordinate newest-first). Ora indice `[0]` = ultimo viaggio, con via + città + paese di arrivo
+  (stesse chiavi della tabella Viaggi).
+- **Filtro ricariche**: aggiunto il select **Mese** (Tutti, Gennaio…Dicembre) accanto a tipo,
+  periodo e anno.
+- **Impostazioni**: i box **Palette**, **Notifiche** e **Automazioni** ora sono affiancati su una
+  sola riga (`grid g3`).
+
 ## 1.0.14 — Ricariche: costi/energia dai record, km dall'odometro, indirizzo
 
 ### Correzioni

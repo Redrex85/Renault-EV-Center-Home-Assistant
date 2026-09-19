@@ -20,6 +20,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CHARGE_STATE_ON_VALUES,
+    MESI_FILTRO,
     CONF_BATTERY_LEVEL,
     CONF_BOLLO_EV,
     CONF_BOLLO_TERMICO,
@@ -1603,6 +1604,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         """Filtra le ricariche secondo i select tipo/periodo/anno e calcola i totali."""
         tipo = self._setting_opt("filtro_tipo", "Tutte")
         periodo = self._setting_opt("filtro_periodo", "Mese")
+        mese = self._setting_opt("filtro_mese", "Tutti")
         anno = self._setting_opt("filtro_anno", "Tutti")
         d = now.date()
         if periodo == "Settimana":
@@ -1613,11 +1615,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             start = d.replace(month=1, day=1).isoformat()
         else:
             start = ""
+        num_mese = MESI_FILTRO.index(mese) if mese in MESI_FILTRO else 0  # 0 = Tutti
         items = []
         for c in charges:
             if tipo != "Tutte" and c.get("tipo") != tipo:
                 continue
             if anno != "Tutti" and str(c.get("data", ""))[:4] != anno:
+                continue
+            if num_mese and str(c.get("data", ""))[5:7] != f"{num_mese:02d}":
                 continue
             if start and str(c.get("data", "")) < start:
                 continue
@@ -1630,6 +1635,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "costo": round(sum(_f(c.get("costo")) for c in items), 2),
             "tipo": tipo,
             "periodo": periodo,
+            "mese": mese,
             "anno": anno,
         }
 
@@ -1954,17 +1960,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                                 "La ricarica è iniziata alle {{ now().strftime('%Y-%m-%d %H:%M:%S') }}")],
                 "mode": "single",
             },
-            f"renault_ev_center_{n}_batteria_bassa": {
-                "alias": f"Renault EV Center — Batteria bassa fuori casa ({n})",
-                "trigger": [{"trigger": "numeric_state", "entity_id": batt, "below": 25}],
-                "condition": ([{"condition": "not", "conditions": [
-                    {"condition": "state", "entity_id": loc, "state": "home"}]}] if loc else [])
-                    + [{"condition": "time", "after": "07:00:00", "before": "22:00:00"}],
-                "action": [_pn(f"rec_low_{n}", "🚗 Batteria bassa",
-                                "Batteria al {{ states('" + batt + "') }}% "
-                                "({{ states('" + range_e + "') }} km). Ricorda di caricare!")],
-                "mode": "single", "max_exceeded": "silent",
-            },
             f"renault_ev_center_{n}_riassunto_giornaliero": {
                 "alias": f"Renault EV Center — Riassunto giornaliero ({n})",
                 "trigger": [{"trigger": "time", "at": "21:30:00"}],
@@ -1985,7 +1980,12 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             },
         }
 
-        return await self._automations_apply(autos, [f"renault_ev_center_{n}_promemoria"])
+        # la notifica "batteria bassa" è gestita NATIVAMENTE dall'integrazione (soglia, fascia
+        # oraria e giorni configurabili dalla vista Automazioni): l'automazione omonima va rimossa
+        return await self._automations_apply(
+            autos,
+            [f"renault_ev_center_{n}_promemoria", f"renault_ev_center_{n}_batteria_bassa"],
+        )
 
     async def _automations_apply(self, upserts: dict[str, dict], removes: list[str]) -> list[str]:
         """Scrive/aggiorna/rimuove automazioni in automations.yaml (come la UI HA)."""

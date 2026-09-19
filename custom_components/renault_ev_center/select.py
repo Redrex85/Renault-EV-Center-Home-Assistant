@@ -10,13 +10,14 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, MESI_FILTRO
 from .coordinator import RenaultMateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 TIPI = ["Tutte", "Casa", "Fotovoltaico", "Pubblica"]
 PERIODI = ["Settimana", "Mese", "Anno", "Tutto"]
+MESI = MESI_FILTRO
 ANNI = ["Tutti"] + [str(a) for a in range(2024, 2033)]
 
 
@@ -30,6 +31,7 @@ async def async_setup_entry(
     async_add_entities([
         MateSelect(coordinator, f"{name} Filtro Tipo Ricarica", "filtro_tipo", TIPI, "Tutte", "mdi:filter-variant"),
         MateSelect(coordinator, f"{name} Filtro Periodo Ricariche", "filtro_periodo", PERIODI, "Mese", "mdi:calendar-range"),
+        MateSelect(coordinator, f"{name} Filtro Mese Ricariche", "filtro_mese", MESI, "Tutti", "mdi:calendar-month"),
         MateSelect(coordinator, f"{name} Filtro Anno Ricariche", "filtro_anno", ANNI, "Tutti", "mdi:calendar-multiple"),
     ])
 

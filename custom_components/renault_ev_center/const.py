@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 DOMAIN = "renault_ev_center"
+
+# mesi per il filtro ricariche (indice 0 = "Tutti", così MESI.index() dà il numero del mese)
+MESI_FILTRO = ["Tutti", "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+               "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"]
 MANUFACTURER = "Renault EV Center"
 PLATFORMS: list[str] = ["sensor", "binary_sensor", "button", "number", "select", "switch", "time", "device_tracker", "climate"]
 
