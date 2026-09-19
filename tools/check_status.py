@@ -436,6 +436,42 @@ try:
 except Exception as e:
     bad(f"AC/DC ricariche: {e}")
 
+print("\n[17] Pannello: stato espansione, consumi/temperatura, descrizione ricarica")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    # lo storico mensile non deve riaprirsi da solo al re-render
+    assert "_mesiOpen" in js, "storico mensile senza memoria di espansione (si riapre da solo)"
+    assert 'details[data-mk]' in js, "manca il listener di stato sui <details> dello storico mensile"
+    # grafico consumi vs temperatura
+    assert 'id="tempchart"' in js and "_drawTempChart" in js, "manca il grafico consumi/temperatura"
+    # descrizione ricarica manuale
+    assert 'data-mc="descrizione"' in js, "manca il campo Descrizione nella ricarica manuale"
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert '"consumi_temp": consumi_temp' in src, "consumi_temp non esposto nei dati"
+    assert 'descrizione: str = ""' in src, "add_manual_charge non accetta la descrizione"
+    flow = open(os.path.join(CC, "__init__.py"), encoding="utf-8").read()
+    assert 'vol.Optional("descrizione"' in flow, "schema servizio senza descrizione"
+    ok("storico mensile stabile · tempchart · descrizione ricarica · consumi_temp")
+except Exception as e:
+    bad(f"pannello/storico: {e}")
+
+print("\n[18] Risparmi: confronto termica/elettrica dai record")
+try:
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    for chiave in ('savings["termica"] = {', 'savings["elettrica"] = {',
+                   'savings["differenza"] =', 'savings["fv_eur"] ='):
+        assert chiave in src, f"manca {chiave}"
+    # i costi del periodo NON devono più usare i meter live
+    assert 'costo_elet = _f(self.cost_meters' not in src, \
+        "il risparmio per periodo usa ancora i meter live (restano a 0)"
+    assert 'def _chg_cost(' in src, "manca _chg_cost: costo ricariche dai record"
+    assert 'def _periodo(' in src, "manca _periodo: km con ripiego sui viaggi"
+    sen = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
+    assert 'return savings' in sen, "il sensore risparmio non espone il dettaglio completo"
+    ok("risparmi: termica/elettrica + differenza + FV in €, costi dai record")
+except Exception as e:
+    bad(f"risparmi: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

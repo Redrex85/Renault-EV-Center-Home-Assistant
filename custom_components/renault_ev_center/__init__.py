@@ -132,7 +132,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if isinstance(quando, dt) and quando.tzinfo is None:
             quando = quando.replace(tzinfo=dt_util.UTC)
         for coord in _all_coordinators(hass):
-            rec = coord.service_add_manual_charge(kwh, costo, tipo, quando)
+            rec = coord.service_add_manual_charge(kwh, costo, tipo, quando,
+                                                 str(call.data.get("descrizione", "") or ""))
             _LOGGER.info("Ricarica manuale aggiunta: %s kWh (%s)", rec["kwh"], rec["tipo"])
 
     async def handle_delete_trip(call: ServiceCall) -> None:
@@ -228,6 +229,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                   vol.Required("kwh"): cv.positive_float,
                   vol.Optional("costo", default=0.0): vol.Coerce(float),
                   vol.Optional("tipo", default="Pubblica"): str,
+                  vol.Optional("descrizione", default=""): str,
                   vol.Optional("quando"): str,
               }))
     _register(SERVICE_DELETE_TRIP, handle_delete_trip,

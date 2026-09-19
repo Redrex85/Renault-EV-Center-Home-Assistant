@@ -5,6 +5,26 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.17 — Risparmi ridisegnati (termica vs elettrica)
+
+### Perché "Risparmiato MESE/ANNO" era 0
+Il risparmio per periodo usava `cost_meters` (i *meter live*, che restano a 0) e i km del meter.
+Ora il costo delle ricariche del periodo è **somma dei record**, e i km hanno come ripiego la
+somma dei viaggi di quel periodo. Vale per RadiciFuel/Risparmi mese, anno e totale.
+
+### Pagina Risparmi — nuova
+- **Tabella di confronto** "🔴 Auto termica vs 🟢 Auto elettrica" con le voci
+  **Carburante / Tagliandi / Bollo**, i **totali** e la **Differenza** per riga.
+- **Barre semplici** che confrontano i due totali + il risparmio in evidenza.
+- **Risparmio per periodo**: mese, anno, da sempre, km percorsi, prezzo carburante.
+- **Fotovoltaico**: nuovo **"Risparmiato col FV"** in **€** = kWh dal FV ×
+  (costo rete casa − costo FV), più i kWh dal sole.
+- Card "Come si calcola" con la formula in chiaro.
+
+### Controlli
+- `check_status.py` **[18]**: verifica la struttura del confronto e che il costo del periodo
+  **non** torni a usare i meter live.
+
 ## 1.0.16 — Riordino Panoramica, ricarica manuale, selettore anno
 
 ### Panoramica (p1) — nuovo ordine
@@ -18,15 +38,19 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
 ### Mappa
 - Centrata **sull'ultima posizione** dell'auto (`focus_entity` + zoom 13, `auto_fit: false`),
   mantenendo la **traccia delle 48 ore**.
+- **Riempie tutta la cella** come la card a fianco (`height:100%; min-height:260px`) e dopo il
+  layout forza un `resize` così Leaflet ricentra l'auto (non più spostata verso il basso).
 
 ### Storico mensile
+- **Non si riapre più da solo**: lo stato aperto/chiuso è ricordato (`_mesiOpen`), come per l'archivio.
 - Nuovo **selettore anno** ("Tutti gli anni" o un anno specifico).
 - Tolta la doppia freccia `▼ ▼`: il triangolo era scritto a mano e si sommava a quello nativo
   del `<details>`.
 
 ### Ricariche
-- Nuovo box **➕ Aggiungi ricarica manuale**: data, kWh, costo, tipo → servizio
-  `add_manual_charge`. Utile per le colonnine DC non collegate alla wallbox.
+- **Filtri incorporati** nello Storico ricariche (una sola card, non più due).
+- Nuovo box **➕ Aggiungi ricarica manuale**: data, kWh, costo, tipo e **Descrizione** → servizio
+  `add_manual_charge` (nuovo campo `descrizione`, mostrato sotto il tipo nello storico).
 - Nuovo box **📊 Distribuzione ricariche**:
   - **ciambella AC vs DC** e **Casa vs Pubblica** (CSS `conic-gradient`, nessuna card HACS);
   - tile: sessioni, energia totale, durata media, **potenza di picco**, costo totale, prezzo medio.
@@ -39,6 +63,12 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
 - Nuovo grafico **⚡ Potenza wallbox (48 h)** con **apexcharts**: area con soglie di colore
   verde < 3000 W, giallo < 6300 W, rosso oltre. Il sensore è preso da
   **Configura → Wallbox → Potenza istantanea** (non è hardcoded).
+
+### Extra — Consumi vs temperatura esterna
+- Nuovo grafico a dispersione (apexcharts): un punto per viaggio (≥3 km) con **kWh/100km** sulla
+  **temperatura esterna**, più la **linea di tendenza** (regressione lineare).
+- Selettore periodo: **Settimana · Mese · Stagione (90 gg) · Tutto**.
+- Ogni viaggio ora salva la **temperatura esterna** all'arrivo (`temp_est`).
 
 ## 1.0.15 — Automazioni duplicate, filtro mese, indirizzo, layout Impostazioni
 

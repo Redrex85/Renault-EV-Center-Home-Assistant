@@ -975,42 +975,84 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         mese_key = keys["monthly"]
 
         # --- risparmio vs termica ----------------------------------------------------------------
+        # Confronto "auto termica" vs "auto elettrica": quello che AVRESTI speso a benzina/diesel
+        # (carburante + tagliandi + bollo) contro quello che HAI speso (ricariche + tagliandi + bollo EV).
         savings: dict[str, Any] = {}
         if self.fuel_enabled:
             litri_100 = self.fuel_consumption
             prezzo_l = self._prezzo_termico()
             km_tot = odometer
-            costo_termica_tot = km_tot * litri_100 * prezzo_l / 100.0
-            costo_elettrico_tot = round(self.cost_total, 2)
-            savings["totale"] = round(costo_termica_tot - costo_elettrico_tot, 2)
-            savings["termica_totale"] = round(costo_termica_tot, 2)
-            savings["elettrico_totale"] = costo_elettrico_tot
+
+            def _chg_cost(pred) -> float:
+                """Costo ricariche del periodo, dai RECORD (i meter live non sono affidabili)."""
+                return round(sum(_f(c.get("costo")) for c in charges
+                                 if pred(str(c.get("data", "")))), 2)
+
+            def _km_of(pred) -> float:
+                """Km del periodo: prima il meter, altrimenti somma dei viaggi."""
+                v = 0.0
+                for t in trips:
+                    if pred(str(t.get("data", ""))):
+                        v += _f(t.get("km"))
+                return v
+
+            def _periodo(label: str, pred, km_meter: float) -> None:
+                km = km_meter if km_meter > 0 else _km_of(pred)
+                termica = km * litri_100 * prezzo_l / 100.0
+                elettrico = _chg_cost(pred)
+                savings[label] = round(termica - elettrico, 2)
+                if label == "totale":
+                    savings["termica_totale"] = round(termica, 2)
+                    savings["elettrico_totale"] = elettrico
+
+            _periodo("totale", lambda d: True, km_tot)
+            _periodo("mese", lambda d: d[:7] == keys["monthly"],
+                     _f(self.km_meters["monthly"].value))
+            _periodo("anno", lambda d: d[:4] == keys["yearly"],
+                     _f(self.km_meters["yearly"].value))
             savings["prezzo_termico"] = prezzo_l
-            for label, period in (("mese", "monthly"), ("anno", "yearly")):
-                km_p = _f(self.km_meters[period].value)
-                costo_termica = km_p * litri_100 * prezzo_l / 100.0
-                costo_elet = _f(self.cost_meters[period]["value"])
-                savings[label] = round(costo_termica - costo_elet, 2)
+            savings["km_totali"] = round(km_tot, 1)
+
+            # --- dettaglio per voce: termica vs elettrica --------------------------
+            carb_termica = _f(savings.get("termica_totale"))
+            carb_ev = _f(savings.get("elettrico_totale"))
+            tag_termica = tag_ev = bollo_termica = bollo_ev = 0.0
             if self.maint_enabled:
-                # anni di uso stimati sul chilometraggio (media 15.000 km/anno)
                 anni = max(km_tot / 15000.0, 0.1)
-                # Quanti tagliandi AVEREBBE FATTO l'auto termica in questi km
                 tagliandi_termici = int(km_tot // self.tagliando_intervallo)
-                spesa_termica_teoria = tagliandi_termici * self.tag_termico
-                # Quanto HAI SPESO DAVVERO per l'elettrica (registro tagliandi)
-                spesa_ev_reale = round(
-                    sum(_f(m.get("costo")) for m in self.store.data.get("maintenance", [])), 2
-                )
-                risp_tagliandi = spesa_termica_teoria - spesa_ev_reale
-                risp_bollo = anni * (self.bollo_termico - self.bollo_ev)
-                savings["tagliandi"] = round(risp_tagliandi, 2)
-                savings["tagliandi_teoria"] = round(spesa_termica_teoria, 2)
-                savings["tagliandi_reale"] = spesa_ev_reale
+                tag_termica = tagliandi_termici * self.tag_termico
+                tag_ev = round(
+                    sum(_f(m.get("costo")) for m in self.store.data.get("maintenance", [])), 2)
+                bollo_termica = anni * self.bollo_termico
+                bollo_ev = anni * self.bollo_ev
+                savings["tagliandi"] = round(tag_termica - tag_ev, 2)
+                savings["tagliandi_teoria"] = round(tag_termica, 2)
+                savings["tagliandi_reale"] = tag_ev
                 savings["tagliandi_n"] = tagliandi_termici
-                savings["bollo"] = round(risp_bollo, 2)
-                savings["netto"] = round(
-                    _f(savings.get("totale")) + risp_tagliandi + risp_bollo, 2
-                )
+                savings["bollo"] = round(bollo_termica - bollo_ev, 2)
+
+            savings["termica"] = {"carburante": round(carb_termica, 2),
+                                  "tagliandi": round(tag_termica, 2),
+                                  "bollo": round(bollo_termica, 2),
+                                  "totale": round(carb_termica + tag_termica + bollo_termica, 2)}
+            savings["elettrica"] = {"ricariche": round(carb_ev, 2),
+                                    "tagliandi": round(tag_ev, 2),
+                                    "bollo": round(bollo_ev, 2),
+                                    "totale": round(carb_ev + tag_ev + bollo_ev, 2)}
+            savings["differenza"] = round(savings["termica"]["totale"]
+                                          - savings["elettrica"]["totale"], 2)
+            savings["netto"] = savings["differenza"]
+
+            # --- fotovoltaico: quanto hai risparmiato caricando col sole -----------
+            kwh_fv = sum(_f(c.get("kwh")) for c in charges if c.get("tipo") == "Fotovoltaico")
+            kwh_casa = sum(_f(c.get("kwh")) for c in charges if c.get("tipo") == "Casa")
+            kwh_pub = sum(_f(c.get("kwh")) for c in charges if c.get("tipo") == "Pubblica")
+            savings["fv_kwh"] = round(kwh_fv, 2)
+            # il kWh da FV costa il prezzo FV (spesso 0): risparmio = differenza vs rete casa
+            risparmio_kwh = max(self.price_home - self.price_solar, 0.0)
+            savings["fv_eur"] = round(kwh_fv * risparmio_kwh, 2)
+            savings["casa_kwh"] = round(kwh_casa, 2)
+            savings["pubblica_kwh"] = round(kwh_pub, 2)
 
         stats_all = heavy["stats_all"]
         best_eff = heavy["best_eff"]
@@ -1254,6 +1296,17 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         cstats["prezzo_medio"] = round(cstats["costo"] / cstats["kwh"], 3) if cstats["kwh"] > 0 else 0.0
         cstats["durata_media_min"] = round(cstats["durata_min"] / cstats["n"], 0) if cstats["n"] else 0.0
 
+        # --- consumi vs temperatura esterna (grafico a dispersione) ----------------
+        # un punto per viaggio >= 3 km, con la temperatura esterna registrata all'arrivo
+        consumi_temp = [
+            {"d": str(t.get("data", "")),
+             "t": round(_f(t.get("temp_est")), 1),
+             "e": round(_f(t.get("kwh_per_100km")), 2)}
+            for t in trips
+            if _f(t.get("km")) >= 3 and _f(t.get("kwh_per_100km")) > 0
+            and t.get("temp_est") is not None
+        ][-500:]
+
         percorrenza = [
             {"nome": "Oggi", "pct": _pct(o_pct, o_kwh), "usati": o_kwh,
              "caricati": chg["daily"][0], "km": o_km},
@@ -1375,6 +1428,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "mesi_storico": mesi_storico,
             "charges_filtered": charges_filtered,
             "charges_stats": cstats,
+            "consumi_temp": consumi_temp,
             "report": report,
             "temp_out": temp_out,
             "drain_oggi_pct": round(self.drain_meter.value, 1),
@@ -1518,6 +1572,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         record["zona_partenza"] = self._zone_label(record.get("zona_partenza", ""))
         record["zona_arrivo"] = self._zone_label(record.get("zona_arrivo", ""))
         record["costo_stimato"] = round(_f(record.get("kwh_consumati")) * self.price_home, 2)
+        # temperatura esterna all'arrivo: serve al grafico "consumi vs temperatura"
+        if record.get("temp_est") is None and self.temp_entity:
+            _t = _num(self.hass, self.temp_entity, None) if self.temp_entity else None
+            if _t is not None:
+                record["temp_est"] = round(_f(_t), 1)
         # doppia verifica: coordinate reali del tracker all'arrivo + posizione aggiornata
         gps = {}
         posizione_aggiornata = False
@@ -1840,7 +1899,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.persist(force=True)
 
     def service_add_manual_charge(self, kwh: float, costo: float, tipo: str,
-                                  quando: datetime | None) -> dict[str, Any]:
+                                  quando: datetime | None, descrizione: str = "") -> dict[str, Any]:
         q = quando or dt_util.now()
         record = {
             "id": int(q.timestamp()),
@@ -1854,6 +1913,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "potenza_media_kw": 0.0,
             "costo": round(costo, 2),
             "tipo": tipo or "Manuale",
+            "note": str(descrizione or "").strip(),
         }
         self.store.data["charges"].append(record)
         self.cost_total = round(

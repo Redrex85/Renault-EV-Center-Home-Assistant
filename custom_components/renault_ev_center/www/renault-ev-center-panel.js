@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.16";
+const REC_VER = "1.0.17";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -672,7 +672,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       });
     });
     // filtri locali viaggi (anno/mese)
-    this.shadowRoot.querySelectorAll("[data-tf], [data-tfm], [data-rf], [data-rfm], [data-myear]").forEach((sel) => {
+    this.shadowRoot.querySelectorAll("[data-tf], [data-tfm], [data-rf], [data-rfm], [data-myear], [data-trend]").forEach((sel) => {
       sel.addEventListener("change", () => this._update());
     });
     // chip giorni schedulazione
@@ -951,10 +951,12 @@ class RenaultEvCenterPanel extends HTMLElement {
         const costo = parseFloat((g("costo") || {}).value);
         const data = (g("data") || {}).value || "";
         const tipo = (g("tipo") || {}).value || "Pubblica";
+        const descrizione = ((g("descrizione") || {}).value || "").trim();
         const payload = { kwh, costo: isNaN(costo) ? 0 : costo, tipo };
+        if (descrizione) payload.descrizione = descrizione;
         if (data) payload.quando = `${data}T12:00:00`;
         this._call("renault_ev_center", "add_manual_charge", payload, "➕ Ricarica registrata");
-        ["data", "kwh", "costo"].forEach((k) => { const el = g(k); if (el) el.value = ""; });
+        ["data", "kwh", "costo", "descrizione"].forEach((k) => { const el = g(k); if (el) el.value = ""; });
         break;
       }
       case "tfilter-reset": {
@@ -1093,6 +1095,11 @@ class RenaultEvCenterPanel extends HTMLElement {
       this._drawWbChart(root);
       if (this._wbChart) this._wbChart.hass = this._hass;
     }
+    if (root.querySelector("#tempchart")) {
+      this._drawTempChart(root);
+      if (this._tempChart) this._tempChart.hass = this._hass;
+    }
+    this._drawSavings(root);
     // tabelle scadenze (attributo scadenze di prossima_scadenza) — p1 (righe) e p8 (tabella)
     const _sc = this._st(this._sid("prossima_scadenza"));
     const _scRows = (_sc && Array.isArray(_sc.attributes.scadenze) ? _sc.attributes.scadenze : []);
@@ -1209,6 +1216,9 @@ class RenaultEvCenterPanel extends HTMLElement {
       box.innerHTML = "";
       box.appendChild(card);
       this._mapCard = card;
+      // Leaflet calcola il centro prima che il box abbia la sua altezza definitiva:
+      // dopo il layout forzo un resize così l'auto finisce al centro.
+      [150, 600, 1500].forEach((ms) => setTimeout(() => window.dispatchEvent(new Event("resize")), ms));
     } catch (e) {
       box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Mappa non disponibile</div>`;
     }
@@ -1403,6 +1413,145 @@ class RenaultEvCenterPanel extends HTMLElement {
       box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Grafico non disponibile.</div>`;
     }
   }
+  /** grafico a dispersione consumi vs temperatura esterna (apex), con periodo selezionabile */
+  async _drawTempChart(root) {
+    const box = root.querySelector("#tempchart");
+    if (!box) return;
+    const sel = root.querySelector('[data-trend="trend"]');
+    const mode = sel ? sel.value : "month";
+    const s = this._st(this._sid("viaggi_recenti"));
+    const pts = (s && Array.isArray(s.attributes.consumi_temp)) ? s.attributes.consumi_temp : [];
+    if (!pts.length) {
+      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">
+        Nessun dato: servono viaggi ≥3 km con la <b>temperatura esterna</b> configurata.</div>`;
+      this._tempChart = null;
+      return;
+    }
+    const hasApex = typeof customElements !== "undefined" && !!customElements.get("apexcharts-card");
+    if (!hasApex) {
+      box.innerHTML = `<div style="padding:12px;border:1px dashed var(--accent);border-radius:12px;font-size:12.5px;color:var(--muted)">
+        📦 Per questo grafico installa <b>apexcharts-card</b> da HACS → Frontend.</div>`;
+      this._tempChart = null;
+      return;
+    }
+    // il filtro cambia i dati: la card va ricostruita quando cambia il periodo
+    if (this._tempChart && this._tempMode === mode) { this._tempChart.hass = this._hass; return; }
+    const days = { week: 7, month: 31, season: 90, all: 100000 }[mode] || 31;
+    const lim = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+    const vis = pts.filter((p) => !p.d || p.d >= lim);
+    if (!vis.length) {
+      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio nel periodo scelto.</div>`;
+      this._tempChart = null;
+      return;
+    }
+    // regressione lineare per la linea di tendenza
+    const n = vis.length;
+    const sx = vis.reduce((a, p) => a + p.t, 0), sy = vis.reduce((a, p) => a + p.e, 0);
+    const sxx = vis.reduce((a, p) => a + p.t * p.t, 0), sxy = vis.reduce((a, p) => a + p.t * p.e, 0);
+    const den = n * sxx - sx * sx;
+    const xs = vis.map((p) => p.t);
+    const minx = Math.min(...xs), maxx = Math.max(...xs);
+    const trend = (den !== 0 && maxx > minx)
+      ? [[minx, ((n * sxy - sx * sy) / den) * minx + (sy - ((n * sxy - sx * sy) / den) * sx) / n],
+         [maxx, ((n * sxy - sx * sy) / den) * maxx + (sy - ((n * sxy - sx * sy) / den) * sx) / n]]
+      : [];
+    if (typeof window.loadCardHelpers !== "function") return;
+    try {
+      const helpers = await window.loadCardHelpers();
+      const series = [{
+        entity: this._sid("viaggi_recenti"),
+        name: "Elettrico (kWh/100 km)",
+        type: "scatter",
+        color: "#3ea6ff",
+        data_generator: () => vis.map((p) => [p.t, p.e]),
+      }];
+      if (trend.length) {
+        series.push({
+          name: "Tendenza",
+          type: "line",
+          color: "#7cc4ff",
+          stroke_width: 2,
+          curve: "straight",
+          data_generator: () => trend,
+        });
+      }
+      const card = helpers.createCardElement({
+        type: "custom:apexcharts-card",
+        graph_span: "1y",
+        update_interval: "30min",
+        apex_config: {
+          chart: { height: 240 },
+          xaxis: { type: "numeric", title: { text: "°C" }, tickAmount: 6 },
+          yaxis: { title: { text: "kWh/100km" } },
+          markers: { size: 4 },
+        },
+        series,
+      });
+      card.hass = this._hass;
+      card.style.display = "block";
+      box.innerHTML = "";
+      box.appendChild(card);
+      this._tempChart = card;
+      this._tempMode = mode;
+    } catch (e) {
+      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Grafico non disponibile.</div>`;
+      this._tempChart = null;
+    }
+  }
+  /** trova un sensore dell'integrazione per prefisso (il nome carburante è configurabile) */
+  _sensorByPrefix(prefix) {
+    const base = `sensor.${this._slug(this._cfg.name)}_${prefix}`;
+    if (this._hass.states[base]) return this._hass.states[base];
+    for (const id of Object.keys(this._hass.states)) {
+      if (id.startsWith(base)) return this._hass.states[id];
+    }
+    return null;
+  }
+  /** vista Risparmi: confronto termica vs elettrica + barre */
+  _drawSavings(root) {
+    const s = this._sensorByPrefix("risparmio_totale_vs");
+    const a = s && s.attributes ? s.attributes : null;
+    const money = (k, v) => root.querySelectorAll(`[data-sv="${k}"]`).forEach((el) => {
+      el.textContent = (v === null || v === undefined || isNaN(v)) ? "—" : this._fmt(v, 2);
+    });
+    const bar = root.querySelector('[data-c="bar-risp"]');
+    const keys = ["t_carb", "e_ric", "d_carb", "t_tag", "e_tag", "d_tag",
+                  "t_bollo", "e_bollo", "d_bollo", "t_tot", "e_tot", "d_tot", "fv_eur", "fv_kwh"];
+    if (!a || !a.termica || !a.elettrica) {
+      keys.forEach((k) => money(k, null));
+      root.querySelectorAll('[data-sv="km"]').forEach((el) => { el.textContent = "—"; });
+      root.querySelectorAll('[data-sv="prezzo"]').forEach((el) => { el.textContent = "—"; });
+      if (bar) bar.innerHTML = `<div style="color:var(--muted);font-size:12px">Attiva il confronto con l'auto termica in <b>Configura → Risparmi</b>.</div>`;
+      return;
+    }
+    const t = a.termica, e = a.elettrica;
+    money("t_carb", t.carburante); money("e_ric", e.ricariche);
+    money("d_carb", (t.carburante || 0) - (e.ricariche || 0));
+    money("t_tag", t.tagliandi); money("e_tag", e.tagliandi);
+    money("d_tag", (t.tagliandi || 0) - (e.tagliandi || 0));
+    money("t_bollo", t.bollo); money("e_bollo", e.bollo);
+    money("d_bollo", (t.bollo || 0) - (e.bollo || 0));
+    money("t_tot", t.totale); money("e_tot", e.totale); money("d_tot", a.differenza);
+    money("fv_eur", a.fv_eur); money("fv_kwh", a.fv_kwh);
+    root.querySelectorAll('[data-sv="km"]').forEach((el) => { el.textContent = this._i(a.km_totali); });
+    root.querySelectorAll('[data-sv="prezzo"]').forEach((el) => {
+      el.textContent = (a.prezzo_termico === null || a.prezzo_termico === undefined)
+        ? "—" : this._fmt(a.prezzo_termico, 3);
+    });
+    if (bar) {
+      const max = Math.max(t.totale || 0, e.totale || 0, 1);
+      const row = (label, val, color) => `
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:12.5px"><span>${label}</span><b>${this._fmt(val, 2)} €</b></div>
+          <div style="height:14px;border-radius:7px;background:var(--panel2);margin-top:5px;overflow:hidden">
+            <i style="display:block;height:14px;border-radius:7px;width:${Math.max(3, ((val || 0) / max) * 100)}%;background:${color}"></i></div>
+        </div>`;
+      bar.innerHTML = row("🔴 Auto termica", t.totale, "#e05555")
+        + row("🟢 Auto elettrica", e.totale, "#22c55e")
+        + `<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line);display:flex;justify-content:space-between">
+             <b>💚 Risparmio</b><b style="color:var(--accent);font-size:19px">${this._fmt(a.differenza, 2)} €</b></div>`;
+    }
+  }
   _wb_state_txt() {
     const p = this._num(this._sid("wallbox_potenza"), "sensor.wallbox_instant_power", this._car("sensor", "battery_charger_power"));
     if (p !== null) return p > 0 ? `${this._fmt(p, 2)} kW` : "Inattiva";
@@ -1521,6 +1670,9 @@ class RenaultEvCenterPanel extends HTMLElement {
       selY.value = anni.includes(cur) ? cur : "";
     }
     const fY = selY ? selY.value : "";
+    // stato aperto/chiuso ricordato: senza questo il re-render riapre tutto da solo
+    const opened = (this._mesiOpen = this._mesiOpen || {});
+    const op = (k) => (opened[k] === false ? "" : "open");
     box.innerHTML = anni.filter((y) => !fY || y === fY).map((y) => {
       const mm = mesi[y] || {};
       let tC = 0, tK = 0, tKm = 0;
@@ -1534,10 +1686,13 @@ class RenaultEvCenterPanel extends HTMLElement {
           <td>${r ? this._fmt(k, 1) + " kWh" : (futuro ? "" : "0,0 kWh")}</td>
           <td>${r && km ? this._i(km) + " km" : (futuro ? "attesa" : "0 km")}</td></tr>`;
       }).join("");
-      return `<details class="anno" open><summary><span class="tr">${y} · ${this._fmt(tC, 2)} € · ${this._fmt(tK, 1)} kWh · ${this._i(tKm)} km</span></summary>
+      return `<details class="anno" data-mk="${y}" ${op(y)}><summary><span class="tr">${y} · ${this._fmt(tC, 2)} € · ${this._fmt(tK, 1)} kWh · ${this._i(tKm)} km</span></summary>
         <table><tr><th>Mese</th><th>Costo</th><th>Ricaricati</th><th>KM</th></tr>${rows}
         <tr class="totrow"><td>TOTALE</td><td>${this._fmt(tC, 2)} €</td><td>${this._fmt(tK, 1)} kWh</td><td>${this._i(tKm)} km</td></tr></table></details>`;
     }).join("") || `<div style="color:var(--muted)">Nessun dato per l'anno scelto</div>`;
+    box.querySelectorAll("details[data-mk]").forEach((d) => {
+      d.addEventListener("toggle", () => { this._mesiOpen[d.dataset.mk] = d.open; });
+    });
   }
   _tableViaggi(root) {
     const s = this._st(this._sid("viaggi_recenti"));
@@ -1603,7 +1758,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const dur = dm > 0 ? this._fmt(dm / 60, 1) + " h" : "—";
       const dsoc = (r.soc_end !== undefined && r.soc_start !== undefined) ? "+" + Math.round(r.soc_end - r.soc_start) + "%" : "—";
       return `<tr><td>${this._d(r.data)}${r.ora_inizio ? " · " + r.ora_inizio : ""}</td>
-        <td>${r.tipo ?? "—"}</td><td>${dur}</td>
+        <td>${r.tipo ?? "—"}${r.note ? `<br><span style="color:var(--muted);font-size:11px">${r.note}</span>` : ""}</td><td>${dur}</td>
         <td><b>${dsoc}</b></td>
         <td>${this._fmt(parseFloat(r.kwh ?? r.energia ?? 0), 2)}</td>
         <td>${this._fmt(parseFloat(r.potenza_media_kw ?? r.kw_medio ?? 0), 2)}</td>
@@ -1874,7 +2029,7 @@ select,input{background:var(--panel2);color:var(--txt);border:1px solid var(--li
 .carbox{position:relative;border-radius:14px;overflow:hidden;border:1px dashed var(--accent);background:radial-gradient(ellipse at 50% 115%,var(--accent-soft),transparent 60%),var(--panel);display:flex;align-items:center;justify-content:center;min-height:210px;flex-direction:column;gap:8px}
 .carbox .ph{font-size:52px}
 .carbox img{max-height:190px;max-width:90%;object-fit:contain}
-.mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);height:260px}
+.mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);height:100%;min-height:260px}
 .mapbox ha-map{display:block;width:100%;height:100%}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel);color:var(--txt);border:1px solid var(--accent);border-radius:12px;padding:12px 20px;font-size:14px;opacity:0;transition:.3s;z-index:999}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -2041,12 +2196,6 @@ const PAGES = {
     <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett">—</span> €</div></div>
     <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">MESE</div><div class="v"><span data-f="kwh_mese_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_mese">—</span> €</div></div>
     <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">ANNO</div><div class="v"><span data-f="kwh_anno_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_anno">—</span> €</div></div></div>
-  <div class="card"><h3>Filtri</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <select data-sel="sel_tipo"></select>
-      <select data-sel="sel_periodo"></select>
-      <select data-sel="sel_mese"></select>
-      <select data-sel="sel_anno"></select></div></div>
   <div class="card" style="margin-top:16px"><h3>➕ Aggiungi ricarica manuale</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Data
@@ -2057,6 +2206,8 @@ const PAGES = {
         <input type="number" data-mc="costo" step="0.01" min="0" style="width:90px"></label>
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Tipo
         <select data-mc="tipo" style="width:auto"><option>Casa</option><option>Fotovoltaico</option><option selected>Pubblica</option><option>Manuale</option></select></label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted);flex:1;min-width:180px">Descrizione
+        <input data-mc="descrizione" placeholder="es. Colonnina DC autostrada" style="width:100%"></label>
       <div class="btn" data-cmd="add_charge_manual">💾 Registra ricarica</div>
     </div>
     <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Utile per le colonnine DC. Se lasci vuoto il costo, resta 0 €.</div></div>
@@ -2076,6 +2227,11 @@ const PAGES = {
       <div class="tile"><div><div class="v" data-cs="prezzo">—</div><div class="l">Prezzo medio €/kWh</div></div></div>
     </div></div>
   <div class="card"><h3>Storico ricariche</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <select data-sel="sel_tipo"></select>
+      <select data-sel="sel_periodo"></select>
+      <select data-sel="sel_mese"></select>
+      <select data-sel="sel_anno"></select></div>
     <table><tr><th>Data</th><th>Tipo</th><th>Durata</th><th>Δ SoC</th><th>kWh</th><th>Ø kW</th><th>€/kWh</th><th>Costo</th></tr>
     <tbody data-c="tab-ricariche"></tbody></table></div>`,
 
@@ -2142,27 +2298,45 @@ const PAGES = {
     <div class="row"><span>Risparmio bollo</span><b><span data-f="risp_bollo">—</span> €</b></div></div>`,
 
   p7: `<h1>Risparmi</h1>
-  <div class="grid g2">
-    <div class="card"><h3>💶 Carburante</h3>
-      <div class="row"><span>Risparmiato TOTALE</span><b style="color:var(--accent)"><span data-f="risp_tot">—</span> €</b></div>
-      <div class="row"><span>Spesa teorica termica</span><b><span data-f="spesa_teorica">—</span> €</b></div>
-      <div class="row"><span>Costo totale ricariche</span><b><span data-f="costo_ric_tot">—</span> €</b></div>
-      <div class="row"><span>Risparmiato MESE</span><b><span data-f="risp_mese">—</span> €</b></div>
-      <div class="row"><span>Risparmiato ANNO</span><b><span data-f="risp_anno">—</span> €</b></div></div>
-    <div class="card"><h3>🔧📄 Manutenzione + Bollo</h3>
-      <div class="row"><span>Risparmio tagliandi</span><b><span data-f="risp_tagliandi">—</span> €</b></div>
-      <div class="row"><span>Risparmio bollo</span><b><span data-f="risp_bollo">—</span> €</b></div></div></div>
-  <div class="card netto" style="margin-top:16px"><h3>🏆 Risultato netto</h3>
-    <table><tr><th>Voce</th><th>Euro</th></tr>
-      <tr><td>Carburante evitato</td><td><span data-f="risp_tot">—</span> €</td></tr>
-      <tr><td>+ Tagliandi</td><td><span data-f="risp_tagliandi">—</span> €</td></tr>
-      <tr><td>+ Bollo</td><td><span data-f="risp_bollo">—</span> €</td></tr></table></div>
+  <div class="card"><h3>⚖️ Termica vs Elettrica</h3>
+    <table style="width:100%">
+      <tr><th>Voce</th><th style="text-align:right">🔴 Auto termica</th><th style="text-align:right">🟢 Auto elettrica</th><th style="text-align:right">💚 Differenza</th></tr>
+      <tr><td>⛽ Carburante</td><td style="text-align:right"><span data-sv="t_carb">—</span> €</td><td style="text-align:right"><span data-sv="e_ric">—</span> €</td><td style="text-align:right"><b data-sv="d_carb">—</b> €</td></tr>
+      <tr><td>🔧 Tagliandi</td><td style="text-align:right"><span data-sv="t_tag">—</span> €</td><td style="text-align:right"><span data-sv="e_tag">—</span> €</td><td style="text-align:right"><b data-sv="d_tag">—</b> €</td></tr>
+      <tr><td>📄 Bollo</td><td style="text-align:right"><span data-sv="t_bollo">—</span> €</td><td style="text-align:right"><span data-sv="e_bollo">—</span> €</td><td style="text-align:right"><b data-sv="d_bollo">—</b> €</td></tr>
+      <tr style="border-top:2px solid var(--accent)"><td><b>TOTALE</b></td>
+        <td style="text-align:right"><b data-sv="t_tot">—</b> €</td>
+        <td style="text-align:right"><b data-sv="e_tot">—</b> €</td>
+        <td style="text-align:right"><b style="color:var(--accent);font-size:17px" data-sv="d_tot">—</b> €</td></tr>
+    </table>
+    <div style="color:var(--muted);font-size:11.5px;margin-top:8px" data-sv="nota">Il risparmio è la differenza fra quello che avresti speso con l'auto termica e quello che hai speso davvero.</div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>📊 Confronto costi</h3>
+      <div data-c="bar-risp"></div></div>
+    <div class="card"><h3>📅 Risparmio per periodo</h3>
+      <div class="row"><span>Mese</span><b style="color:var(--accent)"><span data-f="risp_mese" data-dec="2">—</span> €</b></div>
+      <div class="row"><span>Anno</span><b style="color:var(--accent)"><span data-f="risp_anno" data-dec="2">—</span> €</b></div>
+      <div class="row" style="border-top:1px solid var(--line)"><span><b>Da sempre</b></span><b style="color:var(--accent)"><span data-sv="d_tot">—</span> €</b></div>
+      <div class="row"><span>Km percorsi</span><b><span data-sv="km">—</span> km</b></div>
+      <div class="row"><span>Prezzo carburante</span><b><span data-sv="prezzo">—</span> €/l</b></div></div>
+  </div>
+
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>☀️ Fotovoltaico</h3>
+      <div class="row"><span>Risparmiato col FV</span><b style="color:var(--good);font-size:17px"><span data-sv="fv_eur" data-dec="2">—</span> €</b></div>
+      <div class="row"><span>Energia dal FV</span><b><span data-sv="fv_kwh">—</span> kWh</b></div>
       <div class="row"><span>Ricaricato FV questo mese</span><b><span data-f="fv_mese">—</span> kWh</b></div>
-      <div class="row"><span>Energia FV totale</span><b><span data-f="fv_tot">—</span> kWh</b></div></div>
+      <div class="row"><span>Energia FV totale</span><b><span data-f="fv_tot">—</span> kWh</b></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Risparmio = kWh dal FV × (costo rete casa − costo FV).</div></div>
     <div class="card"><h3>ℹ️ Come si calcola</h3>
-      <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Carburante: km × consumo × prezzo − costi pagati.<br>Tagliandi: (km ÷ intervallo) × 450 € − spesa reale EV.<br>Bollo: imposta il bollo termico con <code>overrides.bollo_termico</code>. Il FV costa 0 €.</div></div></div>`,
+      <div style="color:var(--muted);font-size:12.5px;line-height:1.8">
+        <b>Termica</b>: km × consumo × prezzo carburante + tagliandi + bollo.<br>
+        <b>Elettrica</b>: ricariche registrate + spesa tagliandi reale + bollo EV.<br>
+        <b>Risparmio</b>: termica − elettrica.<br>
+        Periodi (mese/anno) usano i km e le ricariche di quel periodo.</div></div>
+  </div>`,
 
   p8: `<h1>Extra</h1>
   <div class="grid g3">
@@ -2187,6 +2361,19 @@ const PAGES = {
       <div class="row"><span>Peggiore</span><b><span data-topstop="peggiore|kwh_per_100km">—</span> kWh/100km</b></div>
       <div class="row"><span>Energia casa (totale)</span><b><span data-f="energia_casa">—</span> kWh</b></div></div>
   </div>
+  <div class="card" style="margin-top:16px"><h3>🌡️ Consumi vs temperatura esterna</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <select data-trend="trend" style="width:auto">
+        <option value="week">Settimana</option>
+        <option value="month" selected>Mese</option>
+        <option value="season">Stagione (90 gg)</option>
+        <option value="all">Tutto</option>
+      </select>
+    </div>
+    <div id="tempchart" style="min-height:220px"></div>
+    <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Un punto per viaggio (≥3 km): consumo kWh/100km
+      sulla temperatura esterna. La linea tratteggiata è la tendenza. Richiede <b>apexcharts-card</b> e il
+      sensore <b>Temperatura esterna</b> mappato in Configura.</div></div>
   <div class="card" style="margin-top:16px"><h3>ℹ️ Note</h3>
     <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2 evitata vs termica (termica − rete).<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div>`,
 

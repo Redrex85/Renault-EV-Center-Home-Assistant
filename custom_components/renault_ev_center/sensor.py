@@ -599,7 +599,8 @@ class ViaggiRecenti(MateSensor):
 
     @property
     def extra_state_attributes(self):
-        return {"trips": self.coordinator.data["trips_recent"]}
+        return {"trips": self.coordinator.data["trips_recent"],
+                "consumi_temp": self.coordinator.data.get("consumi_temp", [])}
 
 
 class StoricoGiornaliero(MateSensor):
@@ -711,7 +712,10 @@ class RisparmioTermica(MateSensor):
 
     @property
     def extra_state_attributes(self):
-        savings = self.coordinator.data.get("savings", {})
+        savings = dict(self.coordinator.data.get("savings", {}))
+        # sulla voce "totale" espongo TUTTO il confronto termica/elettrica per la vista Risparmi
+        if self._periodo == "totale":
+            return savings
         return {
             "termica_totale": savings.get("termica_totale"),
             "elettrico_totale": savings.get("elettrico_totale"),

@@ -25,6 +25,10 @@ add_manual_charge:
     tipo:
       name: Tipo
       example: Pubblica
+    descrizione:
+      name: Descrizione
+      description: Nota libera (es. "Colonnina DC autostrada").
+      example: Colonnina DC autostrada
     quando:
       name: Data/ora
       description: Formato ISO opzionale (2026-08-22T14:30:00).
