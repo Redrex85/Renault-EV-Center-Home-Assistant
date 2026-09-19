@@ -5,6 +5,41 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.16 — Riordino Panoramica, ricarica manuale, selettore anno
+
+### Panoramica (p1) — nuovo ordine
+1. **Prima riga**: auto · **Comandi Renault** · **Efficienza** (con dentro anche il
+   **Risparmio netto**: carburante evitato, tagliandi, bollo, NETTO).
+2. **Seconda riga**: **Oggi a colpo d'occhio** + **Ultima ricarica** affiancati.
+3. **Terza riga**: **Mappa** + **Km percorsi (7 giorni)**.
+4. **Quarta riga**: **Automazioni attive** + **Scadenze e manutenzione** (con giorni colorati:
+   rosso ≤15, giallo ≤45, verde oltre).
+
+### Mappa
+- Centrata **sull'ultima posizione** dell'auto (`focus_entity` + zoom 13, `auto_fit: false`),
+  mantenendo la **traccia delle 48 ore**.
+
+### Storico mensile
+- Nuovo **selettore anno** ("Tutti gli anni" o un anno specifico).
+- Tolta la doppia freccia `▼ ▼`: il triangolo era scritto a mano e si sommava a quello nativo
+  del `<details>`.
+
+### Ricariche
+- Nuovo box **➕ Aggiungi ricarica manuale**: data, kWh, costo, tipo → servizio
+  `add_manual_charge`. Utile per le colonnine DC non collegate alla wallbox.
+- Nuovo box **📊 Distribuzione ricariche**:
+  - **ciambella AC vs DC** e **Casa vs Pubblica** (CSS `conic-gradient`, nessuna card HACS);
+  - tile: sessioni, energia totale, durata media, **potenza di picco**, costo totale, prezzo medio.
+- **AC/DC rilevato dalla potenza**: ogni sessione registra il **picco** (`potenza_max_kw`);
+  oltre **22 kW** (3 fasi 32 A) è considerata **DC/fast**, altrimenti **AC**. I record vecchi
+  usano la potenza media come ripiego. Controllo `check_status` **[16]**.
+
+### Wallbox (p11)
+- Nuovo box **⏱️ Stima ricarica**: tempo stimato, orario stimato, costo stimato.
+- Nuovo grafico **⚡ Potenza wallbox (48 h)** con **apexcharts**: area con soglie di colore
+  verde < 3000 W, giallo < 6300 W, rosso oltre. Il sensore è preso da
+  **Configura → Wallbox → Potenza istantanea** (non è hardcoded).
+
 ## 1.0.15 — Automazioni duplicate, filtro mese, indirizzo, layout Impostazioni
 
 ### Correzioni

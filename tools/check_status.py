@@ -415,6 +415,27 @@ try:
 except Exception as e:
     bad(f"costi ricariche: {e}")
 
+print("\n[16] AC/DC e statistiche ricariche")
+try:
+    with open(os.path.join(CC, "coordinator.py"), encoding="utf-8") as fh:
+        tree16 = ast.parse(fh.read())
+    ns16: dict = {"_f": lambda v, d=0.0: float(v) if v not in (None, "") else d}
+    fn16 = next(n for n in tree16.body
+                if isinstance(n, ast.FunctionDef) and n.name == "_ac_dc_from_power")
+    exec(compile(ast.Module(body=[fn16], type_ignores=[]), "<acdc>", "exec"), ns16)
+    acdc = ns16["_ac_dc_from_power"]
+    assert acdc(11.0) == "AC", "11 kW deve essere AC"
+    assert acdc(22.0) == "AC", "22 kW (3 fase 32 A) resta AC"
+    assert acdc(110.0) == "DC", "110 kW deve essere DC"
+    assert acdc(0, 50.0) == "DC", "senza picco usa la media"
+    assert acdc(0, 0) is None, "potenza ignota -> None"
+    src16 = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert '"charges_stats": cstats' in src16, "charges_stats non esposto nei dati"
+    assert "power_max_kw" in src16, "picco di potenza non registrato nella sessione"
+    ok("AC/DC dalla potenza + statistiche ricariche esposte")
+except Exception as e:
+    bad(f"AC/DC ricariche: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

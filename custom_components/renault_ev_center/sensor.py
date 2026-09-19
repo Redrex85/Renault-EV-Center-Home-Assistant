@@ -865,6 +865,7 @@ class ListaRicariche(MateSensor):
             "periodo": cf["periodo"],
             "totale_kwh": cf["kwh"],
             "totale_costo": cf["costo"],
+            "stats": self.coordinator.data.get("charges_stats", {}),
         }
 
 

@@ -171,6 +171,14 @@ def _best_measured_delta(pairs):
     return max(vals) if vals else 0.0
 
 
+def _ac_dc_from_power(power_max_kw, power_avg_kw=0.0):
+    """AC o DC dalla potenza: oltre 22 kW (3 fasi 32 A) è DC/fast. None se non nota."""
+    p = _f(power_max_kw) or _f(power_avg_kw) or 0.0
+    if p <= 0:
+        return None
+    return "DC" if p > 22.0 else "AC"
+
+
 def _charge_energy(measured: float, accum: float, tipo: str, soc_start, battery, capacity):
     """Energia di una ricarica, in ordine di affidabilità.
 
@@ -843,12 +851,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     "total_start": self._wb_total_counter(),
                     "kwh_accum": 0.0,
                     "ts_last": time.time(),
+                    "power_max_kw": 0.0,
                     "odometro_inizio": odometer,
                     "prezzo": self._price_for_zone(location or "home"),
                 }
                 started_charge = True
             self.charge_session["soc_now"] = battery
             self.charge_session["power_kw"] = wb_power
+            # picco di potenza della sessione: serve a distinguere AC (≤22 kW) da DC (fast)
+            if wb_power > _f(self.charge_session.get("power_max_kw")):
+                self.charge_session["power_max_kw"] = round(wb_power, 2)
             # integrale della potenza istantanea: conta i kWh se i contatori wallbox mancano
             _now_ts = time.time()
             _dt_h = max(_now_ts - _f(self.charge_session.get("ts_last"), _now_ts), 0.0) / 3600.0
@@ -1212,6 +1224,36 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         def _prev_of(p: str) -> tuple[float, float]:
             return chg[_prev_key[p]]
 
+        # --- statistiche complessive ricariche (AC/DC, Casa/Pubblica) --------------
+        cstats: dict[str, Any] = {
+            "n": 0, "kwh": 0.0, "costo": 0.0, "durata_min": 0, "picco_kw": 0.0,
+            "ac": {"n": 0, "kwh": 0.0}, "dc": {"n": 0, "kwh": 0.0},
+            "casa": {"n": 0, "kwh": 0.0}, "pubblica": {"n": 0, "kwh": 0.0},
+        }
+        for c in charges:
+            kwh_c = _f(c.get("kwh"))
+            cstats["n"] += 1
+            cstats["kwh"] += kwh_c
+            cstats["costo"] += _f(c.get("costo"))
+            cstats["durata_min"] += int(_f(c.get("durata_min")))
+            cstats["picco_kw"] = max(cstats["picco_kw"],
+                                     _f(c.get("potenza_max_kw")), _f(c.get("potenza_media_kw")))
+            ad = c.get("ac_dc") or _ac_dc_from_power(
+                c.get("potenza_max_kw"), c.get("potenza_media_kw"))
+            grp = "dc" if ad == "DC" else "ac"
+            cstats[grp]["n"] += 1
+            cstats[grp]["kwh"] += kwh_c
+            casa = str(c.get("tipo", "")) != "Pubblica"
+            cstats["casa" if casa else "pubblica"]["n"] += 1
+            cstats["casa" if casa else "pubblica"]["kwh"] += kwh_c
+        for grp in ("ac", "dc", "casa", "pubblica"):
+            cstats[grp]["kwh"] = round(cstats[grp]["kwh"], 2)
+        cstats["kwh"] = round(cstats["kwh"], 2)
+        cstats["costo"] = round(cstats["costo"], 2)
+        cstats["picco_kw"] = round(cstats["picco_kw"], 2)
+        cstats["prezzo_medio"] = round(cstats["costo"] / cstats["kwh"], 3) if cstats["kwh"] > 0 else 0.0
+        cstats["durata_media_min"] = round(cstats["durata_min"] / cstats["n"], 0) if cstats["n"] else 0.0
+
         percorrenza = [
             {"nome": "Oggi", "pct": _pct(o_pct, o_kwh), "usati": o_kwh,
              "caricati": chg["daily"][0], "km": o_km},
@@ -1332,6 +1374,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "health": dict(self.store.data.get("health", {})),
             "mesi_storico": mesi_storico,
             "charges_filtered": charges_filtered,
+            "charges_stats": cstats,
             "report": report,
             "temp_out": temp_out,
             "drain_oggi_pct": round(self.drain_meter.value, 1),
@@ -1406,6 +1449,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "soc_start": round(_f(s.get("soc_start")), 1),
             "soc_end": round(battery, 1),
             "potenza_media_kw": round(kwh / (durata_min / 60.0), 2) if durata_min > 5 else 0.0,
+            "potenza_max_kw": round(_f(s.get("power_max_kw")), 2),
+            "ac_dc": _ac_dc_from_power(_f(s.get("power_max_kw")),
+                                       kwh / (durata_min / 60.0) if durata_min > 5 else 0.0),
             "costo": costo,
             "tipo": tipo,
         }

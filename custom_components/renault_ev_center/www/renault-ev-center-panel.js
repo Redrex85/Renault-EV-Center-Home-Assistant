@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.15";
+const REC_VER = "1.0.16";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -672,7 +672,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       });
     });
     // filtri locali viaggi (anno/mese)
-    this.shadowRoot.querySelectorAll("[data-tf], [data-tfm], [data-rf], [data-rfm]").forEach((sel) => {
+    this.shadowRoot.querySelectorAll("[data-tf], [data-tfm], [data-rf], [data-rfm], [data-myear]").forEach((sel) => {
       sel.addEventListener("change", () => this._update());
     });
     // chip giorni schedulazione
@@ -944,6 +944,19 @@ class RenaultEvCenterPanel extends HTMLElement {
         this._call("renault_ev_center", "set_low_soc_days", { giorni }, "🔔 Giorni avviso salvati");
         break;
       }
+      case "add_charge_manual": {
+        const g = (k) => this.shadowRoot.querySelector(`[data-mc="${k}"]`);
+        const kwh = parseFloat((g("kwh") || {}).value);
+        if (isNaN(kwh) || kwh <= 0) { this._toast("⚠️ Inserisci i kWh"); break; }
+        const costo = parseFloat((g("costo") || {}).value);
+        const data = (g("data") || {}).value || "";
+        const tipo = (g("tipo") || {}).value || "Pubblica";
+        const payload = { kwh, costo: isNaN(costo) ? 0 : costo, tipo };
+        if (data) payload.quando = `${data}T12:00:00`;
+        this._call("renault_ev_center", "add_manual_charge", payload, "➕ Ricarica registrata");
+        ["data", "kwh", "costo"].forEach((k) => { const el = g(k); if (el) el.value = ""; });
+        break;
+      }
       case "tfilter-reset": {
         const f = this.shadowRoot.querySelector('[data-tfd="from"]');
         const t = this.shadowRoot.querySelector('[data-tfd="to"]');
@@ -1074,14 +1087,29 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._drawWallbox(root);
     this._drawAutos(root);
     this._drawAutoToggles(root);
-    // tabella scadenze (attributo scadenze di prossima_scadenza)
+    // statistiche ricariche (ciambelle + tile) e grafico potenza wallbox
+    this._drawChargesStats(root);
+    if (root.querySelector("#wbchart")) {
+      this._drawWbChart(root);
+      if (this._wbChart) this._wbChart.hass = this._hass;
+    }
+    // tabelle scadenze (attributo scadenze di prossima_scadenza) — p1 (righe) e p8 (tabella)
+    const _sc = this._st(this._sid("prossima_scadenza"));
+    const _scRows = (_sc && Array.isArray(_sc.attributes.scadenze) ? _sc.attributes.scadenze : []);
     const tbSc = root.querySelector('[data-c="tab-scadenze"]');
     if (tbSc) {
-      const s = this._st(this._sid("prossima_scadenza"));
-      const rs = (s && Array.isArray(s.attributes.scadenze) ? s.attributes.scadenze : []);
-      tbSc.innerHTML = rs.slice(0, 6).map((r) =>
+      tbSc.innerHTML = _scRows.slice(0, 6).map((r) =>
         `<tr><td>${r.tipo ?? r.nome ?? "—"}</td><td><b>${r.giorni ?? r.gg ?? "—"}</b> gg</td></tr>`).join("")
         || `<tr><td colspan="2" style="color:var(--muted)">Nessuna scadenza</td></tr>`;
+    }
+    const scP1 = root.querySelector('[data-c="tab-scadenze-p1"]');
+    if (scP1) {
+      scP1.innerHTML = _scRows.slice(0, 6).map((r) => {
+        const g = parseInt(r.giorni ?? r.gg, 10);
+        const col = isNaN(g) ? "var(--muted)" : (g <= 15 ? "var(--bad)" : g <= 45 ? "var(--warn)" : "var(--good)");
+        return `<div class="row"><span>${r.tipo ?? r.nome ?? "—"}</span>` +
+          `<b style="color:${col}">${isNaN(g) ? "—" : g + " gg"}</b></div>`;
+      }).join("") || `<div style="color:var(--muted);font-size:12px">Nessuna scadenza</div>`;
     }
     // celle percorrenza: [data-per="oggi|usati"] → riga attributo `righe`
     root.querySelectorAll("[data-per]").forEach((el) => {
@@ -1167,11 +1195,13 @@ class RenaultEvCenterPanel extends HTMLElement {
       const helpers = await window.loadCardHelpers();
       const card = helpers.createCardElement({
         type: "map",
+        // traccia 48 h (come prima) ma inquadratura centrata sull'ultima posizione dell'auto
         entities: [{ entity: loc }],
         hours_to_show: 48,
         theme_mode: "dark",
         auto_fit: false,
-        default_zoom: 11,
+        default_zoom: 13,
+        focus_entity: loc,
       });
       card.hass = this._hass;
       card.style.display = "block";
@@ -1263,6 +1293,115 @@ class RenaultEvCenterPanel extends HTMLElement {
           Per vedere questo grafico installa da <b>HACS → Frontend</b> → <code>apexcharts-card</code>,
           poi riavvia Home Assistant e ricarica la pagina.
         </div></div>`;
+  }
+  /** ciambella con CSS conic-gradient: nessuna card HACS richiesta */
+  _donut(parts, center) {
+    const tot = parts.reduce((a, p) => a + (p.value || 0), 0);
+    let acc = 0;
+    const segs = [];
+    for (const p of parts) {
+      const pct = tot > 0 ? ((p.value || 0) / tot) * 100 : 0;
+      if (pct > 0) segs.push(`${p.color} ${acc}% ${acc + pct}%`);
+      acc += pct;
+    }
+    const bg = segs.length ? `conic-gradient(${segs.join(",")})` : "var(--panel2)";
+    const legend = parts.map((p) => {
+      const pct = tot > 0 ? Math.round(((p.value || 0) / tot) * 100) : 0;
+      return `<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:8px">
+        <span style="width:11px;height:11px;border-radius:50%;background:${p.color};flex:0 0 auto"></span>
+        <span style="flex:1">${p.label}</span>
+        <b>${p.n || 0}</b><span style="color:var(--muted)"> sess · </span>
+        <b>${this._fmt(p.value || 0, 2)}</b><span style="color:var(--muted)"> kWh · ${pct}%</span></div>`;
+    }).join("");
+    return `<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+      <div style="position:relative;width:150px;height:150px;border-radius:50%;background:${bg};flex:0 0 auto">
+        <div style="position:absolute;inset:30px;border-radius:50%;background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-size:26px;font-weight:800;line-height:1">${center}</div>
+          <div style="font-size:10.5px;color:var(--muted)">Ricariche</div></div></div>
+      <div style="flex:1;min-width:160px">${legend}</div></div>`;
+  }
+  /** statistiche ricariche: AC/DC e Casa/Pubblica (attributo `stats` della lista ricariche) */
+  _drawChargesStats(root) {
+    const s = this._st(this._sid("lista_ricariche"));
+    const st = s && s.attributes ? s.attributes.stats : null;
+    const set = (k, v) => root.querySelectorAll(`[data-cs="${k}"]`).forEach((el) => { el.textContent = v; });
+    const d1 = root.querySelector('[data-c="donut-acdc"]');
+    const d2 = root.querySelector('[data-c="donut-casa"]');
+    if (!st || !st.n) {
+      ["n", "kwh", "durata", "picco", "costo", "prezzo"].forEach((k) => set(k, "—"));
+      if (d1) d1.innerHTML = `<div style="color:var(--muted);font-size:12px">Nessuna ricarica registrata</div>`;
+      if (d2) d2.innerHTML = `<div style="color:var(--muted);font-size:12px">Nessuna ricarica registrata</div>`;
+      return;
+    }
+    set("n", this._i(st.n));
+    set("kwh", this._fmt(st.kwh, 2));
+    set("durata", this._fmt((st.durata_media_min || 0) / 60, 1) + " h");
+    set("picco", this._fmt(st.picco_kw, 1));
+    set("costo", this._fmt(st.costo, 2) + " €");
+    set("prezzo", this._fmt(st.prezzo_medio, 3));
+    if (d1) d1.innerHTML = this._donut([
+      { label: "AC (lenta)", n: (st.ac || {}).n, value: (st.ac || {}).kwh, color: "#3ea6ff" },
+      { label: "DC (fast)", n: (st.dc || {}).n, value: (st.dc || {}).kwh, color: "#ff9933" },
+    ], this._i(st.n));
+    if (d2) d2.innerHTML = this._donut([
+      { label: "Casa", n: (st.casa || {}).n, value: (st.casa || {}).kwh, color: "#22c55e" },
+      { label: "Pubblica", n: (st.pubblica || {}).n, value: (st.pubblica || {}).kwh, color: "#7cc4ff" },
+    ], this._i(st.n));
+  }
+  /** grafico potenza wallbox 48 h (apex), sensore da Configura → Wallbox */
+  async _drawWbChart(root) {
+    const box = root.querySelector("#wbchart");
+    if (!box) return;
+    const ent = this._ov("wallbox_power");
+    if (!ent) {
+      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">
+        Mappa il sensore <b>Potenza istantanea wallbox</b> in Configura → Wallbox.</div>`;
+      return;
+    }
+    const hasApex = typeof customElements !== "undefined" && !!customElements.get("apexcharts-card");
+    if (!hasApex) {
+      box.innerHTML = `<div style="padding:12px;border:1px dashed var(--accent);border-radius:12px;font-size:12.5px;color:var(--muted)">
+        📦 Per questo grafico installa <b>apexcharts-card</b> da HACS → Frontend.</div>`;
+      return;
+    }
+    if (this._wbChart) { this._wbChart.hass = this._hass; return; }
+    if (typeof window.loadCardHelpers !== "function") return;
+    try {
+      const helpers = await window.loadCardHelpers();
+      const card = helpers.createCardElement({
+        type: "custom:apexcharts-card",
+        graph_span: "48h",
+        update_interval: "5min",
+        apex_config: { chart: { height: 150 } },
+        yaxis: [{ min: 0, max: 7000, decimals: 0 }],
+        series: [{
+          entity: ent,
+          name: "Wallbox",
+          type: "area",
+          color: "#4d8dff",
+          stroke_width: 1,
+          curve: "smooth",
+          fill_raw: "last",
+          float_precision: 0,
+          group_by: { func: "avg", duration: "2min" },
+          // verde < 3000 W, giallo < 6300 W, rosso oltre
+          color_threshold: [
+            { value: 0, color: "green" },
+            { value: 3000, color: "yellow" },
+            { value: 6300, color: "red" },
+          ],
+          show: { legend_value: false },
+        }],
+        header: { show: true, show_states: true },
+      });
+      card.hass = this._hass;
+      card.style.display = "block";
+      box.innerHTML = "";
+      box.appendChild(card);
+      this._wbChart = card;
+    } catch (e) {
+      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Grafico non disponibile.</div>`;
+    }
   }
   _wb_state_txt() {
     const p = this._num(this._sid("wallbox_potenza"), "sensor.wallbox_instant_power", this._car("sensor", "battery_charger_power"));
@@ -1371,7 +1510,18 @@ class RenaultEvCenterPanel extends HTMLElement {
     const now = new Date();
     const curY = String(now.getFullYear());
     const curM = String(now.getMonth() + 1).padStart(2, "0");
-    box.innerHTML = Object.keys(mesi).sort().reverse().map((y) => {
+    // selettore anno
+    const selY = root.querySelector('[data-myear="year"]');
+    const anni = Object.keys(mesi).sort().reverse();
+    if (selY && (selY.dataset.sig || "") !== anni.join("|")) {
+      selY.dataset.sig = anni.join("|");
+      const cur = selY.value;
+      selY.innerHTML = `<option value="">Tutti gli anni</option>` +
+        anni.map((y) => `<option value="${y}">${y}</option>`).join("");
+      selY.value = anni.includes(cur) ? cur : "";
+    }
+    const fY = selY ? selY.value : "";
+    box.innerHTML = anni.filter((y) => !fY || y === fY).map((y) => {
       const mm = mesi[y] || {};
       let tC = 0, tK = 0, tKm = 0;
       const rows = NOMI_MESI.map((nome, i) => {
@@ -1384,10 +1534,10 @@ class RenaultEvCenterPanel extends HTMLElement {
           <td>${r ? this._fmt(k, 1) + " kWh" : (futuro ? "" : "0,0 kWh")}</td>
           <td>${r && km ? this._i(km) + " km" : (futuro ? "attesa" : "0 km")}</td></tr>`;
       }).join("");
-      return `<details class="anno" open><summary>▼ ${y} <span class="tr">${this._fmt(tC, 2)} € · ${this._fmt(tK, 1)} kWh · ${this._i(tKm)} km</span></summary>
+      return `<details class="anno" open><summary><span class="tr">${y} · ${this._fmt(tC, 2)} € · ${this._fmt(tK, 1)} kWh · ${this._i(tKm)} km</span></summary>
         <table><tr><th>Mese</th><th>Costo</th><th>Ricaricati</th><th>KM</th></tr>${rows}
         <tr class="totrow"><td>TOTALE</td><td>${this._fmt(tC, 2)} €</td><td>${this._fmt(tK, 1)} kWh</td><td>${this._i(tKm)} km</td></tr></table></details>`;
-    }).join("");
+    }).join("") || `<div style="color:var(--muted)">Nessun dato per l'anno scelto</div>`;
   }
   _tableViaggi(root) {
     const s = this._st(this._sid("viaggi_recenti"));
@@ -1782,19 +1932,31 @@ const PAGES = {
         <div class="row"><span>Carica programmata</span><b data-f="t_start_v">—</b></div>
         <div class="row"><span>⚡ Wallbox ora</span><b data-v="cmd_wb">—</b></div>
       </div>
+      <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+        <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">💰 Risparmio netto</div>
+        <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)"><span data-f="risp_tot">—</span> €</b></div>
+        <div class="row"><span>+ Tagliandi</span><b><span data-f="risp_tagliandi">—</span> €</b></div>
+        <div class="row"><span>+ Bollo</span><b><span data-f="risp_bollo">—</span> €</b></div>
+        <div class="row" style="border-top:2px solid var(--accent)"><span><b>★ NETTO</b></span><b style="color:var(--accent);font-size:17px"><span data-f="risp_netto_tot" data-dec="2">—</span> €</b></div>
+      </div>
     </div>
   </div>
 
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>📈 Km percorsi (7 giorni)</h3>
-      <div id="kmchart" style="min-height:150px"></div>
+    <div class="card"><h3>Oggi a colpo d'occhio</h3>
+      <div class="grid g2">
+        <div>
+          <div class="row"><span>🔴 Consumata oggi</span><b><span data-f="drain" data-dec="1">—</span>%</b></div>
+          <div class="row"><span>🔋 kWh usati oggi</span><b><span data-f="kwh_oggi_k" data-dec="2">—</span> kWh</b></div>
+          <div class="row"><span>🚗 Km oggi</span><b><span data-f="km_oggi">—</span> km</b></div>
+        </div>
+        <div>
+          <div class="row"><span>⚡ Ricaricati oggi</span><b><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh · <span data-f="ricarica_oggi_pct" data-dec="0">—</span>%</b></div>
+          <div class="row"><span>💰 Ricariche oggi</span><b><span data-f="costo_oggi" data-dec="2">—</span> €</b></div>
+          <div class="row"><span>💰 Ricariche mensili</span><b><span data-f="costo_mese" data-dec="2">—</span> €</b></div>
+        </div>
+      </div>
     </div>
-    <div class="card"><h3>🤖 Automazioni attive</h3>
-      <div data-c="autos-on"></div>
-    </div>
-  </div>
-
-  <div class="grid g3" style="margin-top:16px">
     <div class="card"><h3>Ultima ricarica</h3>
       <div class="row"><span>Data</span><b data-f="ultima_data">—</b></div>
       <div class="row"><span>Energia</span><b><span data-f="batt_ult">—</span> kWh</b></div>
@@ -1802,28 +1964,21 @@ const PAGES = {
       <div class="row"><span>Media</span><b><span data-f="media_ult">—</span> kW</b></div>
       <div class="row"><span>Costo · Eff.</span><b><span data-f="costo_corr">—</span> € · <span data-f="eff_ric">—</span>%</b></div>
     </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
     <div class="mapbox" id="evmap"></div>
-    <div class="card netto"><h3>💰 Risparmio netto</h3>
-      <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)"><span data-f="risp_tot">—</span> €</b></div>
-      <div class="row"><span>+ Tagliandi</span><b><span data-f="risp_tagliandi">—</span> €</b></div>
-      <div class="row"><span>+ Bollo</span><b><span data-f="risp_bollo">—</span> €</b></div>
-      <div class="row" style="border-top:2px solid var(--accent)"><span><b>★ NETTO</b></span><b style="color:var(--accent);font-size:17px"><span data-f="risp_netto_tot" data-dec="2">—</span> €</b></div>
-      <div style="text-align:center;margin-top:10px"><span class="chip acc">📄 dettaglio completo → Risparmi</span></div>
+    <div class="card"><h3>📈 Km percorsi (7 giorni)</h3>
+      <div id="kmchart" style="min-height:150px"></div>
     </div>
   </div>
 
-  <div class="card" style="margin-top:16px"><h3>Oggi a colpo d'occhio</h3>
-    <div class="grid g2">
-      <div>
-        <div class="row"><span>🔴 Consumata oggi</span><b><span data-f="drain" data-dec="1">—</span>%</b></div>
-        <div class="row"><span>🔋 kWh usati oggi</span><b><span data-f="kwh_oggi_k" data-dec="2">—</span> kWh</b></div>
-        <div class="row"><span>🚗 Km oggi</span><b><span data-f="km_oggi">—</span> km</b></div>
-      </div>
-      <div>
-        <div class="row"><span>⚡ Ricaricati oggi</span><b><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh · <span data-f="ricarica_oggi_pct" data-dec="0">—</span>%</b></div>
-        <div class="row"><span>💰 Ricariche oggi</span><b><span data-f="costo_oggi" data-dec="2">—</span> €</b></div>
-        <div class="row"><span>💰 Ricariche mensili</span><b><span data-f="costo_mese" data-dec="2">—</span> €</b></div>
-      </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>🤖 Automazioni attive</h3>
+      <div data-c="autos-on"></div>
+    </div>
+    <div class="card"><h3>🔧 Scadenze e manutenzione</h3>
+      <div data-c="tab-scadenze-p1"><div style="color:var(--muted);font-size:12px">Nessuna scadenza</div></div>
     </div>
   </div>`,
 
@@ -1876,7 +2031,9 @@ const PAGES = {
     </div>
     <table><tr><th>Rotta</th><th>Viaggi</th><th>Km</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th></tr>
     <tbody data-c="tab-rotte"></tbody></table></div>
-  <div class="card" style="margin-top:16px"><h3>Storico mensile (tutti gli anni)</h3><div data-c="tab-mesi"></div></div>`,
+  <div class="card" style="margin-top:16px"><h3>Storico mensile (tutti gli anni)</h3>
+    <div style="margin-bottom:10px"><select data-myear="year" style="width:auto"><option value="">Tutti gli anni</option></select></div>
+    <div data-c="tab-mesi"></div></div>`,
 
   p4: `<h1>Ricariche</h1>
   <div class="tiles">
@@ -1890,6 +2047,34 @@ const PAGES = {
       <select data-sel="sel_periodo"></select>
       <select data-sel="sel_mese"></select>
       <select data-sel="sel_anno"></select></div></div>
+  <div class="card" style="margin-top:16px"><h3>➕ Aggiungi ricarica manuale</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Data
+        <input type="date" data-mc="data" style="width:auto"></label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">kWh
+        <input type="number" data-mc="kwh" step="0.01" min="0" style="width:90px"></label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Costo €
+        <input type="number" data-mc="costo" step="0.01" min="0" style="width:90px"></label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Tipo
+        <select data-mc="tipo" style="width:auto"><option>Casa</option><option>Fotovoltaico</option><option selected>Pubblica</option><option>Manuale</option></select></label>
+      <div class="btn" data-cmd="add_charge_manual">💾 Registra ricarica</div>
+    </div>
+    <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Utile per le colonnine DC. Se lasci vuoto il costo, resta 0 €.</div></div>
+  <div class="card" style="margin-top:16px"><h3>📊 Distribuzione ricariche</h3>
+    <div class="grid g2">
+      <div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">AC vs DC</div>
+        <div data-c="donut-acdc"></div></div>
+      <div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Casa vs Pubblica</div>
+        <div data-c="donut-casa"></div></div>
+    </div>
+    <div class="tiles" style="margin-top:14px">
+      <div class="tile"><div><div class="v" data-cs="n">—</div><div class="l">Sessioni</div></div></div>
+      <div class="tile"><div><div class="v" data-cs="kwh">—</div><div class="l">Energia totale kWh</div></div></div>
+      <div class="tile"><div><div class="v" data-cs="durata">—</div><div class="l">Durata media</div></div></div>
+      <div class="tile"><div><div class="v" data-cs="picco">—</div><div class="l">Potenza picco kW</div></div></div>
+      <div class="tile"><div><div class="v" data-cs="costo">—</div><div class="l">Costo totale €</div></div></div>
+      <div class="tile"><div><div class="v" data-cs="prezzo">—</div><div class="l">Prezzo medio €/kWh</div></div></div>
+    </div></div>
   <div class="card"><h3>Storico ricariche</h3>
     <table><tr><th>Data</th><th>Tipo</th><th>Durata</th><th>Δ SoC</th><th>kWh</th><th>Ø kW</th><th>€/kWh</th><th>Costo</th></tr>
     <tbody data-c="tab-ricariche"></tbody></table></div>`,
@@ -2103,6 +2288,15 @@ const PAGES = {
       <div style="display:flex;gap:8px;margin-top:14px">
         <div class="btn" data-cmd="wb_start">▶️ Avvia</div>
         <div class="btn" data-cmd="wb_stop">⏹️ Ferma</div></div></div></div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>⏱️ Stima ricarica</h3>
+      <div class="row"><span>Tempo stimato</span><b data-f="tempo_ric">—</b></div>
+      <div class="row"><span>Orario stimato</span><b data-f="ora_compl">—</b></div>
+      <div class="row"><span>Costo stimato</span><b><span data-f="costo_corr" data-dec="2">—</span> €</b></div>
+      <div class="note">Stima verso il % obiettivo configurato. Con auto non in carica mostra l'ultimo stato.</div></div>
+    <div class="card"><h3>⚡ Potenza wallbox (48 h)</h3>
+      <div id="wbchart" style="min-height:150px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Sensore preso da <b>Configura → Wallbox → Potenza istantanea</b>.</div></div></div>
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>🎚️ Corrente di carica (A)</h3>
       <div class="inp"><span>Limite</span><input id="wb_amp" type="range" min="6" max="32" step="1" style="flex:1" oninput="this.closest('.inp').querySelector('#wb_amp_live').textContent=this.value+' A'"><b id="wb_amp_live" style="min-width:54px;text-align:right">—</b></div>
