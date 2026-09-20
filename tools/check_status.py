@@ -551,6 +551,37 @@ try:
 except Exception as e:
     bad(f"GSE: {e}")
 
+print("\n[22] Wallbox, stima e scadenze")
+try:
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    # l'automazione 'batteria bassa' non va più creata e va rimossa sempre
+    assert "def _legacy(" in src and '"_batteria_bassa"' in src, \
+        "l'automazione 'batteria bassa' non viene rimossa"
+    # la stima deve usare il SoC della carica programmata quando attiva
+    assert '_sc_prog = (self.store.data.get("schedule"' in src, \
+        "la stima ricarica ignora il SoC dell'automazione (due valori diversi)"
+    # tagliando: niente doppione km + consegna
+    assert 's["nome"] != "Tagliando"' in src, "tagliando duplicato (km + consegna)"
+    # stop carica: usa lo stop dedicato e rispetta il SoC obiettivo anche in modalità orario
+    assert "self.wb_stop_switch" in src, "lo stop carica non usa l'entità di stop dedicata"
+    assert "target_ent = ent if avvia else" in src, "il fermo carica ripiega sull'avvio"
+    assert "battery >= stop_target" in src, "in modalità orario il SoC obiettivo viene ignorato"
+    # gomme: il valore impostato è l'ULTIMO CAMBIO, l'obiettivo si calcola aggiungendo l'intervallo
+    assert "last_change=" in src and "kmv = _f(kmv) + interval_km" in src, \
+        "gomme: la scadenza non somma l'intervallo all'ultimo cambio"
+    assert '_due("Cambio gomme", "gomme", self.tyre_interval, last_change=True)' in src, \
+        "il calcolo gomme non è marcato come 'ultimo cambio'"
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert "_findState(" in js, "wallbox: corrente/tensione/temperatura senza ricerca per nome"
+    assert 'live.textContent = `${S._fmt(amps, 0)} A`' in js, "lo slider ampere non mostra il valore"
+    assert "return x * 1000;" in js, "il grafico wallbox non converte kW → W (resta invisibile)"
+    assert "max: 7000" not in js, "il grafico wallbox ha ancora il massimo fisso"
+    assert "#22c55e,#16a34a" in js and "#ef4444,#b91c1c" in js, \
+        "i tasti Avvia/Ferma wallbox non sono verde/rosso grandi"
+    ok("batteria bassa rimossa, stima col SoC programmato, tagliando unico, wallbox a posto")
+except Exception as e:
+    bad(f"wallbox/stima: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

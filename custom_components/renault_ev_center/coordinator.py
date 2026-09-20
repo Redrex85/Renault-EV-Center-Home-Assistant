@@ -73,6 +73,7 @@ from .const import (
     CONF_AC_BUTTON,
     CONF_CHARGE_TARGET_NUMBER,
     CONF_WB_CHARGE_SWITCH,
+    CONF_WB_STOP_SWITCH,
     CONF_BALANCE_GRID_SENSOR,
     CONF_BALANCE_BATTERY_SENSOR,
     CONF_BALANCE_INVERT_GRID,
@@ -320,6 +321,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.charge_start_soc = _f(opts.get(CONF_CHARGE_START_SOC), 30.0)
         self.charge_stop_soc = _f(opts.get(CONF_CHARGE_STOP_SOC), 80.0)
         self.charge_start_button = opts.get(CONF_WB_CHARGE_SWITCH) or ""
+        # entità di STOP dedicata (switch/button): senza, con un button si ripremeva l'avvio
+        self.wb_stop_switch = opts.get(CONF_WB_STOP_SWITCH) or ""
         self.charge_target_number = opts.get(CONF_CHARGE_TARGET_NUMBER) or ""
         self._sched_done_key = ""
         self.balance_grid_sensor = opts.get(CONF_BALANCE_GRID_SENSOR) or ""
@@ -948,7 +951,12 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.persist()
 
         # --- stime ricarica ---------------------------------------------------------
+        # target: se la carica programmata è attiva uso il SUO SoC (quello dell'automazione),
+        # altrimenti l'obiettivo generale. Prima erano due valori diversi e la stima sbagliava.
         target = self.target_soc
+        _sc_prog = (self.store.data.get("schedule", {}) or {}).get("ricarica") or {}
+        if _sc_prog.get("attivo") and _sc_prog.get("soc"):
+            target = _f(_sc_prog.get("soc"), target)
         needed_pct = max(target - battery, 0.0)
         needed_kwh = needed_pct * self.capacity / 100.0
         minutes_left = 0
@@ -1192,8 +1200,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             km_giorno = km_anno / 365.0
             manutenzioni = self.store.data.get("maintenance", [])
 
-            def _due(label: str, key: str, interval_km: float) -> None:
-                # scadenza = ultima manutenzione registrata di quel tipo + intervallo km
+            def _due(label: str, key: str, interval_km: float, last_change: bool = False) -> None:
+                """Calcola la scadenza per km (+ eventuale data).
+
+                `last_change=True` (gomme): il valore salvato è il km dell'**ultimo cambio**,
+                quindi l'obiettivo è `ultimo + intervallo`.
+                `last_change=False` (tagliando): il valore salvato è già l'obiettivo in km.
+                """
                 recs = [m for m in manutenzioni if key in str(m.get("tipo", "")).lower()]
                 last = max(recs, key=lambda m: (str(m.get("data", "")), m.get("id", 0)), default=None)
                 last_km = _f(last.get("km")) if last else 0.0
@@ -1201,11 +1214,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 if kmv is None:
                     base = last_km if last_km > 0 else (odometer if odometer > 0 else 0.0)
                     kmv = base + interval_km
+                elif last_change:
+                    # ultimo cambio dichiarato → obiettivo = ultimo + intervallo
+                    kmv = _f(kmv) + interval_km
                 if kmv:
                     target = _f(kmv)
                     mancanti = target - odometer
                     scadenze.append({"nome": label, "km": round(mancanti, 0),
-                                     "data": f"{target:.0f} km",
+                                     "data": f"a {target:.0f} km",
                                      "giorni": max(int(mancanti / km_giorno), 0)})
                 dv = str(scad_cfg.get(f"{key}_data") or "").strip()
                 if dv:
@@ -1217,7 +1233,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                         pass
 
             _due("Tagliando", "tagliando", self.tagliando_intervallo)
-            _due("Cambio gomme", "gomme", self.tyre_interval)
+            # gomme: il valore impostato è l'ULTIMO CAMBIO → obiettivo = ultimo + intervallo
+            _due("Cambio gomme", "gomme", self.tyre_interval, last_change=True)
             # tagliando annuale conteggiato dalla data di consegna dell'auto
             if self.purchase_date:
                 try:
@@ -1229,6 +1246,12 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                                      "giorni": (anniv - oggi_d).days})
                 except ValueError:
                     pass
+            # se ci sono ENTRAMBI i tagliandi (km e consegna) tengo solo quello della consegna:
+            # erano due voci per la stessa cosa e la prima restava a 0 giorni
+            ha_km = any(s["nome"] == "Tagliando" for s in scadenze)
+            ha_consegna = any(str(s["nome"]).startswith("Tagliando annuale") for s in scadenze)
+            if ha_km and ha_consegna:
+                scadenze = [s for s in scadenze if s["nome"] != "Tagliando"]
             scadenze.sort(key=lambda s: s["giorni"])
             await self._check_notifications(scadenze, now)
 
@@ -2179,6 +2202,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 return False
             return any(aid.endswith(s) for s in gestiti)
 
+        def _legacy(aid: object) -> bool:
+            """Automazioni NON più create dall'integrazione: vanno rimosse.
+
+            'batteria bassa fuori casa' è sostituita dalla notifica NATIVA (soglia, fascia
+            oraria e giorni configurabili dalla vista Automazioni).
+            """
+            return isinstance(aid, str) and aid.startswith("renault_ev_center_") \
+                and aid.endswith("_batteria_bassa")
+
         path = self.hass.config.path(AUTOMATION_CONFIG_PATH)
         rmset = set(removes)
 
@@ -2190,6 +2222,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             if not isinstance(data, list):
                 data = []
             data = [d for d in data if not (isinstance(d, dict) and d.get("id") in rmset)]
+            data = [d for d in data if not (isinstance(d, dict) and _legacy(d.get("id")))]
             data = [d for d in data if not (isinstance(d, dict) and _orfana(d.get("id")))]
             byid = {d.get("id"): i for i, d in enumerate(data) if isinstance(d, dict) and d.get("id")}
             made: list[str] = []
@@ -2322,21 +2355,23 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         - button: press (toggle) — usato solo se non c'è uno switch
         - fallback: number target di carica Renault (stop portando il target al SoC attuale)
         """
-        ent = self.charge_start_button  # ora contiene l'entità wallbox (switch/button)
+        ent = self.charge_start_button  # avvio (switch/button wallbox)
+        # per FERMARE uso lo stop dedicato se mappato: un "button" di avvio ripremuto NON ferma
+        target_ent = ent if avvia else (self.wb_stop_switch or ent)
         try:
-            domain = ent.split(".")[0] if ent else ""
-            if ent and domain == "switch":
+            domain = target_ent.split(".")[0] if target_ent else ""
+            if target_ent and domain == "switch":
                 await self.hass.services.async_call(
                     "switch", "turn_on" if avvia else "turn_off",
-                    {"entity_id": ent}, blocking=False,
+                    {"entity_id": target_ent}, blocking=False,
                 )
                 _LOGGER.info("Carica programmata: wallbox %s", "avviata" if avvia else "fermata")
                 return
-            if ent and domain == "button":
+            if target_ent and domain == "button":
                 await self.hass.services.async_call(
-                    "button", "press", {"entity_id": ent}, blocking=False,
+                    "button", "press", {"entity_id": target_ent}, blocking=False,
                 )
-                _LOGGER.info("Carica programmata: pulsante wallbox premuto (%s)",
+                _LOGGER.info("Carica programmata: pulsante %s premuto",
                              "avvio" if avvia else "stop")
                 return
             # fallback: target Renault (solo per lo stop)
@@ -2536,6 +2571,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         stop_ora_s = self._setting_time("charge_stop_time", self.charge_stop_time)
         avvio_soc = self._setting_num("charge_start_soc", self.charge_start_soc)
         stop_soc = self._setting_num("charge_stop_soc", self.charge_stop_soc)
+        # SoC di stop: quello dell'AUTOMAZIONE (es. 70%) se impostato, altrimenti charge_stop_soc
+        _sc_prog = (self.store.data.get("schedule", {}) or {}).get("ricarica") or {}
+        stop_target = _f(_sc_prog.get("soc"), 0.0) or stop_soc
 
         if mode == "orario":
             in_window = _in_window(hhmm, avvio_ora_s, stop_ora_s)
@@ -2543,13 +2581,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             if not charging and in_window and self._sched_done_key != f"start_{today_key}":
                 await self._wb_charge(True, battery)
                 self._sched_done_key = f"start_{today_key}"
-            # stop: fuori dalla finestra
-            if charging and not in_window:
+            # stop: fuori dalla finestra OPPURE SoC obiettivo raggiunto
+            # (prima il SoC veniva ignorato: la carica proseguiva oltre il 70%)
+            if charging and (not in_window or battery >= stop_target):
                 await self._wb_charge(False, battery)
         else:  # percentuale
             if not charging and battery <= avvio_soc:
                 await self._wb_charge(True, battery)
-            if charging and battery >= stop_soc:
+            if charging and battery >= min(stop_soc, stop_target):
                 await self._wb_charge(False, battery)
 
     async def _press_start(self) -> None:

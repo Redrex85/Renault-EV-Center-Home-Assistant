@@ -5,6 +5,34 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.21 — Cambio gomme: km dell'ultimo cambio
+
+### Correzione
+- Il campo della scadenza gomme era interpretato come **km obiettivo assoluto**. Ora è il **km
+  dell'ultimo cambio**: l'integrazione **somma l'intervallo gomme** configurato e mostra dove
+  cambiarle.
+  - Esempio: ultimo cambio **60.000 km** + intervallo **40.000 km** → **"Cambio gomme · a 100.000 km"**
+    con i km mancanti rispetto all'odometro.
+  - Vale anche per un intervento registrato nel registro manutenzione (usa il suo km).
+  - Il **Tagliando** resta invariato (lì il valore è già l'obiettivo).
+- **Pannello → Manutenzione → Cambio gomme**: campo rinominato **"Ultimo cambio (km)"**, aggiunta la
+  riga **"Prossimo cambio"** (km obiettivo + km mancanti) e i campi si **ripopolano** dai valori salvati.
+- `check_status.py` **[22]** esteso: somma dell'intervallo all'ultimo cambio.
+
+## 1.0.20 — Stop carica al SoC e grafico wallbox
+
+### Correzioni
+- **La carica non si fermava al SoC impostato (70%)**: due cause.
+  1. In modalità **orario** lo stop avveniva **solo uscendo dalla fascia**: il SoC obiettivo era
+     **ignorato**. Ora ferma anche quando `battery >= target` (il SoC dell'automazione, es. 70%).
+  2. Il coordinator **non usava mai** l'entità di **stop** dedicata: se l'avvio è un `button`,
+     ripremerlo **riavvia** invece di fermare. Ora per fermare usa **`wb_stop_switch`**; se manca,
+     ripiega sull'avvio (switch → `turn_off`) e solo alla fine sul number target Renault.
+- **Grafico apex wallbox senza valori**: il sensore può essere in **kW** (la pagina lo convertiva,
+  il grafico no) e l'asse aveva un **massimo fisso 7000**. Ora se il sensore è in kW applica
+  `return x * 1000` e **non c'è più il massimo fisso** (non taglia wallbox diverse).
+- Controllo `check_status.py` **[22]** esteso: stop dedicato, SoC obiettivo, conversione kW.
+
 ## 1.0.19 — Sperimentazione GSE + automazioni
 
 ### Nuova funzione: limite di potenza a fasce orarie (GSE)
@@ -41,8 +69,24 @@ Interruttore **Sperimentazione GSE** (tra i dispositivi, o nella pagina *Wallbox
   transitorio/unavailable). Ora si ricostruisce solo se la lista cambia e lo stato si allinea a HA
   senza toccare il checkbox che stai cliccando.
 
+### Correzioni (wallbox, stima, scadenze)
+- **Automazione "Batteria bassa fuori casa" eliminata** in automatico: era un doppione della
+  notifica **nativa** (quella configurabile in *Automazioni → Avviso batteria bassa*). Non serve più
+  ri-lanciare "Crea automazioni": viene rimossa al primo giro.
+  → **"Promemoria collegamento" NON fa la stessa cosa**: quello avvisa a un **orario** fisso di
+  collegare la spina; "batteria bassa" avvisa **quando il SoC scende sotto la soglia**.
+- **Stima ricarica**: usava l'*Obiettivo Ricarica* di configurazione invece del **SoC dell'automazione**
+  (es. 70%): due valori diversi. Ora se la carica programmata è attiva usa **il suo SoC**.
+- **Scadenze**: "Tagliando" (per km) + "Tagliando annuale (consegna)" erano **due voci** per la stessa
+  cosa, con la prima a 0 giorni. Ora resta **solo quella della consegna**.
+- **Wallbox**: corrente/tensione/temperatura erano lette solo da `sensor.wallbox_*` (vuote se i nomi
+  differiscono). Ora c'è anche la **ricerca per nome** (`wallbox` + `current`/`voltage`/`temperature`).
+- **Slider corrente**: il valore non veniva mostrato dopo un refresh (restava "—"). Ora mostra gli
+  ampere correnti e non ruba il cursore mentre lo trascini.
+- **Tasti Avvia/Ferma**: ora **verde e rosso, più grandi**.
+
 ### Controlli
-- `check_status.py` **[20]** (automazioni) e **[21]** (GSE).
+- `check_status.py` **[22]**: batteria bassa rimossa, stima col SoC programmato, tagliando unico, wallbox.
 
 ## 1.0.18 — Due confronti di risparmio + guida
 

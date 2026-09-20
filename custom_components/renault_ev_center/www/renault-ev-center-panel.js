@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.19";
+const REC_VER = "1.0.21";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -198,6 +198,15 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
 
   // ------------------------------------------------------------- campi dati
+  /** primo stato (opz. filtrato per dominio) la cui entity_id contiene tutte le parole */
+  _findState(domain, ...words) {
+    for (const id of Object.keys(this._hass.states)) {
+      if (domain && !id.startsWith(domain + ".")) continue;
+      const low = id.toLowerCase();
+      if (words.every((w) => low.includes(w))) return this._hass.states[id];
+    }
+    return null;
+  }
   _field(k) {
     const n = this._slug(this._cfg.name);
     const c = this._cfg.car;
@@ -746,14 +755,19 @@ class RenaultEvCenterPanel extends HTMLElement {
 
     const power = S._num(S._ov("wallbox_power"), S._sid("wallbox_potenza"), "sensor.wallbox_instant_power");
     set("power", power === null ? "—" : S._fmt(power) + " kW");
-    const cur = S._num("sensor.wallbox_current");
-    set("current", cur === null ? "—" : S._fmt(cur, 1) + " A");
-    const volt = S._num("sensor.wallbox_voltage");
-    set("voltage", volt === null ? "—" : S._fmt(volt, 0) + " V");
-    const temp = S._num("sensor.wallbox_temperature");
-    set("temp", temp === null ? "—" : S._fmt(temp, 1) + " °C");
-    const lim = S._st("sensor.wallbox_limit_reason");
-    set("limit", lim ? lim.state : "—");
+    const curEnt = S._st(S._ov("wallbox_current")) || S._findState("sensor", "wallbox", "current");
+    const cur = curEnt ? parseFloat(String(curEnt.state).replace(",", ".")) : null;
+    set("current", (cur === null || isNaN(cur)) ? "—" : S._fmt(cur, 1) + " A");
+    const voltEnt = S._st(S._ov("wallbox_voltage")) || S._findState("sensor", "wallbox", "voltage");
+    const volt = voltEnt ? parseFloat(String(voltEnt.state).replace(",", ".")) : null;
+    set("voltage", (volt === null || isNaN(volt)) ? "—" : S._fmt(volt, 0) + " V");
+    const tempEnt = S._st(S._ov("wallbox_temperature"))
+      || S._findState("sensor", "wallbox", "temperature")
+      || S._findState("sensor", "wallbox", "temp");
+    const temp = tempEnt ? parseFloat(String(tempEnt.state).replace(",", ".")) : null;
+    set("temp", (temp === null || isNaN(temp)) ? "—" : S._fmt(temp, 1) + " °C");
+    const limEnt = S._st("sensor.wallbox_limit_reason") || S._findState("sensor", "wallbox", "limit");
+    set("limit", limEnt ? limEnt.state : "—");
 
     const skwh = S._num(S._ov("wallbox_session_energy"), "sensor.wallbox_session_energy");
     set("session_kwh", skwh === null ? "—" : S._fmt(skwh, 2) + " kWh");
@@ -767,15 +781,21 @@ class RenaultEvCenterPanel extends HTMLElement {
     const eid = S._ov("wallbox_max_current") || "number.wallbox_user_limit";
     const sNum = S._hass.states[eid];
     const sl = root.getElementById("wb_amp");
+    const live = root.getElementById("wb_amp_live");
     if (sl && sNum) {
       const a = sNum.attributes || {};
       if (a.min !== undefined) sl.min = a.min;
       if (a.max !== undefined) sl.max = a.max;
       if (a.step !== undefined) sl.step = a.step;
-      if (parseFloat(sNum.state)) sl.value = sNum.state;
+      const amps = parseFloat(sNum.state);
+      if (!isNaN(amps)) {
+        if (document.activeElement !== sl) sl.value = amps;   // non rubare il cursore
+        if (live) live.textContent = `${S._fmt(amps, 0)} A`;
+      }
       root.getElementById("wb_amp_val").textContent = `${S._fmt(parseFloat(sNum.state), 0)} A (min ${a.min ?? "?"} · max ${a.max ?? "?"} A)`;
     } else if (sl) {
       root.getElementById("wb_amp_val").textContent = "Nessun number corrente wallbox in configurazione";
+      if (live) live.textContent = "—";
     }
 
     // bilanciamento solare (switch integrazione + ultimo stato dal sensore potenza)
@@ -1176,6 +1196,27 @@ class RenaultEvCenterPanel extends HTMLElement {
           `<b style="color:${col}">${isNaN(g) ? "—" : g + " gg"}</b></div>`;
       }).join("") || `<div style="color:var(--muted);font-size:12px">Nessuna scadenza</div>`;
     }
+    // manutenzione: ripopola i campi scadenza e mostra il prossimo cambio gomme
+    const _scSt = this._st(this._sid("prossima_scadenza"));
+    if (_scSt && _scSt.attributes) {
+      const _sa = _scSt.attributes;
+      const _gg = (_sa.scadenze || []).find((r) => /gomme/i.test(String(r.nome || "")));
+      root.querySelectorAll('[data-gomme="prossimo"]').forEach((el) => {
+        el.textContent = _gg ? `${_gg.data} · ${this._i(_gg.km)} km mancanti` : "—";
+      });
+      for (const [tipo, attr] of [["tagliando", "tagliando_km"], ["gomme", "gomme_km"]]) {
+        const v = _sa[attr];
+        if (v === null || v === undefined) continue;
+        const el = root.querySelector(`input[data-mk="${tipo}"]:not([data-mdate])`);
+        if (el && document.activeElement !== el) el.value = v;
+      }
+      for (const [tipo, attr] of [["tagliando", "tagliando_data"], ["gomme", "gomme_data"]]) {
+        const v = _sa[attr];
+        if (!v) continue;
+        const el = root.querySelector(`input[data-mk="${tipo}"][data-mdate]`);
+        if (el && document.activeElement !== el) el.value = v;
+      }
+    }
     // celle percorrenza: [data-per="oggi|usati"] → riga attributo `righe`
     root.querySelectorAll("[data-per]").forEach((el) => {
       const [per, key] = el.dataset.per.split("|");
@@ -1437,32 +1478,39 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     if (this._wbChart) { this._wbChart.hass = this._hass; return; }
     if (typeof window.loadCardHelpers !== "function") return;
+    // il sensore può essere in W o in kW: se è kW moltiplico per 1000 (altrimenti resta invisibile)
+    const _stWb = this._hass.states[ent];
+    const _unit = ((_stWb && _stWb.attributes && _stWb.attributes.unit_of_measurement) || "").toLowerCase();
+    const _isKw = _unit === "kw" || _unit === "kilowatt";
     try {
       const helpers = await window.loadCardHelpers();
+      const series = {
+        entity: ent,
+        name: "Wallbox",
+        type: "area",
+        color: "#4d8dff",
+        stroke_width: 1,
+        curve: "smooth",
+        fill_raw: "last",
+        float_precision: 0,
+        group_by: { func: "avg", duration: "2min" },
+        // verde < 3000 W, giallo < 6300 W, rosso oltre
+        color_threshold: [
+          { value: 0, color: "green" },
+          { value: 3000, color: "yellow" },
+          { value: 6300, color: "red" },
+        ],
+        show: { legend_value: false },
+      };
+      if (_isKw) series.transform = "return x * 1000;";
       const card = helpers.createCardElement({
         type: "custom:apexcharts-card",
         graph_span: "48h",
         update_interval: "5min",
+        // niente max fisso: così non taglia wallbox diverse
         apex_config: { chart: { height: 150 } },
-        yaxis: [{ min: 0, max: 7000, decimals: 0 }],
-        series: [{
-          entity: ent,
-          name: "Wallbox",
-          type: "area",
-          color: "#4d8dff",
-          stroke_width: 1,
-          curve: "smooth",
-          fill_raw: "last",
-          float_precision: 0,
-          group_by: { func: "avg", duration: "2min" },
-          // verde < 3000 W, giallo < 6300 W, rosso oltre
-          color_threshold: [
-            { value: 0, color: "green" },
-            { value: 3000, color: "yellow" },
-            { value: 6300, color: "red" },
-          ],
-          show: { legend_value: false },
-        }],
+        yaxis: [{ min: 0, decimals: 0 }],
+        series: [series],
         header: { show: true, show_states: true },
       });
       card.hass = this._hass;
@@ -2347,10 +2395,13 @@ const PAGES = {
       <div class="inp"><span>Scadenza a data</span><input type="date" data-mk="tagliando" data-mdate="1"><span class="u"></span></div>
       <div class="btn" data-cmd="maint_tagliando" style="margin-top:8px">💾 Salva scadenza tagliando</div></div>
     <div class="card"><h3>🛞 Cambio gomme</h3>
-      <div class="inp"><span>Scadenza a km</span><input type="number" data-mk="gomme"><span class="u">km</span></div>
-      <div class="inp"><span>Scadenza a data</span><input type="date" data-mk="gomme" data-mdate="1"><span class="u"></span></div>
-      <div class="btn" data-cmd="maint_gomme" style="margin-top:8px">💾 Salva scadenza gomme</div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Le notifiche scadenze coprono tagliando e gomme.</div></div>
+      <div class="row"><span>Ultimo cambio a</span><b><span data-attr="prossima_scadenza|gomme_km">—</span> km</b></div>
+      <div class="row"><span>Prossimo cambio</span><b><span data-gomme="prossimo">—</span></b></div>
+      <div class="inp"><span>Ultimo cambio (km)</span><input type="number" data-mk="gomme" placeholder="es. 60000"><span class="u">km</span></div>
+      <div class="inp"><span>Scadenza a data (opz.)</span><input type="date" data-mk="gomme" data-mdate="1"><span class="u"></span></div>
+      <div class="btn" data-cmd="maint_gomme" style="margin-top:8px">💾 Salva</div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Inserisci i <b>km dell'ultimo cambio</b>:
+        l'integrazione aggiunge l'<b>intervallo gomme</b> configurato e ti dice a quanti km cambiarle.</div></div>
     <div class="card"><h3>🛡️ Assicurazione</h3>
       <div class="row"><span>Scadenza</span><b><span data-attr="assicurazione|data">—</span> · <span data-f="assic">—</span> gg</b></div>
       <div class="inp"><span>Costo annuo</span><input data-n="n_assic"><span class="u">€/anno</span></div>
@@ -2564,9 +2615,9 @@ const PAGES = {
       <div class="big" style="font-size:32px;color:var(--good)"><span data-wb="session_kwh">—</span></div>
       <div class="row"><span>Tempo di ricarica</span><b><span data-wb="session_time">—</span></b></div>
       <div class="row"><span>Energia totale erogata</span><b><span data-wb="total_kwh">—</span></b></div>
-      <div style="display:flex;gap:8px;margin-top:14px">
-        <div class="btn" data-cmd="wb_start">▶️ Avvia</div>
-        <div class="btn" data-cmd="wb_stop">⏹️ Ferma</div></div></div></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <div class="btn" data-cmd="wb_start" style="flex:1;background:linear-gradient(180deg,#22c55e,#16a34a);border-color:#16a34a;color:#fff;font-size:16px;font-weight:800;padding:14px 8px">▶️ AVVIA</div>
+        <div class="btn" data-cmd="wb_stop" style="flex:1;background:linear-gradient(180deg,#ef4444,#b91c1c);border-color:#b91c1c;color:#fff;font-size:16px;font-weight:800;padding:14px 8px">⏹️ FERMA</div></div></div></div>
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>⏱️ Stima ricarica</h3>
       <div class="row"><span>Tempo stimato</span><b data-f="tempo_ric">—</b></div>

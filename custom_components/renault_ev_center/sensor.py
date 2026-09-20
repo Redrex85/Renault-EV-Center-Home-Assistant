@@ -1177,8 +1177,14 @@ class Scadenze(MateSensor):
 
     @property
     def extra_state_attributes(self):
+        scad = self.coordinator.store.data.get("scadenze") or {}
         return {"scadenze": self.coordinator.data.get("scadenze", []),
-                "version": getattr(self.coordinator, "version", "")}
+                "version": getattr(self.coordinator, "version", ""),
+                # impostazioni salvate: servono al pannello per ripopolare i campi
+                "tagliando_km": scad.get("tagliando_km"),
+                "tagliando_data": scad.get("tagliando_data"),
+                "gomme_km": scad.get("gomme_km"),
+                "gomme_data": scad.get("gomme_data")}
 
 
 class ViaggioEstremo(MateSensor):
