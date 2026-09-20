@@ -47,6 +47,12 @@ from .const import (
     CONF_LIGHT_ENTITY,
     CONF_HORN_ENTITY,
     CONF_HAS_PV,
+    CONF_PROFILE,
+    PROFILES,
+    PROFILE_BASE,
+    PROFILE_PRO,
+    PROFILE_ENTERPRISE,
+    DEFAULT_PROFILE,
     CONF_BALANCE_GRID_SENSOR,
     CONF_BALANCE_BATTERY_SENSOR,
     CONF_BALANCE_INVERT_GRID,
@@ -115,6 +121,14 @@ from .const import (
     CONF_GSE_END,
     CONF_GSE_DOMENICA,
     CONF_GSE_HOLIDAY,
+    CONF_HOME_POWER_SENSOR,
+    CONF_HOME_METER_KW,
+    CONF_HOME_MAX_AMPS,
+    CONF_HOME_REDUCE_AMPS,
+    DEFAULT_HOME_METER_KW,
+    DEFAULT_HOME_MAX_AMPS,
+    DEFAULT_HOME_REDUCE_AMPS,
+    HOME_METER_OPTIONS,
     DEFAULT_GSE_WPA,
     DEFAULT_GSE_KW_MAX,
     DEFAULT_GSE_KW_RIDOTTA,
@@ -181,8 +195,7 @@ def _flat(data: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _car_schema(defaults: dict[str, Any]) -> vol.Schema:
-    return vol.Schema({
+def _car_schema(defaults: dict[str, Any]) -> vol.Schema:    return vol.Schema({
         vol.Required("car"): section(vol.Schema({
             # PRIMO campo: il modello decide la foto dell'auto (e la dashboard)
             vol.Required(CONF_MODEL, default=defaults.get(CONF_MODEL, MODELS[0])): SelectSelector(
@@ -227,8 +240,9 @@ def _car_schema(defaults: dict[str, Any]) -> vol.Schema:
     })
 
 
-def _wallbox_schema(defaults: dict[str, Any]) -> vol.Schema:
-    return vol.Schema({
+def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) -> vol.Schema:
+    """Sezioni wallbox + GSE + (solo enterprise) fotovoltaico."""
+    schema: dict[Any, Any] = {
         vol.Required("wallbox"): section(vol.Schema({
             vol.Required(CONF_WALLBOX_ENABLED, default=defaults.get(CONF_WALLBOX_ENABLED, True)): BooleanSelector(),
             vol.Optional(
@@ -256,7 +270,21 @@ def _wallbox_schema(defaults: dict[str, Any]) -> vol.Schema:
                 CONF_WB_STOP_SWITCH, description={"suggested_value": defaults.get(CONF_WB_STOP_SWITCH)}
             ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
         }), {"collapsed": False}),
-        vol.Required("gse"): section(vol.Schema({
+    }
+    # GSE: ha senso solo con una wallbox (pro/enterprise)
+    if profile != PROFILE_BASE:
+        schema[vol.Required("home")] = section(vol.Schema({
+            vol.Optional(
+                CONF_HOME_POWER_SENSOR, description={"suggested_value": defaults.get(CONF_HOME_POWER_SENSOR)}
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            vol.Optional(CONF_HOME_METER_KW, default=str(defaults.get(CONF_HOME_METER_KW, DEFAULT_HOME_METER_KW))): SelectSelector(
+                SelectSelectorConfig(options=HOME_METER_OPTIONS)),
+            vol.Optional(CONF_HOME_MAX_AMPS, default=defaults.get(CONF_HOME_MAX_AMPS, DEFAULT_HOME_MAX_AMPS)): NumberSelector(
+                NumberSelectorConfig(min=6, max=32, step=1, unit_of_measurement="A", mode=NumberSelectorMode.BOX)),
+            vol.Optional(CONF_HOME_REDUCE_AMPS, default=defaults.get(CONF_HOME_REDUCE_AMPS, DEFAULT_HOME_REDUCE_AMPS)): NumberSelector(
+                NumberSelectorConfig(min=6, max=32, step=1, unit_of_measurement="A", mode=NumberSelectorMode.BOX)),
+        }), {"collapsed": True})
+        schema[vol.Required("gse")] = section(vol.Schema({
             vol.Optional(CONF_GSE_KW_MAX, default=defaults.get(CONF_GSE_KW_MAX, DEFAULT_GSE_KW_MAX)): NumberSelector(
                 NumberSelectorConfig(min=1, max=50, step=0.1, unit_of_measurement="kW",
                                      mode=NumberSelectorMode.BOX)),
@@ -271,8 +299,10 @@ def _wallbox_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_GSE_WPA, default=defaults.get(CONF_GSE_WPA, DEFAULT_GSE_WPA)): NumberSelector(
                 NumberSelectorConfig(min=100, max=800, step=10, unit_of_measurement="W/A",
                                      mode=NumberSelectorMode.BOX)),
-        }), {"collapsed": True}),
-        vol.Required("solar"): section(vol.Schema({
+        }), {"collapsed": True})
+    # fotovoltaico: SOLO enterprise
+    if profile == PROFILE_ENTERPRISE:
+        schema[vol.Required("solar")] = section(vol.Schema({
             vol.Required(CONF_HAS_PV, default=defaults.get(CONF_HAS_PV, False)): BooleanSelector(),
             vol.Optional(
                 CONF_BALANCE_GRID_SENSOR, description={"suggested_value": defaults.get(CONF_BALANCE_GRID_SENSOR)}
@@ -289,8 +319,8 @@ def _wallbox_schema(defaults: dict[str, Any]) -> vol.Schema:
             ): EntitySelector(EntitySelectorConfig(domain="sensor")),
             vol.Optional(CONF_BATTERY_PRIORITY_MIN, default=defaults.get(CONF_BATTERY_PRIORITY_MIN, DEFAULT_BATTERY_PRIORITY)): NumberSelector(
                 NumberSelectorConfig(min=0, max=100, step=5, unit_of_measurement="%")),
-        }), {"collapsed": True}),
-    })
+        }), {"collapsed": True})
+    return vol.Schema(schema)
 
 
 def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
@@ -415,15 +445,37 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._data: dict[str, Any] = {}
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
+        """PRIMO passo: profilo di installazione."""
+        if user_input is not None:
+            self._data[CONF_PROFILE] = str(user_input.get(CONF_PROFILE, DEFAULT_PROFILE))
+            return await self.async_step_car()
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema({
+                vol.Required(CONF_PROFILE, default=DEFAULT_PROFILE): SelectSelector(
+                    SelectSelectorConfig(options=PROFILES, translation_key="profile")),
+            }),
+        )
+
+    def _profile(self) -> str:
+        return str(self._data.get(CONF_PROFILE) or DEFAULT_PROFILE)
+
+    async def async_step_car(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
         if user_input is not None:
             user_input = _flat(user_input)
             await self.async_set_unique_id(f"{DOMAIN}_{user_input[CONF_NAME].lower()}")
             self._abort_if_unique_id_configured()
             self._data.update(user_input)
+            # il profilo decide cosa è attivo
+            prof = self._profile()
+            self._data[CONF_WALLBOX_ENABLED] = prof != PROFILE_BASE
+            self._data[CONF_HAS_PV] = prof == PROFILE_ENTERPRISE
+            if prof == PROFILE_BASE:
+                return await self.async_step_settings()   # niente step wallbox
             return await self.async_step_wallbox()
         return self.async_show_form(
-            step_id="user",
+            step_id="car",
             data_schema=vol.Schema({
                 **_car_schema({}).schema,
                 vol.Required(CONF_CREATE_DASHBOARD, default=True): BooleanSelector(),
@@ -432,10 +484,13 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_wallbox(self, user_input: dict[str, Any] | None = None):
+        if self._profile() == PROFILE_BASE:
+            return await self.async_step_settings()
         if user_input is not None:
             self._data.update(_flat(user_input))
             return await self.async_step_settings()
-        return self.async_show_form(step_id="wallbox", data_schema=_wallbox_schema({}))
+        return self.async_show_form(step_id="wallbox",
+                                    data_schema=_wallbox_schema({}, self._profile()))
 
     async def async_step_settings(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
@@ -493,7 +548,7 @@ class RenaultMateOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema({
                 **_car_schema(base).schema,
-                **_wallbox_schema(base).schema,
+                **_wallbox_schema(base, str(base.get(CONF_PROFILE) or DEFAULT_PROFILE)).schema,
                 **_settings_schema(base).schema,
             }),
         )

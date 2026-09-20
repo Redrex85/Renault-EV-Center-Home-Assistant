@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.23";
+const REC_VER = "1.0.24";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -93,6 +93,8 @@ class RenaultEvCenterPanel extends HTMLElement {
       notify: config.notify || "",
       overrides: config.overrides || {},
       capacity: config.capacity || 60,
+      wallbox: config.wallbox !== false,     // profilo base → false: niente pagina Wallbox
+      profile: config.profile || "",
     };
     this._page = localStorage.getItem("rec_panel_page") || "p1";
     this._theme = localStorage.getItem("rec_panel_theme") || "blu";
@@ -109,7 +111,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       if (!this._built) this._build();
       else if (!this._raf) this._raf = requestAnimationFrame(() => {
         this._raf = null;
-        try { if (!PAGES[this._page]) this._page = "p1"; this._update(); }
+        try { if (!PAGES[this._page] || !this._pages().some(([id]) => id === this._page)) this._page = "p1"; this._update(); }
         catch (e) { this._showError(e); }
       });
     } catch (e) { this._showError(e); }
@@ -123,6 +125,16 @@ class RenaultEvCenterPanel extends HTMLElement {
     } catch (e2) { /* noop */ }
   }
 
+  // ------------------------------------------------------------- pagine visibili
+  /** profilo base: niente pagina Wallbox */
+  _navItems() {
+    const noWb = this._cfg.wallbox === false;
+    return NAV.filter(([id]) => !(noWb && id === "p11"));
+  }
+  _pages() {
+    const noWb = this._cfg.wallbox === false;
+    return Object.entries(PAGES).filter(([id]) => !(noWb && id === "p11"));
+  }
   getCardSize() { return 12; }
 
   // ------------------------------------------------------------- helpers
@@ -427,6 +439,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "sw_low": return S._swid("promemoria_batteria_bassa");
       case "sw_sched": return S._swid("carica_programmata");
       case "sw_bal": return S._swid("bilanciamento_solare");
+      case "sw_home": return S._swid("bilanciamento_casa");
       case "sw_gse": return S._swid("sperimentazione_gse");
       case "t_start": return S._tid("carica_orario_avvio");
       case "t_start_v": {
@@ -604,13 +617,13 @@ class RenaultEvCenterPanel extends HTMLElement {
           <div><b>Renault EV<br>Center</b><span class="ver">v${REC_VER}</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
-          ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
+          ${this._navItems().map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
         </div>
       </div>
       <div class="mobilenav" id="mnav">
-        ${NAV.map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
+        ${this._navItems().map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
       </div>
-      <div class="main">${Object.entries(PAGES).map(([id, html]) => `<section id="${id}" class="page ${id === this._page ? "active" : ""}">${html}</section>`).join("")}
+      <div class="main">${this._pages().map(([id, html]) => `<section id="${id}" class="page ${id === this._page ? "active" : ""}">${html}</section>`).join("")}
       </div>
     </div>
     <div id="toast"></div>`;
@@ -818,25 +831,16 @@ class RenaultEvCenterPanel extends HTMLElement {
     set("bal_amps", bAttr("ampere_impostati"));
     set("bal_ts", bAttr("bilanciamento_ultimo_aggiustamento"));
 
-    // bilanciamento casalingo: automazioni HA per nome
-    const host = root.querySelector('[data-c="wb-home-autos"]');
-    if (host) {
-      const ids = ["automation.regola_potenza_wallbox_se_consumo_elevato",
-                   "automation.ripristina_potenza_wallbox_se_consumo_basso"];
-      let found = ids.map((id) => S._hass.states[id]).filter(Boolean);
-      if (!found.length) {
-        found = Object.values(S._hass.states)
-          .filter((s) => s.entity_id.startsWith("automation.")
-            && /wallbox/i.test(s.entity_id + " " + (s.attributes.friendly_name || "")))
-          .sort((a, b) => String(a.attributes.friendly_name || a.entity_id)
-            .localeCompare(String(b.attributes.friendly_name || b.entity_id), "it"));
-      }
-      host.innerHTML = found.map((s) =>
-        `<div class="cmd" data-cmd="switch" data-ent="${s.entity_id}"><span class="em">${s.state === "on" ? "🟢" : "⚪"}</span>${s.attributes.friendly_name || s.entity_id}<b>${s.state === "on" ? "attiva" : "spenta"}</b></div>`).join("")
-        || `<div style="color:var(--muted);font-size:12px">Nessuna automazione "potenza wallbox" trovata — creala in Impostazioni → Automazioni.</div>`;
-      host.querySelectorAll("[data-cmd]").forEach((el) =>
-        el.addEventListener("click", () => S._cmd(el.dataset.cmd, el)));
-    }
+    // bilanciamento casa (switch integrazione + config dal sensore Programmazione)
+    const pgHome = (_pg && _pg.attributes && _pg.attributes.home) ? _pg.attributes.home : {};
+    const homeEnt = pgHome.sensor ? S._hass.states[pgHome.sensor] : null;
+    let hw = homeEnt ? parseFloat(String(homeEnt.state).replace(",", ".")) : null;
+    if (hw !== null && !isNaN(hw) && /kw/i.test(String(homeEnt.attributes.unit_of_measurement || ""))) hw *= 1000;
+    set("home_w", (hw === null || isNaN(hw)) ? "—" : S._fmt(hw, 0));
+    set("home_hi", pgHome.meter_kw ? S._fmt(Number(pgHome.meter_kw) * 1000, 0) : "—");
+    set("home_amps", sNum ? S._fmt(parseFloat(sNum.state), 0) : "—");
+    const homeSw = S._hass.states[S._swid("bilanciamento_casa")];
+    set("home_state", homeSw ? (homeSw.state === "on" ? "attivo" : "spento") : "—");
   }
   /** Elenco delle automazioni attive (Renault / Wallbox / Bilanciamento). */
   _drawAutos(root) {
@@ -1199,17 +1203,23 @@ class RenaultEvCenterPanel extends HTMLElement {
     const _scRows = (_sc && Array.isArray(_sc.attributes.scadenze) ? _sc.attributes.scadenze : []);
     const tbSc = root.querySelector('[data-c="tab-scadenze"]');
     if (tbSc) {
-      tbSc.innerHTML = _scRows.slice(0, 6).map((r) =>
-        `<tr><td>${r.tipo ?? r.nome ?? "—"}</td><td><b>${r.giorni ?? r.gg ?? "—"}</b> gg</td></tr>`).join("")
-        || `<tr><td colspan="2" style="color:var(--muted)">Nessuna scadenza</td></tr>`;
+      tbSc.innerHTML = _scRows.slice(0, 6).map((r) => {
+        const haKm = r.km !== undefined && r.km !== null && !isNaN(parseFloat(r.km));
+        const val = haKm ? `${this._i(parseFloat(r.km))} km` : `${r.giorni ?? r.gg ?? "—"} gg`;
+        return `<tr><td>${r.tipo ?? r.nome ?? "—"}</td><td><b>${val}</b></td></tr>`;
+      }).join("") || `<tr><td colspan="2" style="color:var(--muted)">Nessuna scadenza</td></tr>`;
     }
     const scP1 = root.querySelector('[data-c="tab-scadenze-p1"]');
     if (scP1) {
       scP1.innerHTML = _scRows.slice(0, 6).map((r) => {
         const g = parseInt(r.giorni ?? r.gg, 10);
-        const col = isNaN(g) ? "var(--muted)" : (g <= 15 ? "var(--bad)" : g <= 45 ? "var(--warn)" : "var(--good)");
+        // se la scadenza è per KM mostro i km mancanti (es. cambio gomme), altrimenti i giorni
+        const haKm = r.km !== undefined && r.km !== null && !isNaN(parseFloat(r.km));
+        const val = haKm ? `${this._i(parseFloat(r.km))} km` : (isNaN(g) ? "—" : g + " gg");
+        const ref = haKm ? parseFloat(r.km) : g;
+        const col = isNaN(ref) ? "var(--muted)" : (ref <= 15 ? "var(--bad)" : ref <= 45 ? "var(--warn)" : "var(--good)");
         return `<div class="row"><span>${r.tipo ?? r.nome ?? "—"}</span>` +
-          `<b style="color:${col}">${isNaN(g) ? "—" : g + " gg"}</b></div>`;
+          `<b style="color:${col}">${val}</b></div>`;
       }).join("") || `<div style="color:var(--muted);font-size:12px">Nessuna scadenza</div>`;
     }
     // manutenzione: ripopola i campi scadenza e mostra il prossimo cambio gomme
@@ -1857,11 +1867,15 @@ class RenaultEvCenterPanel extends HTMLElement {
       selY.dataset.sig = years.join("|");
       const cur = selY.value;
       selY.innerHTML = `<option value="">Tutti gli anni</option>` + years.map((y) => `<option value="${y}">${y}</option>`).join("");
-      selY.value = cur;
+      // default: anno corrente (se presente nei dati)
+      const thisY = String(new Date().getFullYear());
+      selY.value = cur || (years.includes(thisY) ? thisY : "");
     }
     if (selM && !selM.dataset.done) {
       selM.dataset.done = "1";
       selM.innerHTML = `<option value="">Tutti i mesi</option>` + NOMI_MESI.map((n, i) => `<option value="${String(i + 1).padStart(2, "0")}">${n}</option>`).join("");
+      // default: mese corrente
+      selM.value = String(new Date().getMonth() + 1).padStart(2, "0");
     }
     const fy = selY ? selY.value : "";
     const fm = selM ? selM.value : "";
@@ -2171,7 +2185,7 @@ select,input{background:var(--panel2);color:var(--txt);border:1px solid var(--li
 .carbox{position:relative;border-radius:14px;overflow:hidden;border:1px dashed var(--accent);background:radial-gradient(ellipse at 50% 115%,var(--accent-soft),transparent 60%),var(--panel);display:flex;align-items:center;justify-content:center;min-height:210px;flex-direction:column;gap:8px}
 .carbox .ph{font-size:52px}
 .carbox img{max-height:190px;max-width:90%;object-fit:contain}
-.mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);height:280px}
+.mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);height:100%;min-height:0}
 .mapbox ha-map{display:block;width:100%;height:100%}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel);color:var(--txt);border:1px solid var(--accent);border-radius:12px;padding:12px 20px;font-size:14px;opacity:0;transition:.3s;z-index:999}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -2263,7 +2277,7 @@ const PAGES = {
     </div>
   </div>
 
-  <div class="grid g2" style="margin-top:16px">
+  <div class="grid g2" style="margin-top:16px;grid-auto-rows:330px">
     <div class="mapbox" id="evmap"></div>
     <div class="card"><h3>📈 Km percorsi (7 giorni)</h3>
       <div id="kmchart" style="min-height:150px"></div>
@@ -2350,7 +2364,7 @@ const PAGES = {
         <select data-mc="tipo" style="width:auto"><option>Casa</option><option>Fotovoltaico</option><option selected>Pubblica</option><option>Manuale</option></select></label>
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted);flex:1;min-width:180px">Descrizione
         <input data-mc="descrizione" placeholder="es. Colonnina DC autostrada" style="width:100%"></label>
-      <div class="btn" data-cmd="add_charge_manual">💾 Registra ricarica</div>
+      <div class="btn" data-cmd="add_charge_manual" style="padding:8px 14px;font-size:13px;align-self:flex-end">💾 Registra ricarica</div>
     </div>
     <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Utile per le colonnine DC. Se lasci vuoto il costo, resta 0 €.</div></div>
   <div class="card" style="margin-top:16px"><h3>📊 Distribuzione ricariche</h3>
@@ -2506,7 +2520,7 @@ const PAGES = {
       <div style="color:var(--muted);font-size:12px;margin-top:6px">Anno: <span data-attr="co2_risparmiata|quest_anno">—</span> kg</div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:4px">evitata = termica − rete</div></div>
     <div class="card"><h3>📅 Scadenze</h3>
-      <table><tr><th>Tipo</th><th>Giorni</th></tr><tbody data-c="tab-scadenze"></tbody></table></div></div>
+      <table><tr><th>Tipo</th><th>Km / Giorni</th></tr><tbody data-c="tab-scadenze"></tbody></table></div></div>
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>🌦️ Meteo vs consumi</h3>
       <div class="row"><span>Temperatura esterna</span><b><span data-f="temp_est">—</span> °C</b></div>
@@ -2658,15 +2672,21 @@ const PAGES = {
       <div class="row"><span>Ampere impostati</span><b><span data-wb="bal_amps">—</span> A</b></div>
       <div class="row"><span>Ultimo aggiustamento</span><b><span data-wb="bal_ts">—</span></b></div>
       <div class="note">Adatta gli ampere per tenere il prelievo da rete ~0. Sensori rete/batteria e W per A in <b>Configura → Bilanciamento</b>.</div></div></div>
-  <div class="card" style="margin-top:16px"><h3>⚡ Sperimentazione GSE</h3>
-    <div class="row"><span>Attiva</span><label class="switch"><input type="checkbox" data-sw="sw_gse"><span></span></label></div>
-    <div class="row"><span>Limite adesso</span><b data-wb="gse_now">—</b></div>
-    <div class="row"><span>Fascia a potenza piena</span><b><span data-wb="gse_fascia">—</span></b></div>
-    <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Fuori fascia la wallbox viene limitata alla potenza ridotta.
-      Orari e potenze in <b>Configura → Sperimentazione GSE</b>.</div></div>
-  <div class="card" style="margin-top:16px"><h3>🏠 Bilanciamento casalingo</h3>
-    <div class="note">Se la wallbox non fa da sé il bilanciamento domestico (non superare il contatore di casa), usa automazioni Home Assistant — es. quelle che riducono gli ampere quando il consumo sale. Trovo per nome:</div>
-    <div data-c="wb-home-autos" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div></div>`,
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>🏠 Bilanciamento casa</h3>
+      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-sw="sw_home"><span></span></label></div>
+      <div class="row"><span>Stato</span><b data-wb="home_state">—</b></div>
+      <div class="row"><span>Consumo casa</span><b><span data-wb="home_w">—</span> W</b></div>
+      <div class="row"><span>Soglia contatore</span><b><span data-wb="home_hi">—</span> W</b></div>
+      <div class="row"><span>Ampere wallbox</span><b><span data-wb="home_amps">—</span> A</b></div>
+      <div class="note">Se il consumo casa supera la soglia per <b>10 min</b> la wallbox scende a <b>Ridotta</b> A;
+        sotto l'80% per <b>15 min</b> torna a <b>Max</b> A. Sensore, contatore e ampere in <b>Configura → Bilanciamento casa</b>.</div></div>
+    <div class="card"><h3>⚡ Sperimentazione GSE</h3>
+      <div class="row"><span>Attiva</span><label class="switch"><input type="checkbox" data-sw="sw_gse"><span></span></label></div>
+      <div class="row"><span>Limite adesso</span><b data-wb="gse_now">—</b></div>
+      <div class="row"><span>Fascia a potenza piena</span><b><span data-wb="gse_fascia">—</span></b></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Fuori fascia la wallbox viene limitata alla potenza ridotta.
+        Orari e potenze in <b>Configura → Sperimentazione GSE</b>.</div></div></div>`,
 };
 
 if (!customElements.get("renault-ev-center-panel")) {

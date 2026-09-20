@@ -3,35 +3,10 @@
   "config": {
     "step": {
       "user": {
-        "title": "🚗 Renault EV Center — Your car",
-        "description": "**Welcome!** Select your Renault EV entities (official Renault integration).\n\n- Give the car a **short name** (e.g. `Megane`): it becomes the prefix of all new entities.\n- The **model** sets the car picture.\n- You can create the **dashboard** in the sidebar automatically.",
+        "title": "🧩 Installation profile",
+        "description": "Choose the profile:\n- **Base** — car only\n- **Pro** — car + wallbox\n- **Enterprise** — car + wallbox + solar\n\nThe profile decides which sections you see during setup and which pages appear in the dashboard (e.g. Base has no Wallbox page).",
         "data": {
-              "model": "Car model — 1st choice: sets the picture",
-          "create_dashboard": "Create the dashboard automatically in the sidebar"
-        },
-        "sections": {
-          "car": {
-            "name": "🚗 Car",
-            "data": {
-              "name": "Car name",
-              "odometer_entity": "Odometer sensor",
-              "battery_level_entity": "Battery level sensor (%)",
-              "range_entity": "Remaining range sensor",
-              "charging_entity": "Charging binary sensor/sensor",
-              "plug_entity": "Plug status (optional)",
-              "location_entity": "GPS tracker (optional)"
-            }
-          },
-          "commands": {
-            "name": "🎛️ Renault commands",
-            "data": {
-              "charge_start_button": "Start charge button (Renault)",
-              "ac_button_entity": "Start A/C button (Renault)",
-              "climate_entity": "Renault climate entity",
-              "light_entity": "Exterior lights (light/switch/button)",
-              "horn_entity": "Horn (button/switch)"
-            }
-          }
+          "profile": "Installation profile"
         }
       },
       "wallbox": {
@@ -68,6 +43,15 @@
               "gse_wpa": "Wallbox watts per amp (230 single-phase, 690 three-phase)"
             }
           },
+          "home": {
+            "name": "🏠 Home balancing",
+            "data": {
+              "home_power_sensor": "Home consumption sensor (W or kW)",
+              "home_meter_kw": "Home meter: 3 · 4.5 · 6 · 10 (higher) kW",
+              "home_max_amps": "Wallbox amps at low load (restore)",
+              "home_reduce_amps": "Wallbox amps at high load (reduce)"
+            }
+          },
           "solar": {
             "name": "☀️ Solar & balancing",
             "data": {
@@ -88,7 +72,7 @@
         "description": "Battery capacity, energy prices and preferences. Everything can be changed later in Options.",
         "data": {
           "charge_start_button": "Start charge button (Renault)",
-              "model": "Car model — 1st choice: sets the picture",
+          "model": "Car model — 1st choice: sets the picture",
           "create_dashboard": "Create the dashboard in the sidebar automatically"
         },
         "sections": {
@@ -183,6 +167,38 @@
             }
           }
         }
+      },
+      "car": {
+        "title": "🚗 Renault EV Center — Your car",
+        "description": "**Welcome!** Select your Renault EV entities (official Renault integration).\n\n- Give the car a **short name** (e.g. `Megane`): it becomes the prefix of all new entities.\n- The **model** sets the car picture.\n- You can create the **dashboard** in the sidebar automatically.",
+        "data": {
+          "model": "Car model — 1st choice: sets the picture",
+          "create_dashboard": "Create the dashboard automatically in the sidebar"
+        },
+        "sections": {
+          "car": {
+            "name": "🚗 Car",
+            "data": {
+              "name": "Car name",
+              "odometer_entity": "Odometer sensor",
+              "battery_level_entity": "Battery level sensor (%)",
+              "range_entity": "Remaining range sensor",
+              "charging_entity": "Charging binary sensor/sensor",
+              "plug_entity": "Plug status (optional)",
+              "location_entity": "GPS tracker (optional)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Renault commands",
+            "data": {
+              "charge_start_button": "Start charge button (Renault)",
+              "ac_button_entity": "Start A/C button (Renault)",
+              "climate_entity": "Renault climate entity",
+              "light_entity": "Exterior lights (light/switch/button)",
+              "horn_entity": "Horn (button/switch)"
+            }
+          }
+        }
       }
     }
   },
@@ -192,7 +208,7 @@
         "title": "Renault EV Center — Options",
         "description": "Change mapped entities and settings.",
         "data": {
-              "model": "Car model — 1st choice: sets the picture",
+          "model": "Car model — 1st choice: sets the picture",
           "create_dashboard": "Create the dashboard in the sidebar automatically"
         },
         "sections": {
@@ -242,6 +258,15 @@
               "gse_domenica": "Sunday: full power all day",
               "gse_holiday_entity": "Holiday sensor (binary_sensor, optional)",
               "gse_wpa": "Wallbox watts per amp (230 single-phase, 690 three-phase)"
+            }
+          },
+          "home": {
+            "name": "🏠 Home balancing",
+            "data": {
+              "home_power_sensor": "Home consumption sensor (W or kW)",
+              "home_meter_kw": "Home meter: 3 · 4.5 · 6 · 10 (higher) kW",
+              "home_max_amps": "Wallbox amps at low load (restore)",
+              "home_reduce_amps": "Wallbox amps at high load (reduce)"
             }
           },
           "solar": {
@@ -514,6 +539,15 @@
         "giorni": {
           "name": "Days"
         }
+      }
+    }
+  },
+  "selector": {
+    "profile": {
+      "options": {
+        "base": "Base — car only",
+        "pro": "Pro — car + wallbox",
+        "enterprise": "Enterprise — car + wallbox + solar"
       }
     }
   }

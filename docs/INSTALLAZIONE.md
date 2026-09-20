@@ -25,8 +25,14 @@ Tempo richiesto: **~10 minuti**.
    https://github.com/Redrex85/Renault-EV-Center-Home-Assistant
    ```
 4. Categoria: **Integrazione** → **Aggiungi**
-5. Cerca "Renault EV Center" → **Scarica**
+5. Sempre in HACS, **cerca "Renault EV Center"** (compare tra le integrazioni) → aprila → **Scarica**
 6. **Riavvia Home Assistant** (Strumenti per sviluppatori → YAML → Riavvia, o Impostazioni → Sistema)
+7. Dopo il riavvio: **Impostazioni → Dispositivi e servizi → + Aggiungi integrazione** →
+   cerca **"Renault EV Center"** e **avvia la configurazione guidata** (vedi §2)
+
+> In breve: **repo → cerca in HACS → scarica → riavvia → aggiungi l'integrazione → configura**.
+> Il riavvio serve perché HA carica le integrazioni nuove solo all'avvio; senza di esso
+> "Renault EV Center" non compare nella ricerca delle integrazioni.
 
 ### Manuale
 
@@ -40,12 +46,27 @@ Tempo richiesto: **~10 minuti**.
 1. **Impostazioni → Dispositivi e servizi → + Aggiungi integrazione**
 2. Cerca **"Renault EV Center"**
 
+### Schermata 0 — Profilo di installazione (la prima!)
+
+La **primissima cosa** che ti viene chiesta è il **profilo**: decide **quali schermate** vedrai
+durante la configurazione e **quali pagine** compariranno nella dashboard.
+
+| Profilo | Cosa include | Cosa NON vedrai |
+|---|---|---|
+| **Base** — solo auto | auto, viaggi, costi, ricariche, risparmi, manutenzione | **niente wallbox**, **niente fotovoltaico**, e la **pagina Wallbox non compare** nel pannello |
+| **Pro** — auto + wallbox | tutto il Base **+ wallbox** (avvio/stop, potenza, sessione, GSE) | niente fotovoltaico |
+| **Enterprise** — tutto | Pro **+ fotovoltaico** e bilanciamento solare | — |
+
+> Scegli **Base** se non hai una wallbox in Home Assistant (carichi solo alle colonnine): la
+> configurazione sarà più corta e il pannello più pulito. Puoi cambiare profilo in seguito da
+> *Impostazioni → Integrazioni → Renault EV Center → ⋮ → Configura*.
+
 ### Schermata 1 — L'auto
 
 | Campo | Cosa scegliere | Tipicamente |
 |---|---|---|
-| Nome dell'auto | Nome breve, minuscolo | `Renault` |
 | Modello | Imposta in automatico la **foto dell'auto** | Megane E-Tech |
+| Nome dell'auto | Nome breve, minuscolo | `Renault` |
 | Crea dashboard | Plancia laterale con tutte le viste, creata da sola | ✅ |
 | Odometro | Sensore chilometraggio | `sensor.mileage` |
 | Livello batteria (%) | Sensore % batteria | `sensor.battery_level` |
@@ -171,8 +192,21 @@ Vai in *Configura → Prezzi* e compila **almeno uno** dei due campi:
 | **kWh caricati prima** | se conosci i kWh (es. il **totale della wallbox**); vengono convertiti in € col *Prezzo energia casa* |
 
 Esempio: hai l'auto da 40.000 km e la wallbox segna **8.326,4 kWh** → metti `8326,4` in
-*kWh caricati prima*. In Risparmi vedrai la voce **"🕘 Ricariche prima (dichiarate)"** inserita nel
-totale elettrico.
+*kWh caricati prima*.
+
+**Cosa cambia quando li inserisci** — non è un dettaglio del solo box "Affidabilità del confronto":
+i valori dichiarati entrano in **tutti** i numeri dei Risparmi:
+- la riga **"🕘 Ricariche prima (dichiarate)"** nella tabella termica vs elettrica;
+- il **totale elettrico**, la **Differenza** per riga e il **★ NETTO**;
+- il **grafico a barre** "Confronto costi" (barra verde);
+- il sensore **`Risparmio Totale vs Diesel`** → quindi anche la card **Risparmio netto** in *Panoramica*.
+
+In pratica: **se compili quei due campi, la pagina Risparmi diventa completa e attendibile** su tutto
+l'arco di vita dell'auto — non solo nel riquadro di confronto. Se li lasci vuoti, il "da sempre"
+resta **gonfiato** (avviso ⚠️) e devi guardare il confronto **A**.
+
+> I valori dichiarati valgono per il **totale "da sempre"**. **Mese** e **anno** restano calcolati
+> sui dati reali di quel periodo: sono per definizione più piccoli, non è un errore.
 
 ### Quale scegliere?
 | Obiettivo | Confronto da usare |
@@ -189,6 +223,30 @@ totale elettrico.
 > Se compili i valori dichiarati e poi guardi il confronto **A**, i due numeri sono diversi per
 > definizione: A copre solo il periodo dall'installazione, B copre tutta la vita dell'auto.
 > Non è un errore: sono due domande diverse.
+
+## 5.3 Bilanciamento casa (non superare il contatore)
+
+Se la wallbox non gestisce da sé il **contatore di casa**, lo fa l'integrazione — senza automazioni YAML.
+Nella pagina **Wallbox**, accanto a *Bilanciamento solare*, trovi la card **🏠 Bilanciamento casa** con lo
+switch, il **consumo casa** live, la **soglia contatore** e gli **ampere wallbox** attuali.
+
+Configurazione in *Configura → Bilanciamento casa*:
+
+| Campo | Cosa mettere |
+|---|---|
+| **Sensore consumo casa** | il sensore della potenza di casa (W o kW), es. `sensor.em_power` |
+| **Contatore di casa** | **3 · 4.5 · 6 · 10** (= superiore) kW |
+| **Ampere a carico alto** | a quanto scendere quando il consumo sale (es. `18`) |
+| **Ampere a carico basso** | a quanto tornare quando il consumo cala (es. `25`) |
+
+Logica (derivata dalle soglie del contatore):
+- consumo casa **> potenza contatore** per **10 min** → wallbox agli **ampere ridotti**;
+- consumo casa **< 80% del contatore** per **15 min** → wallbox agli **ampere ripristinati**;
+- in mezzo (80–100%) resta com'è: evita di oscillare.
+
+> Funziona solo **mentre la wallbox carica**. Ogni cambio manda una **notifica** (se hai configurato il
+> servizio di notifica). Gli **ampere** sono gli stessi della card *Corrente di carica*: puoi impostarli a mano
+> in qualsiasi momento.
 
 ## 6. Problemi comuni
 

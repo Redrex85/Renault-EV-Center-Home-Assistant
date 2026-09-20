@@ -10,7 +10,11 @@ From install to a fully working dashboard in **~10 minutes**.
 
 ## 1. Install
 
-**HACS:** HACS → ⋮ → Custom repositories → add `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant` (category: Integration) → download → restart HA.
+**HACS:** HACS → ⋮ → Custom repositories → add `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant` (category: Integration) → **then search "Renault EV Center" in HACS → open it → Download** → **restart Home Assistant** → **Settings → Devices & Services → Add Integration → "Renault EV Center"** → run the setup wizard.
+
+> Short version: **repo → search in HACS → download → restart → add the integration → configure**.
+> The restart is required: HA only loads new integrations at startup, so before it "Renault EV
+> Center" won't appear in the integration search.
 
 **Manual:** copy `custom_components/renault_ev_center/` into `<config>/custom_components/`, restart HA.
 
@@ -18,15 +22,31 @@ From install to a fully working dashboard in **~10 minutes**.
 
 Settings → Devices & Services → Add Integration → **Renault EV Center**:
 
+### Step 0 — Installation profile (the very first screen)
+The **first thing** you're asked is the **profile**: it decides **which screens** you see during
+setup and **which pages** appear in the dashboard.
+
+| Profile | Includes | You won't see |
+|---|---|---|
+| **Base** — car only | car, trips, costs, charges, savings, maintenance | **no wallbox**, **no solar**, and the **Wallbox page is hidden** in the panel |
+| **Pro** — car + wallbox | Base **+ wallbox** (start/stop, power, session, GSE) | no solar |
+| **Enterprise** — everything | Pro **+ solar** and solar balancing | — |
+
+> Pick **Base** if you have no wallbox in Home Assistant (public charging only): shorter setup,
+> cleaner panel. You can change it later from *Settings → Integrations → Renault EV Center → ⋮ →
+> Configure*.
+
 ### Step 1 — Car
 Pick a short lowercase name (`Megane`) — it becomes the entity prefix — then select:
 odometer (`sensor.mileage`), battery level (`sensor.battery_level`), range (`sensor.battery_autonomy`),
 charging (`binary_sensor.charging` or `sensor.charge_state`), optional plug status and GPS tracker.
+Also choose the **model** (first field: it sets the car picture).
 
-### Step 2 — Wallbox
+### Step 2 — Wallbox *(skipped in Base profile)*
 Enable the toggle and map: instant power (W or kW, auto-converted), charger state, session energy counter and/or total energy counter.
+Also here: **charge start / stop** entities and the **GSE pilot scheme** section.
 
-No wallbox? Leave everything off — public charges can be logged manually via the `add_manual_charge` service.
+No wallbox? Pick the **Base** profile — public charges can be logged manually via the `add_manual_charge` service.
 
 ### Step 3 — Settings
 Battery capacity (60 kWh for Megane EV60), target SoC, home/public/solar prices per kWh,
@@ -97,8 +117,21 @@ Go to *Configure → Prices* and fill **at least one** of the two fields:
 | **kWh charged before** | if you know the kWh (e.g. the **wallbox total**); converted to € using *Home energy price* |
 
 Example: the car has 40.000 km and the wallbox reads **8,326.4 kWh** → put `8326.4` in
-*kWh charged before*. In Savings you'll see a **"🕘 Ricariche prima (declared)"** row folded into
-the electric total.
+*kWh charged before*.
+
+**What changes when you fill them in** — it is not just the "Confronto affidabilità" box: the declared
+values feed **every** number on the Savings page:
+- the **"🕘 Ricariche prima (dichiarate)"** row in the thermal vs electric table;
+- the **electric total**, the per-row **Difference** and the **★ NETTO**;
+- the **"Confronto costi" bar chart** (green bar);
+- the **`Risparmio Totale vs Diesel`** sensor → therefore also the **Risparmio netto** card on *Panoramica*.
+
+In short: **fill those two fields and the Savings page becomes complete and trustworthy** over the
+car's whole life — not only inside the comparison box. Leave them empty and "all time" stays
+**inflated** (⚠️ warning) and you should look at comparison **A**.
+
+> Declared values apply to the **"all time" total**. **Month** and **year** stay computed from that
+> period's real data: by definition smaller — not an error.
 
 ### Which one to pick?
 | Goal | Use |

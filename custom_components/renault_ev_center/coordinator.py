@@ -59,6 +59,13 @@ from .const import (
     CONF_GSE_DOMENICA,
     CONF_GSE_HOLIDAY,
     DEFAULT_GSE_WPA,
+    CONF_HOME_POWER_SENSOR,
+    CONF_HOME_METER_KW,
+    CONF_HOME_MAX_AMPS,
+    CONF_HOME_REDUCE_AMPS,
+    DEFAULT_HOME_METER_KW,
+    DEFAULT_HOME_MAX_AMPS,
+    DEFAULT_HOME_REDUCE_AMPS,
     DEFAULT_GSE_KW_MAX,
     DEFAULT_GSE_KW_RIDOTTA,
     DEFAULT_GSE_START,
@@ -314,6 +321,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.gse_end = str(opts.get(CONF_GSE_END) or DEFAULT_GSE_END)
         self.gse_domenica = bool(opts.get(CONF_GSE_DOMENICA, True))
         self.gse_holiday = str(opts.get(CONF_GSE_HOLIDAY) or "")
+        # --- bilanciamento casalingo ---------------------------------------------
+        self.home_power_sensor = str(opts.get(CONF_HOME_POWER_SENSOR) or "")
+        self.home_meter_kw = _f(opts.get(CONF_HOME_METER_KW), DEFAULT_HOME_METER_KW)
+        self.home_max_amps = _f(opts.get(CONF_HOME_MAX_AMPS), DEFAULT_HOME_MAX_AMPS)
+        self.home_reduce_amps = _f(opts.get(CONF_HOME_REDUCE_AMPS), DEFAULT_HOME_REDUCE_AMPS)
+        self._home_hi_since: float | None = None
+        self._home_lo_since: float | None = None
+        self._home_last: dict[str, Any] = {}
         self.charge_sched_enabled = bool(opts.get(CONF_CHARGE_SCHED_ENABLED, False))
         self.charge_sched_mode = str(opts.get(CONF_CHARGE_SCHED_MODE) or "orario")
         self.charge_start_time = str(opts.get(CONF_CHARGE_START_TIME) or "23:30")
@@ -1083,6 +1098,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             ric_reg = carb_ev  # ricariche registrate dall'integrazione
             savings["pre_kwh"] = round(pre_kwh, 2)
             savings["pre_eur"] = round(pre_eur, 2)
+            # il valore DICHIARATO entra anche nei totali "ufficiali" (sensore Risparmio Totale,
+            # risp_tot del pannello): altrimenti i due numeri non coincidono col box di confronto
+            savings["elettrico_totale"] = round(ric_reg + pre_eur, 2)
+            savings["totale"] = round(_f(savings.get("termica_totale"))
+                                      - savings["elettrico_totale"], 2)
 
             savings["termica"] = {"carburante": round(carb_termica, 2),
                                   "tagliandi": round(tag_termica, 2),
@@ -1550,8 +1570,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self._maybe_backfill_geocode()
         await self._handle_charge_events(data["events"], data, now)
         await self._balance_solar(data, wb_state)
+        await self._home_balance(wb_state)
         await self._apply_gse(wb_state, bool(data.get("charging")))
         data["balance"] = dict(self.store.data.get("counters", {}).get("balance_last", {}))
+        data["home_balance"] = dict(self._home_last)
         return data
 
     # ------------------------------------------------------------ fine ricarica
@@ -2280,6 +2302,12 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             wb = self.opts.get(CONF_WB_CHARGE_SWITCH)
             btn = self.opts.get(CONF_CHARGE_START_BUTTON)
             ent = wb or btn
+            if not ent:
+                # senza entità di avvio l'automazione non farebbe NULLA: provo i nomi comuni
+                for cand in ("button.wallbox_charger_start", f"button.{n}_start_charge"):
+                    if self.hass.states.get(cand) is not None:
+                        ent = cand
+                        break
             if ent:
                 dom = str(ent).split(".")[0]
                 if dom == "switch":
@@ -2288,6 +2316,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     actions.append({"action": "button.press", "target": {"entity_id": ent}})
                 else:
                     actions.append({"action": "homeassistant.turn_on", "target": {"entity_id": ent}})
+            if not actions:
+                _LOGGER.error(
+                    "Programma ricarica: NESSUNA azione possibile — mappa 'Avvio carica WALLBOX' "
+                    "(o il Pulsante Avvia carica) in Configura, altrimenti l'automazione non fa nulla"
+                )
             cfg = {"alias": f"Renault EV Center — Programma ricarica ({n})",
                    "trigger": [{"trigger": "time", "at": f"{inizio}:00"}],
                    "condition": cond, "action": actions, "mode": "single"}
@@ -2310,7 +2343,29 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                    "condition": cond,
                    "action": [{"action": "button.press", "target": {"entity_id": btn}}] if btn else [],
                    "mode": "single"}
-        return await self._automations_apply({aid: cfg}, [])
+        made = await self._automations_apply({aid: cfg}, [])
+        # l'automazione appena salvata deve essere ATTIVA, altrimenti non parte mai
+        await self._enable_automation(cfg["alias"])
+        return made
+
+    async def _enable_automation(self, alias: str) -> None:
+        """Accende l'automazione (id derivato dall'alias) e lo segnala nel log."""
+        from .dashboard import slugify
+
+        eid = f"automation.{slugify(alias)}"
+        st = self.hass.states.get(eid)
+        if st is None:
+            _LOGGER.warning("Automazione non trovata (%s): controlla che automations.yaml "
+                            "sia incluso in configuration.yaml", eid)
+            return
+        if st.state == "on":
+            return
+        try:
+            await self.hass.services.async_call(
+                "automation", "turn_on", {"entity_id": eid}, blocking=False)
+            _LOGGER.info("Automazione attivata: %s", eid)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Attivazione automazione fallita (%s): %s", eid, err)
 
     async def _check_notifications(self, scadenze: list[dict], oggi) -> None:
         """Invia una notifica al giorno se una scadenza rientra nel preavviso."""
@@ -2521,6 +2576,71 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 )
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Bilanciamento: impostazione ampere fallita: %s", err)
+
+    async def _home_balance(self, wb_state: str) -> None:
+        """Bilanciamento casalingo: abbassa la wallbox se il consumo casa sale troppo.
+
+        Soglie derivate dal contatore dichiarato: alta = potenza contatore,
+        bassa = 80%. Isteresi temporale: 10 min sopra → ampere ridotti,
+        15 min sotto → ampere ripristinati. Adattato dalle automazioni utente.
+        """
+        if not self._switch_on("home_balance") or not self.home_power_sensor:
+            return
+        if wb_state not in WALLBOX_CHARGING_STATES:
+            self._home_hi_since = self._home_lo_since = None
+            return
+        max_entity = self.opts.get(CONF_WB_MAX_CURRENT)
+        if not max_entity:
+            return
+        st = self.hass.states.get(self.home_power_sensor)
+        if st is None or st.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return
+        w = _f(st.state)
+        unit = str(st.attributes.get("unit_of_measurement") or "").lower()
+        if unit.startswith("kw"):  # sensore in kW → W
+            w *= 1000.0
+        hi = self.home_meter_kw * 1000.0
+        lo = hi * 0.8
+        now_t = time.time()
+        self._home_last = {"w": round(w), "hi": round(hi), "lo": round(lo)}
+        if w > hi:
+            self._home_lo_since = None
+            if self._home_hi_since is None:
+                self._home_hi_since = now_t
+            elif now_t - self._home_hi_since >= 600:
+                self._home_hi_since = None
+                await self._set_wb_amps(
+                    max_entity, self.home_reduce_amps,
+                    f"consumo casa {round(w)} W > {round(hi)} W per 10 min")
+        elif w < lo:
+            self._home_hi_since = None
+            if self._home_lo_since is None:
+                self._home_lo_since = now_t
+            elif now_t - self._home_lo_since >= 900:
+                self._home_lo_since = None
+                await self._set_wb_amps(
+                    max_entity, self.home_max_amps,
+                    f"consumo casa {round(w)} W < {round(lo)} W per 15 min")
+        else:
+            self._home_hi_since = self._home_lo_since = None
+
+    async def _set_wb_amps(self, entity: str, amps: float, motivo: str) -> None:
+        """Imposta la corrente wallbox solo se diversa (tolleranza 0.5 A)."""
+        cur = _num(self.hass, entity, None)
+        if cur is not None and abs(cur - amps) < 0.5:
+            return
+        try:
+            await self.hass.services.async_call(
+                "number", "set_value", {"entity_id": entity, "value": amps},
+                blocking=False,
+            )
+            _LOGGER.info("Bilanciamento casa: wallbox a %s A (%s)", amps, motivo)
+            await self._send_notify(
+                "🏠 Bilanciamento casa",
+                f"Wallbox: {cur} A → {amps} A\n{motivo}",
+            )
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Bilanciamento casa: impostazione fallita: %s", err)
 
     async def _handle_charge_events(self, events: dict[str, Any], data: dict[str, Any],
                                     now) -> None:

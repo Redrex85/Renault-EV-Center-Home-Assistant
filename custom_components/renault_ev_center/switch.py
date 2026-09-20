@@ -36,6 +36,8 @@ async def async_setup_entry(
                    False, "mdi:solar-power"),
         MateSwitch(coordinator, "gse", f"{name} Sperimentazione GSE",
                    False, "mdi:transmission-tower"),
+        MateSwitch(coordinator, "home_balance", f"{name} Bilanciamento Casa",
+                   False, "mdi:home-lightning-bolt"),
     ])
 
 

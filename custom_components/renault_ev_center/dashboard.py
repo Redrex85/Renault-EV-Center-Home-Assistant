@@ -17,6 +17,7 @@ from .const import (
     CONF_LOCATION_ENTITY, CONF_LIGHT_ENTITY, CONF_HORN_ENTITY, CONF_WB_STOP_SWITCH,
     CONF_WB_POWER, CONF_WB_STATE, CONF_WB_SESSION_ENERGY, CONF_WB_TOTAL_ENERGY,
     CONF_WB_MAX_CURRENT, CONF_WB_CHARGE_SWITCH,
+    CONF_WALLBOX_ENABLED, CONF_PROFILE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -110,7 +111,8 @@ def setup_car_image(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
 
 
 def _panel_view(name: str, image: str | None, overrides: dict[str, Any] | None = None,
-                version: str = "") -> dict[str, Any]:
+                version: str = "", opts_wb: bool = True,
+                opts_profile: str = "") -> dict[str, Any]:
     """Vista unica tipo panel: una sola card custom full-width."""
     card: dict[str, Any] = {
         "type": "custom:renault-ev-center-panel",
@@ -118,6 +120,9 @@ def _panel_view(name: str, image: str | None, overrides: dict[str, Any] | None =
         "car": slugify(name),
         "image": f"/local/{WWW_DIR}/auto.png",
         "version": version,
+        # il pannello usa questi per nascondere le parti non attive (profilo base/pro)
+        "wallbox": bool(opts_wb),
+        "profile": opts_profile,
     }
     if image:
         card["image"] = image
@@ -240,7 +245,9 @@ async def async_setup_dashboard(hass: HomeAssistant, entry: ConfigEntry, name: s
         "wb_stop_switch": opts.get(CONF_WB_STOP_SWITCH),
     }
     overrides = {k: v for k, v in _ov.items() if v}
-    views = [_panel_view(name, None, overrides, version)]
+    views = [_panel_view(name, None, overrides, version,
+                         bool(opts.get(CONF_WALLBOX_ENABLED, True)),
+                         str(opts.get(CONF_PROFILE) or ""))]
 
     async def piano_b() -> None:
         path = await hass.async_add_executor_job(_export_yaml_fallback, hass, name, views)

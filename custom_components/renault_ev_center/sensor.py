@@ -758,14 +758,22 @@ class WbPotenza(MateSensor):
     @property
     def extra_state_attributes(self):
         b = self.coordinator.data.get("balance", {})
-        if not b:
-            return {}
-        return {
-            "bilanciamento_ultimo_aggiustamento": b.get("ts"),
-            "surplus_w": b.get("surplus_w"),
-            "rete_w": b.get("rete_w"),
-            "ampere_impostati": b.get("ampere"),
-        }
+        hb = self.coordinator.data.get("home_balance", {})
+        attrs = {}
+        if b:
+            attrs.update({
+                "bilanciamento_ultimo_aggiustamento": b.get("ts"),
+                "surplus_w": b.get("surplus_w"),
+                "rete_w": b.get("rete_w"),
+                "ampere_impostati": b.get("ampere"),
+            })
+        if hb:
+            attrs.update({
+                "casa_w": hb.get("w"),
+                "casa_soglia_w": hb.get("hi"),
+                "casa_soglia_bassa_w": hb.get("lo"),
+            })
+        return attrs
 
 
 class WbTempoSessione(MateSensor):
@@ -1252,7 +1260,14 @@ class Programmazione(MateSensor):
         # si aggiornano solo al poll successivo → dopo un salvataggio il form si resettava)
         sch = self.coordinator.store.data.get("schedule") or {}
         gse = self.coordinator.data.get("gse", {})
-        return {"schedule": dict(sch), "gse": gse}
+        c = self.coordinator
+        home = {
+            "sensor": c.home_power_sensor,
+            "meter_kw": c.home_meter_kw,
+            "max_amps": c.home_max_amps,
+            "reduce_amps": c.home_reduce_amps,
+        }
+        return {"schedule": dict(sch), "gse": gse, "home": home}
 
 
 class Percorrenza(MateSensor):

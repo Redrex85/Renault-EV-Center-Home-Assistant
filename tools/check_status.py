@@ -470,6 +470,9 @@ try:
     # ricariche dichiarate prima dell'installazione
     assert 'CONF_PRE_KWH' in src and 'CONF_PRE_EUR' in src, "mancano i valori pre-installazione"
     assert 'ricariche_pre' in src, "il valore pre-installazione non è esposto separatamente"
+    # i valori dichiarati devono entrare anche nei totali ufficiali (sensore Risparmio Totale)
+    assert 'savings["elettrico_totale"] = round(ric_reg + pre_eur, 2)' in src, \
+        "il valore dichiarato non entra nel totale ufficiale: Risparmi incoerenti"
     # base odometro all'installazione e confronto "da installazione"
     assert 'savings["da_installazione"]' in src, "manca il confronto da installazione"
     st = open(os.path.join(CC, "store.py"), encoding="utf-8").read()
@@ -605,6 +608,66 @@ try:
     ok("batteria bassa rimossa, stima col SoC programmato, tagliando unico, wallbox a posto")
 except Exception as e:
     bad(f"wallbox/stima: {e}")
+
+print("\n[23] Profili di installazione (base / pro / enterprise)")
+try:
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    assert "async def async_step_user" in flow and "async def async_step_car" in flow, \
+        "manca il passo profilo / la schermata auto"
+    assert "PROFILE_BASE" in flow and "PROFILE_ENTERPRISE" in flow, "profili non usati nel wizard"
+    assert 'if profile != PROFILE_BASE:' in flow, "la sezione GSE non è legata al profilo"
+    assert 'if profile == PROFILE_ENTERPRISE:' in flow, "la sezione fotovoltaico non è solo enterprise"
+    assert 'self._data[CONF_WALLBOX_ENABLED] = prof != PROFILE_BASE' in flow, \
+        "il profilo base non disattiva la wallbox"
+    dash = open(os.path.join(CC, "dashboard.py"), encoding="utf-8").read()
+    assert '"wallbox": bool(opts_wb)' in dash and '"profile": opts_profile' in dash, \
+        "la card non riceve profilo/wallbox: il pannello non può nascondere la pagina"
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert "_navItems()" in js and "_pages()" in js, "il pannello non filtra le pagine"
+    assert 'id === "p11"' in js, "la pagina Wallbox non è nascosta col profilo base"
+    # scadenze: km mancanti (gomme) invece dei soli giorni + mappa alta come il grafico
+    assert "haKm" in js, "le scadenze non mostrano i km mancanti (cambio gomme)"
+    assert "grid-auto-rows:330px" in js, "la mappa non ha la stessa altezza del grafico a fianco"
+    tr = json.load(open(os.path.join(CC, "strings.json"), encoding="utf-8"))
+    assert "car" in tr["config"]["step"] and "user" in tr["config"]["step"], \
+        "traduzioni: mancano gli step car/user"
+    assert "profile" in tr.get("selector", {}), "traduzioni: manca selector.profile"
+    ok("profili base/pro/enterprise: wizard, sezioni, pagina Wallbox e traduzioni")
+except Exception as e:
+    bad(f"profili: {e}")
+
+print("\n[24] Bilanciamento casa (consumo contatore)")
+try:
+    cst = open(os.path.join(CC, "const.py"), encoding="utf-8").read()
+    for k in ("CONF_HOME_POWER_SENSOR", "CONF_HOME_METER_KW",
+              "CONF_HOME_MAX_AMPS", "CONF_HOME_REDUCE_AMPS", "HOME_METER_OPTIONS"):
+        assert k in cst, f"const mancante: {k}"
+    sw = open(os.path.join(CC, "switch.py"), encoding="utf-8").read()
+    assert '"home_balance"' in sw and "Bilanciamento Casa" in sw, "switch bilanciamento casa assente"
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert "async def _home_balance" in src, "manca _home_balance"
+    assert "self._switch_on(\"home_balance\")" in src, "lo switch casa non è controllato"
+    assert "await self._home_balance(wb_state)" in src, "_home_balance non è chiamato nel ciclo"
+    assert "self.home_meter_kw * 1000.0" in src and "hi * 0.8" in src, \
+        "soglie non derivate dal contatore (alta = contatore, bassa = 80%)"
+    assert ">= 600" in src and ">= 900" in src, "isteresi 10 min / 15 min mancante"
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    assert "CONF_HOME_POWER_SENSOR" in flow and '"home"' in flow, \
+        "la sezione Bilanciamento casa non è nel config flow"
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert 'data-sw="sw_home"' in js, "switch casa assente nel pannello"
+    assert 'case "sw_home": return S._swid("bilanciamento_casa")' in js, \
+        "il pannello non mappa lo switch casa"
+    assert 'data-wb="home_w"' in js and 'data-wb="home_hi"' in js, \
+        "il pannello non mostra consumo/soglia casa"
+    for fn in ("strings.json", "translations/it.json", "translations/en.json", "translations/fr.json"):
+        t = json.load(open(os.path.join(CC, fn), encoding="utf-8"))
+        secs = t["config"]["step"]["wallbox"]["sections"]
+        assert "home" in secs and "home_power_sensor" in secs["home"]["data"], \
+            f"{fn}: manca la sezione Bilanciamento casa"
+    ok("bilanciamento casa: switch, soglie da contatore, isteresi, pannello e traduzioni")
+except Exception as e:
+    bad(f"bilanciamento casa: {e}")
 
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)

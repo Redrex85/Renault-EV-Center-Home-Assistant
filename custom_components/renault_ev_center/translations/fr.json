@@ -3,35 +3,10 @@
   "config": {
     "step": {
       "user": {
-        "title": "🚗 Renault EV Center — Votre voiture",
-        "description": "**Bienvenue !** Sélectionnez vos entités Renault (intégration officielle).\n\n- Donnez un **nom court** à la voiture (ex. `Mégane`) : il devient le préfixe de toutes les nouvelles entités.\n- Le **modèle** définit l'image de la voiture.\n- Vous pouvez créer le **tableau de bord** dans la barre latérale automatiquement.",
+        "title": "🧩 Profil d'installation",
+        "description": "Choisissez le profil :\n- **Base** — voiture seule\n- **Pro** — voiture + wallbox\n- **Enterprise** — voiture + wallbox + solaire\n\nLe profil détermine les sections de configuration et les pages du tableau de bord (ex. Base n'a pas la page Wallbox).",
         "data": {
-              "model": "Modèle — 1er choix : définit l'image",
-          "create_dashboard": "Créer automatiquement le tableau de bord"
-        },
-        "sections": {
-          "car": {
-            "name": "🚗 Voiture",
-            "data": {
-              "name": "Nom de la voiture",
-              "odometer_entity": "Capteur odomètre",
-              "battery_level_entity": "Capteur niveau batterie (%)",
-              "range_entity": "Capteur autonomie restante",
-              "charging_entity": "Capteur en charge",
-              "plug_entity": "Statut prise (optionnel)",
-              "location_entity": "Traqueur GPS (optionnel)"
-            }
-          },
-          "commands": {
-            "name": "🎛️ Commandes Renault",
-            "data": {
-              "charge_start_button": "Bouton démarrer la charge (Renault)",
-              "ac_button_entity": "Bouton démarrer la clim (Renault)",
-              "climate_entity": "Climatisation (climate) Renault",
-              "light_entity": "Feux extérieurs (light/switch/button)",
-              "horn_entity": "Klaxon (button/switch)"
-            }
-          }
+          "profile": "Profil d'installation"
         }
       },
       "wallbox": {
@@ -68,6 +43,15 @@
               "gse_wpa": "Watts par ampère de la wallbox (230 mono, 690 triphasé)"
             }
           },
+          "home": {
+            "name": "🏠 Équilibrage maison",
+            "data": {
+              "home_power_sensor": "Capteur consommation maison (W ou kW)",
+              "home_meter_kw": "Compteur maison : 3 · 4.5 · 6 · 10 (supérieur) kW",
+              "home_max_amps": "Ampères wallbox à faible charge (rétablir)",
+              "home_reduce_amps": "Ampères wallbox à forte charge (réduire)"
+            }
+          },
           "solar": {
             "name": "☀️ Solaire et équilibrage",
             "data": {
@@ -88,7 +72,7 @@
         "description": "Capacité batterie, tarifs énergie et préférences. Tout est modifiable ensuite dans Options.",
         "data": {
           "charge_start_button": "Bouton démarrer la charge (Renault)",
-              "model": "Modèle — 1er choix : définit l'image",
+          "model": "Modèle — 1er choix : définit l'image",
           "create_dashboard": "Créer le tableau de bord automatiquement"
         },
         "sections": {
@@ -183,6 +167,38 @@
             }
           }
         }
+      },
+      "car": {
+        "title": "🚗 Renault EV Center — Votre voiture",
+        "description": "**Bienvenue !** Sélectionnez vos entités Renault (intégration officielle).\n\n- Donnez un **nom court** à la voiture (ex. `Mégane`) : il devient le préfixe de toutes les nouvelles entités.\n- Le **modèle** définit l'image de la voiture.\n- Vous pouvez créer le **tableau de bord** dans la barre latérale automatiquement.",
+        "data": {
+          "model": "Modèle — 1er choix : définit l'image",
+          "create_dashboard": "Créer automatiquement le tableau de bord"
+        },
+        "sections": {
+          "car": {
+            "name": "🚗 Voiture",
+            "data": {
+              "name": "Nom de la voiture",
+              "odometer_entity": "Capteur odomètre",
+              "battery_level_entity": "Capteur niveau batterie (%)",
+              "range_entity": "Capteur autonomie restante",
+              "charging_entity": "Capteur en charge",
+              "plug_entity": "Statut prise (optionnel)",
+              "location_entity": "Traqueur GPS (optionnel)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Commandes Renault",
+            "data": {
+              "charge_start_button": "Bouton démarrer la charge (Renault)",
+              "ac_button_entity": "Bouton démarrer la clim (Renault)",
+              "climate_entity": "Climatisation (climate) Renault",
+              "light_entity": "Feux extérieurs (light/switch/button)",
+              "horn_entity": "Klaxon (button/switch)"
+            }
+          }
+        }
       }
     }
   },
@@ -192,7 +208,7 @@
         "title": "Renault EV Center — Options",
         "description": "Modifier les entités et paramètres.",
         "data": {
-              "model": "Modèle — 1er choix : définit l'image",
+          "model": "Modèle — 1er choix : définit l'image",
           "create_dashboard": "Créer le tableau de bord automatiquement"
         },
         "sections": {
@@ -242,6 +258,15 @@
               "gse_domenica": "Dimanche : pleine puissance toute la journée",
               "gse_holiday_entity": "Capteur jours fériés (binary_sensor, optionnel)",
               "gse_wpa": "Watts par ampère de la wallbox (230 mono, 690 triphasé)"
+            }
+          },
+          "home": {
+            "name": "🏠 Équilibrage maison",
+            "data": {
+              "home_power_sensor": "Capteur consommation maison (W ou kW)",
+              "home_meter_kw": "Compteur maison : 3 · 4.5 · 6 · 10 (supérieur) kW",
+              "home_max_amps": "Ampères wallbox à faible charge (rétablir)",
+              "home_reduce_amps": "Ampères wallbox à forte charge (réduire)"
             }
           },
           "solar": {
@@ -512,6 +537,15 @@
         "giorni": {
           "name": "Jours"
         }
+      }
+    }
+  },
+  "selector": {
+    "profile": {
+      "options": {
+        "base": "Base — voiture seule",
+        "pro": "Pro — voiture + wallbox",
+        "enterprise": "Enterprise — voiture + wallbox + solaire"
       }
     }
   }

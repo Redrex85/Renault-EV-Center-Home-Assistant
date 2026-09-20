@@ -19,6 +19,13 @@ CONF_PLUG_ENTITY = "plug_entity"
 CONF_LOCATION_ENTITY = "location_entity"
 
 CONF_WALLBOX_ENABLED = "wallbox_enabled"
+# --- profilo di installazione: base (solo auto) · pro (+wallbox) · enterprise (+FV) ---
+CONF_PROFILE = "profile"
+PROFILE_BASE = "base"
+PROFILE_PRO = "pro"
+PROFILE_ENTERPRISE = "enterprise"
+PROFILES = [PROFILE_BASE, PROFILE_PRO, PROFILE_ENTERPRISE]
+DEFAULT_PROFILE = PROFILE_PRO
 CONF_WB_POWER = "wallbox_power_entity"
 CONF_WB_STATE = "wallbox_state_entity"
 CONF_WB_SESSION_ENERGY = "wallbox_session_energy_entity"
@@ -103,6 +110,16 @@ DEFAULT_LOW_SOC_START = "18:00"
 DEFAULT_LOW_SOC_END = "22:00"
 DEFAULT_LOW_SOC_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+# --- bilanciamento casalingo (potenza casa / contatore) -----------------------
+CONF_HOME_POWER_SENSOR = "home_power_sensor"   # sensore consumo casa (W o kW)
+CONF_HOME_METER_KW = "home_meter_kw"           # contatore: 3 · 4.5 · 6 · 10 (superiore)
+CONF_HOME_MAX_AMPS = "home_max_amps"           # ampere da ripristinare (carico basso)
+CONF_HOME_REDUCE_AMPS = "home_reduce_amps"     # ampere da impostare (carico alto)
+DEFAULT_HOME_METER_KW = 6.0
+DEFAULT_HOME_MAX_AMPS = 25.0
+DEFAULT_HOME_REDUCE_AMPS = 18.0
+HOME_METER_OPTIONS = ["3", "4.5", "6", "10"]
 
 # profili installazione: minimal (solo auto) · pro (auto+wallbox) · enterprise (+FV)
 CONF_HAS_PV = "has_pv"

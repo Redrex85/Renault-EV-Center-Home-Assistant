@@ -5,6 +5,62 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.24 — Profili di installazione (base / pro / enterprise)
+
+### Nuova funzione: bilanciamento casa (contatore)
+L'integrazione ora **bilanciamento anche il contatore di casa**, senza automazioni YAML. Nella
+pagina **Wallbox**, accanto a *Bilanciamento solare*:
+- **switch** *Bilanciamento Casa* (`switch.<nome>_bilanciamento_casa`);
+- **consumo casa** live, **soglia contatore** e **ampere wallbox** attuali.
+
+Configurazione (*Configura → Bilanciamento casa*): **sensore consumo casa** (W o kW), **contatore**
+(3 · 4.5 · 6 · 10 = superiore, kW), **ampere a carico basso** (ripristino) e **ampere a carico alto** (riduzione).
+Soglie derivate: alta = potenza contatore, bassa = **80%**. Isteresi: **10 min** sopra → ampere ridotti;
+**15 min** sotto → ampere ripristinati (adattato dalle automazioni dell'utente).
+
+### Nuova funzione: profilo scelto all'inizio
+La **prima schermata** della configurazione ora chiede il **profilo**, che decide quali sezioni
+vedrai e quali pagine compaiono nel pannello:
+
+| Profilo | Include | Esclude |
+|---|---|---|
+| **Base** — solo auto | auto, viaggi, costi, ricariche, risparmi, manutenzione | **wallbox** e **fotovoltaico**; la **pagina Wallbox non compare** |
+| **Pro** — auto + wallbox | Base **+ wallbox** (+ GSE) | fotovoltaico |
+| **Enterprise** — tutto | Pro **+ fotovoltaico** e bilanciamento solare | — |
+
+- Il wizard diventa: **profilo → auto → wallbox (saltata in Base) → impostazioni**.
+- Le sezioni **GSE** (pro/enterprise) e **fotovoltaico** (solo enterprise) compaiono solo dove serve.
+- Il profilo forza `wallbox_enabled` e `has_pv`; il pannello riceve `wallbox`/`profile` e **nasconde
+  la pagina Wallbox** (sidebar, nav mobile e sezione) quando è disattivata.
+- Etichette tradotte in IT/EN/FR (`selector.profile`).
+
+### Automazione carica
+- **Diagnostica**: se l'automazione del programma ricarica non ha **nessuna azione** (nessuna entità
+  di avvio mappata) ora lo scrive **nel log** con la spiegazione.
+- **Fallback** sui nomi comuni (`button.wallbox_charger_start`, `button.<auto>_start_charge`).
+- Dopo il salvataggio l'automazione viene **accesa** se era spenta (prima restava off → non partiva),
+  e se l'entità non esiste lo segnala (indizio: `automations.yaml` non incluso in `configuration.yaml`).
+
+### Correzioni
+- **Risparmi con i valori dichiarati**: `kWh/€ caricati prima` ora entrano anche nei **totali
+  ufficiali** (`elettrico_totale`, `savings["totale"]` → sensore `Risparmio Totale vs Diesel` e card
+  *Risparmio netto* in Panoramica), non solo nel box di confronto. Prima i due numeri non coincidevano.
+- **Dettaglio viaggi recenti**: i filtri partono sul **mese corrente** (anno corrente se presente nei dati).
+- **Tasto "Registra ricarica"** più piccolo (padding 8/14, font 13).
+- **Mappa = stessa altezza del grafico a fianco**: riga a `grid-auto-rows:330px` e `.mapbox`
+  in `height:100%` (prima era fissa a 280 px → più bassa della card Km percorsi).
+- **Scadenze: km mancanti**. Le voci per chilometraggio (es. **Cambio gomme**) ora mostrano i
+  **km che mancano** (`35.806 km`) invece dei soli giorni, sia nel box in *Panoramica* sia nella
+  tabella in *Extra* (colonna rinominata **"Km / Giorni"**). Le voci per data restano in giorni.
+
+### Guida
+- **§1 (IT/EN/FR)**: flusso HACS completo — *repo → cerca in HACS → scarica → riavvia → aggiungi
+  l'integrazione → configura*.
+- **§2**: nuova **Schermata 0 — Profilo** con la tabella delle 3 opzioni e cosa comportano.
+- **Risparmi (§5.2 IT / §4.2 EN/FR)**: spiegato che inserendo **kWh/€ caricati prima** i valori
+  entrano in **tutti** i numeri della pagina (tabella, differenze, NETTO, barre, sensore Risparmio
+  Totale e card in Panoramica) — non solo nel box "Affidabilità del confronto".
+
 ## 1.0.23 — Fonte unica prezzo carburante, orario programma, tile
 
 ### Duplicazioni eliminate (segnalate dall'utente, confermate)
