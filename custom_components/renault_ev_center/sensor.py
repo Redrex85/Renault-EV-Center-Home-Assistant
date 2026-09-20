@@ -1248,8 +1248,11 @@ class Programmazione(MateSensor):
 
     @property
     def extra_state_attributes(self):
-        return {"schedule": self.coordinator.data.get("schedule", {}),
-                "gse": self.coordinator.data.get("gse", {})}
+        # letto DIRETTAMENTE dallo store: è sempre aggiornato (i dati del coordinator
+        # si aggiornano solo al poll successivo → dopo un salvataggio il form si resettava)
+        sch = self.coordinator.store.data.get("schedule") or {}
+        gse = self.coordinator.data.get("gse", {})
+        return {"schedule": dict(sch), "gse": gse}
 
 
 class Percorrenza(MateSensor):

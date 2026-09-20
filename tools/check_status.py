@@ -167,6 +167,7 @@ generated |= {
     "number." + slugify(f"{NAME} Costo Energia Casa"),
     "number." + slugify(f"{NAME} Costo Colonnina"),
     "number." + slugify(f"{NAME} Costo Fotovoltaico"),
+    "number." + slugify(f"{NAME} Prezzo Carburante"),
     "number." + slugify(f"{NAME} Capacita Batteria"),
     "number." + slugify(f"{NAME} Obiettivo Ricarica"),
     "number." + slugify(f"{NAME} SOH Ufficiale"),
@@ -576,6 +577,19 @@ try:
     assert "_pg.attributes.schedule.ricarica" in open(
         os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read(), \
         "Panoramica: 'Carica programmata' non legge l'orario dell'automazione"
+    # FONTE UNICA del prezzo carburante (prima: coordinator da config, pannello da localStorage)
+    assert '_setting_num("fuel_price"' in src, "il prezzo carburante non usa il number dell'integrazione"
+    num = open(os.path.join(CC, "number.py"), encoding="utf-8").read()
+    assert '("fuel_price"' in num, "manca il number Prezzo Carburante"
+    js2 = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert 'this._num(this._nid("prezzo_carburante"))' in js2, \
+        "il pannello non legge il prezzo carburante dall'entità (usa ancora localStorage)"
+    assert 'localStorage.getItem("rec_diesel")' not in js2.split("_dieselPrice", 1)[0], \
+        "il pannello ha ancora il vecchio prezzo diesel come fonte primaria"
+    # il sensore Programmazione deve leggere lo store (dati sempre freschi)
+    sen2 = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
+    assert 'coordinator.store.data.get("schedule")' in sen2, \
+        "Programmazione legge dati vecchi: il form si resetta dopo il salvataggio"
     # gomme: il valore impostato è l'ULTIMO CAMBIO, l'obiettivo si calcola aggiungendo l'intervallo
     assert "last_change=" in src and "kmv = _f(kmv) + interval_km" in src, \
         "gomme: la scadenza non somma l'intervallo all'ultimo cambio"

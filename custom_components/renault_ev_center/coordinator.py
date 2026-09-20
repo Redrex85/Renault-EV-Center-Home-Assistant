@@ -563,14 +563,19 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         )
 
     def _prezzo_termico(self) -> float:
-        """Prezzo carburante: sensore live se configurato, altrimenti valore fisso."""
+        """Prezzo carburante: sensore live se configurato, altrimenti il number dell'integrazione.
+
+        FONTE UNICA: `number.<auto>_prezzo_carburante`. Prima il coordinator usava il valore
+        fisso di configurazione mentre il pannello leggeva un altro valore (localStorage):
+        due prezzi diversi → risparmi incoerenti.
+        """
         if self.diesel_price_entity:
             st = self.hass.states.get(self.diesel_price_entity)
             if st is not None and st.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
                 v = _f(st.state, 0.0)
                 if v > 0.2:
                     return v
-        return self.fuel_price
+        return self._setting_num("fuel_price", self.fuel_price)
 
     def _price_for_zone(self, zone: str) -> float:
         z = (zone or "").lower()

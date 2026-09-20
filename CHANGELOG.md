@@ -5,6 +5,26 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.23 — Fonte unica prezzo carburante, orario programma, tile
+
+### Duplicazioni eliminate (segnalate dall'utente, confermate)
+- **Prezzo carburante — DUE fonti diverse** 😱
+  - il **coordinator** (risparmi) usava il valore fisso di *Configura* (`fuel_price`, default 1,65);
+  - il **pannello** (spesa teorica, €/km) usava `localStorage.rec_diesel` (default 1,72).
+  → con 2,10 impostati in Impostazioni, i Risparmi calcolavano con **l'altro** prezzo.
+  **Ora c'è una fonte unica**: nuovo `number.<auto>_prezzo_carburante`, usato da **entrambi**.
+  Il campo *Impostazioni → Prezzo carburante* scrive lì (non più in localStorage).
+- **Orario "Programma ricarica"**: il sensore `Programmazione` leggeva i dati del coordinator,
+  che si aggiornano **solo al poll successivo** → dopo il salvataggio il form si **resettava a 23:30**.
+  Ora legge **direttamente dallo store**: sempre aggiornato.
+
+### Correzioni
+- **Tile Ricariche (OGGI/SETTIMANA/MESE/ANNO)**: avevo tolto lo stile della colonna → sembravano
+  spariti. Ripristinato il layout **e** resi cliccabili (filtro periodo).
+
+### Controlli
+- `check_status.py` **[22]** esteso: prezzo carburante a fonte unica, Programmazione dallo store.
+
 ## 1.0.22 — Una sola notifica, orario programmato, tile cliccabili
 
 ### Correzioni

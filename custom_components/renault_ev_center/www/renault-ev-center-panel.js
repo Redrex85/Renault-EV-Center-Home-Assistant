@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.22";
+const REC_VER = "1.0.23";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -411,10 +411,6 @@ class RenaultEvCenterPanel extends HTMLElement {
       // Extra p1/p10
       case "name": return S._cfg.name;
       case "notify": return S._cfg.notify || "da configurare";
-      case "diesel": {
-        const s = S._ov("diesel_price") ? S._hass.states[S._ov("diesel_price")] : null;
-        return s ? s.state : (localStorage.getItem("rec_diesel") || "1.72");
-      }
       // Impostazioni (entità di configurazione)
       case "n_price_home": return S._nid("costo_energia_casa");
       case "n_price_public": return S._nid("costo_colonnina");
@@ -424,6 +420,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "n_soh": return S._nid("soh_ufficiale");
       case "n_assic": return S._nid("costo_assicurazione");
       case "n_prio": return S._nid("priorita_batteria_casa");
+      case "n_fuel_price": return S._nid("prezzo_carburante");
       case "n_low_soc": return S._nid("batteria_minima_promemoria");
       case "sw_start": return S._swid("notifica_avvio_ricarica");
       case "sw_end": return S._swid("notifica_fine_ricarica");
@@ -570,13 +567,15 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     return "";
   }
-  /** prezzo diesel €/l: overrides.diesel_price (sensore live) → localStorage rec_diesel → default */
+  /** prezzo carburante €/l: FONTE UNICA = number dell'integrazione (poi override, poi localStorage) */
   _dieselPrice() {
+    const n = this._num(this._nid("prezzo_carburante"));
+    if (n !== null && n > 0.2) return n;
     const s = this._ov("diesel_price") ? this._hass.states[this._ov("diesel_price")] : null;
     const v = s ? parseFloat(s.state) : NaN;
-    if (!isNaN(v)) return v;
+    if (!isNaN(v) && v > 0.2) return v;
     const ls = parseFloat(localStorage.getItem("rec_diesel"));
-    return isNaN(ls) ? 1.72 : ls;
+    return (isNaN(ls) || ls <= 0.2) ? 1.72 : ls;
   }
   _spesaTeo(km) {
     if (km === null) return null;
@@ -2335,10 +2334,10 @@ const PAGES = {
 
   p4: `<h1>Ricariche</h1>
   <div class="tiles">
-    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="cursor:pointer" title="Filtra: settimana"><div class="l">OGGI</div><div class="v"><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_oggi">—</span> €</div></div>
-    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="cursor:pointer" title="Filtra: settimana"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett">—</span> €</div></div>
-    <div class="tile" data-cmd="ric_period" data-per="Mese" style="cursor:pointer" title="Filtra: mese"><div class="l">MESE</div><div class="v"><span data-f="kwh_mese_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_mese">—</span> €</div></div>
-    <div class="tile" data-cmd="ric_period" data-per="Anno" style="cursor:pointer" title="Filtra: anno"><div class="l">ANNO</div><div class="v"><span data-f="kwh_anno_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_anno">—</span> €</div></div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: settimana"><div class="l">OGGI</div><div class="v"><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_oggi">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: settimana"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Mese" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: mese"><div class="l">MESE</div><div class="v"><span data-f="kwh_mese_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_mese">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Anno" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: anno"><div class="l">ANNO</div><div class="v"><span data-f="kwh_anno_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_anno">—</span> €</div></div></div>
   <div class="card" style="margin-top:16px"><h3>➕ Aggiungi ricarica manuale</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Data
@@ -2595,7 +2594,7 @@ const PAGES = {
       <div class="inp"><span>Costo casa</span><input data-n="n_price_home"><span class="u">€/kWh</span></div>
       <div class="inp"><span>Costo colonnina</span><input data-n="n_price_public"><span class="u">€/kWh</span></div>
       <div class="inp"><span>Costo fotovoltaico</span><input data-n="n_price_solar"><span class="u">€/kWh</span></div>
-      <div class="inp"><span>Prezzo diesel (o sensore live)</span><input data-ls="rec_diesel" data-f="diesel" value="1.72"><span class="u">€/l</span></div></div>
+      <div class="inp"><span>Prezzo carburante</span><input data-n="n_fuel_price"><span class="u">€/l</span></div></div>
     <div class="card"><h3>Batteria</h3>
       <div class="inp"><span>Obiettivo ricarica</span><input data-n="n_target"><span class="u">%</span></div>
       <div class="inp"><span>Capacità</span><input data-n="n_capacity"><span class="u">kWh</span></div>

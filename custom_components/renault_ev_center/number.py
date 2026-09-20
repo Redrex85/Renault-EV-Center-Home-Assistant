@@ -39,6 +39,9 @@ async def async_setup_entry(
          float(base.get(CONF_PRICE_PUBLIC, 0.45)), 0.0, 5.0, 0.001, "€/kWh", "mdi:ev-station"),
         ("price_solar", f"{name} Costo Fotovoltaico",
          float(base.get(CONF_PRICE_SOLAR, 0.0)), 0.0, 5.0, 0.001, "€/kWh", "mdi:solar-power"),
+        # FONTE UNICA del prezzo carburante: usata sia dal coordinator (risparmi) sia dal pannello
+        ("fuel_price", f"{name} Prezzo Carburante",
+         float(base.get("fuel_price", 1.65)), 0.5, 5.0, 0.01, "€/l", "mdi:gas-station"),
         ("capacity", f"{name} Capacita Batteria",
          float(base.get(CONF_CAPACITY, 60.0)), 20.0, 150.0, 0.5, "kWh", "mdi:car-battery"),
         ("target", f"{name} Obiettivo Ricarica",
