@@ -5,9 +5,24 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.24.2 — Configurazione in una schermata + mappa
+
+### Correzioni
+- **Configurazione iniziale in UNA schermata** (come le *Opzioni*): il wizard non è più a passi
+  (auto → wallbox → impostazioni), ma mostra **tutte le sezioni** insieme — *L'auto, Comandi Renault,
+  Wallbox, Bilanciamento casa, Sperimentazione GSE, Fotovoltaico* (dal profilo) *+ Batteria, Prezzi,
+  Confronto carburante, Manutenzione e bollo, Notifiche, Carica programmata, Avanzate*.
+- **Sezioni chiuse di default**: tutte `collapsed`, si aprono a mano come nella schermata *Opzioni*.
+- **Mappa**: niente più traccia 48 h che spostava l'inquadratura. Ora mostra la **posizione corrente**
+  e la card viene **ricreata quando l'auto si sposta** → centrata sull'ultima posizione.
+
 ## 1.0.24.1 — Fix automazioni, filtri e mappa
 
 ### Correzioni
+- **Tile di *Ricariche* sempre a "—" (bug)**: il loop della *percorrenza* selezionava **tutti** gli
+  elementi `data-per`, comprese le tile OGGI/SETTIMANA/MESE/ANNO che usano `data-per` per il filtro,
+  e le **svuotava** scrivendo "—". Ora il selettore è ristretto alle celle nel formato `periodo|chiave`
+  (`[data-per*="|"]`). Valori di nuovo visibili e formattati (es. *57,84 kWh · 14,46 €*).
 - **Configurazione: sezioni sempre visibili**. Tutte le sezioni del wizard (Batteria, Prezzi,
   Carburante, Manutenzione, Notifiche, Programmazione, Avanzate e, per pro/enterprise, Wallbox,
   Bilanciamento casa, GSE, Fotovoltaico) ora sono **espanse**: prima erano `collapsed` e in HA

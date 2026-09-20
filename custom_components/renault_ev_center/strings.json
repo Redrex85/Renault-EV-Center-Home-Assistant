@@ -64,14 +64,84 @@
         }
       },
       "settings": {
-        "title": "Renault EV Center — Impostazioni",
-        "description": "Capacità batteria, prezzi dell'energia e preferenze. Tutto modificabile dopo dalle opzioni.",
+        "title": "🧩 Configurazione",
+        "description": "Scegli le entità e le impostazioni. Le sezioni sono **chiuse**: aprì quelle che ti servono. Il profilo scelto decide quali compaiono.",
         "data": {
           "charge_start_button": "Pulsante avvio carica (Renault)",
           "model": "Modello dell'auto — 1ª scelta: imposta la foto",
           "create_dashboard": "Crea automaticamente la dashboard nella barra laterale"
         },
         "sections": {
+          "car": {
+            "name": "🚗 L'auto",
+            "data": {
+              "name": "Nome dell'auto",
+              "odometer_entity": "Sensore odometro/chilometraggio",
+              "battery_level_entity": "Sensore livello batteria (%)",
+              "range_entity": "Sensore autonomia residua",
+              "charging_entity": "Sensore/binary sensor in carica",
+              "plug_entity": "Stato spina collegata (opzionale)",
+              "location_entity": "Tracker GPS posizione auto (opzionale)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Comandi Renault",
+            "data": {
+              "charge_start_button": "Pulsante avvio carica (Renault)",
+              "ac_button_entity": "Pulsante Avvia A/C (Renault)",
+              "climate_entity": "Climatizzatore (climate) Renault",
+              "light_entity": "Luci esterne (light/switch/button)",
+              "horn_entity": "Clacson (button/switch)"
+            }
+          },
+          "wallbox": {
+            "name": "🔌 Wallbox",
+            "data": {
+              "wallbox_enabled": "Ho una wallbox in Home Assistant",
+              "wallbox_power_entity": "Potenza istantanea di carica (W o kW)",
+              "wallbox_state_entity": "Stato della wallbox (es. charging)",
+              "wallbox_session_energy_entity": "Contatore energia sessione (kWh)",
+              "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
+              "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
+              "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
+              "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione",
+              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»"
+            }
+          },
+          "gse": {
+            "name": "⚡ Sperimentazione GSE",
+            "data": {
+              "gse_kw_max": "Potenza consentita nella fascia (kW)",
+              "gse_kw_ridotta": "Potenza fuori fascia (kW)",
+              "gse_start": "Inizio fascia consentita",
+              "gse_end": "Fine fascia consentita",
+              "gse_domenica": "Domenica: tutto il giorno a potenza piena",
+              "gse_holiday_entity": "Sensore festivi (binary_sensor, opzionale)",
+              "gse_wpa": "Watt per ampere della wallbox (230 monofase, 690 trifase)"
+            }
+          },
+          "home": {
+            "name": "🏠 Bilanciamento casa",
+            "data": {
+              "home_power_sensor": "Sensore consumo casa (W o kW)",
+              "home_meter_kw": "Contatore di casa: 3 · 4.5 · 6 · 10 (superiore) kW",
+              "home_max_amps": "Ampere wallbox a carico basso (ripristino)",
+              "home_reduce_amps": "Ampere wallbox a carico alto (riduzione)"
+            }
+          },
+          "solar": {
+            "name": "☀️ Fotovoltaico e bilanciamento",
+            "data": {
+              "has_pv": "Ho il fotovoltaico (profilo Enterprise)",
+              "balance_grid_sensor": "Sensore potenza scambiata/prelevata dalla rete (W)",
+              "balance_battery_sensor": "Sensore potenza batteria (W, opzionale)",
+              "balance_invert_grid": "Inverti il segno del sensore rete",
+              "balance_include_battery": "Includi la scarica batteria nel surplus",
+              "balance_watts_per_amp": "Watt per ampere (230V mono ≈ 690)",
+              "balance_battery_soc_sensor": "Sensore SoC batteria casa (%) — per la priorità",
+              "battery_priority_min": "SoC minimo batteria casa prima di dare surplus all'auto (%)"
+            }
+          },
           "battery": {
             "name": "🔋 Batteria",
             "data": {

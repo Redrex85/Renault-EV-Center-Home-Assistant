@@ -612,12 +612,15 @@ except Exception as e:
 print("\n[23] Profili di installazione (base / pro / enterprise)")
 try:
     flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
-    assert "async def async_step_user" in flow and "async def async_step_car" in flow, \
-        "manca il passo profilo / la schermata auto"
+    assert "async def async_step_user" in flow and "async def async_step_settings" in flow, \
+        "manca il passo profilo / la schermata unica di configurazione"
+    # la schermata unica deve contenere TUTTE le sezioni (auto + wallbox + impostazioni)
+    assert "**_car_schema({}).schema" in flow and "**_settings_schema({}).schema" in flow, \
+        "la schermata unica non unisce auto + impostazioni"
     assert "PROFILE_BASE" in flow and "PROFILE_ENTERPRISE" in flow, "profili non usati nel wizard"
     assert 'if profile != PROFILE_BASE:' in flow, "la sezione GSE non è legata al profilo"
     assert 'if profile == PROFILE_ENTERPRISE:' in flow, "la sezione fotovoltaico non è solo enterprise"
-    assert 'self._data[CONF_WALLBOX_ENABLED] = prof != PROFILE_BASE' in flow, \
+    assert 'user_input[CONF_WALLBOX_ENABLED] = prof != PROFILE_BASE' in flow, \
         "il profilo base non disattiva la wallbox"
     dash = open(os.path.join(CC, "dashboard.py"), encoding="utf-8").read()
     assert '"wallbox": bool(opts_wb)' in dash and '"profile": opts_profile' in dash, \
@@ -687,6 +690,13 @@ try:
     assert 'data-sw="sw_bal"' in js, "il bilanciamento solare non ha lo switch on/off"
     assert "wb_bal_toggle" not in js, "resta il vecchio pulsante bilanciamento solare"
     assert "if (!box.clientHeight)" in js, "la mappa non attende l'altezza del riquadro"
+    # BUG noto: il loop della percorrenza selezionava TUTTI i [data-per], svuotando le
+    # tile di Ricariche (che usano data-per per il filtro) -> valori sempre "—".
+    assert '[data-per*="|"]' in js, "il loop percorrenza non è ristretto alle celle 'periodo|chiave'"
+    assert 'querySelectorAll("[data-per]")' not in js, \
+        "il loop percorrenza tocca di nuovo le tile di Ricariche (data-per)"
+    assert 'data-per="Settimana"' in js and 'data-per="Mese"' in js and 'data-per="Anno"' in js, \
+        "le tile di Ricariche non hanno più il filtro data-per"
     ok("fix 1.0.24.1: orari automazione, stato toggle, filtro mese, switch solare, mappa")
 except Exception as e:
     bad(f"fix 1.0.24.1: {e}")

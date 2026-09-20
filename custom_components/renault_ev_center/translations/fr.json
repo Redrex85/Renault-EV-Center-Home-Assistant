@@ -68,69 +68,139 @@
         }
       },
       "settings": {
-        "title": "Renault EV Center — Paramètres",
-        "description": "Capacité batterie, tarifs énergie et préférences. Tout est modifiable ensuite dans Options.",
+        "title": "🧩 Configuration",
+        "description": "Choisissez entités et réglages. Les sections sont **repliées** : ouvrez celles qu'il vous faut. Le profil choisi décide desquelles apparaissent.",
         "data": {
           "charge_start_button": "Bouton démarrer la charge (Renault)",
           "model": "Modèle — 1er choix : définit l'image",
-          "create_dashboard": "Créer le tableau de bord automatiquement"
+          "create_dashboard": "Créer automatiquement le tableau de bord"
         },
         "sections": {
+          "car": {
+            "name": "🚗 Voiture",
+            "data": {
+              "name": "Nom de la voiture",
+              "odometer_entity": "Capteur odomètre",
+              "battery_level_entity": "Capteur niveau batterie (%)",
+              "range_entity": "Capteur autonomie restante",
+              "charging_entity": "Capteur en charge",
+              "plug_entity": "Statut prise (optionnel)",
+              "location_entity": "Traqueur GPS voiture (optionnel)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Commandes Renault",
+            "data": {
+              "charge_start_button": "Bouton démarrer la charge (Renault)",
+              "ac_button_entity": "Bouton démarrer la clim (Renault)",
+              "climate_entity": "Climatisation (climate) Renault",
+              "light_entity": "Feux extérieurs (light/switch/button)",
+              "horn_entity": "Klaxon (button/switch)"
+            }
+          },
+          "wallbox": {
+            "name": "🔌 Wallbox",
+            "data": {
+              "wallbox_enabled": "J'ai une wallbox dans Home Assistant",
+              "wallbox_power_entity": "Puissance de charge instantanée (W ou kW)",
+              "wallbox_state_entity": "État wallbox (ex. charging)",
+              "wallbox_session_energy_entity": "Compteur énergie session (kWh)",
+              "wallbox_total_energy_entity": "Compteur énergie total (kWh) — utilisé sans compteur session",
+              "wallbox_max_current_entity": "Nombre courant max (optionnel)",
+              "wallbox_session_time_entity": "Temps de session wallbox (s/min/h) — optionnel, sinon compteur interne",
+              "wb_charge_switch": "Démarrage charge wallbox (switch ou bouton) — utilisé par « Démarrer la charge » et l'automatisation",
+              "wb_stop_switch": "Arrêt charge wallbox (switch ou bouton) — utilisé par « Arrêter la charge »"
+            }
+          },
+          "gse": {
+            "name": "⚡ Expérimentation GSE",
+            "data": {
+              "gse_kw_max": "Puissance autorisée dans la plage (kW)",
+              "gse_kw_ridotta": "Puissance hors plage (kW)",
+              "gse_start": "Début de la plage autorisée",
+              "gse_end": "Fin de la plage autorisée",
+              "gse_domenica": "Dimanche : pleine puissance toute la journée",
+              "gse_holiday_entity": "Capteur jours fériés (binary_sensor, optionnel)",
+              "gse_wpa": "Watts par ampère de la wallbox (230 mono, 690 triphasé)"
+            }
+          },
+          "home": {
+            "name": "🏠 Équilibrage maison",
+            "data": {
+              "home_power_sensor": "Capteur consommation maison (W ou kW)",
+              "home_meter_kw": "Compteur maison : 3 · 4.5 · 6 · 10 (supérieur) kW",
+              "home_max_amps": "Ampères wallbox à faible charge (rétablir)",
+              "home_reduce_amps": "Ampères wallbox à forte charge (réduire)"
+            }
+          },
+          "solar": {
+            "name": "☀️ Solaire et équilibrage",
+            "data": {
+              "has_pv": "J'ai du photovoltaïque (profil Enterprise)",
+              "balance_grid_sensor": "Capteur puissance réseau import/export (W)",
+              "balance_battery_sensor": "Capteur puissance batterie maison (W, optionnel)",
+              "balance_invert_grid": "Inverser le signe du capteur réseau",
+              "balance_include_battery": "Inclure la décharge batterie dans le surplus",
+              "balance_watts_per_amp": "Watts par ampère (230V mono ≈ 690)",
+              "balance_battery_soc_sensor": "Capteur SoC batterie maison (%) — pour la priorité",
+              "battery_priority_min": "SoC min batterie maison avant de donner le surplus à la voiture (%)"
+            }
+          },
           "battery": {
             "name": "🔋 Batterie",
             "data": {
-              "battery_capacity": "Capacité batterie utilisable",
-              "target_soc": "Objectif de charge (%, pour estimations)",
-              "charging_efficiency": "Rendement charge AC→batterie"
+              "battery_capacity": "Capacité utile batterie",
+              "target_soc": "Objectif de charge (% pour les estimations)",
+              "charging_efficiency": "Rendement de charge AC→batterie"
             }
           },
           "prices": {
             "name": "💶 Prix de l'énergie",
             "data": {
-              "price_home": "Tarif domicile",
-              "price_public": "Tarif bornes publiques",
-              "price_solar": "Tarif solaire/PV (0 = gratuit)",
-              "solar_zone": "Nom zone solaire/BEB (vide = aucun)",
-              "pre_kwh": "kWh rechargés AVANT d'utiliser l'intégration (pour les économies)",
-              "pre_eur": "€ déjà dépensés en recharge avant l'intégration (prioritaire sur les kWh)"
+              "price_home": "Prix énergie maison",
+              "price_public": "Prix bornes publiques",
+              "price_solar": "Coût photovoltaïque (0 = gratuit)",
+              "solar_zone": "Nom de la zone photovoltaïque/BEB (vide = aucune)",
+              "pre_kwh": "kWh rechargés AVANT d'utiliser l'intégration (pour le calcul des économies)",
+              "pre_eur": "€ déjà dépensés en recharges avant l'intégration (priorité sur les kWh)"
             }
           },
           "fuel": {
             "name": "⛽ Comparaison carburant",
             "data": {
-              "fuel_comparison": "Comparer économies vs voiture thermique",
-              "fuel_label": "Nom carburant (Diesel, Essence…)",
-              "fuel_consumption": "Consommation voiture thermique",
-              "fuel_price": "Prix carburant",
-              "diesel_price_entity": "Capteur prix carburant en direct (optionnel)"
+              "fuel_comparison": "Comparer l'économie avec une voiture thermique",
+              "fuel_label": "Nom du carburant (Diesel, Essence…)",
+              "fuel_consumption": "Consommation voiture thermique équivalente",
+              "fuel_price": "Prix du carburant",
+              "diesel_price_entity": "Capteur prix diesel €/l (optionnel)"
             }
           },
           "maint": {
             "name": "🔧 Entretien et taxe",
             "data": {
-              "maint_comparison": "Comparaison entretien + taxe",
-              "service_cost_thermal": "Coût moyen entretien thermique",
-              "service_cost_ev": "Coût entretien EV estimé",
-              "service_interval_km": "Intervalle service (km)",
+              "maint_comparison": "Comparer coûts entretien thermique vs EV",
+              "service_cost_thermal": "Coût entretien thermique (€)",
+              "service_cost_ev": "Coût entretien EV (€)",
+              "service_interval_km": "Intervalle entretien (km)",
               "tyre_interval_km": "Intervalle changement pneus (km)",
               "purchase_date": "Date livraison/achat (pour l'entretien annuel)",
-              "road_tax_thermal": "Taxe routière thermique/an",
-              "road_tax_ev": "Taxe routière EV/an",
-              "assicurazione_costo": "Coût assurance annuel",
+              "road_tax_thermal": "Taxe thermique (€/an)",
+              "road_tax_ev": "Taxe EV (€/an)",
+              "assicurazione_costo": "Coût annuel assurance",
               "assicurazione_data": "Échéance assurance (AAAA-MM-JJ)"
             }
           },
           "notify": {
             "name": "🔔 Notifications",
             "data": {
-              "notify_service": "Service de notification (ex. notify.mobile_app_x)",
-              "notify_days": "Jours de préavis pour échéances",
-              "notify_charge_start": "Notifier début de charge",
-              "notify_charge_end": "Notifier fin de charge",
-              "low_soc_enabled": "Rappel batterie faible (à domicile)",
-              "low_soc_threshold": "Seuil batterie faible (%)",
-              "low_soc_start": "Fenêtre rappel — début",
-              "low_soc_end": "Fenêtre rappel — fin",
+              "notify_service": "Service de notification (ex. notify.michele)",
+              "notify_days": "Jours d'avertissement échéances",
+              "notify_charge_start": "Notification début de charge",
+              "notify_charge_end": "Notification fin de charge",
+              "low_soc_enabled": "Rappel batterie faible (à la maison)",
+              "low_soc_threshold": "% minimum rappel",
+              "low_soc_start": "Début plage horaire",
+              "low_soc_end": "Fin plage horaire",
               "low_soc_days": "Jours de la semaine"
             }
           },
@@ -138,20 +208,20 @@
             "name": "⏰ Charge programmée",
             "data": {
               "charge_sched_enabled": "Charge programmée",
-              "charge_sched_mode": "Mode programmation (heure ou pourcentage)",
-              "charge_start_time": "Heure début charge",
-              "charge_stop_time": "Heure fin charge",
-              "charge_start_soc": "Démarrer charge sous (%)",
-              "charge_stop_soc": "Arrêter charge au-dessus (%)",
+              "charge_sched_mode": "Mode (heure ou pourcentage)",
+              "charge_start_time": "Heure début de charge",
+              "charge_stop_time": "Heure arrêt de charge",
+              "charge_start_soc": "% début de charge",
+              "charge_stop_soc": "% arrêt de charge",
               "wb_charge_switch": "Démarrage charge WALLBOX (switch ou bouton) — utilisé par Démarrer la charge et l'automatisation",
-              "charge_target_number": "Nombre cible de charge (repli arrêt)"
+              "charge_target_number": "Number cible de charge (pour l'arrêt)"
             }
           },
           "advanced": {
             "name": "⚙️ Avancé",
             "data": {
               "poll_interval": "Intervalle de mise à jour",
-              "trip_timeout": "Minutes d'odomètre immobile avant clôture trajet",
+              "trip_timeout": "Minutes d'odomètre immobile avant de clôturer un trajet",
               "temp_entity": "Capteur température extérieure (pour CO2/météo)",
               "co2_comparison": "Calculer la comparaison CO2 thermique vs EV",
               "co2_thermal_gkm": "CO2 thermique (g/km)",
@@ -162,8 +232,8 @@
               "scadenza_bollo": "Échéance taxe (AAAA-MM-JJ)",
               "scadenza_revisione": "Échéance contrôle technique (AAAA-MM-JJ)",
               "scadenza_assicurazione": "Échéance assurance (AAAA-MM-JJ)",
-              "tagliando_mode": "Échéance service : km ou date",
-              "tagliando_data": "Date service (si mode date)"
+              "tagliando_mode": "Entretien : échéance par km ou date",
+              "tagliando_data": "Date entretien (si mode date)"
             }
           }
         }
@@ -296,7 +366,9 @@
               "price_home": "Prix énergie maison",
               "price_public": "Prix bornes publiques",
               "price_solar": "Coût photovoltaïque (0 = gratuit)",
-              "solar_zone": "Nom de la zone photovoltaïque/BEB (vide = aucune)"
+              "solar_zone": "Nom de la zone photovoltaïque/BEB (vide = aucune)",
+              "pre_kwh": "kWh rechargés AVANT d'utiliser l'intégration (pour le calcul des économies)",
+              "pre_eur": "€ déjà dépensés en recharges avant l'intégration (priorité sur les kWh)"
             }
           },
           "fuel": {

@@ -219,7 +219,7 @@ def _car_schema(defaults: dict[str, Any]) -> vol.Schema:    return vol.Schema({
             vol.Optional(
                 CONF_LOCATION_ENTITY, description={"suggested_value": defaults.get(CONF_LOCATION_ENTITY)}
             ): EntitySelector(EntitySelectorConfig(domain=["device_tracker", "sensor"])),
-        }), {"collapsed": False}),
+        }), {"collapsed": True}),
         vol.Required("commands"): section(vol.Schema({
             vol.Optional(
                 CONF_CHARGE_START_BUTTON, description={"suggested_value": defaults.get(CONF_CHARGE_START_BUTTON)}
@@ -236,7 +236,7 @@ def _car_schema(defaults: dict[str, Any]) -> vol.Schema:    return vol.Schema({
             vol.Optional(
                 CONF_HORN_ENTITY, description={"suggested_value": defaults.get(CONF_HORN_ENTITY)}
             ): EntitySelector(EntitySelectorConfig(domain=["button", "switch"])),
-        }), {"collapsed": False}),
+        }), {"collapsed": True}),
     })
 
 
@@ -269,7 +269,7 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
             vol.Optional(
                 CONF_WB_STOP_SWITCH, description={"suggested_value": defaults.get(CONF_WB_STOP_SWITCH)}
             ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
-        }), {"collapsed": False}),
+        }), {"collapsed": True}),
     }
     # GSE: ha senso solo con una wallbox (pro/enterprise)
     if profile != PROFILE_BASE:
@@ -283,7 +283,7 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
                 NumberSelectorConfig(min=6, max=32, step=1, unit_of_measurement="A", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_HOME_REDUCE_AMPS, default=defaults.get(CONF_HOME_REDUCE_AMPS, DEFAULT_HOME_REDUCE_AMPS)): NumberSelector(
                 NumberSelectorConfig(min=6, max=32, step=1, unit_of_measurement="A", mode=NumberSelectorMode.BOX)),
-        }), {"collapsed": False})
+        }), {"collapsed": True})
         schema[vol.Required("gse")] = section(vol.Schema({
             vol.Optional(CONF_GSE_KW_MAX, default=defaults.get(CONF_GSE_KW_MAX, DEFAULT_GSE_KW_MAX)): NumberSelector(
                 NumberSelectorConfig(min=1, max=50, step=0.1, unit_of_measurement="kW",
@@ -299,7 +299,7 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
             vol.Optional(CONF_GSE_WPA, default=defaults.get(CONF_GSE_WPA, DEFAULT_GSE_WPA)): NumberSelector(
                 NumberSelectorConfig(min=100, max=800, step=10, unit_of_measurement="W/A",
                                      mode=NumberSelectorMode.BOX)),
-        }), {"collapsed": False})
+        }), {"collapsed": True})
     # fotovoltaico: SOLO enterprise
     if profile == PROFILE_ENTERPRISE:
         schema[vol.Required("solar")] = section(vol.Schema({
@@ -319,7 +319,7 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
             ): EntitySelector(EntitySelectorConfig(domain="sensor")),
             vol.Optional(CONF_BATTERY_PRIORITY_MIN, default=defaults.get(CONF_BATTERY_PRIORITY_MIN, DEFAULT_BATTERY_PRIORITY)): NumberSelector(
                 NumberSelectorConfig(min=0, max=100, step=5, unit_of_measurement="%")),
-        }), {"collapsed": False})
+        }), {"collapsed": True})
     return vol.Schema(schema)
 
 
@@ -332,7 +332,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                 NumberSelectorConfig(min=50, max=100, step=1, unit_of_measurement="%")),
             vol.Required(CONF_CHARGING_EFFICIENCY, default=defaults.get(CONF_CHARGING_EFFICIENCY, DEFAULT_EFFICIENCY * 100)): NumberSelector(
                 NumberSelectorConfig(min=50, max=100, step=1, unit_of_measurement="%")),
-        }), {"collapsed": False}),
+        }), {"collapsed": True}),
         vol.Required("prices"): section(vol.Schema({
             vol.Required(CONF_PRICE_HOME, default=defaults.get(CONF_PRICE_HOME, DEFAULT_PRICE_HOME)): NumberSelector(
                 NumberSelectorConfig(min=0, max=10, step=0.001, unit_of_measurement="€/kWh", mode=NumberSelectorMode.BOX)),
@@ -347,7 +347,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_PRE_EUR, default=defaults.get(CONF_PRE_EUR, 0.0)): NumberSelector(
                 NumberSelectorConfig(min=0, max=200000, step=1, unit_of_measurement="€",
                                      mode=NumberSelectorMode.BOX)),
-        }), {"collapsed": False}),
+        }), {"collapsed": True}),
         vol.Required("fuel"): section(vol.Schema({
             vol.Required(CONF_FUEL_ENABLED, default=defaults.get(CONF_FUEL_ENABLED, False)): BooleanSelector(),
             vol.Optional(CONF_FUEL_LABEL, default=defaults.get(CONF_FUEL_LABEL, DEFAULT_FUEL_LABEL)): TextSelector(),
@@ -359,7 +359,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                 CONF_DIESEL_PRICE_ENTITY,
                 description={"suggested_value": defaults.get(CONF_DIESEL_PRICE_ENTITY)},
             ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-        }), {"collapsed": False}),
+        }), {"collapsed": True}),
         vol.Required("maint"): section(vol.Schema({
             vol.Required(CONF_MAINT_ENABLED, default=defaults.get(CONF_MAINT_ENABLED, False)): BooleanSelector(),
             vol.Optional(CONF_TAG_TERMICO, default=defaults.get(CONF_TAG_TERMICO, DEFAULT_TAG_TERMICO)): NumberSelector(
@@ -378,7 +378,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_ASSICURAZIONE_COSTO, default=defaults.get(CONF_ASSICURAZIONE_COSTO, DEFAULT_ASSICURAZIONE_COSTO)): NumberSelector(
                 NumberSelectorConfig(min=0, max=3000, step=10, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_ASSICURAZIONE_DATA, description={"suggested_value": defaults.get(CONF_ASSICURAZIONE_DATA, "")}): TextSelector(),
-        }), {"collapsed": False}),
+        }), {"collapsed": True}),
         vol.Required("notify"): section(vol.Schema({
             vol.Optional(CONF_NOTIFY_SERVICE, description={"suggested_value": defaults.get(CONF_NOTIFY_SERVICE, "")}): TextSelector(),
             vol.Optional(CONF_NOTIFY_DAYS, default=defaults.get(CONF_NOTIFY_DAYS, DEFAULT_NOTIFY_DAYS)): NumberSelector(
@@ -392,7 +392,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_LOW_SOC_END, default=defaults.get(CONF_LOW_SOC_END, DEFAULT_LOW_SOC_END)): TimeSelector(),
             vol.Optional(CONF_LOW_SOC_DAYS, default=defaults.get(CONF_LOW_SOC_DAYS, DEFAULT_LOW_SOC_DAYS)): SelectSelector(
                 SelectSelectorConfig(options=WEEKDAY_OPTIONS, multiple=True)),
-        }), {"collapsed": False}),
+        }), {"collapsed": True}),
         vol.Required("schedule"): section(vol.Schema({
             vol.Required(CONF_CHARGE_SCHED_ENABLED, default=defaults.get(CONF_CHARGE_SCHED_ENABLED, False)): BooleanSelector(),
             vol.Optional(CONF_CHARGE_SCHED_MODE, default=defaults.get(CONF_CHARGE_SCHED_MODE, "orario")): SelectSelector(
@@ -407,7 +407,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                 CONF_CHARGE_TARGET_NUMBER,
                 description={"suggested_value": defaults.get(CONF_CHARGE_TARGET_NUMBER)},
             ): EntitySelector(EntitySelectorConfig(domain="number")),
-        }), {"collapsed": False}),
+        }), {"collapsed": True}),
         vol.Required("advanced"): section(vol.Schema({
             vol.Required(CONF_POLL_INTERVAL, default=defaults.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)): NumberSelector(
                 NumberSelectorConfig(min=10, max=300, step=5, unit_of_measurement="s")),
@@ -432,7 +432,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_SCAD_BOLLO, description={"suggested_value": defaults.get(CONF_SCAD_BOLLO)}): TextSelector(),
             vol.Optional(CONF_SCAD_REVISIONE, description={"suggested_value": defaults.get(CONF_SCAD_REVISIONE)}): TextSelector(),
             vol.Optional(CONF_SCAD_ASSICURAZIONE, description={"suggested_value": defaults.get(CONF_SCAD_ASSICURAZIONE)}): TextSelector(),
-        }), {"collapsed": False}),
+        }), {"collapsed": True}),
     })
 
 
@@ -448,7 +448,7 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """PRIMO passo: profilo di installazione."""
         if user_input is not None:
             self._data[CONF_PROFILE] = str(user_input.get(CONF_PROFILE, DEFAULT_PROFILE))
-            return await self.async_step_car()
+            return await self.async_step_settings()
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({
@@ -460,41 +460,15 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def _profile(self) -> str:
         return str(self._data.get(CONF_PROFILE) or DEFAULT_PROFILE)
 
-    async def async_step_car(self, user_input: dict[str, Any] | None = None):
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            user_input = _flat(user_input)
-            await self.async_set_unique_id(f"{DOMAIN}_{user_input[CONF_NAME].lower()}")
-            self._abort_if_unique_id_configured()
-            self._data.update(user_input)
-            # il profilo decide cosa è attivo
-            prof = self._profile()
-            self._data[CONF_WALLBOX_ENABLED] = prof != PROFILE_BASE
-            self._data[CONF_HAS_PV] = prof == PROFILE_ENTERPRISE
-            if prof == PROFILE_BASE:
-                return await self.async_step_settings()   # niente step wallbox
-            return await self.async_step_wallbox()
-        return self.async_show_form(
-            step_id="car",
-            data_schema=vol.Schema({
-                **_car_schema({}).schema,
-                vol.Required(CONF_CREATE_DASHBOARD, default=True): BooleanSelector(),
-            }),
-            errors=errors,
-        )
-
-    async def async_step_wallbox(self, user_input: dict[str, Any] | None = None):
-        if self._profile() == PROFILE_BASE:
-            return await self.async_step_settings()
-        if user_input is not None:
-            self._data.update(_flat(user_input))
-            return await self.async_step_settings()
-        return self.async_show_form(step_id="wallbox",
-                                    data_schema=_wallbox_schema({}, self._profile()))
-
     async def async_step_settings(self, user_input: dict[str, Any] | None = None):
+        """Schermata UNICA di configurazione: tutte le sezioni (come le Opzioni)."""
         if user_input is not None:
             user_input = _flat(user_input)
+            await self.async_set_unique_id(f"{DOMAIN}_{str(user_input.get(CONF_NAME, '')).lower()}")
+            self._abort_if_unique_id_configured()
+            prof = self._profile()
+            user_input[CONF_WALLBOX_ENABLED] = prof != PROFILE_BASE
+            user_input[CONF_HAS_PV] = prof == PROFILE_ENTERPRISE
             eff = float(user_input.get(CONF_CHARGING_EFFICIENCY, DEFAULT_EFFICIENCY * 100))
             user_input[CONF_CHARGING_EFFICIENCY] = eff
             if not user_input.get(CONF_FUEL_ENABLED):
@@ -529,7 +503,15 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input.pop(CONF_ASSICURAZIONE_DATA, None)
             self._data.update(user_input)
             return self.async_create_entry(title=self._data[CONF_NAME], data=self._data)
-        return self.async_show_form(step_id="settings", data_schema=_settings_schema({}))
+        # schermata unica: auto + comandi + wallbox (dal profilo) + tutte le impostazioni
+        prof = self._profile()
+        schema: dict[Any, Any] = {
+            **_car_schema({}).schema,
+            **_wallbox_schema({}, prof).schema,
+            **_settings_schema({}).schema,
+            vol.Required(CONF_CREATE_DASHBOARD, default=True): BooleanSelector(),
+        }
+        return self.async_show_form(step_id="settings", data_schema=vol.Schema(schema))
 
     @staticmethod
     @callback

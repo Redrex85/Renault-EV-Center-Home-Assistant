@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.24.1";
+const REC_VER = "1.0.24.2";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -1232,7 +1232,9 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
     }
     // celle percorrenza: [data-per="oggi|usati"] → riga attributo `righe`
-    root.querySelectorAll("[data-per]").forEach((el) => {
+    // NB: selettore SOLO per le celle nel formato "periodo|chiave": le tile di Ricariche
+    // usano data-per="Settimana|Mese|Anno" per il filtro e NON vanno toccate (venivano svuotate).
+    root.querySelectorAll('[data-per*="|"]').forEach((el) => {
       const [per, key] = el.dataset.per.split("|");
       const rows = this._list(this._sid("percorrenza"));
       const r = rows.find((x) => this._slug(String(x.nome ?? "")) === per);
@@ -1312,21 +1314,25 @@ class RenaultEvCenterPanel extends HTMLElement {
   async _drawMap() {
     const box = this.shadowRoot && this.shadowRoot.querySelector("#evmap");
     if (!box) return;
-    if (this._mapCard) { this._mapCard.hass = this._hass; return; }
+    const loc = this._ov("location") || this._car("device_tracker", "posizione") || "device_tracker.megane_posizione";
+    const st = this._hass.states[loc];
+    const la = st && st.attributes ? st.attributes.latitude : null;
+    const lo = st && st.attributes ? st.attributes.longitude : null;
+    const pos = (la === undefined || la === null || lo === undefined || lo === null) ? "" : `${la},${lo}`;
+    // posizione invariata → aggiorno solo hass (niente flicker). Cambiata → ricreo per ricentrare.
+    if (this._mapCard && pos && this._mapPos === pos) { this._mapCard.hass = this._hass; return; }
     // Leaflet centra male se il box è ancora a 0 px: aspetto l'altezza definitiva
     if (!box.clientHeight) { setTimeout(() => this._drawMap(), 200); return; }
-    const loc = this._ov("location") || this._car("device_tracker", "posizione") || "device_tracker.megane_posizione";
     if (typeof window.loadCardHelpers !== "function") return;
     try {
       const helpers = await window.loadCardHelpers();
       const card = helpers.createCardElement({
         type: "map",
-        // traccia 48 h (come prima) ma inquadratura centrata sull'ultima posizione dell'auto
+        // sola posizione corrente (niente traccia 48h) → la card centra SEMPRE sull'auto
         entities: [{ entity: loc }],
-        hours_to_show: 48,
         theme_mode: "dark",
-        auto_fit: false,
-        default_zoom: 13,
+        auto_fit: true,
+        default_zoom: 15,
         focus_entity: loc,
       });
       card.hass = this._hass;
@@ -1335,6 +1341,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       box.innerHTML = "";
       box.appendChild(card);
       this._mapCard = card;
+      this._mapPos = pos;
       // il box prende l'altezza solo dopo il layout: ricalcolo e riallineo al centro
       [150, 600, 1500].forEach((ms) => setTimeout(() => {
         window.dispatchEvent(new Event("resize"));
@@ -2341,10 +2348,10 @@ const PAGES = {
 
   p4: `<h1>Ricariche</h1>
   <div class="tiles">
-    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: settimana"><div class="l">OGGI</div><div class="v"><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_oggi">—</span> €</div></div>
-    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: settimana"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett">—</span> €</div></div>
-    <div class="tile" data-cmd="ric_period" data-per="Mese" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: mese"><div class="l">MESE</div><div class="v"><span data-f="kwh_mese_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_mese">—</span> €</div></div>
-    <div class="tile" data-cmd="ric_period" data-per="Anno" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: anno"><div class="l">ANNO</div><div class="v"><span data-f="kwh_anno_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_anno">—</span> €</div></div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: settimana"><div class="l">OGGI</div><div class="v"><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_oggi" data-dec="2">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: settimana"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett" data-dec="2">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Mese" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: mese"><div class="l">MESE</div><div class="v"><span data-f="kwh_mese_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_mese" data-dec="2">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Anno" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: anno"><div class="l">ANNO</div><div class="v"><span data-f="kwh_anno_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_anno" data-dec="2">—</span> €</div></div></div>
   <div class="card" style="margin-top:16px"><h3>➕ Aggiungi ricarica manuale</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Data
