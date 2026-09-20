@@ -5,14 +5,28 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.24.4 — Logo nella sidebar
+
+### Correzioni
+- **Sidebar**: sostituita la 🚗 con il **logo Renault EV Center** (marchio a diamante con il giallo
+  Renault), adattivo al tema (`currentColor`).
+
 ## 1.0.24.3 — Ritocchi
 
 ### Correzioni
 - **Prezzo carburante con 2 decimali** (es. `2,00 €/l`): in *Risparmi* era mostrato con 3 decimali.
 - **Tasto "Registra ricarica" più corto**: la classe `.btn` ha `flex:1` e lo allargava a tutta la riga;
   ora è `flex:0 0 auto` (larghezza del testo).
-- **Mappa di nuovo a 48 ore**: ripristinata la traccia `hours_to_show: 48`, sempre **ricentrata
-  sull'ultima posizione** (la card si ricrea quando l'auto si sposta).
+- **Mappa a 48 ore + zoom fisso sull'ultima posizione**: ripristinata la traccia `hours_to_show: 48`,
+  centrata sull'auto (la card si ricrea quando l'auto si sposta).
+- **Automazioni che si riaccendevano** (es. *Programma clima*): `automation.reload` riaccendeva **tutte**
+  le automazioni, non solo quelle salvate. Ora lo stato on/off di **ogni** automazione è ripristinato
+  dopo il reload → restano spente se le hai spente.
+- **Rimossa l'automazione duplicata "Batteria bassa fuori casa"**: la notifica batteria bassa è **nativa**;
+  all'avvio l'integrazione rimuove le automazioni legacy (e riscrive `automations.yaml` anche quando
+  rimuove solo quelle).
+- **Doppio interruttore "Avviso batteria bassa"** nella vista *Automazioni*: rimosso quello in alto
+  (resta nel box dedicato).
 
 ## 1.0.24.2 — Configurazione in una schermata + mappa
 

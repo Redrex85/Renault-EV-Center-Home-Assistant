@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.24.3";
+const REC_VER = "1.0.24.4";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -613,7 +613,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     <div class="app" data-theme="${this._theme}">
       <div class="sidebar">
         <div class="logo">
-          <div class="ph">🚗</div>
+          <svg class="ph" viewBox="-70 -70 140 140" aria-hidden="true"><path d="M0,-62 L40,0 L0,62 L-40,0 Z" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="miter"/><path d="M0,-34 L21,0 L0,34 L-21,0 Z" fill="#FFCB00"/></svg>
           <div><b>Renault EV<br>Center</b><span class="ver">v${REC_VER}</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
@@ -2085,7 +2085,7 @@ const CSS = `
 .app{display:flex;min-height:520px;position:relative;overflow:hidden;border-radius:14px}
 .main{flex:1;margin-left:230px;padding:24px 28px}
 .logo{display:flex;align-items:center;gap:12px;padding:6px 10px 14px}
-.logo .ph{font-size:34px}
+.logo .ph{width:34px;height:34px;flex:0 0 auto;display:block}
 .logo b{display:block;font-size:15px;line-height:1.15}
 .ver{display:inline-block;font-size:10.5px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:1px 7px;margin-top:4px;letter-spacing:.05em}
 .logo small{color:var(--muted);font-size:11px;display:block;margin-top:3px}
@@ -2553,9 +2553,6 @@ const PAGES = {
   <div class="grid g2">
     <div class="card"><h3>Notifiche</h3>
       <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div>
-      <div class="row"><span>⚠️ Avviso batteria bassa</span><label class="switch"><input type="checkbox" data-sw="sw_low"><span></span></label></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Stesso interruttore del box <b>Avviso batteria bassa</b> qui sotto
-        (soglia e orari in <b>Configura</b>).</div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🤖 Automazioni create — attiva/disattiva</div>
         <div data-c="autos-created" style="display:flex;flex-direction:column;gap:2px"></div>

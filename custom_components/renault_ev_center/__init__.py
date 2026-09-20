@@ -79,6 +79,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except Exception as err:  # noqa: BLE001
         _LOGGER.warning("Sync orario carica programmata fallita: %s", err)
 
+    # rimuove le automazioni legacy (es. 'batteria bassa fuori casa'): la notifica è nativa
+    await coordinator.async_cleanup_automations()
+
     await coordinator.async_config_entry_first_refresh()
     hass.data[DOMAIN][entry.entry_id] = coordinator
 

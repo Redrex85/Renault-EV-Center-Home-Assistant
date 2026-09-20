@@ -2236,11 +2236,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         def _legacy(aid: object) -> bool:
             """Automazioni NON più create dall'integrazione: vanno rimosse.
 
-            'batteria bassa fuori casa' è sostituita dalla notifica NATIVA (soglia, fascia
-            oraria e giorni configurabili dalla vista Automazioni).
+            'batteria bassa' e 'batteria bassa fuori casa' sono sostituite dalla notifica
+            NATIVA (soglia, fascia oraria e giorni configurabili dalla vista Automazioni).
             """
             return isinstance(aid, str) and aid.startswith("renault_ev_center_") \
-                and aid.endswith("_batteria_bassa")
+                and (aid.endswith("_batteria_bassa") or "_batteria_bassa_" in aid)
 
         path = self.hass.config.path(AUTOMATION_CONFIG_PATH)
         rmset = set(removes)
@@ -2248,12 +2248,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         def _eid(cfg: dict) -> str:
             return f"automation.{slugify(str(cfg.get('alias', '')))}"
 
-        # stato on/off PRIMA del reload: le automazioni esistenti devono conservare
-        # la scelta dell'utente, solo quelle nuove vengono accese.
-        prev_state: dict[str, str | None] = {}
-        for aid, cfg in upserts.items():
-            st = self.hass.states.get(_eid(cfg))
-            prev_state[aid] = st.state if st is not None else None
+        # stato on/off di TUTTE le automazioni PRIMA del reload: `automation.reload`
+        # riaccende tutto, quindi va ripristinata la scelta dell'utente (non solo le salvate).
+        prev_auto: dict[str, str] = {
+            s.entity_id: s.state for s in self.hass.states.async_all("automation")
+        }
+        prev_state: dict[str, str | None] = {
+            aid: prev_auto.get(_eid(cfg)) for aid, cfg in upserts.items()
+        }
 
         def _apply() -> list[str]:
             try:
@@ -2262,9 +2264,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 data = None
             if not isinstance(data, list):
                 data = []
+            n_before = len(data)
             data = [d for d in data if not (isinstance(d, dict) and d.get("id") in rmset)]
             data = [d for d in data if not (isinstance(d, dict) and _legacy(d.get("id")))]
             data = [d for d in data if not (isinstance(d, dict) and _orfana(d.get("id")))]
+            purged = len(data) != n_before   # legacy/orfane rimosse → va riscritto
             byid = {d.get("id"): i for i, d in enumerate(data) if isinstance(d, dict) and d.get("id")}
             made: list[str] = []
             for aid, cfg in upserts.items():
@@ -2274,25 +2278,25 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 else:
                     data.append(entry)
                 made.append(aid)
-            if made or rmset:
+            if made or rmset or purged:
                 write_utf8_file_atomic(path, _yaml_dump(data))
-            return made
+            return made, purged
 
-        changed = await self.hass.async_add_executor_job(_apply)
-        if changed or rmset:
+        changed, purged = await self.hass.async_add_executor_job(_apply)
+        if changed or rmset or purged:
             await self.hass.services.async_call("automation", "reload", {}, blocking=True)
-            for aid, cfg in upserts.items():
-                eid = _eid(cfg)
-                if self.hass.states.get(eid) is None:
-                    continue
-                was = prev_state.get(aid)
-                if was == "off":
-                    # era spenta dall'utente: il reload NON deve riaccenderla
+            # 1) ripristina TUTTE le automazioni che l'utente aveva spento (il reload le riaccende)
+            for eid, stt in prev_auto.items():
+                if stt == "off" and self.hass.states.get(eid) is not None:
                     await self.hass.services.async_call(
                         "automation", "turn_off", {"entity_id": eid}, blocking=False)
-                elif was is None:
-                    await self.hass.services.async_call(
-                        "automation", "turn_on", {"entity_id": eid}, blocking=False)
+            # 2) accendi SOLO le automazioni appena create
+            for aid, cfg in upserts.items():
+                if prev_state.get(aid) is None:
+                    eid = _eid(cfg)
+                    if self.hass.states.get(eid) is not None:
+                        await self.hass.services.async_call(
+                            "automation", "turn_on", {"entity_id": eid}, blocking=False)
         return changed
 
     async def service_set_schedule(self, tipo: str, attivo: bool, inizio: str,
@@ -2416,6 +2420,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     self.persist(force=True)
                     _LOGGER.info("Orario carica programmata ripreso dall'automazione: %s", at)
                     return
+
+    async def async_cleanup_automations(self) -> None:
+        """All'avvio rimuove le automazioni legacy (es. 'batteria bassa fuori casa').
+
+        La notifica batteria bassa è gestita NATIVAMENTE: le automazioni omonime non servono.
+        """
+        try:
+            await self._automations_apply({}, [])
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Pulizia automazioni fallita: %s", err)
 
     async def _enable_automation(self, alias: str) -> None:
         """Accende l'automazione (id derivato dall'alias) e lo segnala nel log."""

@@ -681,7 +681,7 @@ try:
     src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
     assert '_sc_prog.get("inizio")' in src and '_sc_prog.get("fine")' in src, \
         "lo scheduler nativo non usa gli orari dell'automazione salvata"
-    assert "prev_state" in src and 'was == "off"' in src, \
+    assert "prev_state" in src and "prev_auto" in src, \
         "le automazioni non conservano lo stato on/off al reload"
     sel = open(os.path.join(CC, "select.py"), encoding="utf-8").read()
     assert "datetime.now().month" in sel, "il filtro mese non parte dal mese corrente"
@@ -724,6 +724,37 @@ try:
     ok("fix 1.0.24.2: SOH≤100%, orario persistente, Base senza wallbox/schedule")
 except Exception as e:
     bad(f"fix 1.0.24.2: {e}")
+
+print("\n[27] Fix 1.0.24.3: stato automazioni, batteria bassa duplicata, ritocchi UI")
+try:
+    co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert "prev_auto: dict[str, str]" in co and 'async_all("automation")' in co, \
+        "il reload non ripristina lo stato di TUTTE le automazioni"
+    assert '" _batteria_bassa" ' not in co and '"_batteria_bassa_" in aid' in co, \
+        "le automazioni 'batteria bassa fuori casa' non vengono rimosse"
+    assert "async def async_cleanup_automations" in co, "manca la pulizia delle automazioni legacy"
+    ini = open(os.path.join(CC, "__init__.py"), encoding="utf-8").read()
+    assert "async_cleanup_automations()" in ini, "la pulizia automazioni non è chiamata all'avvio"
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert js.count('data-sw="sw_low"') == 1, "c'è ancora il doppio interruttore Avviso batteria bassa"
+    assert "hours_to_show: 48" in js, "la mappa non ha più la traccia 48h"
+    assert 'data-sv="prezzo"]' in js and "_fmt(a.prezzo_termico, 2)" in js, \
+        "il prezzo carburante non è a 2 decimali"
+    ok("fix 1.0.24.3: stato automazioni, batteria bassa unica, UI")
+except Exception as e:
+    bad(f"fix 1.0.24.3: {e}")
+
+print("\n[28] Fix 1.0.24.4: logo nella sidebar")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert '<div class="logo">' in js, "manca la sidebar"
+    assert '<div class="ph">🚗</div>' not in js.split('<div class="logo">')[1][:400], \
+        "la sidebar usa ancora la macchinina 🚗"
+    assert 'stroke="currentColor"' in js and '#FFCB00' in js, \
+        "il logo Renault EV Center non è nella sidebar"
+    ok("fix 1.0.24.4: logo Renault EV Center nella sidebar")
+except Exception as e:
+    bad(f"fix 1.0.24.4: {e}")
 
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
