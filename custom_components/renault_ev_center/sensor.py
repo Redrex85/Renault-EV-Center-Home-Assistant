@@ -666,6 +666,7 @@ class UltimaRicarica(MateSensor):
             "potenza_media_kw": ric.get("potenza_media_kw"),
             "costo": ric.get("costo"),
             "tipo": ric.get("tipo"),
+            "zona": ric.get("zona"),
         }
 
 

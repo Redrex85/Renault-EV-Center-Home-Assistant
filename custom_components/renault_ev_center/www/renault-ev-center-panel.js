@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.21";
+const REC_VER = "1.0.22";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -432,7 +432,15 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "sw_bal": return S._swid("bilanciamento_solare");
       case "sw_gse": return S._swid("sperimentazione_gse");
       case "t_start": return S._tid("carica_orario_avvio");
-      case "t_start_v": { const s = S._st(S._tid("carica_orario_avvio")); return s && typeof s.state === "string" ? s.state.slice(0, 5) : null; }
+      case "t_start_v": {
+        // priorità alla PROGRAMMAZIONE salvata (quella dell'automazione), non all'entità time
+        const _pg = S._sensorByPrefix("programmazione");
+        const _sc = (_pg && _pg.attributes && _pg.attributes.schedule)
+          ? _pg.attributes.schedule.ricarica : null;
+        if (_sc && _sc.attivo && _sc.inizio) return String(_sc.inizio).slice(0, 5);
+        const s = S._st(S._tid("carica_orario_avvio"));
+        return s && typeof s.state === "string" ? s.state.slice(0, 5) : null;
+      }
       case "t_stop": return S._tid("carica_orario_stop");
       case "t_low_start": return S._tid("promemoria_inizio");
       case "t_low_end": return S._tid("promemoria_fine");
@@ -988,6 +996,15 @@ class RenaultEvCenterPanel extends HTMLElement {
         if (d === "light") this._call("light", "toggle", { entity_id: b.entity_id }, "💡 Luci");
         else if (d === "switch") this._call("switch", "toggle", { entity_id: b.entity_id }, "💡 Luci");
         else this._call("button", "press", { entity_id: b.entity_id }, "💡 Luci lampeggianti");
+        break;
+      }
+      case "ric_period": {
+        const per = (el && el.dataset && el.dataset.per) || "Mese";
+        const sel = this.shadowRoot.querySelector('select[data-sel="sel_periodo"]');
+        if (!sel) break;
+        sel.value = per;
+        const eid = sel.dataset.ent || this._field("sel_periodo");
+        if (eid) this._call("select", "select_option", { entity_id: eid, option: per }, `📅 Filtro: ${per}`);
         break;
       }
       case "lowsave": {
@@ -2318,10 +2335,10 @@ const PAGES = {
 
   p4: `<h1>Ricariche</h1>
   <div class="tiles">
-    <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">OGGI</div><div class="v"><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_oggi">—</span> €</div></div>
-    <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett">—</span> €</div></div>
-    <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">MESE</div><div class="v"><span data-f="kwh_mese_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_mese">—</span> €</div></div>
-    <div class="tile" style="flex-direction:column;align-items:flex-start"><div class="l">ANNO</div><div class="v"><span data-f="kwh_anno_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_anno">—</span> €</div></div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="cursor:pointer" title="Filtra: settimana"><div class="l">OGGI</div><div class="v"><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_oggi">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="cursor:pointer" title="Filtra: settimana"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Mese" style="cursor:pointer" title="Filtra: mese"><div class="l">MESE</div><div class="v"><span data-f="kwh_mese_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_mese">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Anno" style="cursor:pointer" title="Filtra: anno"><div class="l">ANNO</div><div class="v"><span data-f="kwh_anno_wb">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_anno">—</span> €</div></div></div>
   <div class="card" style="margin-top:16px"><h3>➕ Aggiungi ricarica manuale</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Data
@@ -2524,14 +2541,16 @@ const PAGES = {
   <div class="grid g2">
     <div class="card"><h3>Notifiche</h3>
       <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Avvio ricarica e promemoria batteria bassa si configurano in <b>Configura</b>.</div>
+      <div class="row"><span>⚠️ Avviso batteria bassa</span><label class="switch"><input type="checkbox" data-sw="sw_low"><span></span></label></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Stesso interruttore del box <b>Avviso batteria bassa</b> qui sotto
+        (soglia e orari in <b>Configura</b>).</div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🤖 Automazioni create — attiva/disattiva</div>
         <div data-c="autos-created" style="display:flex;flex-direction:column;gap:2px"></div>
         <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Sono le automazioni create in Home Assistant (Impostazioni → Automazioni). Accendile/spegni da qui, senza YAML.</div>
       </div></div>
     <div class="card"><h3>⏰ Programma ricarica</h3>
-      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="ricarica"><span></span></label></div>
+      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="ricarica" checked><span></span></label></div>
       <div class="row"><span>Inizio</span><input type="time" data-sch="ricarica" data-k="inizio" value="23:30"></div>
       <div class="row"><span>Fine</span><input type="time" data-sch="ricarica" data-k="fine" value="07:00"></div>
       <div class="row"><span>SoC obiettivo %</span><input type="number" data-sch="ricarica" data-k="soc" value="80" min="50" max="100" style="width:80px"></div>
@@ -2541,7 +2560,7 @@ const PAGES = {
       <div class="btn" data-cmd="schsave_ricarica" style="margin-top:10px">💾 Salva programma ricarica</div>
     </div>
     <div class="card"><h3>❄️ Programma clima</h3>
-      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="clima"><span></span></label></div>
+      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="clima" checked><span></span></label></div>
       <div class="row"><span>Orario</span><input type="time" data-sch="clima" data-k="inizio" value="07:00"></div>
       <div class="row" style="flex-wrap:wrap;gap:6px"><span>Giorni</span>
         <span><span class="chip dchip" data-schday="clima|mon">Lun</span><span class="chip dchip" data-schday="clima|tue">Mar</span><span class="chip dchip" data-schday="clima|wed">Mer</span><span class="chip dchip" data-schday="clima|thu">Gio</span><span class="chip dchip" data-schday="clima|fri">Ven</span><span class="chip dchip" data-schday="clima|sat">Sab</span><span class="chip dchip" data-schday="clima|sun">Dom</span></span>

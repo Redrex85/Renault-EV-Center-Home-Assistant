@@ -1593,6 +1593,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                                        kwh / (durata_min / 60.0) if durata_min > 5 else 0.0),
             "costo": costo,
             "tipo": tipo,
+            # posizione della ricarica (per la notifica di fine carica)
+            "zona": self._zone_label(str(s.get("zone") or zone or "")),
         }
         if origine is not None:
             record["stima"] = origine
@@ -2142,7 +2144,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 "action": [_pn(f"rec_ric_{n}", "🔋 Ricarica completata",
                                 "⚡ {{ states('sensor." + n + "_ultima_ricarica') }} kWh · "
                                 "🔋 {{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_end') }}% · "
-                                "💰 {{ state_attr('sensor." + n + "_ultima_ricarica', 'costo') }} €")],
+                                "💰 {{ state_attr('sensor." + n + "_ultima_ricarica', 'costo') }} € · "
+                                "📍 {{ state_attr('sensor." + n + "_ultima_ricarica', 'zona') or '—' }}")],
                 "mode": "single",
             },
             f"renault_ev_center_{n}_avvio_ricarica": {
@@ -2525,15 +2528,12 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 f"La {data.get('capacity', 60):.0f}-kWh si sta caricando.\n"
                 f"Tipo: {zona}\nBatteria: {data.get('battery')}%"
             )
-        finished = events.get("charge_finished")
-        if finished and self._switch_on("notify_end"):
-            await self._send_notify(
-                "🔋 Ricarica completata",
-                f"⚡ Energia: {finished.get('kwh')} kWh\n"
-                f"🔋 Batteria: {finished.get('soc_start')}% → {finished.get('soc_end')}%\n"
-                f"💰 Costo: {finished.get('costo')} €\n"
-                f"🏷️ {finished.get('tipo')}"
-            )
+        # NOTA: la notifica di FINE ricarica la manda l'automazione "Ricarica completata"
+        # (visibile e attivabile dalla vista Automazioni, con posizione inclusa).
+        # Qui NON la inviamo più: prima arrivavano DUE notifiche identiche.
+        if events.get("charge_finished"):
+            _LOGGER.info("Ricarica completata: %s kWh (notifica via automazione)",
+                         events["charge_finished"].get("kwh"))
 
         # --- promemoria batteria bassa a casa --------------------------------------
         soglia = self._setting_num("low_soc", self.low_soc_threshold)

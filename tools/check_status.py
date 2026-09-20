@@ -566,6 +566,16 @@ try:
     assert "self.wb_stop_switch" in src, "lo stop carica non usa l'entità di stop dedicata"
     assert "target_ent = ent if avvia else" in src, "il fermo carica ripiega sull'avvio"
     assert "battery >= stop_target" in src, "in modalità orario il SoC obiettivo viene ignorato"
+    # una sola notifica di fine carica (l'automazione), con la posizione
+    assert 'Notifica fine ricarica nativa rimossa' not in src
+    assert '"zona": self._zone_label(' in src, "la ricarica non salva la posizione"
+    assert "finished.get('soc_start')" not in src, \
+        "la notifica di fine carica è ancora inviata due volte (nativa + automazione)"
+    assert "'zona') or '—'" in src, "la notifica di fine carica non include la posizione"
+    # programmazione: l'orario mostrato in Panoramica viene dalla programmazione salvata
+    assert "_pg.attributes.schedule.ricarica" in open(
+        os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read(), \
+        "Panoramica: 'Carica programmata' non legge l'orario dell'automazione"
     # gomme: il valore impostato è l'ULTIMO CAMBIO, l'obiettivo si calcola aggiungendo l'intervallo
     assert "last_change=" in src and "kmv = _f(kmv) + interval_km" in src, \
         "gomme: la scadenza non somma l'intervallo all'ultimo cambio"

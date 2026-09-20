@@ -5,6 +5,29 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.22 — Una sola notifica, orario programmato, tile cliccabili
+
+### Correzioni
+- **Due notifiche di fine carica** → ora **una sola**: la mandava sia l'integrazione (nativa) sia
+  l'automazione. Tenuta l'**automazione** "Ricarica completata" (visibile e attivabile dal pannello)
+  e **aggiunta la posizione** al messaggio: `📍 <zona>`.
+  La ricarica ora salva la **zona** (attributo `zona` di *Ultima Ricarica*).
+- **Panoramica → "Carica programmata"** mostrava sempre `23:30` (il default dell'entità time). Ora
+  legge l'**orario della programmazione salvata** (quella dell'automazione).
+- **Programmazione che non si salvava**: le caselle **"Attivo"** partivano **non spuntate**, quindi il
+  primo "Salva" inviava `attivo=false` e **cancellava** l'automazione. Ora partono **spuntate** e i
+  campi si ripopolano dai valori salvati.
+- **Ricariche**: i riquadri **OGGI / SETTIMANA / MESE / ANNO** sono ora **cliccabili** e impostano il
+  filtro periodo.
+- **Avviso batteria bassa**: aggiunto **lo stesso interruttore** anche nel box *Notifiche* (prima c'era
+  solo nel box in basso): accendendolo in uno si accende nell'altro — è la stessa entità.
+
+### Risposta: quale delle due automazioni serve?
+- **"Avviso batteria bassa"** (notifica nativa): è quella che serve — soglia, orari e giorni
+  configurabili, interruttore `switch.<auto>_promemoria_batteria_bassa`.
+- **"Batteria bassa fuori casa"** (automazione): **rimossa**, era un doppione. Non c'è più nulla da
+  scegliere.
+
 ## 1.0.21 — Cambio gomme: km dell'ultimo cambio
 
 ### Correzione
