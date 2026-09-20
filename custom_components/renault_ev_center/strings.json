@@ -91,7 +91,8 @@
               "ac_button_entity": "Pulsante Avvia A/C (Renault)",
               "climate_entity": "Climatizzatore (climate) Renault",
               "light_entity": "Luci esterne (light/switch/button)",
-              "horn_entity": "Clacson (button/switch)"
+              "horn_entity": "Clacson (button/switch)",
+              "charge_target_number": "Number target di carica (per lo stop)"
             }
           },
           "wallbox": {
@@ -198,19 +199,6 @@
               "low_soc_start": "Inizio fascia oraria",
               "low_soc_end": "Fine fascia oraria",
               "low_soc_days": "Giorni della settimana"
-            }
-          },
-          "schedule": {
-            "name": "⏰ Carica programmata",
-            "data": {
-              "charge_sched_enabled": "Carica programmata",
-              "charge_sched_mode": "Modalità (orario o percentuale)",
-              "charge_start_time": "Orario avvio carica",
-              "charge_stop_time": "Orario stop carica",
-              "charge_start_soc": "% avvio carica",
-              "charge_stop_soc": "% stop carica",
-              "wb_charge_switch": "Avvio carica WALLBOX (switch o button) — usato da Avvia carica e dall'automazione",
-              "charge_target_number": "Number target di carica (per lo stop)"
             }
           },
           "advanced": {
@@ -293,7 +281,8 @@
               "ac_button_entity": "Pulsante Avvia A/C (Renault)",
               "climate_entity": "Climatizzatore (climate) Renault",
               "light_entity": "Luci esterne (light/switch/button)",
-              "horn_entity": "Clacson (button/switch)"
+              "horn_entity": "Clacson (button/switch)",
+              "charge_target_number": "Number target di carica (per lo stop)"
             }
           },
           "wallbox": {
@@ -400,19 +389,6 @@
               "low_soc_start": "Inizio fascia oraria",
               "low_soc_end": "Fine fascia oraria",
               "low_soc_days": "Giorni della settimana"
-            }
-          },
-          "schedule": {
-            "name": "⏰ Carica programmata",
-            "data": {
-              "charge_sched_enabled": "Carica programmata",
-              "charge_sched_mode": "Modalità (orario o percentuale)",
-              "charge_start_time": "Orario avvio carica",
-              "charge_stop_time": "Orario stop carica",
-              "charge_start_soc": "% avvio carica",
-              "charge_stop_soc": "% stop carica",
-              "wb_charge_switch": "Avvio carica WALLBOX (switch o button) — usato da Avvia carica e dall'automazione",
-              "charge_target_number": "Number target di carica (per lo stop)"
             }
           },
           "advanced": {

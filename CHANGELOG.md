@@ -5,13 +5,32 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.24.3 — Ritocchi
+
+### Correzioni
+- **Prezzo carburante con 2 decimali** (es. `2,00 €/l`): in *Risparmi* era mostrato con 3 decimali.
+- **Tasto "Registra ricarica" più corto**: la classe `.btn` ha `flex:1` e lo allargava a tutta la riga;
+  ora è `flex:0 0 auto` (larghezza del testo).
+- **Mappa di nuovo a 48 ore**: ripristinata la traccia `hours_to_show: 48`, sempre **ricentrata
+  sull'ultima posizione** (la card si ricrea quando l'auto si sposta).
+
 ## 1.0.24.2 — Configurazione in una schermata + mappa
 
 ### Correzioni
+- **SOH stimato mai sopra il 100%**: la stima ora richiede una **ricarica significativa (≥15%)**
+  (sotto, il rapporto kWh/% è troppo sensibile e dava valori assurdi tipo 102,1%) ed è **limitata a 100%**
+  anche in lettura.
+- **Orario «Programma ricarica» che tornava alle 23:30**: all'avvio l'integrazione **riprende l'orario
+  dall'automazione** esistente (`automations.yaml`) e lo salva nello store → **non si perde più** agli
+  aggiornamenti/riavvii.
+- **Carica programmata rimossa dalla configurazione**: niente più sezione nel wizard né nelle *Opzioni*;
+  si usa **solo** quella nella vista *Automazioni*. Il *Target di carica* Renault è passato in *Comandi Renault*.
+- **Profilo Base**: **niente sezione Wallbox** (né Bilanciamento casa / GSE) nel wizard e **niente pagina
+  Wallbox** nel pannello/dashboard (già nascosta quando `wallbox=false`).
 - **Configurazione iniziale in UNA schermata** (come le *Opzioni*): il wizard non è più a passi
   (auto → wallbox → impostazioni), ma mostra **tutte le sezioni** insieme — *L'auto, Comandi Renault,
   Wallbox, Bilanciamento casa, Sperimentazione GSE, Fotovoltaico* (dal profilo) *+ Batteria, Prezzi,
-  Confronto carburante, Manutenzione e bollo, Notifiche, Carica programmata, Avanzate*.
+  Confronto carburante, Manutenzione e bollo, Notifiche, Avanzate*.
 - **Sezioni chiuse di default**: tutte `collapsed`, si aprono a mano come nella schermata *Opzioni*.
 - **Mappa**: niente più traccia 48 h che spostava l'inquadratura. Ora mostra la **posizione corrente**
   e la card viene **ricreata quando l'auto si sposta** → centrata sull'ultima posizione.

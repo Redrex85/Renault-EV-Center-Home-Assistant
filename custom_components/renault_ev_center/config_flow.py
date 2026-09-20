@@ -236,14 +236,22 @@ def _car_schema(defaults: dict[str, Any]) -> vol.Schema:    return vol.Schema({
             vol.Optional(
                 CONF_HORN_ENTITY, description={"suggested_value": defaults.get(CONF_HORN_ENTITY)}
             ): EntitySelector(EntitySelectorConfig(domain=["button", "switch"])),
+            # Target di carica Renault: usato dall'automazione «Programma ricarica» (vista Automazioni)
+            vol.Optional(
+                CONF_CHARGE_TARGET_NUMBER,
+                description={"suggested_value": defaults.get(CONF_CHARGE_TARGET_NUMBER)},
+            ): EntitySelector(EntitySelectorConfig(domain="number")),
         }), {"collapsed": True}),
     })
 
 
 def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) -> vol.Schema:
     """Sezioni wallbox + GSE + (solo enterprise) fotovoltaico."""
-    schema: dict[Any, Any] = {
-        vol.Required("wallbox"): section(vol.Schema({
+    schema: dict[Any, Any] = {}
+    # Wallbox (+ Bilanciamento casa + GSE): solo con una wallbox (pro/enterprise).
+    # In Base NON compare la sezione Wallbox.
+    if profile != PROFILE_BASE:
+        schema[vol.Required("wallbox")] = section(vol.Schema({
             vol.Required(CONF_WALLBOX_ENABLED, default=defaults.get(CONF_WALLBOX_ENABLED, True)): BooleanSelector(),
             vol.Optional(
                 CONF_WB_POWER, description={"suggested_value": defaults.get(CONF_WB_POWER)}
@@ -269,10 +277,7 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
             vol.Optional(
                 CONF_WB_STOP_SWITCH, description={"suggested_value": defaults.get(CONF_WB_STOP_SWITCH)}
             ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
-        }), {"collapsed": True}),
-    }
-    # GSE: ha senso solo con una wallbox (pro/enterprise)
-    if profile != PROFILE_BASE:
+        }), {"collapsed": True})
         schema[vol.Required("home")] = section(vol.Schema({
             vol.Optional(
                 CONF_HOME_POWER_SENSOR, description={"suggested_value": defaults.get(CONF_HOME_POWER_SENSOR)}
@@ -393,21 +398,6 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_LOW_SOC_DAYS, default=defaults.get(CONF_LOW_SOC_DAYS, DEFAULT_LOW_SOC_DAYS)): SelectSelector(
                 SelectSelectorConfig(options=WEEKDAY_OPTIONS, multiple=True)),
         }), {"collapsed": True}),
-        vol.Required("schedule"): section(vol.Schema({
-            vol.Required(CONF_CHARGE_SCHED_ENABLED, default=defaults.get(CONF_CHARGE_SCHED_ENABLED, False)): BooleanSelector(),
-            vol.Optional(CONF_CHARGE_SCHED_MODE, default=defaults.get(CONF_CHARGE_SCHED_MODE, "orario")): SelectSelector(
-                SelectSelectorConfig(options=["orario", "percentuale"])),
-            # NB: orari/SoC NON si configurano qui — li imposta l'automazione dal pannello
-            # (vista Automazioni), così non vengono sovrascritti dai default del wizard.
-            vol.Optional(CONF_CHARGE_START_SOC, default=defaults.get(CONF_CHARGE_START_SOC, 30)): NumberSelector(
-                NumberSelectorConfig(min=5, max=80, step=1, unit_of_measurement="%")),
-            vol.Optional(CONF_CHARGE_STOP_SOC, default=defaults.get(CONF_CHARGE_STOP_SOC, 80)): NumberSelector(
-                NumberSelectorConfig(min=50, max=100, step=1, unit_of_measurement="%")),
-            vol.Optional(
-                CONF_CHARGE_TARGET_NUMBER,
-                description={"suggested_value": defaults.get(CONF_CHARGE_TARGET_NUMBER)},
-            ): EntitySelector(EntitySelectorConfig(domain="number")),
-        }), {"collapsed": True}),
         vol.Required("advanced"): section(vol.Schema({
             vol.Required(CONF_POLL_INTERVAL, default=defaults.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)): NumberSelector(
                 NumberSelectorConfig(min=10, max=300, step=5, unit_of_measurement="s")),
@@ -488,11 +478,6 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     user_input.pop(k, None)
             if not user_input.get(CONF_LOW_SOC_ENABLED):
                 for k in (CONF_LOW_SOC_THRESHOLD, CONF_LOW_SOC_START, CONF_LOW_SOC_END, CONF_LOW_SOC_DAYS):
-                    user_input.pop(k, None)
-            if not user_input.get(CONF_CHARGE_SCHED_ENABLED):
-                for k in (CONF_CHARGE_SCHED_MODE, CONF_CHARGE_START_TIME, CONF_CHARGE_STOP_TIME,
-                          CONF_CHARGE_START_SOC, CONF_CHARGE_STOP_SOC,
-                          CONF_WB_CHARGE_SWITCH, CONF_CHARGE_TARGET_NUMBER):
                     user_input.pop(k, None)
             if not user_input.get(CONF_MAINT_ENABLED):
                 user_input.pop(CONF_NOTIFY_SERVICE, None)

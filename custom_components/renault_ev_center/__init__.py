@@ -73,6 +73,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except Exception as err:  # noqa: BLE001
         raise ConfigEntryNotReady(f"Impossibile leggere lo storage: {err}") from err
 
+    # recupera l'orario della carica programmata dall'automazione: non si perde agli update
+    try:
+        await coordinator.async_sync_schedule_from_automation()
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.warning("Sync orario carica programmata fallita: %s", err)
+
     await coordinator.async_config_entry_first_refresh()
     hass.data[DOMAIN][entry.entry_id] = coordinator
 

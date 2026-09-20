@@ -1644,10 +1644,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             health["last_rete_kwh"] = round(kwh, 2)
             health["last_batteria_kwh"] = round(teorica, 2)
             health["last_delta_pct"] = round(delta_pct, 1)
-            if delta_pct > 5:
-                health["soh_stimato"] = round(
-                    (kwh * 0.92 / delta_pct) * (100.0 / self.capacity) * 100.0, 1
-                )
+            # stima SOH solo con una ricarica SIGNIFICATIVA (>=15%): sotto, il rapporto
+            # kWh/% è troppo sensibile agli errori e può superare il 100%.
+            if delta_pct >= 15:
+                soh = round((kwh * 0.92 / delta_pct) * (100.0 / self.capacity) * 100.0, 1)
+                health["soh_stimato"] = min(soh, 100.0)
             sessions = health.setdefault("sessions", [])
             sessions.append({
                 "id": record["id"], "data": record["data"], "eff": eff,
@@ -2369,6 +2370,52 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # l'automazione appena salvata deve essere ATTIVA, altrimenti non parte mai
         await self._enable_automation(cfg["alias"])
         return made
+
+    async def async_sync_schedule_from_automation(self) -> None:
+        """Riprende l'orario della carica programmata DALL'automazione esistente.
+
+        Così la scelta dell'utente NON si perde dopo un aggiornamento o un riavvio:
+        se lo store non ha l'orario, lo legge dal trigger dell'automazione.
+        """
+        from homeassistant.config import AUTOMATION_CONFIG_PATH
+        from homeassistant.util.yaml import load_yaml as _yaml_load
+
+        from .dashboard import slugify
+
+        sch = self.store.data.setdefault("schedule", {})
+        if sch.get("ricarica"):
+            return  # già memorizzato: non toccare
+        path = self.hass.config.path(AUTOMATION_CONFIG_PATH)
+        try:
+            data = await self.hass.async_add_executor_job(_yaml_load, path)
+        except Exception:  # noqa: BLE001
+            return
+        n = slugify(str(self.opts.get(CONF_NAME, "Renault")))
+        aid = f"renault_ev_center_{n}_programma_ricarica"
+        autos = data if isinstance(data, list) else []
+        for a in autos:
+            if not (isinstance(a, dict) and a.get("id") == aid):
+                continue
+            trig = a.get("trigger") or a.get("triggers") or []
+            if isinstance(trig, dict):
+                trig = [trig]
+            if not isinstance(trig, list):
+                trig = []
+            giorni: list[str] = []
+            for c in (a.get("condition") or a.get("conditions") or []):
+                if isinstance(c, dict) and c.get("weekday"):
+                    wd = c["weekday"]
+                    giorni = [wd] if isinstance(wd, str) else list(wd)
+            for t in trig:
+                at = str((t or {}).get("at") or "")[:5]
+                if at:
+                    sch["ricarica"] = {
+                        "attivo": True, "inizio": at, "fine": at,
+                        "soc": 0, "modo": "cool", "temperatura": 0, "giorni": giorni,
+                    }
+                    self.persist(force=True)
+                    _LOGGER.info("Orario carica programmata ripreso dall'automazione: %s", at)
+                    return
 
     async def _enable_automation(self, alias: str) -> None:
         """Accende l'automazione (id derivato dall'alias) e lo segnala nel log."""

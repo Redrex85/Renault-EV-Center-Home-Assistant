@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.24.2";
+const REC_VER = "1.0.24.3";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -1328,10 +1328,10 @@ class RenaultEvCenterPanel extends HTMLElement {
       const helpers = await window.loadCardHelpers();
       const card = helpers.createCardElement({
         type: "map",
-        // sola posizione corrente (niente traccia 48h) → la card centra SEMPRE sull'auto
         entities: [{ entity: loc }],
+        hours_to_show: 48,
         theme_mode: "dark",
-        auto_fit: true,
+        auto_fit: false,
         default_zoom: 15,
         focus_entity: loc,
       });
@@ -1688,7 +1688,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     root.querySelectorAll('[data-sv="km"]').forEach((el) => { el.textContent = this._i(a.km_totali); });
     root.querySelectorAll('[data-sv="prezzo"]').forEach((el) => {
       el.textContent = (a.prezzo_termico === null || a.prezzo_termico === undefined)
-        ? "—" : this._fmt(a.prezzo_termico, 3);
+        ? "—" : this._fmt(a.prezzo_termico, 2);
     });
     if (bar) {
       const max = Math.max(t.totale || 0, e.totale || 0, 1);
@@ -2240,7 +2240,6 @@ const PAGES = {
       </div>
       <div style="margin-top:10px">
         <div class="row"><span>Viaggio in corso</span><b data-f="trip_attivo">—</b></div>
-        <div class="row"><span>Carica programmata</span><b data-f="t_start_v">—</b></div>
         <div class="row"><span>⚡ Wallbox ora</span><b data-v="cmd_wb">—</b></div>
       </div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
@@ -2364,7 +2363,7 @@ const PAGES = {
         <select data-mc="tipo" style="width:auto"><option>Casa</option><option>Fotovoltaico</option><option selected>Pubblica</option><option>Manuale</option></select></label>
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted);flex:1;min-width:180px">Descrizione
         <input data-mc="descrizione" placeholder="es. Colonnina DC autostrada" style="width:100%"></label>
-      <div class="btn" data-cmd="add_charge_manual" style="padding:8px 14px;font-size:13px;align-self:flex-end">💾 Registra ricarica</div>
+      <div class="btn" data-cmd="add_charge_manual" style="flex:0 0 auto;padding:8px 14px;font-size:13px;align-self:flex-end">💾 Registra ricarica</div>
     </div>
     <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Utile per le colonnine DC. Se lasci vuoto il costo, resta 0 €.</div></div>
   <div class="card" style="margin-top:16px"><h3>📊 Distribuzione ricariche</h3>

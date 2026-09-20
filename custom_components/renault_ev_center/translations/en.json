@@ -95,7 +95,8 @@
               "ac_button_entity": "Start A/C button (Renault)",
               "climate_entity": "Renault climate entity",
               "light_entity": "Exterior lights (light/switch/button)",
-              "horn_entity": "Horn (button/switch)"
+              "horn_entity": "Horn (button/switch)",
+              "charge_target_number": "Charge target number (for stop)"
             }
           },
           "wallbox": {
@@ -202,19 +203,6 @@
               "low_soc_start": "Time window start",
               "low_soc_end": "Time window end",
               "low_soc_days": "Days of the week"
-            }
-          },
-          "schedule": {
-            "name": "⏰ Scheduled charging",
-            "data": {
-              "charge_sched_enabled": "Scheduled charging",
-              "charge_sched_mode": "Mode (time or percentage)",
-              "charge_start_time": "Charge start time",
-              "charge_stop_time": "Charge stop time",
-              "charge_start_soc": "Charge start %",
-              "charge_stop_soc": "Charge stop %",
-              "wb_charge_switch": "WALLBOX charge start (switch or button) — used by Start charge and the automation",
-              "charge_target_number": "Charge target number (for stop)"
             }
           },
           "advanced": {
@@ -301,7 +289,8 @@
               "ac_button_entity": "Start A/C button (Renault)",
               "climate_entity": "Renault climate entity",
               "light_entity": "Exterior lights (light/switch/button)",
-              "horn_entity": "Horn (button/switch)"
+              "horn_entity": "Horn (button/switch)",
+              "charge_target_number": "Charge target number (for stop)"
             }
           },
           "wallbox": {
@@ -408,19 +397,6 @@
               "low_soc_start": "Time window start",
               "low_soc_end": "Time window end",
               "low_soc_days": "Days of the week"
-            }
-          },
-          "schedule": {
-            "name": "⏰ Scheduled charging",
-            "data": {
-              "charge_sched_enabled": "Scheduled charging",
-              "charge_sched_mode": "Mode (time or percentage)",
-              "charge_start_time": "Charge start time",
-              "charge_stop_time": "Charge stop time",
-              "charge_start_soc": "Charge start %",
-              "charge_stop_soc": "Charge stop %",
-              "wb_charge_switch": "WALLBOX charge start (switch or button) — used by Start charge and the automation",
-              "charge_target_number": "Charge target number (for stop)"
             }
           },
           "advanced": {

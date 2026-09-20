@@ -962,7 +962,11 @@ class SohStimato(MateSensor):
 
     @property
     def native_value(self):
-        return self.coordinator.data.get("health", {}).get("soh_stimato", 0.0)
+        v = self.coordinator.data.get("health", {}).get("soh_stimato", 0.0)
+        try:
+            return min(float(v or 0.0), 100.0)   # il SOH non può superare il 100%
+        except (TypeError, ValueError):
+            return 0.0
 
     @property
     def extra_state_attributes(self):

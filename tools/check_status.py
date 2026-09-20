@@ -701,6 +701,30 @@ try:
 except Exception as e:
     bad(f"fix 1.0.24.1: {e}")
 
+print("\n[26] Fix 1.0.24.2: SOH, persistenza orario, Base senza wallbox/schedule")
+try:
+    co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    se = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
+    assert "delta_pct >= 15" in co and "min(soh, 100.0)" in co, \
+        "la stima SOH non richiede una ricarica significativa o non è limitata a 100%"
+    assert "min(float(v or 0.0), 100.0)" in se, "il sensore SOH non è limitato a 100%"
+    assert "async def async_sync_schedule_from_automation" in co, \
+        "manca il recupero dell'orario carica dall'automazione"
+    ini = open(os.path.join(CC, "__init__.py"), encoding="utf-8").read()
+    assert "async_sync_schedule_from_automation()" in ini, \
+        "l'orario carica non viene recuperato all'avvio"
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    assert 'vol.Required("schedule")' not in flow, \
+        "la sezione 'Carica programmata' non è stata rimossa dalla configurazione"
+    assert "if profile != PROFILE_BASE:\n        schema[vol.Required(\"wallbox\")]" in flow, \
+        "la sezione Wallbox non è legata al profilo (Base non deve averla)"
+    # il Target di carica è ora in Comandi Renault
+    assert 'vol.Required("commands")' in flow and "CONF_CHARGE_TARGET_NUMBER" in flow, \
+        "il Target di carica non è stato spostato nei Comandi Renault"
+    ok("fix 1.0.24.2: SOH≤100%, orario persistente, Base senza wallbox/schedule")
+except Exception as e:
+    bad(f"fix 1.0.24.2: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:
