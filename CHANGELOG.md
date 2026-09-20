@@ -5,6 +5,25 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.24.1 — Fix automazioni, filtri e mappa
+
+### Correzioni
+- **Configurazione: sezioni sempre visibili**. Tutte le sezioni del wizard (Batteria, Prezzi,
+  Carburante, Manutenzione, Notifiche, Programmazione, Avanzate e, per pro/enterprise, Wallbox,
+  Bilanciamento casa, GSE, Fotovoltaico) ora sono **espanse**: prima erano `collapsed` e in HA
+  apparivano come intestazioni chiuse, facendo sembrare "mancanti" i menu.
+- **Automazione ricarica che tornava alle 23:30**: gli orari/SoC **non si configurano più nel
+  wizard**; lo scheduler nativo usa l'orario dell'**automazione salvata** (vista Automazioni) con
+  priorità sui default. Prima il default `23:30` sovrascriveva la scelta dell'utente.
+- **Toggle automazioni**: al **reload/aggiornamento** le automazioni **conservano** lo stato scelto
+  (on/off). Solo quelle **nuove** vengono accese; quelle spente dall'utente restano spente.
+- **Storico ricariche**: il filtro **mese** parte dal **mese corrente** (es. *Settembre*), senza
+  ripristinare il vecchio valore.
+- **Bilanciamento solare**: ora ha lo **switch on/off** (come il bilanciamento casa) al posto del
+  pulsante testuale.
+- **Mappa**: attende che il riquadro abbia la sua altezza prima di creare la card (Leaflet centrava
+  male a 0 px) e mantiene la card viva per aggiornare la posizione.
+
 ## 1.0.24 — Profili di installazione (base / pro / enterprise)
 
 ### Nuova funzione: bilanciamento casa (contatore)

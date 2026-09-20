@@ -236,7 +236,7 @@ def _car_schema(defaults: dict[str, Any]) -> vol.Schema:    return vol.Schema({
             vol.Optional(
                 CONF_HORN_ENTITY, description={"suggested_value": defaults.get(CONF_HORN_ENTITY)}
             ): EntitySelector(EntitySelectorConfig(domain=["button", "switch"])),
-        }), {"collapsed": True}),
+        }), {"collapsed": False}),
     })
 
 
@@ -283,7 +283,7 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
                 NumberSelectorConfig(min=6, max=32, step=1, unit_of_measurement="A", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_HOME_REDUCE_AMPS, default=defaults.get(CONF_HOME_REDUCE_AMPS, DEFAULT_HOME_REDUCE_AMPS)): NumberSelector(
                 NumberSelectorConfig(min=6, max=32, step=1, unit_of_measurement="A", mode=NumberSelectorMode.BOX)),
-        }), {"collapsed": True})
+        }), {"collapsed": False})
         schema[vol.Required("gse")] = section(vol.Schema({
             vol.Optional(CONF_GSE_KW_MAX, default=defaults.get(CONF_GSE_KW_MAX, DEFAULT_GSE_KW_MAX)): NumberSelector(
                 NumberSelectorConfig(min=1, max=50, step=0.1, unit_of_measurement="kW",
@@ -299,7 +299,7 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
             vol.Optional(CONF_GSE_WPA, default=defaults.get(CONF_GSE_WPA, DEFAULT_GSE_WPA)): NumberSelector(
                 NumberSelectorConfig(min=100, max=800, step=10, unit_of_measurement="W/A",
                                      mode=NumberSelectorMode.BOX)),
-        }), {"collapsed": True})
+        }), {"collapsed": False})
     # fotovoltaico: SOLO enterprise
     if profile == PROFILE_ENTERPRISE:
         schema[vol.Required("solar")] = section(vol.Schema({
@@ -319,7 +319,7 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
             ): EntitySelector(EntitySelectorConfig(domain="sensor")),
             vol.Optional(CONF_BATTERY_PRIORITY_MIN, default=defaults.get(CONF_BATTERY_PRIORITY_MIN, DEFAULT_BATTERY_PRIORITY)): NumberSelector(
                 NumberSelectorConfig(min=0, max=100, step=5, unit_of_measurement="%")),
-        }), {"collapsed": True})
+        }), {"collapsed": False})
     return vol.Schema(schema)
 
 
@@ -347,7 +347,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_PRE_EUR, default=defaults.get(CONF_PRE_EUR, 0.0)): NumberSelector(
                 NumberSelectorConfig(min=0, max=200000, step=1, unit_of_measurement="€",
                                      mode=NumberSelectorMode.BOX)),
-        }), {"collapsed": True}),
+        }), {"collapsed": False}),
         vol.Required("fuel"): section(vol.Schema({
             vol.Required(CONF_FUEL_ENABLED, default=defaults.get(CONF_FUEL_ENABLED, False)): BooleanSelector(),
             vol.Optional(CONF_FUEL_LABEL, default=defaults.get(CONF_FUEL_LABEL, DEFAULT_FUEL_LABEL)): TextSelector(),
@@ -359,7 +359,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                 CONF_DIESEL_PRICE_ENTITY,
                 description={"suggested_value": defaults.get(CONF_DIESEL_PRICE_ENTITY)},
             ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-        }), {"collapsed": True}),
+        }), {"collapsed": False}),
         vol.Required("maint"): section(vol.Schema({
             vol.Required(CONF_MAINT_ENABLED, default=defaults.get(CONF_MAINT_ENABLED, False)): BooleanSelector(),
             vol.Optional(CONF_TAG_TERMICO, default=defaults.get(CONF_TAG_TERMICO, DEFAULT_TAG_TERMICO)): NumberSelector(
@@ -378,7 +378,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_ASSICURAZIONE_COSTO, default=defaults.get(CONF_ASSICURAZIONE_COSTO, DEFAULT_ASSICURAZIONE_COSTO)): NumberSelector(
                 NumberSelectorConfig(min=0, max=3000, step=10, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_ASSICURAZIONE_DATA, description={"suggested_value": defaults.get(CONF_ASSICURAZIONE_DATA, "")}): TextSelector(),
-        }), {"collapsed": True}),
+        }), {"collapsed": False}),
         vol.Required("notify"): section(vol.Schema({
             vol.Optional(CONF_NOTIFY_SERVICE, description={"suggested_value": defaults.get(CONF_NOTIFY_SERVICE, "")}): TextSelector(),
             vol.Optional(CONF_NOTIFY_DAYS, default=defaults.get(CONF_NOTIFY_DAYS, DEFAULT_NOTIFY_DAYS)): NumberSelector(
@@ -392,13 +392,13 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_LOW_SOC_END, default=defaults.get(CONF_LOW_SOC_END, DEFAULT_LOW_SOC_END)): TimeSelector(),
             vol.Optional(CONF_LOW_SOC_DAYS, default=defaults.get(CONF_LOW_SOC_DAYS, DEFAULT_LOW_SOC_DAYS)): SelectSelector(
                 SelectSelectorConfig(options=WEEKDAY_OPTIONS, multiple=True)),
-        }), {"collapsed": True}),
+        }), {"collapsed": False}),
         vol.Required("schedule"): section(vol.Schema({
             vol.Required(CONF_CHARGE_SCHED_ENABLED, default=defaults.get(CONF_CHARGE_SCHED_ENABLED, False)): BooleanSelector(),
             vol.Optional(CONF_CHARGE_SCHED_MODE, default=defaults.get(CONF_CHARGE_SCHED_MODE, "orario")): SelectSelector(
                 SelectSelectorConfig(options=["orario", "percentuale"])),
-            vol.Optional(CONF_CHARGE_START_TIME, default=defaults.get(CONF_CHARGE_START_TIME, "23:30")): TextSelector(),
-            vol.Optional(CONF_CHARGE_STOP_TIME, default=defaults.get(CONF_CHARGE_STOP_TIME, "07:00")): TextSelector(),
+            # NB: orari/SoC NON si configurano qui — li imposta l'automazione dal pannello
+            # (vista Automazioni), così non vengono sovrascritti dai default del wizard.
             vol.Optional(CONF_CHARGE_START_SOC, default=defaults.get(CONF_CHARGE_START_SOC, 30)): NumberSelector(
                 NumberSelectorConfig(min=5, max=80, step=1, unit_of_measurement="%")),
             vol.Optional(CONF_CHARGE_STOP_SOC, default=defaults.get(CONF_CHARGE_STOP_SOC, 80)): NumberSelector(
@@ -407,7 +407,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                 CONF_CHARGE_TARGET_NUMBER,
                 description={"suggested_value": defaults.get(CONF_CHARGE_TARGET_NUMBER)},
             ): EntitySelector(EntitySelectorConfig(domain="number")),
-        }), {"collapsed": True}),
+        }), {"collapsed": False}),
         vol.Required("advanced"): section(vol.Schema({
             vol.Required(CONF_POLL_INTERVAL, default=defaults.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)): NumberSelector(
                 NumberSelectorConfig(min=10, max=300, step=5, unit_of_measurement="s")),
@@ -432,7 +432,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_SCAD_BOLLO, description={"suggested_value": defaults.get(CONF_SCAD_BOLLO)}): TextSelector(),
             vol.Optional(CONF_SCAD_REVISIONE, description={"suggested_value": defaults.get(CONF_SCAD_REVISIONE)}): TextSelector(),
             vol.Optional(CONF_SCAD_ASSICURAZIONE, description={"suggested_value": defaults.get(CONF_SCAD_ASSICURAZIONE)}): TextSelector(),
-        }), {"collapsed": True}),
+        }), {"collapsed": False}),
     })
 
 

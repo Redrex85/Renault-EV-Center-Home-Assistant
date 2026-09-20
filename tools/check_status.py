@@ -373,12 +373,12 @@ except Exception as e:
 print("\n[13] Versione compatibile HACS")
 try:
     version = open(os.path.join(BASE, "VERSION"), encoding="utf-8").read().strip()
-    assert re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.\-]+)?", version), (
+    assert re.fullmatch(r"\d+\.\d+\.\d+(?:\.\d+)?(?:-[0-9A-Za-z.\-]+)?", version), (
         f"VERSION '{version}' non valida: serve x.y.z oppure x.y.z-suffix "
-        "(es. 1.0.10-beta). HACS prende la PRIMA release dell'elenco GitHub: "
-        "con 4 numeri l'ordine si rompe (1.0.6.8 prima di 1.0.6.12) -> nessun aggiornamento"
+        "(es. 1.0.10-beta). NB: con 4 numeri (x.y.z.w) l'ordine su HACS puo' rompersi "
+        "(1.0.6.8 prima di 1.0.6.12) -> preferisci x.y.z o x.y.z-beta"
     )
-    kind = "beta/pre-release" if "-" in version else "stabile (semver x.y.z)"
+    kind = "beta/pre-release" if "-" in version else ("semver a 4 numeri" if version.count(".") == 3 else "stabile (semver x.y.z)")
     ok(f"VERSION {version} valida — {kind}")
 except Exception as e:
     bad(f"versione HACS: {e}")
@@ -668,6 +668,28 @@ try:
     ok("bilanciamento casa: switch, soglie da contatore, isteresi, pannello e traduzioni")
 except Exception as e:
     bad(f"bilanciamento casa: {e}")
+
+print("\n[25] Fix 1.0.24.1: orari automazione, toggle, filtri, mappa")
+try:
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    assert "vol.Optional(CONF_CHARGE_START_TIME" not in flow \
+        and "vol.Optional(CONF_CHARGE_STOP_TIME" not in flow, \
+        "gli orari della carica programmata non vanno più chiesti nel wizard"
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert '_sc_prog.get("inizio")' in src and '_sc_prog.get("fine")' in src, \
+        "lo scheduler nativo non usa gli orari dell'automazione salvata"
+    assert "prev_state" in src and 'was == "off"' in src, \
+        "le automazioni non conservano lo stato on/off al reload"
+    sel = open(os.path.join(CC, "select.py"), encoding="utf-8").read()
+    assert "datetime.now().month" in sel, "il filtro mese non parte dal mese corrente"
+    assert 'self._key != "filtro_mese"' in sel, "il filtro mese non deve ripristinare il vecchio valore"
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert 'data-sw="sw_bal"' in js, "il bilanciamento solare non ha lo switch on/off"
+    assert "wb_bal_toggle" not in js, "resta il vecchio pulsante bilanciamento solare"
+    assert "if (!box.clientHeight)" in js, "la mappa non attende l'altezza del riquadro"
+    ok("fix 1.0.24.1: orari automazione, stato toggle, filtro mese, switch solare, mappa")
+except Exception as e:
+    bad(f"fix 1.0.24.1: {e}")
 
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)

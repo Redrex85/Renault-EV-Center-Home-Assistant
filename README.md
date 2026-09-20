@@ -15,7 +15,7 @@ Un *companion* per **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Tech, Renault 5
 
 ☕ Sostieni il progetto
 
-Renault EV Center è gratuito e open-source, sviluppato nel tempo libero. Se ti è utile, puoi sostenerne lo sviluppo con un caffè — grazie! ☕
+Renault EV Center è un progetto gratuito e open source, portato avanti nel tempo libero. Se ti torna utile, puoi offrirmi un caffè per sostenere i prossimi aggiornamenti — grazie di cuore! ☕
 
 <p align="left">
   <a href="https://www.paypal.me/lamortella"><img src="https://img.shields.io/badge/Dona-PayPal-00457C?logo=paypal" alt="PayPal"></a>
@@ -72,7 +72,7 @@ Tutto è calcolato **localmente nel tuo Home Assistant** e salvato in `.storage`
 1. **HACS** → ⋮ → **Repository personalizzati**
 2. Incolla `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant`
 3. Categoria: **Integrazione** → Aggiungi
-4. Apri **Renault EV Center** → Scarica
+4. Cerca **Renault EV Center** → Scarica
 5. **Riavvia Home Assistant**
 6. **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → "Renault EV Center"**
 
@@ -80,7 +80,21 @@ Tutto è calcolato **localmente nel tuo Home Assistant** e salvato in `.storage`
 
 Copia la cartella `custom_components/renault_ev_center/` dentro `<config>/custom_components/`, riavvia e aggiungi l'integrazione dal menu.
 
-## 🧙 Configurazione (3 schermate)
+## 🧙 Configurazione (4 schermate)
+
+### 0️⃣ Il profilo
+
+La **prima schermata** chiede il **profilo**: decide quali sezioni del wizard e quali pagine del pannello avrai. Scegli in base a cosa possiedi:
+
+| Profilo | Per chi | Cosa include | Cosa devi inserire |
+|---|---|---|---|
+| **Base** | solo l'auto | auto, viaggi, statistiche, ricariche (anche **pubbliche**), risparmi, **manutenzione e bollo**, **notifiche**, **confronto carburante** e **avanzate** | nome auto + entità Renault (schermata 1️⃣) |
+| **Pro** | auto **+ wallbox** | tutto il Base **+ wallbox** (avvio/stop, potenza, sessione, GSE) | Base **+ schermata 2️⃣** (wallbox) |
+| **Enterprise** | auto + wallbox **+ fotovoltaico** | tutto il Pro **+ fotovoltaico** e bilanciamento solare | Pro **+ sensori rete/batteria** della sezione *Fotovoltaico* |
+
+- **Base** → la **pagina Wallbox non compare** nel pannello; tutte le altre sì (comprese manutenzione/bollo, notifiche, confronto carburante e avanzate).
+- **Pro / Enterprise** → compaiono anche le schermate della **wallbox** e (solo Enterprise) del **fotovoltaico**.
+- Cambi idea? Si può cambiare quando vuoi da ⚙️ **Integrazioni → Renault EV Center → Configura**.
 
 ### 1️⃣ L'auto
 
@@ -237,7 +251,7 @@ A companion for **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Tech, Renault 5 an
 
 ☕ Support
 
-Renault EV Center is free and open-source, developed in spare time. If you find it useful, you can support its development with a coffee — thank you! ☕
+Renault EV Center is a free, open-source project kept alive in my spare time. If it saves you time, you can buy me a coffee to support the next updates — thank you so much! ☕
 
 <p align="left">
   <a href="https://www.paypal.me/lamortella"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal" alt="PayPal"></a>
@@ -260,8 +274,9 @@ Renault EV Center is free and open-source, developed in spare time. If you find 
 
 1. HACS → Custom repositories → `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant` (category: Integration) → Download → restart HA
 2. Settings → Devices & Services → Add Integration → **Renault EV Center**
-3. Pick your Renault entities (odometer, battery %, range, charging, GPS) and wallbox entities (power, state, energy counter)
-4. Import the dashboards from [`dashboards/`](dashboards/)
+3. **Pick a profile** — **Base** (car only), **Pro** (car + wallbox) or **Enterprise** (car + wallbox + solar): it decides which wizard sections and panel pages you get. Base still includes maintenance/road tax, notifications, fuel comparison and advanced options.
+4. Pick your Renault entities (odometer, battery %, range, charging, GPS) and, for Pro/Enterprise, wallbox entities (power, state, energy counter)
+5. Import the dashboards from [`dashboards/`](dashboards/)
 
 See the Italian section above for the full entity reference, services and FAQ.
 
@@ -276,7 +291,7 @@ Un compagnon pour **Megane E-Tech, Scenic E-Tech, Zoe, Twingo E-Tech, Renault 5 
 
 ☕ Soutien
 
-Renault EV Center est gratuit et open-source, développé pendant mon temps libre. S'il vous est utile, vous pouvez soutenir son développement avec un café — merci ! ☕
+Renault EV Center est un projet gratuit et open source, développé sur mon temps libre. S'il vous fait gagner du temps, vous pouvez m'offrir un café pour soutenir les prochaines mises à jour — merci beaucoup ! ☕
 
 <p align="left">
   <a href="https://www.paypal.me/lamortella"><img src="https://img.shields.io/badge/Faire%20un%20don-PayPal-00457C?logo=paypal" alt="PayPal"></a>
@@ -322,7 +337,7 @@ Tout est calculé **localement dans votre Home Assistant** et sauvegardé dans `
 1. **HACS** → ⋮ → **Dépôts personnalisés**
 2. Collez `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant`
 3. Catégorie : **Intégration** → Ajouter
-4. Ouvrez **Renault EV Center** → Télécharger
+4. Recherchez **Renault EV Center** → Télécharger
 5. **Redémarrez Home Assistant**
 6. **Paramètres → Appareils et services → Ajouter l'intégration → "Renault EV Center"**
 
@@ -330,7 +345,21 @@ Tout est calculé **localement dans votre Home Assistant** et sauvegardé dans `
 
 Copiez le dossier `custom_components/renault_ev_center/` dans `<config>/custom_components/`, redémarrez et ajoutez l'intégration depuis le menu.
 
-## 🧙 Configuration (3 écrans)
+## 🧙 Configuration (4 écrans)
+
+### 0️⃣ Le profil
+
+Le **premier écran** demande le **profil** : il décide des sections du wizard et des pages du panneau. Choisissez selon ce que vous possédez :
+
+| Profil | Pour qui | Contenu | À saisir |
+|---|---|---|---|
+| **Base** | voiture seule | voiture, trajets, statistiques, recharges (y compris **publiques**), économies, **entretien et taxe**, **notifications**, **comparaison carburant** et **avancé** | nom + entités Renault (écran 1️⃣) |
+| **Pro** | voiture **+ wallbox** | tout le Base **+ wallbox** (démarrage/arrêt, puissance, session, GSE) | Base **+ écran 2️⃣** (wallbox) |
+| **Enterprise** | voiture + wallbox **+ photovoltaïque** | tout le Pro **+ photovoltaïque** et équilibrage solaire | Pro **+ capteurs réseau/batterie** de la section *Photovoltaïque* |
+
+- **Base** → la **page Wallbox n'apparaît pas** dans le panneau ; toutes les autres oui (entretien/taxe, notifications, comparaison carburant et avancé compris).
+- **Pro / Enterprise** → les écrans **wallbox** et (Enterprise seulement) **photovoltaïque** apparaissent aussi.
+- Changement d'avis ? Modifiable à tout moment via ⚙️ **Paramètres → Intégrations → Renault EV Center → Configurer**.
 
 ### 1️⃣ La voiture
 

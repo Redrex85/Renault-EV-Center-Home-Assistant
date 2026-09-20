@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
@@ -28,10 +29,12 @@ async def async_setup_entry(
 ) -> None:
     coordinator: RenaultMateCoordinator = hass.data[DOMAIN][entry.entry_id]
     name = str(entry.data.get("name") or entry.title or "Renault")
+    # default filtro mese = mese corrente (es. "Settembre"), come per i viaggi
+    mese_ora = MESI[datetime.now().month] if 1 <= datetime.now().month <= 12 else "Tutti"
     async_add_entities([
         MateSelect(coordinator, f"{name} Filtro Tipo Ricarica", "filtro_tipo", TIPI, "Tutte", "mdi:filter-variant"),
         MateSelect(coordinator, f"{name} Filtro Periodo Ricariche", "filtro_periodo", PERIODI, "Mese", "mdi:calendar-range"),
-        MateSelect(coordinator, f"{name} Filtro Mese Ricariche", "filtro_mese", MESI, "Tutti", "mdi:calendar-month"),
+        MateSelect(coordinator, f"{name} Filtro Mese Ricariche", "filtro_mese", MESI, mese_ora, "mdi:calendar-month"),
         MateSelect(coordinator, f"{name} Filtro Anno Ricariche", "filtro_anno", ANNI, "Tutti", "mdi:calendar-multiple"),
     ])
 
@@ -53,9 +56,11 @@ class MateSelect(CoordinatorEntity[RenaultMateCoordinator], RestoreEntity, Selec
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        last = await self.async_get_last_state()
-        if last is not None and last.state in self._options:
-            self._attr_current_option = last.state
+        # il filtro mese NON si ripristina: parte sempre dal mese corrente
+        if self._key != "filtro_mese":
+            last = await self.async_get_last_state()
+            if last is not None and last.state in self._options:
+                self._attr_current_option = last.state
         self.coordinator.register_setting("select", self._key, self.entity_id)
 
     async def async_select_option(self, option: str) -> None:

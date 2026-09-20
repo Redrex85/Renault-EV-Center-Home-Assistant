@@ -2244,6 +2244,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         path = self.hass.config.path(AUTOMATION_CONFIG_PATH)
         rmset = set(removes)
 
+        def _eid(cfg: dict) -> str:
+            return f"automation.{slugify(str(cfg.get('alias', '')))}"
+
+        # stato on/off PRIMA del reload: le automazioni esistenti devono conservare
+        # la scelta dell'utente, solo quelle nuove vengono accese.
+        prev_state: dict[str, str | None] = {}
+        for aid, cfg in upserts.items():
+            st = self.hass.states.get(_eid(cfg))
+            prev_state[aid] = st.state if st is not None else None
+
         def _apply() -> list[str]:
             try:
                 data = _yaml_load(path)
@@ -2270,6 +2280,18 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         changed = await self.hass.async_add_executor_job(_apply)
         if changed or rmset:
             await self.hass.services.async_call("automation", "reload", {}, blocking=True)
+            for aid, cfg in upserts.items():
+                eid = _eid(cfg)
+                if self.hass.states.get(eid) is None:
+                    continue
+                was = prev_state.get(aid)
+                if was == "off":
+                    # era spenta dall'utente: il reload NON deve riaccenderla
+                    await self.hass.services.async_call(
+                        "automation", "turn_off", {"entity_id": eid}, blocking=False)
+                elif was is None:
+                    await self.hass.services.async_call(
+                        "automation", "turn_on", {"entity_id": eid}, blocking=False)
         return changed
 
     async def service_set_schedule(self, tipo: str, attivo: bool, inizio: str,
@@ -2692,12 +2714,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         today_key = now.strftime("%Y-%m-%d")
 
         mode = self._setting_opt("charge_sched_mode", self.charge_sched_mode)
-        avvio_ora_s = self._setting_time("charge_start_time", self.charge_start_time)
-        stop_ora_s = self._setting_time("charge_stop_time", self.charge_stop_time)
+        # SoC/orari di stop: quelli dell'AUTOMAZIONE salvata (vista Automazioni) hanno
+        # priorità sui default del wizard — altrimenti l'orario scelto dall'utente si perdeva.
+        _sc_prog = (self.store.data.get("schedule", {}) or {}).get("ricarica") or {}
+        avvio_ora_s = str(_sc_prog.get("inizio") or "") or self._setting_time("charge_start_time", self.charge_start_time)
+        stop_ora_s = str(_sc_prog.get("fine") or "") or self._setting_time("charge_stop_time", self.charge_stop_time)
         avvio_soc = self._setting_num("charge_start_soc", self.charge_start_soc)
         stop_soc = self._setting_num("charge_stop_soc", self.charge_stop_soc)
-        # SoC di stop: quello dell'AUTOMAZIONE (es. 70%) se impostato, altrimenti charge_stop_soc
-        _sc_prog = (self.store.data.get("schedule", {}) or {}).get("ricarica") or {}
         stop_target = _f(_sc_prog.get("soc"), 0.0) or stop_soc
 
         if mode == "orario":

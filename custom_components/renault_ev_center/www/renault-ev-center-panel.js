@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.24";
+const REC_VER = "1.0.24.1";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -819,11 +819,6 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
 
     // bilanciamento solare (switch integrazione + ultimo stato dal sensore potenza)
-    const balEnt = S._swid("bilanciamento_solare");
-    const balSw = S._hass.states[balEnt];
-    const bBtn = root.querySelector('[data-cmd="wb_bal_toggle"]');
-    if (bBtn) bBtn.textContent = balSw && balSw.state === "on"
-      ? "☀️ Bilanciamento solare: ATTIVO" : "☀️ Bilanciamento solare: spento";
     const ps = S._st(S._sid("wallbox_potenza"));
     const bAttr = (k) => { const v = ps ? S._attrAny(ps, [k]) : null; return v === null || v === undefined ? "—" : v; };
     set("bal_surplus", bAttr("surplus_w"));
@@ -977,13 +972,6 @@ class RenaultEvCenterPanel extends HTMLElement {
         const inp = this.shadowRoot.getElementById("wb_amp");
         const v = inp ? parseFloat(inp.value) : null;
         if (v) this._call("number", "set_value", { entity_id: eid, value: v }, `🔌 Limite corrente: ${v} A`);
-        break;
-      }
-      case "wb_bal_toggle": {
-        const eid = this._swid("bilanciamento_solare");
-        const s = this._hass.states[eid];
-        if (!s) { this._toast("⚠️ Switch bilanciamento solare non trovato"); break; }
-        this._call("homeassistant", s.state === "on" ? "turn_off" : "turn_on", { entity_id: eid }, "☀️ Bilanciamento solare");
         break;
       }
       case "horn": {
@@ -1323,7 +1311,10 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
   async _drawMap() {
     const box = this.shadowRoot && this.shadowRoot.querySelector("#evmap");
-    if (!box || this._mapCard) return;
+    if (!box) return;
+    if (this._mapCard) { this._mapCard.hass = this._hass; return; }
+    // Leaflet centra male se il box è ancora a 0 px: aspetto l'altezza definitiva
+    if (!box.clientHeight) { setTimeout(() => this._drawMap(), 200); return; }
     const loc = this._ov("location") || this._car("device_tracker", "posizione") || "device_tracker.megane_posizione";
     if (typeof window.loadCardHelpers !== "function") return;
     try {
@@ -1344,9 +1335,11 @@ class RenaultEvCenterPanel extends HTMLElement {
       box.innerHTML = "";
       box.appendChild(card);
       this._mapCard = card;
-      // Leaflet calcola il centro prima che il box abbia la sua altezza definitiva:
-      // dopo il layout forzo un resize così l'auto finisce al centro.
-      [150, 600, 1500].forEach((ms) => setTimeout(() => window.dispatchEvent(new Event("resize")), ms));
+      // il box prende l'altezza solo dopo il layout: ricalcolo e riallineo al centro
+      [150, 600, 1500].forEach((ms) => setTimeout(() => {
+        window.dispatchEvent(new Event("resize"));
+        if (this._mapCard) this._mapCard.hass = this._hass;
+      }, ms));
     } catch (e) {
       box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Mappa non disponibile</div>`;
     }
@@ -2666,7 +2659,7 @@ const PAGES = {
       <div class="btn" data-cmd="wb_set_current" style="margin-top:10px">💾 Applica corrente</div>
       <div class="note">Imposta il limite della wallbox (<code>number</code>). Le automazioni di bilanciamento possono sovrascriverlo.</div></div>
     <div class="card"><h3>☀️ Bilanciamento solare</h3>
-      <div class="btn" data-cmd="wb_bal_toggle" style="margin-bottom:6px">☀️ Bilanciamento solare: —</div>
+      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-sw="sw_bal"><span></span></label></div>
       <div class="row"><span>Surplus rete</span><b><span data-wb="bal_surplus">—</span> W</b></div>
       <div class="row"><span>Prelievo rete</span><b><span data-wb="bal_grid">—</span> W</b></div>
       <div class="row"><span>Ampere impostati</span><b><span data-wb="bal_amps">—</span> A</b></div>
