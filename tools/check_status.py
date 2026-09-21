@@ -805,9 +805,9 @@ try:
     i = js.find("p11:")
     body = js[i:js.find("`,\n};", i)]
     assert "/local/renault-ev-center/wallbox.png" in body, "manca l'immagine wallbox nello Stato"
-    assert body.find("Stima ricarica") < body.find("Sessione corrente"), \
-        "Stima ricarica non è tra Stato wallbox e Sessione corrente"
-    assert "grid g3" in body, "i 3 bilanciamenti non sono su un solo rigo"
+    assert body.find("Stato wallbox") < body.find("Sessione corrente") < body.find("Stima ricarica"), \
+        "Stato / Sessione / Stima non sono nell'ordine giusto"
+    assert "grid g3" in body, "i bilanciamenti o la riga Stato/Sessione/Stima non sono a 3 colonne"
     for k in ("sw_home", "sw_gse", "sw_bal"):
         assert f'data-sw="{k}"' in body, f"manca lo switch {k} nella pagina Wallbox"
     assert body.count('id="wb_amp"') == 1, "la corrente di carica non è unica/dentro Sessione"
@@ -816,7 +816,12 @@ try:
     co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
     assert "_programma_promemoria" in co and "_promemoria_collegamento" in co, \
         "l'automazione Promemoria collegamento non viene rimossa"
-    ok("pagina Wallbox ridisegnata + Promemoria collegamento rimosso")
+    assert "_legacy(d)" in co and 'entry.get("alias")' in co, \
+        "la rimozione legacy non controlla anche l'alias"
+    assert "def save_auto_states" in co and "async def async_restore_auto_states" in co, \
+        "lo stato on/off delle automazioni non persiste tra riavvii"
+    assert "async_restore_auto_states()" in co, "il ripristino stato automazioni non è chiamato"
+    ok("pagina Wallbox ridisegnata + automazioni legacy/stato persistente")
 except Exception as e:
     bad(f"pagina Wallbox: {e}")
 

@@ -5,16 +5,20 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.26 — Pagina Wallbox ridisegnata
+## 1.0.27 — Pagina Wallbox + automazioni
+
+> Include anche **1.0.26** (mai pubblicata separatamente).
 
 ### Correzioni
-- **Stato wallbox**: box più carino con l'**immagine della wallbox** (`wallbox.png`) accanto ai valori.
-- **Ordine**: *Stato wallbox* → *Stima ricarica* → *Sessione corrente*.
+- **Wallbox**: riga unica **Stato wallbox · Sessione corrente · Stima ricarica** (3 colonne) con
+  l'**immagine della wallbox** (`wallbox.png`) più grande dentro *Stato wallbox*.
 - **Corrente di carica** inglobata nel box **Sessione corrente** (slider + Applica).
-- **I 3 bilanciamenti** (*Bilanciamento casa · Sperimentazione GSE · Bilanciamento fotovoltaico*) ora su
+- **I 3 bilanciamenti** (*Bilanciamento casa · Sperimentazione GSE · Bilanciamento fotovoltaico*) su
   **un solo rigo** (griglia a 3 colonne).
-- **Automazione «Promemoria collegamento» rimossa**: era ridondante — la notifica nativa
-  «Avviso batteria bassa» dice già *«Collega la wallbox!»*. Rimossa anche «Batteria bassa fuori casa».
+- **Stato on/off delle automazioni persistente**: quelle spente (es. *Programma clima*) **restano
+  spente** anche dopo update/riavvio (salvate nello store e riapplicate all'avvio).
+- **Rimozione legacy robusta** (match su id **e** alias): «Promemoria collegamento» e «Batteria bassa
+  fuori casa» vengono eliminate da `automations.yaml` all'avvio.
 
 ## 1.0.25.1 — Logo, consumi, programmazione e temperatura
 

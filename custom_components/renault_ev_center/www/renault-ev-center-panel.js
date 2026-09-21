@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.26";
+const REC_VER = "1.0.27";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -2632,29 +2632,19 @@ const PAGES = {
   </div>`,
 
   p11: `<h1>Wallbox</h1>
-  <div class="grid g2">
+  <div class="grid g3">
     <div class="card"><h3>🔌 Stato wallbox</h3>
-      <div style="display:flex;gap:16px;align-items:center">
-        <img src="/local/renault-ev-center/wallbox.png" alt="Wallbox" style="width:112px;height:112px;object-fit:contain;flex:0 0 auto;filter:drop-shadow(0 6px 16px rgba(0,0,0,.4))">
-        <div style="flex:1;min-width:0">
-          <div class="big" style="font-size:30px;color:var(--accent);margin-bottom:8px"><span data-wb="state">—</span></div>
-          <div class="row"><span>Potenza ora</span><b><span data-wb="power">—</span></b></div>
-          <div class="row"><span>Corrente</span><b><span data-wb="current">—</span></b></div>
-          <div class="row"><span>Tensione</span><b><span data-wb="voltage">—</span></b></div>
-          <div class="row"><span>Temperatura</span><b><span data-wb="temp">—</span></b></div>
-          <div class="row"><span>Motivo limite</span><b><span data-wb="limit">—</span></b></div>
-        </div>
-      </div></div>
-    <div class="card"><h3>⏱️ Stima ricarica</h3>
-      <div class="row"><span>Tempo stimato</span><b data-f="tempo_ric">—</b></div>
-      <div class="row"><span>Orario stimato</span><b data-f="ora_compl">—</b></div>
-      <div class="row"><span>Costo stimato</span><b><span data-f="costo_corr" data-dec="2">—</span> €</b></div>
-      <div class="note">Stima verso il % obiettivo configurato. Con auto non in carica mostra l'ultimo stato.</div></div></div>
-  <div class="grid g2" style="margin-top:16px">
+      <img src="/local/renault-ev-center/wallbox.png" alt="Wallbox" style="display:block;width:100%;max-width:230px;height:150px;object-fit:contain;margin:0 auto 10px;filter:drop-shadow(0 8px 20px rgba(0,0,0,.45))">
+      <div class="big" style="font-size:26px;color:var(--accent);text-align:center;margin-bottom:8px"><span data-wb="state">—</span></div>
+      <div class="row"><span>Potenza ora</span><b><span data-wb="power">—</span></b></div>
+      <div class="row"><span>Corrente</span><b><span data-wb="current">—</span></b></div>
+      <div class="row"><span>Tensione</span><b><span data-wb="voltage">—</span></b></div>
+      <div class="row"><span>Temperatura</span><b><span data-wb="temp">—</span></b></div>
+      <div class="row"><span>Motivo limite</span><b><span data-wb="limit">—</span></b></div></div>
     <div class="card"><h3>⏱️ Sessione corrente</h3>
       <div class="big" style="font-size:32px;color:var(--good)"><span data-wb="session_kwh">—</span></div>
       <div class="row"><span>Tempo di ricarica</span><b><span data-wb="session_time">—</span></b></div>
-      <div class="row"><span>Energia totale erogata</span><b><span data-wb="total_kwh">—</span></b></div>
+      <div class="row"><span>Energia totale</span><b><span data-wb="total_kwh">—</span></b></div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🎚️ Corrente di carica (A)</div>
         <div class="inp"><span>Limite</span><input id="wb_amp" type="range" min="6" max="32" step="1" style="flex:1" oninput="this.closest('.inp').querySelector('#wb_amp_live').textContent=this.value+' A'"><b id="wb_amp_live" style="min-width:54px;text-align:right">—</b></div>
@@ -2662,11 +2652,16 @@ const PAGES = {
         <div class="btn" data-cmd="wb_set_current" style="margin-top:10px;flex:0 0 auto;padding:8px 14px;font-size:13px">💾 Applica corrente</div>
       </div>
       <div style="display:flex;gap:10px;margin-top:14px">
-        <div class="btn" data-cmd="wb_start" style="flex:1;background:linear-gradient(180deg,#22c55e,#16a34a);border-color:#16a34a;color:#fff;font-size:16px;font-weight:800;padding:14px 8px">▶️ AVVIA</div>
-        <div class="btn" data-cmd="wb_stop" style="flex:1;background:linear-gradient(180deg,#ef4444,#b91c1c);border-color:#b91c1c;color:#fff;font-size:16px;font-weight:800;padding:14px 8px">⏹️ FERMA</div></div></div>
-    <div class="card"><h3>⚡ Potenza wallbox (48 h)</h3>
-      <div id="wbchart" style="min-height:150px"></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Sensore preso da <b>Configura → Wallbox → Potenza istantanea</b>.</div></div></div>
+        <div class="btn" data-cmd="wb_start" style="flex:1;background:linear-gradient(180deg,#22c55e,#16a34a);border-color:#16a34a;color:#fff;font-size:15px;font-weight:800;padding:12px 6px">▶️ AVVIA</div>
+        <div class="btn" data-cmd="wb_stop" style="flex:1;background:linear-gradient(180deg,#ef4444,#b91c1c);border-color:#b91c1c;color:#fff;font-size:15px;font-weight:800;padding:12px 6px">⏹️ FERMA</div></div></div>
+    <div class="card"><h3>⏱️ Stima ricarica</h3>
+      <div class="row"><span>Tempo stimato</span><b data-f="tempo_ric">—</b></div>
+      <div class="row"><span>Orario stimato</span><b data-f="ora_compl">—</b></div>
+      <div class="row"><span>Costo stimato</span><b><span data-f="costo_corr" data-dec="2">—</span> €</b></div>
+      <div class="note">Stima verso il % obiettivo configurato. Con auto non in carica mostra l'ultimo stato.</div></div></div>
+  <div class="card" style="margin-top:16px"><h3>⚡ Potenza wallbox (48 h)</h3>
+    <div id="wbchart" style="min-height:150px"></div>
+    <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Sensore preso da <b>Configura → Wallbox → Potenza istantanea</b>.</div></div>
   <div class="grid g3" style="margin-top:16px">
     <div class="card"><h3>🏠 Bilanciamento casa</h3>
       <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-sw="sw_home"><span></span></label></div>

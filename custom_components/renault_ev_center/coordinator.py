@@ -327,6 +327,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.home_max_amps = _f(opts.get(CONF_HOME_MAX_AMPS), DEFAULT_HOME_MAX_AMPS)
         self.home_reduce_amps = _f(opts.get(CONF_HOME_REDUCE_AMPS), DEFAULT_HOME_REDUCE_AMPS)
         self._home_hi_since: float | None = None
+        self._auto_restored = False
         self._home_lo_since: float | None = None
         self._home_last: dict[str, Any] = {}
         self.charge_sched_enabled = bool(opts.get(CONF_CHARGE_SCHED_ENABLED, False))
@@ -1626,6 +1627,17 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         await self._apply_gse(wb_state, bool(data.get("charging")))
         data["balance"] = dict(self.store.data.get("counters", {}).get("balance_last", {}))
         data["home_balance"] = dict(self._home_last)
+        # stato on/off delle automazioni gestite: ripristina una volta, poi memorizza
+        if not self._auto_restored:
+            self._auto_restored = True
+            try:
+                await self.async_restore_auto_states()
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            self.save_auto_states()
+        except Exception:  # noqa: BLE001
+            pass
         return data
 
     # ------------------------------------------------------------ fine ricarica
@@ -2285,18 +2297,26 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 return False
             return any(aid.endswith(s) for s in gestiti)
 
-        def _legacy(aid: object) -> bool:
+        def _legacy(entry: object) -> bool:
             """Automazioni NON più create dall'integrazione: vanno rimosse.
 
             - 'batteria bassa' / 'batteria bassa fuori casa': sostituite dalla notifica NATIVA
               (soglia, fascia oraria e giorni configurabili dalla vista Automazioni);
             - 'promemoria collegamento': ridondante — la notifica «Avviso batteria bassa» dice
               già «Collega la wallbox!».
+
+            Match su id O alias: i residui vecchi possono avere id diversi.
             """
-            return isinstance(aid, str) and aid.startswith("renault_ev_center_") \
-                and (aid.endswith("_batteria_bassa") or "_batteria_bassa_" in aid
-                     or aid.endswith("_programma_promemoria")
-                     or "_promemoria_collegamento" in aid)
+            if not isinstance(entry, dict):
+                return False
+            aid = str(entry.get("id") or "")
+            alias = str(entry.get("alias") or "").lower()
+            if not (aid.startswith("renault_ev_center_") or "renault ev center" in alias):
+                return False
+            return (aid.endswith("_batteria_bassa") or "_batteria_bassa_" in aid
+                    or aid.endswith("_programma_promemoria") or "_promemoria_collegamento" in aid
+                    or "batteria bassa fuori casa" in alias
+                    or "promemoria collegamento" in alias)
 
         path = self.hass.config.path(AUTOMATION_CONFIG_PATH)
         rmset = set(removes)
@@ -2322,7 +2342,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 data = []
             n_before = len(data)
             data = [d for d in data if not (isinstance(d, dict) and d.get("id") in rmset)]
-            data = [d for d in data if not (isinstance(d, dict) and _legacy(d.get("id")))]
+            data = [d for d in data if not (isinstance(d, dict) and _legacy(d))]
             data = [d for d in data if not (isinstance(d, dict) and _orfana(d.get("id")))]
             purged = len(data) != n_before   # legacy/orfane rimosse → va riscritto
             byid = {d.get("id"): i for i, d in enumerate(data) if isinstance(d, dict) and d.get("id")}
@@ -2501,6 +2521,37 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             await self._automations_apply({}, [])
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Pulizia automazioni fallita: %s", err)
+
+    def _managed_auto_ids(self) -> list[str]:
+        """Automazioni create dall'integrazione (per nome o entity_id)."""
+        out: list[str] = []
+        for s in self.hass.states.async_all("automation"):
+            name = str(s.attributes.get("friendly_name") or "").lower()
+            if "renault ev center" in name or "renault_ev_center" in s.entity_id:
+                out.append(s.entity_id)
+        return out
+
+    def save_auto_states(self) -> None:
+        """Memorizza lo stato on/off delle automazioni gestite (persiste tra riavvii/update)."""
+        states: dict[str, str] = {}
+        for eid in self._managed_auto_ids():
+            s = self.hass.states.get(eid)
+            if s is not None:
+                states[eid] = s.state
+        if states and states != self.store.data.get("auto_states"):
+            self.store.data["auto_states"] = states
+            self.persist()
+
+    async def async_restore_auto_states(self) -> None:
+        """Riapplica lo stato on/off scelto dall'utente: quelle spente restano spente."""
+        saved = self.store.data.get("auto_states") or {}
+        for eid, stt in saved.items():
+            if stt != "off":
+                continue
+            cur = self.hass.states.get(eid)
+            if cur is not None and cur.state == "on":
+                await self.hass.services.async_call(
+                    "automation", "turn_off", {"entity_id": eid}, blocking=False)
 
     async def _enable_automation(self, alias: str) -> None:
         """Accende l'automazione (id derivato dall'alias) e lo segnala nel log."""
