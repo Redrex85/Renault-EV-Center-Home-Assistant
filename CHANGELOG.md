@@ -5,7 +5,9 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.28 — Multi-auto sulla wallbox
+## 1.0.29 — Wallbox, surplus batteria e fix
+
+> Include anche **1.0.28** (mai pubblicata separatamente).
 
 ### Correzioni
 - **Configurazione — errori di validazione risolti**: *Contatore di casa* aveva default `"6.0"` mentre le
@@ -13,7 +15,10 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
   `suggested_value` vuoto al `DateSelector` (`Could not parse date`). Ora i default sono validi.
 - **% batt./100 km coerente col kWh/100 km**: era il delta SoC ÷ km (gonfiato sui tragitti corti, es. 60%);
   ora è **consumo (kWh/100km) ÷ capacità effettiva** → es. ~29% con 16 kWh/100km.
-- **Grafico Potenza wallbox → 72 h** (era 48 h).
+- **Batteria solo senza sole** (switch in *Wallbox → Bilanciamento fotovoltaico*): con lo switch ON, di
+  giorno l'auto va a **solare puro** e la **batteria di casa** entra nel surplus **solo quando la rete
+  importa** (sera/notte) — così non scarichi la batteria quando c'è il sole.
+- **Grafico Potenza wallbox a 48 h**.
 - **Lista automazioni**: le automazioni legacy rimosse (rimaste `unavailable` nel registro) **non
   compaiono più** nel pannello.
 - **Wallbox condivisa con altre auto**: la *Sessione corrente* mostra i valori **solo se QUESTA auto è

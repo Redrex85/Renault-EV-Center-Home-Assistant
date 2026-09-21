@@ -38,6 +38,8 @@ async def async_setup_entry(
                    False, "mdi:transmission-tower"),
         MateSwitch(coordinator, "home_balance", f"{name} Bilanciamento Casa",
                    False, "mdi:home-lightning-bolt"),
+        MateSwitch(coordinator, "battery_night_only", f"{name} Batteria Solo Senza Sole",
+                   False, "mdi:weather-night"),
     ])
 
 

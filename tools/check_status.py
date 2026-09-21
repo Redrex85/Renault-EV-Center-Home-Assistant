@@ -841,8 +841,14 @@ try:
     assert 'S._chargeOn() || S._plugOn()' in js and "autoColl" in js, \
         "la sessione wallbox non è vincolata all'auto collegata"
     assert 's.state !== "unavailable"' in js, "le automazioni legacy (unavailable) restano in lista"
-    assert 'graph_span: "72h"' in js, "il grafico wallbox non è a 72h"
-    ok("multi-auto: sessione gated + legacy unavailable filtrate + grafico 72h")
+    assert 'graph_span: "48h"' in js, "il grafico wallbox non è a 48h"
+    assert 'data-sw="sw_night"' in js and 'case "sw_night"' in js, \
+        "manca lo switch Batteria solo senza sole nel pannello"
+    sw = open(os.path.join(CC, "switch.py"), encoding="utf-8").read()
+    assert '"battery_night_only"' in sw, "manca lo switch batteria-solo-senza-sole"
+    co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert '_switch_on("battery_night_only")' in co, "il bilanciamento ignora lo switch batteria-notte"
+    ok("multi-auto + grafico 48h + switch Batteria solo senza sole")
 except Exception as e:
     bad(f"multi-auto: {e}")
 

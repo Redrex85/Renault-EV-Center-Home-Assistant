@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.28";
+const REC_VER = "1.0.29";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -440,6 +440,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "sw_low": return S._swid("promemoria_batteria_bassa");
       case "sw_sched": return S._swid("carica_programmata");
       case "sw_bal": return S._swid("bilanciamento_solare");
+      case "sw_night": return S._swid("batteria_solo_senza_sole");
       case "sw_home": return S._swid("bilanciamento_casa");
       case "sw_gse": return S._swid("sperimentazione_gse");
       case "t_start": return S._tid("carica_orario_avvio");
@@ -1490,7 +1491,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       { label: "Pubblica", n: (st.pubblica || {}).n, value: (st.pubblica || {}).kwh, color: "#7cc4ff" },
     ], this._i(st.n));
   }
-  /** grafico potenza wallbox 72 h (apex), sensore da Configura → Wallbox */
+  /** grafico potenza wallbox 48 h (apex), sensore da Configura → Wallbox */
   async _drawWbChart(root) {
     const box = root.querySelector("#wbchart");
     if (!box) return;
@@ -1535,7 +1536,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       if (_isKw) series.transform = "return x * 1000;";
       const card = helpers.createCardElement({
         type: "custom:apexcharts-card",
-        graph_span: "72h",
+        graph_span: "48h",
         update_interval: "5min",
         // niente max fisso: così non taglia wallbox diverse
         apex_config: { chart: { height: 150 } },
@@ -2663,7 +2664,7 @@ const PAGES = {
       <div class="row"><span>Orario stimato</span><b data-f="ora_compl">—</b></div>
       <div class="row"><span>Costo stimato</span><b><span data-f="costo_corr" data-dec="2">—</span> €</b></div>
       <div class="note">Stima verso il % obiettivo configurato. Con auto non in carica mostra l'ultimo stato.</div></div></div>
-  <div class="card" style="margin-top:16px"><h3>⚡ Potenza wallbox (72 h)</h3>
+  <div class="card" style="margin-top:16px"><h3>⚡ Potenza wallbox (48 h)</h3>
     <div id="wbchart" style="min-height:150px"></div>
     <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Sensore preso da <b>Configura → Wallbox → Potenza istantanea</b>.</div></div>
   <div class="grid g3" style="margin-top:16px">
@@ -2680,10 +2681,11 @@ const PAGES = {
       <div class="note">Fuori fascia la wallbox è limitata alla potenza ridotta. Orari in <b>Configura → Sperimentazione GSE</b>.</div></div>
     <div class="card"><h3>☀️ Bilanciamento fotovoltaico</h3>
       <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-sw="sw_bal"><span></span></label></div>
+      <div class="row"><span>Batteria solo senza sole</span><label class="switch"><input type="checkbox" data-sw="sw_night"><span></span></label></div>
       <div class="row"><span>Surplus rete</span><b><span data-wb="bal_surplus">—</span> W</b></div>
       <div class="row"><span>Prelievo rete</span><b><span data-wb="bal_grid">—</span> W</b></div>
       <div class="row"><span>Ampere impostati</span><b><span data-wb="bal_amps">—</span> A</b></div>
-      <div class="note">Adatta gli ampere per tenere il prelievo da rete ~0. Sensori in <b>Configura → Fotovoltaico</b>.</div></div></div>`,
+      <div class="note">Adatta gli ampere per tenere il prelievo da rete ~0. Con <b>Batteria solo senza sole</b> di giorno l'auto va a <b>solare puro</b>; la batteria entra solo quando la rete importa (sera/notte). Sensori in <b>Configura → Fotovoltaico</b>.</div></div></div>`,
 };
 
 if (!customElements.get("renault-ev-center-panel")) {

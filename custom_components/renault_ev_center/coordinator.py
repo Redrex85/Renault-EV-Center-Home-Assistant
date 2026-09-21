@@ -2746,7 +2746,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if self.balance_include_battery and self.balance_battery_sensor and not batteria_prima:
             st_bat = self.hass.states.get(self.balance_battery_sensor)
             if st_bat is not None and st_bat.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
-                surplus += _f(st_bat.state)  # scarica batteria >0 aggiunge al surplus
+                # "Batteria solo senza sole" (switch): di giorno, col sole, l'auto va a SOLARE PURO.
+                # La scarica batteria entra nel surplus solo quando la rete sta IMPORTANDO.
+                if not self._switch_on("battery_night_only") or grid_w > 0:
+                    surplus += _f(st_bat.state)  # scarica batteria >0 aggiunge al surplus
 
         amps_att = _num(self.hass, max_entity, 16.0)
         amps_min = self._setting_num("balance_min_amps", DEFAULT_MIN_AMPS)
