@@ -835,8 +835,15 @@ class PercPer100km(MateSensor):
 
     @property
     def native_value(self):
-        # %/100km dal SoC reale della batteria (delta % ÷ km). È il consumo effettivo:
-        # il calcolo dai kWh dei viaggi sbaglia sui tragitti corti (media non significativa).
+        # %/100km = consumo (kWh/100km) ÷ capacità effettiva (SOH): coerente col kWh/100km mostrato.
+        # (il delta SoC ÷ km sui tragitti corti è troppo sensibile e gonfia il valore, es. 60%)
+        try:
+            kwh100 = float(self.coordinator.data.get("eff_kwh_100km") or 0)
+        except (TypeError, ValueError):
+            kwh100 = 0.0
+        cap = self.coordinator._eff_capacity() or 60.0
+        if kwh100 > 0 and cap > 0:
+            return round(kwh100 / cap * 100, 1)
         km = self.coordinator.data["km"]["daily"]["value"]
         perc = abs(self.coordinator.data["pct_daily"]["down"]["value"])
         if km > 0 and perc > 0:

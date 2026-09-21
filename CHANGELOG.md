@@ -5,11 +5,32 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.28 — Multi-auto sulla wallbox
+
+### Correzioni
+- **Configurazione — errori di validazione risolti**: *Contatore di casa* aveva default `"6.0"` mentre le
+  opzioni sono `"3" · "4.5" · "6" · "10"` (`value must be one of…`); *Data acquisto* passava un
+  `suggested_value` vuoto al `DateSelector` (`Could not parse date`). Ora i default sono validi.
+- **% batt./100 km coerente col kWh/100 km**: era il delta SoC ÷ km (gonfiato sui tragitti corti, es. 60%);
+  ora è **consumo (kWh/100km) ÷ capacità effettiva** → es. ~29% con 16 kWh/100km.
+- **Grafico Potenza wallbox → 72 h** (era 48 h).
+- **Lista automazioni**: le automazioni legacy rimosse (rimaste `unavailable` nel registro) **non
+  compaiono più** nel pannello.
+- **Wallbox condivisa con altre auto**: la *Sessione corrente* mostra i valori **solo se QUESTA auto è
+  collegata/in carica** (sensore spina o stato carica). Se la wallbox carica un'altra auto, i valori
+  restano «—» e non inquinano i record dell'integrazione.
+
+### Guida
+- Nuova sezione **«Caricare l'auto dalla batteria di casa (di notte)»** con il bilanciamento.
+
 ## 1.0.27 — Pagina Wallbox + automazioni
 
 > Include anche **1.0.26** (mai pubblicata separatamente).
 
 ### Correzioni
+- **Conflitto `CSS.escape is not a function`** con altre card (es. *entity-progress-card*): il pannello
+  dichiarava `const CSS` a livello globale, **ombreggiando `window.CSS`** per tutte le card. Rinominato
+  in `REC_CSS`.
 - **Wallbox**: riga unica **Stato wallbox · Sessione corrente · Stima ricarica** (3 colonne) con
   l'**immagine della wallbox** (`wallbox.png`) più grande dentro *Stato wallbox*.
 - **Corrente di carica** inglobata nel box **Sessione corrente** (slider + Applica).

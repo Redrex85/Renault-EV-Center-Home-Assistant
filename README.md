@@ -35,6 +35,7 @@ L'integrazione **Renault** ti dà i numeri grezzi (% batteria, autonomia, odomet
 | 🛣️ **Viaggi automatici** | Rileva ogni spostamento dall'odometro, calcola km, batteria consumata, kWh ed efficienza (kWh/100km), chiude il viaggio da solo dopo la sosta, con **costo stimato** e **fonte dell'ultima ricarica** prima della partenza |
 | ⚡ **Ricariche** | Sessioni con energia wallbox (AC) misurata, SoC iniziale→finale, durata, tipo (Casa/Fotovoltaico/Pubblica) e costo reale |
 | 🔌 **Wallbox** | Pagina dedicata: stato live, potenza, corrente, tensione, temperatura e motivo limite; **tempo e kWh di sessione** (con contatore interno di riserva); **limite di carica in A**; **avvio e stop carica** con entità mappabili in configurazione; **bilanciamento solare** a inseguimento del surplus |
+| 🔋 **Surplus batteria (anche di notte)** | L'auto carica dalla **batteria di casa**: il bilanciamento somma la **scarica della batteria** al surplus e regola gli ampere della wallbox per tenere il prelievo da rete ~0 — di notte l'auto **segue la batteria, non la rete**. La *Sessione corrente* conta solo se **questa** auto è collegata/in carica (wallbox condivisa con altre auto) |
 | 🔎 **Lista ricariche filtrabile** | Filtri per tipo e periodo (settimana/mese/anno/tutto) con **somma automatica** di kWh e € |
 | 💰 **Costi veri** | €/km, €/100km, costo ricariche giorno/settimana/mese/anno/totale, prezzi separati per casa/colonnina/fotovoltaico modificabili **dalla dashboard** |
 | 📊 **Statistiche e report** | Contatori con `last_period` (come utility_meter), tabelle **Generale/Settimanale/Mensile**, storico 365 giorni, report mensile |
@@ -71,7 +72,7 @@ Tutto è calcolato **localmente nel tuo Home Assistant** e salvato in `.storage`
 
 1. **HACS** → ⋮ → **Repository personalizzati**
 2. Incolla `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant`
-3. Categoria: **Integrazione** → Aggiungi
+3. Categoria: **Integrazione** e poi premi **Aggiungi**
 4. Cerca **Renault EV Center** → Scarica
 5. **Riavvia Home Assistant**
 6. **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → "Renault EV Center"**
@@ -227,6 +228,8 @@ data: { mode: km, valore: "71218" }
 
 **Le entità hanno ID diversi da quelli delle dashboard?** Le dashboard usano il prefisso del nome che hai dato all'auto in minuscolo. Rinomina l'entry o cerca/sostituisci nei file YAML.
 
+**Ho aggiunto l'integrazione ma i sensori non compaiono.** A volte serve **riavviare Home Assistant** dopo la creazione dell'entry, perché l'integrazione carichi tutte le piattaforme (sensori, switch, select, time). Riavvia e ricontrolla.
+
 **Posso avere due auto?** Sì: aggiungi una seconda istanza dell'integrazione con un altro nome.
 
 **Dove sono i miei dati?** In `.storage/renault_ev_center.<entry_id>` — restano tuoi, nessun invio esterno.
@@ -263,6 +266,7 @@ Renault EV Center is a free, open-source project kept alive in my spare time. If
 - **Automatic trip detection** from the odometer: distance, battery used, kWh, efficiency, auto-close after idle timeout
 - **Charge sessions** with measured AC energy from your wallbox, SoC range, duration, type (Home/Solar/Public) and real cost
 - **Wallbox**: dedicated page with live state, power, current, voltage, temperature and limit reason; **session time & kWh** (with internal fallback counter); **charge limit in A**; **start and stop charging** with entities mapped in the config flow; **solar balancing** that tracks your surplus
+- **Battery surplus (even at night)**: the car charges from the **home battery** — the balancing adds the **battery discharge** to the surplus and keeps grid import ~0, so at night the car **follows the battery, not the grid**
 - **Costs**: €/km, €/100km, charge costs per day/week/month/year/all-time, separate home/public/solar tariffs
 - **Meters**: daily/weekly/monthly/yearly km & energy with `last_period` attribute (utility_meter style)
 - **Charging estimates**: time remaining, completion time, missing energy and estimated cost to your target SoC

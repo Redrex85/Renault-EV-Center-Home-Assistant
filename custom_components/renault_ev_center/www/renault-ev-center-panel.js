@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.27";
+const REC_VER = "1.0.28";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -610,7 +610,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
     const c = this._cfg;
     this.shadowRoot.innerHTML = `
-    <style>${CSS}</style>
+    <style>${REC_CSS}</style>
     <div class="app" data-theme="${this._theme}">
       <div class="sidebar">
         <div class="logo">
@@ -791,10 +791,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     set("limit", limEnt ? limEnt.state : "—");
 
     const skwh = S._num(S._ov("wallbox_session_energy"), "sensor.wallbox_session_energy");
-    set("session_kwh", skwh === null ? "—" : S._fmt(skwh, 2) + " kWh");
     const stEnt = S._st(S._ov("wallbox_session_time"), S._sid("wallbox_tempo_sessione"), "sensor.wallbox_charging_time");
     const stime = S._num(S._ov("wallbox_session_time"), S._sid("wallbox_tempo_sessione"), "sensor.wallbox_charging_time");
-    set("session_time", stime === null ? "—" : S._dur(stime, stEnt ? stEnt.attributes.unit_of_measurement : "s"));
+    // la sessione conta SOLO se QUESTA auto è collegata/in carica: la stessa wallbox può caricare altre auto
+    const autoColl = S._chargeOn() || S._plugOn();
+    set("session_kwh", !autoColl ? "—" : (skwh === null ? "—" : S._fmt(skwh, 2) + " kWh"));
+    set("session_time", !autoColl ? "—" : (stime === null ? "—" : S._dur(stime, stEnt ? stEnt.attributes.unit_of_measurement : "s")));
     const tot = S._num(S._ov("wallbox_total_energy"), "sensor.wallbox_total_charged_energy");
     set("total_kwh", tot === null ? "—" : S._fmt(tot, 1) + " kWh");
 
@@ -871,6 +873,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     const S = this;
     const list = Object.values(S._hass.states)
       .filter((s) => s.entity_id.startsWith("automation.")
+        && s.state !== "unavailable" && s.state !== "unknown"
         && /renault_ev_center|renault|wallbox|bilanc/i.test(s.entity_id + " " + (s.attributes.friendly_name || "")))
       .sort((a, b) => String(a.attributes.friendly_name || a.entity_id)
         .localeCompare(String(b.attributes.friendly_name || b.entity_id), "it"));
@@ -1487,7 +1490,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       { label: "Pubblica", n: (st.pubblica || {}).n, value: (st.pubblica || {}).kwh, color: "#7cc4ff" },
     ], this._i(st.n));
   }
-  /** grafico potenza wallbox 48 h (apex), sensore da Configura → Wallbox */
+  /** grafico potenza wallbox 72 h (apex), sensore da Configura → Wallbox */
   async _drawWbChart(root) {
     const box = root.querySelector("#wbchart");
     if (!box) return;
@@ -1532,7 +1535,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       if (_isKw) series.transform = "return x * 1000;";
       const card = helpers.createCardElement({
         type: "custom:apexcharts-card",
-        graph_span: "48h",
+        graph_span: "72h",
         update_interval: "5min",
         // niente max fisso: così non taglia wallbox diverse
         apex_config: { chart: { height: 150 } },
@@ -2074,7 +2077,8 @@ const THEMES = [
   ["verde", "#57b98a", "🟢 Verde R4"], ["aviation", "#c9d4e2", "⚪ Grigio Aviation"],
 ];
 
-const CSS = `
+// NB: nome prefissato per NON ombreggiare window.CSS (romperebbe CSS.escape di altre card)
+const REC_CSS = `
 .app{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;transition:background .25s,color .25s;user-select:text}
 .app[data-theme="blu"]{--bg:#0d1522;--panel:#14202f;--panel2:#101b2c;--line:#1e2d40;--txt:#e8eef6;--muted:#8296ad;--accent:#4d8dff;--accent-soft:rgba(77,141,255,.15);--good:#4ade80;--warn:#fbbf24;--bad:#f87171}
 .app[data-theme="giallo"]{--bg:#141414;--panel:#1d1d1d;--panel2:#181818;--line:#2a2a2a;--txt:#f2f2f2;--muted:#9e9e9e;--accent:#F5CB39;--accent-soft:rgba(245,203,57,.14);--good:#7ed957;--warn:#ff9f43;--bad:#ff5252}
@@ -2659,7 +2663,7 @@ const PAGES = {
       <div class="row"><span>Orario stimato</span><b data-f="ora_compl">—</b></div>
       <div class="row"><span>Costo stimato</span><b><span data-f="costo_corr" data-dec="2">—</span> €</b></div>
       <div class="note">Stima verso il % obiettivo configurato. Con auto non in carica mostra l'ultimo stato.</div></div></div>
-  <div class="card" style="margin-top:16px"><h3>⚡ Potenza wallbox (48 h)</h3>
+  <div class="card" style="margin-top:16px"><h3>⚡ Potenza wallbox (72 h)</h3>
     <div id="wbchart" style="min-height:150px"></div>
     <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Sensore preso da <b>Configura → Wallbox → Potenza istantanea</b>.</div></div>
   <div class="grid g3" style="margin-top:16px">

@@ -195,6 +195,21 @@ def _flat(data: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _meter_opt(v: Any) -> str:
+    """Contatore come opzione valida ('3' · '4.5' · '6' · '10'): niente '.0' finale."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return "6"
+    return str(int(f)) if f == int(f) else str(f)
+
+
+def _sugg_date(v: Any) -> dict:
+    """suggested_value per DateSelector: SOLO se è una data non vuota (altrimenti errore di parsing)."""
+    s = str(v or "").strip()
+    return {"description": {"suggested_value": s}} if s else {}
+
+
 def _car_schema(defaults: dict[str, Any]) -> vol.Schema:    return vol.Schema({
         vol.Required("car"): section(vol.Schema({
             # PRIMO campo: il modello decide la foto dell'auto (e la dashboard)
@@ -282,7 +297,7 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
             vol.Optional(
                 CONF_HOME_POWER_SENSOR, description={"suggested_value": defaults.get(CONF_HOME_POWER_SENSOR)}
             ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-            vol.Optional(CONF_HOME_METER_KW, default=str(defaults.get(CONF_HOME_METER_KW, DEFAULT_HOME_METER_KW))): SelectSelector(
+            vol.Optional(CONF_HOME_METER_KW, default=_meter_opt(defaults.get(CONF_HOME_METER_KW, DEFAULT_HOME_METER_KW))): SelectSelector(
                 SelectSelectorConfig(options=HOME_METER_OPTIONS)),
             vol.Optional(CONF_HOME_MAX_AMPS, default=defaults.get(CONF_HOME_MAX_AMPS, DEFAULT_HOME_MAX_AMPS)): NumberSelector(
                 NumberSelectorConfig(min=6, max=32, step=1, unit_of_measurement="A", mode=NumberSelectorMode.BOX)),
@@ -379,7 +394,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                 NumberSelectorConfig(min=5000, max=50000, step=1000, unit_of_measurement="km", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_TYRE_INTERVAL, default=defaults.get(CONF_TYRE_INTERVAL, DEFAULT_TYRE_INTERVAL)): NumberSelector(
                 NumberSelectorConfig(min=5000, max=150000, step=1000, unit_of_measurement="km", mode=NumberSelectorMode.BOX)),
-            vol.Optional(CONF_PURCHASE_DATE, description={"suggested_value": defaults.get(CONF_PURCHASE_DATE, "")}): DateSelector(),
+            vol.Optional(CONF_PURCHASE_DATE, **_sugg_date(defaults.get(CONF_PURCHASE_DATE))): DateSelector(),
             vol.Optional(CONF_ASSICURAZIONE_COSTO, default=defaults.get(CONF_ASSICURAZIONE_COSTO, DEFAULT_ASSICURAZIONE_COSTO)): NumberSelector(
                 NumberSelectorConfig(min=0, max=3000, step=10, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_ASSICURAZIONE_DATA, description={"suggested_value": defaults.get(CONF_ASSICURAZIONE_DATA, "")}): TextSelector(),

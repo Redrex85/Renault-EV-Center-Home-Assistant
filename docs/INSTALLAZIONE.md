@@ -24,7 +24,7 @@ Tempo richiesto: **~10 minuti**.
    ```
    https://github.com/Redrex85/Renault-EV-Center-Home-Assistant
    ```
-4. Categoria: **Integrazione** → **Aggiungi**
+4. Categoria: **Integrazione** e poi premi **Aggiungi**
 5. Sempre in HACS, **cerca "Renault EV Center"** (compare tra le integrazioni) → aprila → **Scarica**
 6. **Riavvia Home Assistant** (Strumenti per sviluppatori → YAML → Riavvia, o Impostazioni → Sistema)
 7. Dopo il riavvio: **Impostazioni → Dispositivi e servizi → + Aggiungi integrazione** →
@@ -248,11 +248,31 @@ Logica (derivata dalle soglie del contatore):
 > servizio di notifica). Gli **ampere** sono gli stessi della card *Corrente di carica*: puoi impostarli a mano
 > in qualsiasi momento.
 
+## 5.4 Caricare l'auto dalla batteria di casa (di notte)
+
+Di notte non c'è sole: per **non prelevare dalla rete**, l'auto deve prendere dalla **batteria di casa**.
+Si fa col **Bilanciamento solare** (che funziona anche di notte, quando il "surplus" è la scarica della batteria):
+
+1. *Configura → Fotovoltaico*: attiva il **Bilanciamento** e **Includi la scarica batteria nel surplus**.
+2. Mappa il **Sensore rete** (potenza scambiata/prelevata) e il **Sensore potenza batteria**.
+3. Accendi lo switch **☀️ Bilanciamento fotovoltaico** nella pagina *Wallbox*.
+
+Così l'integrazione somma la **scarica della batteria** al surplus e regola gli ampere della wallbox per
+tenere il prelievo da rete ~0: di notte l'auto **segue la batteria**, non la rete.
+
+> Se la batteria non basta, la wallbox scende al minimo (6 A) e il resto arriva dalla rete. Per **non
+> prelevare mai** dalla rete serve un'automazione che mette in pausa la wallbox quando il prelievo supera
+> la soglia del contatore.
+
+> **Wallbox condivisa con altre auto**: la *Sessione corrente* mostra i valori solo se **questa** auto è
+> collegata/in carica (sensore spina o stato carica), così le ricariche di altre auto non inquinano i dati.
+
 ## 6. Problemi comuni
 
 | Problema | Soluzione |
 |---|---|
 | L'integrazione non appare in HACS | Controlla di averla aggiunta come categoria **Integrazione** e di aver riavviato |
+| Dopo aver aggiunto l'integrazione i sensori non compaiono | **Riavvia Home Assistant**: a volte serve un riavvio perché l'integrazione carichi tutte le piattaforme (sensori, switch, select, time) |
 | Sensori "non disponibili" | Il cloud Renault aggiorna lentamente; attendi o riavvia l'integrazione Renault |
 | Km giornalieri sempre 0 | Controlla di aver scelto il giusto odometro nel config flow |
 | Costi a zero | Verifica i prezzi nelle opzioni; senza wallbox i costi si accumulano solo su ricariche manuali |

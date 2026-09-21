@@ -761,8 +761,8 @@ try:
     se = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
     i = se.find("class PercPer100km")
     body = se[i:se.find("\nclass ", i + 10)]
-    assert "pct_daily" in body and "eff_kwh_100km" not in body, \
-        "il %/100km non usa il SoC reale"
+    assert "eff_kwh_100km" in body and "_eff_capacity()" in body, \
+        "il %/100km non è coerente col kWh/100km (consumo ÷ capacità)"
     te = open(os.path.join(CC, "trip_engine.py"), encoding="utf-8").read()
     assert te.find("if batt_delta > 0:") < te.find("elif eff_live_kwh_100km"), \
         "il kWh dei viaggi non dà priorità al SoC"
@@ -824,6 +824,45 @@ try:
     ok("pagina Wallbox ridisegnata + automazioni legacy/stato persistente")
 except Exception as e:
     bad(f"pagina Wallbox: {e}")
+
+print("\n[32] Nessuna collisione globale (CSS.escape)")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert "\nconst CSS = " not in js and "\nconst CSS=" not in js, \
+        "il pannello ombreggia window.CSS (rompe CSS.escape di altre card)"
+    assert "const REC_CSS = " in js and "${REC_CSS}" in js, "REC_CSS non definito/usato"
+    ok("nessuna collisione: window.CSS intatto")
+except Exception as e:
+    bad(f"collisione CSS: {e}")
+
+print("\n[33] Multi-auto: sessione solo se QUESTA auto è collegata")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert 'S._chargeOn() || S._plugOn()' in js and "autoColl" in js, \
+        "la sessione wallbox non è vincolata all'auto collegata"
+    assert 's.state !== "unavailable"' in js, "le automazioni legacy (unavailable) restano in lista"
+    assert 'graph_span: "72h"' in js, "il grafico wallbox non è a 72h"
+    ok("multi-auto: sessione gated + legacy unavailable filtrate + grafico 72h")
+except Exception as e:
+    bad(f"multi-auto: {e}")
+
+print("\n[34] Config flow: default validi (contatore, data acquisto)")
+try:
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    assert "def _meter_opt" in flow and "default=_meter_opt(" in flow, \
+        "il contatore ha un default non valido (es. '6.0' invece di '6')"
+    assert "def _sugg_date" in flow and "**_sugg_date(" in flow, \
+        "la data acquisto usa un suggested_value vuoto (errore di parsing)"
+    # il default non deve produrre '.0'
+    import typing as _ty
+    ns: dict = {"Any": _ty.Any}
+    src = flow[flow.find("def _meter_opt"):flow.find("def _car_schema")]
+    exec(src, ns)  # noqa: S102
+    assert ns["_meter_opt"](6.0) == "6" and ns["_meter_opt"](4.5) == "4.5", "_meter_opt errato"
+    assert ns["_sugg_date"]("") == {} and ns["_sugg_date"]("2026-01-01"), "_sugg_date errato"
+    ok("config flow: contatore e data acquisto con default validi")
+except Exception as e:
+    bad(f"config flow default: {e}")
 
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
