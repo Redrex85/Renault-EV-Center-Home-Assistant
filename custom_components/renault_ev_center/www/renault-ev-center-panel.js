@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.24.4";
+const REC_VER = "1.0.25";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -384,7 +384,8 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "costo_ric_tot": { const v = S._num(S._sid("costo_ricarica_totale")); if (v) return v; const st = S._st(S._sid("risparmio_totale_vs_diesel")); const e = st ? S._attrAny(st, ["elettrico_totale"]) : null; if (e !== null && e !== undefined && e !== 0) return e; return v === 0 ? 0 : (S._ov("costo_ric_tot") ? S._num(S._ov("costo_ric_tot")) : null); }
       // Extra
       case "drain": {
-        // sensore integrazione = max(scarica totale giornaliera, somma viaggi) → include anche il fermo
+        // % consumata oggi = SoC reale della batteria (delta %). È il consumo effettivo:
+        // il calcolo dai kWh dei viaggi sbaglia sui tragitti corti.
         const v = S._num(S._sid("batteria_scaricata_oggi"), S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge");
         if (v !== null && Math.abs(v) > 0) return Math.round(Math.abs(v) * 10) / 10;
         const rows = S._list(S._sid("percorrenza"));
@@ -392,8 +393,8 @@ class RenaultEvCenterPanel extends HTMLElement {
         const p = r ? (parseFloat(r.pct) || 0) : 0;
         if (p > 0) return Math.round(p * 10) / 10;
         const kwh = S._field("kwh_oggi_k");
-        const cap = parseFloat(S._cfg.capacity) || 60;
-        if (typeof kwh === "number" && kwh > 0) return Math.round(kwh / cap * 1000) / 10;
+        const cap = S._num(S._nid("capacita_batteria")) || parseFloat(S._cfg.capacity) || 60;
+        if (typeof kwh === "number" && kwh > 0 && cap > 0) return Math.round(kwh / cap * 1000) / 10;
         return null;
       }
       case "perc_100km": {

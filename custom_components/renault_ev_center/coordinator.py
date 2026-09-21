@@ -545,7 +545,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.price_public = self._setting_num("price_public", self._cfg_price_public)
         self.price_solar = self._setting_num("price_solar", self._cfg_price_solar)
         self.assicurazione_costo = self._setting_num("assic_costo", self.assicurazione_costo)
-        self.trip.capacity_kwh = self.capacity
+        self.trip.capacity_kwh = self._eff_capacity()
+
+    def _eff_capacity(self) -> float:
+        """Capacità EFFETTIVA = capacità nominale × SOH ufficiale (es. 60 × 0,94 = 56,4 kWh).
+
+        È la base giusta per convertire il SoC in kWh: 1% = capacità_eff / 100
+        (col SOH 94% → 0,564 kWh invece di 0,6).
+        """
+        soh = max(self._setting_num("soh_official", 100.0), 40.0)
+        return (self.capacity or 60.0) * (soh / 100.0)
 
     def _automation_sig(self) -> tuple:
         return (
@@ -1316,13 +1325,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         yday = (now - timedelta(days=1)).strftime("%Y-%m-%d")
 
         def _trips_sum(pred) -> tuple[float, float, float]:
-            km = kwh = pct = 0.0
+            km = pct = 0.0
             for t in trips:
                 if pred(str(t.get("data", ""))):
                     km += _f(t.get("km"))
-                    kwh += _f(t.get("kwh_consumati"))
                     pct += abs(_f(t.get("batteria_delta")))
-            return round(km, 0), round(kwh, 2), round(pct, 1)
+            # kWh consumati dal SoC REALE (delta % × capacità EFFETTIVA con SOH): è il
+            # consumo effettivo; il calcolo dai km sbaglia sui tragitti corti.
+            kwh = round(pct / 100.0 * self._eff_capacity(), 2)
+            return round(km, 0), kwh, round(pct, 1)
 
         o_km, o_kwh, o_pct = _trips_sum(lambda d: d == today_key)
         i_km, i_kwh, i_pct = _trips_sum(lambda d: d == yday)
@@ -1341,10 +1352,25 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # --- ricariche per periodo, derivate dai RECORD (fonte di verità) ----------
         # I meter live dipendono dallo stato wallbox "charging" nel polling: se salta,
         # costi ed energia restavano a 0. Qui si somma direttamente l'archivio ricariche.
+        def _chg_date(c: dict) -> str:
+            """Data 'effettiva' della ricarica per i totali di periodo.
+
+            Se la ricarica attraversa la mezzanotte (es. 23:06 → 00:12) conta il giorno di FINE:
+            l'energia è consegnata alla fine, così «oggi» la include.
+            """
+            d = str(c.get("data", ""))
+            oi, of = str(c.get("ora_inizio", "")), str(c.get("ora_fine", ""))
+            if d and oi and of and of < oi:
+                try:
+                    return (datetime.strptime(d, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+                except ValueError:
+                    return d
+            return d
+
         def _chg_sum(pred) -> tuple[float, float]:
             kwh = costo = 0.0
             for c in charges:
-                if pred(str(c.get("data", ""))):
+                if pred(_chg_date(c)):
                     kwh += _f(c.get("kwh"))
                     costo += _f(c.get("costo"))
             return round(kwh, 2), round(costo, 2)

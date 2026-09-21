@@ -5,11 +5,19 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.24.4 — Logo nella sidebar
+## 1.0.25 — Logo, consumi coerenti e fix vari
+
+> Include le patch **1.0.24.1 · 1.0.24.2 · 1.0.24.3 · 1.0.24.4** (mai pubblicate separatamente).
 
 ### Correzioni
 - **Sidebar**: sostituita la 🚗 con il **logo Renault EV Center** (marchio a diamante con il giallo
   Renault), adattivo al tema (`currentColor`).
+- **Consumi dal SoC reale**: «Consumata oggi %», «Batteria % per 100 km» e i kWh dei viaggi ora
+  derivano dal **delta SoC della batteria** (il dato effettivo), con la **capacità effettiva**
+  (nominale × SOH, es. 60 × 0,94 = 56,4 kWh → **1% = 0,564 kWh**). Il calcolo dai kWh dei viaggi era
+  impreciso sui tragitti corti (media non significativa).
+- **Ricariche a cavallo di mezzanotte**: attribuite al **giorno di fine** (es. 23:06→00:12 conta sul
+  giorno dopo), così «Ricariche oggi» le include.
 
 ## 1.0.24.3 — Ritocchi
 

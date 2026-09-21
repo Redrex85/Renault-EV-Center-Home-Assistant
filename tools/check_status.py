@@ -756,6 +756,30 @@ try:
 except Exception as e:
     bad(f"fix 1.0.24.4: {e}")
 
+print("\n[29] Consumi dal SoC reale (non dai kWh dei viaggi)")
+try:
+    se = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
+    i = se.find("class PercPer100km")
+    body = se[i:se.find("\nclass ", i + 10)]
+    assert "pct_daily" in body and "eff_kwh_100km" not in body, \
+        "il %/100km non usa il SoC reale"
+    te = open(os.path.join(CC, "trip_engine.py"), encoding="utf-8").read()
+    assert te.find("if batt_delta > 0:") < te.find("elif eff_live_kwh_100km"), \
+        "il kWh dei viaggi non dà priorità al SoC"
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert 'S._sid("batteria_scaricata_oggi")' in js, \
+        "la % consumata oggi non usa il SoC reale"
+    co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert "def _eff_capacity" in co and 'soh_official' in co[co.find("def _eff_capacity"):co.find("def _eff_capacity") + 400], \
+        "manca la capacità effettiva (nominale × SOH)"
+    assert "self.trip.capacity_kwh = self._eff_capacity()" in co, \
+        "i viaggi non usano la capacità effettiva (SOH)"
+    assert "pct / 100.0 * self._eff_capacity()" in co, \
+        "i kWh per periodo non usano la capacità effettiva (SOH)"
+    ok("consumi dal SoC reale con capacità effettiva (SOH)")
+except Exception as e:
+    bad(f"consumi dal SoC: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

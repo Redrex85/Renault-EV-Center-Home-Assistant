@@ -235,12 +235,14 @@ class TripEngine:
         if km < self.min_km or durata_min < self.min_minutes:
             return None
 
-        if eff_live_kwh_100km and eff_live_kwh_100km > 0:
-            kwh_consumati = round(km * eff_live_kwh_100km / 100, 2)
-            kwh_per_100 = round(eff_live_kwh_100km, 2)
-        elif batt_delta > 0:
+        # PRIORITÀ al SoC REALE della batteria: il consumo effettivo è il delta % (× capacità).
+        # L'efficienza "live" (kWh dei viaggi) sbaglia sui tragitti corti (media non significativa).
+        if batt_delta > 0:
             kwh_consumati = round(batt_delta / 100 * self.capacity_kwh, 2)
             kwh_per_100 = round(kwh_consumati / km * 100, 2) if km > 0 else 0.0
+        elif eff_live_kwh_100km and eff_live_kwh_100km > 0:
+            kwh_consumati = round(km * eff_live_kwh_100km / 100, 2)
+            kwh_per_100 = round(eff_live_kwh_100km, 2)
         else:
             kwh_consumati = 0.0
             kwh_per_100 = 0.0
