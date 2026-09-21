@@ -2288,11 +2288,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         def _legacy(aid: object) -> bool:
             """Automazioni NON più create dall'integrazione: vanno rimosse.
 
-            'batteria bassa' e 'batteria bassa fuori casa' sono sostituite dalla notifica
-            NATIVA (soglia, fascia oraria e giorni configurabili dalla vista Automazioni).
+            - 'batteria bassa' / 'batteria bassa fuori casa': sostituite dalla notifica NATIVA
+              (soglia, fascia oraria e giorni configurabili dalla vista Automazioni);
+            - 'promemoria collegamento': ridondante — la notifica «Avviso batteria bassa» dice
+              già «Collega la wallbox!».
             """
             return isinstance(aid, str) and aid.startswith("renault_ev_center_") \
-                and (aid.endswith("_batteria_bassa") or "_batteria_bassa_" in aid)
+                and (aid.endswith("_batteria_bassa") or "_batteria_bassa_" in aid
+                     or aid.endswith("_programma_promemoria")
+                     or "_promemoria_collegamento" in aid)
 
         path = self.hass.config.path(AUTOMATION_CONFIG_PATH)
         rmset = set(removes)

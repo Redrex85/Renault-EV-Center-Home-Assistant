@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.25.1";
+const REC_VER = "1.0.26";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -2634,56 +2634,57 @@ const PAGES = {
   p11: `<h1>Wallbox</h1>
   <div class="grid g2">
     <div class="card"><h3>🔌 Stato wallbox</h3>
-      <div class="big" style="font-size:32px;color:var(--accent)"><span data-wb="state">—</span></div>
-      <div class="row"><span>Potenza ora</span><b><span data-wb="power">—</span></b></div>
-      <div class="row"><span>Corrente</span><b><span data-wb="current">—</span></b></div>
-      <div class="row"><span>Tensione</span><b><span data-wb="voltage">—</span></b></div>
-      <div class="row"><span>Temperatura</span><b><span data-wb="temp">—</span></b></div>
-      <div class="row"><span>Motivo limite</span><b><span data-wb="limit">—</span></b></div></div>
-    <div class="card"><h3>⏱️ Sessione corrente</h3>
-      <div class="big" style="font-size:32px;color:var(--good)"><span data-wb="session_kwh">—</span></div>
-      <div class="row"><span>Tempo di ricarica</span><b><span data-wb="session_time">—</span></b></div>
-      <div class="row"><span>Energia totale erogata</span><b><span data-wb="total_kwh">—</span></b></div>
-      <div style="display:flex;gap:10px;margin-top:14px">
-        <div class="btn" data-cmd="wb_start" style="flex:1;background:linear-gradient(180deg,#22c55e,#16a34a);border-color:#16a34a;color:#fff;font-size:16px;font-weight:800;padding:14px 8px">▶️ AVVIA</div>
-        <div class="btn" data-cmd="wb_stop" style="flex:1;background:linear-gradient(180deg,#ef4444,#b91c1c);border-color:#b91c1c;color:#fff;font-size:16px;font-weight:800;padding:14px 8px">⏹️ FERMA</div></div></div></div>
-  <div class="grid g2" style="margin-top:16px">
+      <div style="display:flex;gap:16px;align-items:center">
+        <img src="/local/renault-ev-center/wallbox.png" alt="Wallbox" style="width:112px;height:112px;object-fit:contain;flex:0 0 auto;filter:drop-shadow(0 6px 16px rgba(0,0,0,.4))">
+        <div style="flex:1;min-width:0">
+          <div class="big" style="font-size:30px;color:var(--accent);margin-bottom:8px"><span data-wb="state">—</span></div>
+          <div class="row"><span>Potenza ora</span><b><span data-wb="power">—</span></b></div>
+          <div class="row"><span>Corrente</span><b><span data-wb="current">—</span></b></div>
+          <div class="row"><span>Tensione</span><b><span data-wb="voltage">—</span></b></div>
+          <div class="row"><span>Temperatura</span><b><span data-wb="temp">—</span></b></div>
+          <div class="row"><span>Motivo limite</span><b><span data-wb="limit">—</span></b></div>
+        </div>
+      </div></div>
     <div class="card"><h3>⏱️ Stima ricarica</h3>
       <div class="row"><span>Tempo stimato</span><b data-f="tempo_ric">—</b></div>
       <div class="row"><span>Orario stimato</span><b data-f="ora_compl">—</b></div>
       <div class="row"><span>Costo stimato</span><b><span data-f="costo_corr" data-dec="2">—</span> €</b></div>
-      <div class="note">Stima verso il % obiettivo configurato. Con auto non in carica mostra l'ultimo stato.</div></div>
+      <div class="note">Stima verso il % obiettivo configurato. Con auto non in carica mostra l'ultimo stato.</div></div></div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>⏱️ Sessione corrente</h3>
+      <div class="big" style="font-size:32px;color:var(--good)"><span data-wb="session_kwh">—</span></div>
+      <div class="row"><span>Tempo di ricarica</span><b><span data-wb="session_time">—</span></b></div>
+      <div class="row"><span>Energia totale erogata</span><b><span data-wb="total_kwh">—</span></b></div>
+      <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
+        <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🎚️ Corrente di carica (A)</div>
+        <div class="inp"><span>Limite</span><input id="wb_amp" type="range" min="6" max="32" step="1" style="flex:1" oninput="this.closest('.inp').querySelector('#wb_amp_live').textContent=this.value+' A'"><b id="wb_amp_live" style="min-width:54px;text-align:right">—</b></div>
+        <div style="color:var(--muted);font-size:11.5px;margin-top:4px" id="wb_amp_val">—</div>
+        <div class="btn" data-cmd="wb_set_current" style="margin-top:10px;flex:0 0 auto;padding:8px 14px;font-size:13px">💾 Applica corrente</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <div class="btn" data-cmd="wb_start" style="flex:1;background:linear-gradient(180deg,#22c55e,#16a34a);border-color:#16a34a;color:#fff;font-size:16px;font-weight:800;padding:14px 8px">▶️ AVVIA</div>
+        <div class="btn" data-cmd="wb_stop" style="flex:1;background:linear-gradient(180deg,#ef4444,#b91c1c);border-color:#b91c1c;color:#fff;font-size:16px;font-weight:800;padding:14px 8px">⏹️ FERMA</div></div></div>
     <div class="card"><h3>⚡ Potenza wallbox (48 h)</h3>
       <div id="wbchart" style="min-height:150px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Sensore preso da <b>Configura → Wallbox → Potenza istantanea</b>.</div></div></div>
-  <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>🎚️ Corrente di carica (A)</h3>
-      <div class="inp"><span>Limite</span><input id="wb_amp" type="range" min="6" max="32" step="1" style="flex:1" oninput="this.closest('.inp').querySelector('#wb_amp_live').textContent=this.value+' A'"><b id="wb_amp_live" style="min-width:54px;text-align:right">—</b></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:4px" id="wb_amp_val">—</div>
-      <div class="btn" data-cmd="wb_set_current" style="margin-top:10px">💾 Applica corrente</div>
-      <div class="note">Imposta il limite della wallbox (<code>number</code>). Le automazioni di bilanciamento possono sovrascriverlo.</div></div>
-    <div class="card"><h3>☀️ Bilanciamento solare</h3>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="card"><h3>🏠 Bilanciamento casa</h3>
+      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-sw="sw_home"><span></span></label></div>
+      <div class="row"><span>Consumo casa</span><b><span data-wb="home_w">—</span> W</b></div>
+      <div class="row"><span>Soglia contatore</span><b><span data-wb="home_hi">—</span> W</b></div>
+      <div class="row"><span>Ampere wallbox</span><b><span data-wb="home_amps">—</span> A</b></div>
+      <div class="note">Sopra la soglia 10 min → Ridotta A; sotto l'80% per 15 min → Max A. Sensore/contatore in <b>Configura → Bilanciamento casa</b>.</div></div>
+    <div class="card"><h3>⚡ Sperimentazione GSE</h3>
+      <div class="row"><span>Attiva</span><label class="switch"><input type="checkbox" data-sw="sw_gse"><span></span></label></div>
+      <div class="row"><span>Limite adesso</span><b data-wb="gse_now">—</b></div>
+      <div class="row"><span>Fascia piena</span><b><span data-wb="gse_fascia">—</span></b></div>
+      <div class="note">Fuori fascia la wallbox è limitata alla potenza ridotta. Orari in <b>Configura → Sperimentazione GSE</b>.</div></div>
+    <div class="card"><h3>☀️ Bilanciamento fotovoltaico</h3>
       <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-sw="sw_bal"><span></span></label></div>
       <div class="row"><span>Surplus rete</span><b><span data-wb="bal_surplus">—</span> W</b></div>
       <div class="row"><span>Prelievo rete</span><b><span data-wb="bal_grid">—</span> W</b></div>
       <div class="row"><span>Ampere impostati</span><b><span data-wb="bal_amps">—</span> A</b></div>
-      <div class="row"><span>Ultimo aggiustamento</span><b><span data-wb="bal_ts">—</span></b></div>
-      <div class="note">Adatta gli ampere per tenere il prelievo da rete ~0. Sensori rete/batteria e W per A in <b>Configura → Bilanciamento</b>.</div></div></div>
-  <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>🏠 Bilanciamento casa</h3>
-      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-sw="sw_home"><span></span></label></div>
-      <div class="row"><span>Stato</span><b data-wb="home_state">—</b></div>
-      <div class="row"><span>Consumo casa</span><b><span data-wb="home_w">—</span> W</b></div>
-      <div class="row"><span>Soglia contatore</span><b><span data-wb="home_hi">—</span> W</b></div>
-      <div class="row"><span>Ampere wallbox</span><b><span data-wb="home_amps">—</span> A</b></div>
-      <div class="note">Se il consumo casa supera la soglia per <b>10 min</b> la wallbox scende a <b>Ridotta</b> A;
-        sotto l'80% per <b>15 min</b> torna a <b>Max</b> A. Sensore, contatore e ampere in <b>Configura → Bilanciamento casa</b>.</div></div>
-    <div class="card"><h3>⚡ Sperimentazione GSE</h3>
-      <div class="row"><span>Attiva</span><label class="switch"><input type="checkbox" data-sw="sw_gse"><span></span></label></div>
-      <div class="row"><span>Limite adesso</span><b data-wb="gse_now">—</b></div>
-      <div class="row"><span>Fascia a potenza piena</span><b><span data-wb="gse_fascia">—</span></b></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Fuori fascia la wallbox viene limitata alla potenza ridotta.
-        Orari e potenze in <b>Configura → Sperimentazione GSE</b>.</div></div></div>`,
+      <div class="note">Adatta gli ampere per tenere il prelievo da rete ~0. Sensori in <b>Configura → Fotovoltaico</b>.</div></div></div>`,
 };
 
 if (!customElements.get("renault-ev-center-panel")) {

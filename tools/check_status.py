@@ -799,6 +799,27 @@ try:
 except Exception as e:
     bad(f"% caricata/SoC: {e}")
 
+print("\n[31] Pagina Wallbox ridisegnata (1.0.26)")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    i = js.find("p11:")
+    body = js[i:js.find("`,\n};", i)]
+    assert "/local/renault-ev-center/wallbox.png" in body, "manca l'immagine wallbox nello Stato"
+    assert body.find("Stima ricarica") < body.find("Sessione corrente"), \
+        "Stima ricarica non è tra Stato wallbox e Sessione corrente"
+    assert "grid g3" in body, "i 3 bilanciamenti non sono su un solo rigo"
+    for k in ("sw_home", "sw_gse", "sw_bal"):
+        assert f'data-sw="{k}"' in body, f"manca lo switch {k} nella pagina Wallbox"
+    assert body.count('id="wb_amp"') == 1, "la corrente di carica non è unica/dentro Sessione"
+    dash = open(os.path.join(CC, "dashboard.py"), encoding="utf-8").read()
+    assert 'wallbox.png' in dash, "l'immagine wallbox non viene copiata in /local"
+    co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert "_programma_promemoria" in co and "_promemoria_collegamento" in co, \
+        "l'automazione Promemoria collegamento non viene rimossa"
+    ok("pagina Wallbox ridisegnata + Promemoria collegamento rimosso")
+except Exception as e:
+    bad(f"pagina Wallbox: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

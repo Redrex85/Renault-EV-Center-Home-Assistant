@@ -51,6 +51,10 @@ def setup_card_js(hass: HomeAssistant) -> None:
             src = _pkg_dir("www", fn)
             if os.path.isfile(src):
                 shutil.copyfile(src, os.path.join(dest_dir, fn))
+        # immagine wallbox (usata dalla pagina Wallbox del pannello)
+        wb = _pkg_dir("images", "wallbox.png")
+        if os.path.isfile(wb):
+            shutil.copyfile(wb, os.path.join(dest_dir, "wallbox.png"))
         _LOGGER.info("Card Lovelace copiate in /local/%s/", WWW_DIR)
     except Exception as err:  # noqa: BLE001
         _LOGGER.warning("Impossibile copiare le card: %s", err)

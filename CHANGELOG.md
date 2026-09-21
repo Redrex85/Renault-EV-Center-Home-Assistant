@@ -5,6 +5,17 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.26 — Pagina Wallbox ridisegnata
+
+### Correzioni
+- **Stato wallbox**: box più carino con l'**immagine della wallbox** (`wallbox.png`) accanto ai valori.
+- **Ordine**: *Stato wallbox* → *Stima ricarica* → *Sessione corrente*.
+- **Corrente di carica** inglobata nel box **Sessione corrente** (slider + Applica).
+- **I 3 bilanciamenti** (*Bilanciamento casa · Sperimentazione GSE · Bilanciamento fotovoltaico*) ora su
+  **un solo rigo** (griglia a 3 colonne).
+- **Automazione «Promemoria collegamento» rimossa**: era ridondante — la notifica nativa
+  «Avviso batteria bassa» dice già *«Collega la wallbox!»*. Rimossa anche «Batteria bassa fuori casa».
+
 ## 1.0.25.1 — Logo, consumi, programmazione e temperatura
 
 > Include le patch **1.0.24.1 · 1.0.24.2 · 1.0.24.3 · 1.0.24.4 · 1.0.25** (mai pubblicate separatamente).
