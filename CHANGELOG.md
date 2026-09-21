@@ -5,9 +5,9 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.25 — Logo, consumi coerenti e fix vari
+## 1.0.25.1 — Logo, consumi, programmazione e temperatura
 
-> Include le patch **1.0.24.1 · 1.0.24.2 · 1.0.24.3 · 1.0.24.4** (mai pubblicate separatamente).
+> Include le patch **1.0.24.1 · 1.0.24.2 · 1.0.24.3 · 1.0.24.4 · 1.0.25** (mai pubblicate separatamente).
 
 ### Correzioni
 - **Sidebar**: sostituita la 🚗 con il **logo Renault EV Center** (marchio a diamante con il giallo
@@ -18,6 +18,12 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
   impreciso sui tragitti corti (media non significativa).
 - **Ricariche a cavallo di mezzanotte**: attribuite al **giorno di fine** (es. 23:06→00:12 conta sul
   giorno dopo), così «Ricariche oggi» le include.
+- **% caricata oggi**: usava un sensore inesistente → mostrava «—». Ora usa `batteria_caricata_oggi`.
+- **SoC della programmazione ricarica**: il recupero dall'automazione ora legge anche il **SoC
+  obiettivo** dall'azione (`number.set_value`), non solo l'orario → non torna più a 0.
+- **Temperatura esterna**: se il sensore mappato manca o è `unknown`, ripiega sull'entità **weather**
+  (`weather.forecast_casa`, attributo `temperature`) — meglio di niente. Il selettore in *Configura*
+  ora accetta anche entità `weather`.
 
 ## 1.0.24.3 — Ritocchi
 

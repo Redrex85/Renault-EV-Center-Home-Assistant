@@ -780,6 +780,25 @@ try:
 except Exception as e:
     bad(f"consumi dal SoC: {e}")
 
+print("\n[30] % caricata oggi + SoC della programmazione")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert 'S._num(S._sid("batteria_caricata_oggi")' in js, \
+        "la % caricata oggi non usa il sensore giusto"
+    co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    i = co.find("async def async_sync_schedule_from_automation")
+    body = co[i:co.find("async def ", i + 10)]
+    assert "soc = int(float(val))" in body, \
+        "il sync della programmazione non recupera il SoC dall'automazione"
+    assert "def _read_temp" in co and 'weather.forecast_casa' in co, \
+        "manca il ripiego temperatura su weather"
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    assert 'domain=["sensor", "weather"]' in flow, \
+        "il selettore Temperatura esterna non accetta entità weather"
+    ok("% caricata oggi, SoC programmazione e temperatura (weather) recuperati")
+except Exception as e:
+    bad(f"% caricata/SoC: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

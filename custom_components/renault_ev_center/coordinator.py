@@ -556,6 +556,32 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         soh = max(self._setting_num("soh_official", 100.0), 40.0)
         return (self.capacity or 60.0) * (soh / 100.0)
 
+    def _read_temp(self) -> float | None:
+        """Temperatura esterna: dal sensore mappato; se manca/unknown ripiega su un'entità
+        `weather` (es. weather.forecast_casa, attributo `temperature`). Meglio di niente.
+        """
+        ent = self.temp_entity
+        if ent:
+            st = self.hass.states.get(ent)
+            if st is not None and st.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+                if str(ent).split(".")[0] == "weather":
+                    v = st.attributes.get("temperature")
+                    if v is not None:
+                        return _f(v, None)
+                else:
+                    return _f(st.state, None)
+        # ripiego: prima weather.forecast_casa, poi il primo weather con temperatura
+        cands: list = []
+        f = self.hass.states.get("weather.forecast_casa")
+        if f is not None:
+            cands.append(f)
+        cands += [s for s in self.hass.states.async_all("weather") if s is not f]
+        for st in cands:
+            v = st.attributes.get("temperature")
+            if v is not None:
+                return _f(v, None)
+        return None
+
     def _automation_sig(self) -> tuple:
         return (
             self.capacity,
@@ -810,7 +836,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                                     allow=True, max_delta=25.0)
 
         # --- temperatura esterna (opzionale) --------------------------------------
-        temp_out = _num(hass, self.temp_entity, 0.0) if self.temp_entity else None
+        temp_out = self._read_temp()
 
         # --- vampire drain: SoC persa da fermo (non carica, odometro fermo) --------
         fermo = (
@@ -1714,8 +1740,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         record["zona_arrivo"] = self._zone_label(record.get("zona_arrivo", ""))
         record["costo_stimato"] = round(_f(record.get("kwh_consumati")) * self.price_home, 2)
         # temperatura esterna all'arrivo: serve al grafico "consumi vs temperatura"
-        if record.get("temp_est") is None and self.temp_entity:
-            _t = _num(self.hass, self.temp_entity, None) if self.temp_entity else None
+        if record.get("temp_est") is None:
+            _t = self._read_temp()
             if _t is not None:
                 record["temp_est"] = round(_f(_t), 1)
         # doppia verifica: coordinate reali del tracker all'arrivo + posizione aggiornata
@@ -2402,10 +2428,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         return made
 
     async def async_sync_schedule_from_automation(self) -> None:
-        """Riprende l'orario della carica programmata DALL'automazione esistente.
+        """Riprende orario, giorni e SoC della carica programmata DALL'automazione esistente.
 
-        Così la scelta dell'utente NON si perde dopo un aggiornamento o un riavvio:
-        se lo store non ha l'orario, lo legge dal trigger dell'automazione.
+        Così le scelte NON si perdono dopo un aggiornamento/riavvio: se lo store non ha
+        l'orario (o ha SoC 0), li legge dal trigger e dall'azione dell'automazione.
         """
         from homeassistant.config import AUTOMATION_CONFIG_PATH
         from homeassistant.util.yaml import load_yaml as _yaml_load
@@ -2413,8 +2439,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         from .dashboard import slugify
 
         sch = self.store.data.setdefault("schedule", {})
-        if sch.get("ricarica"):
-            return  # già memorizzato: non toccare
+        cur = dict(sch.get("ricarica") or {})
         path = self.hass.config.path(AUTOMATION_CONFIG_PATH)
         try:
             data = await self.hass.async_add_executor_job(_yaml_load, path)
@@ -2436,15 +2461,31 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 if isinstance(c, dict) and c.get("weekday"):
                     wd = c["weekday"]
                     giorni = [wd] if isinstance(wd, str) else list(wd)
+            # SoC obiettivo dall'azione number.set_value dell'automazione
+            soc = 0
+            for act in (a.get("action") or a.get("actions") or []):
+                if isinstance(act, dict):
+                    val = (act.get("data") or {}).get("value")
+                    if val is not None:
+                        try:
+                            soc = int(float(val))
+                        except (TypeError, ValueError):
+                            pass
             for t in trig:
                 at = str((t or {}).get("at") or "")[:5]
                 if at:
-                    sch["ricarica"] = {
-                        "attivo": True, "inizio": at, "fine": at,
-                        "soc": 0, "modo": "cool", "temperatura": 0, "giorni": giorni,
-                    }
+                    cur["inizio"] = at
+                    cur["giorni"] = giorni or cur.get("giorni", [])
+                    if soc > 0:
+                        cur["soc"] = soc
+                    cur.setdefault("attivo", True)
+                    cur.setdefault("fine", "")
+                    cur.setdefault("modo", "cool")
+                    cur.setdefault("temperatura", 0)
+                    sch["ricarica"] = cur
                     self.persist(force=True)
-                    _LOGGER.info("Orario carica programmata ripreso dall'automazione: %s", at)
+                    _LOGGER.info("Carica programmata ripresa dall'automazione: %s · SoC %s%%",
+                                 at, cur.get("soc"))
                     return
 
     async def async_cleanup_automations(self) -> None:

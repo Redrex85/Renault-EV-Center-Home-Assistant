@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.25";
+const REC_VER = "1.0.25.1";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -284,7 +284,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         const vs = [S._field("risp_tot"), S._field("risp_tagliandi"), S._field("risp_bollo")].filter((v) => typeof v === "number");
         return vs.length ? vs.reduce((a, v) => a + v, 0) : null;
       }
-      case "ricarica_oggi_pct": return S._num(S._sid("battery_perc_giorno_charge"), "sensor.megane_battery_perc_giorno_charge");
+      case "ricarica_oggi_pct": return S._num(S._sid("batteria_caricata_oggi"), S._sid("battery_perc_giorno_charge"), "sensor.megane_battery_perc_giorno_charge");
       case "risp_tot": {
         const rv = S._num(S._sid("risparmio_totale_vs_diesel"));
         if (rv !== null) return rv;

@@ -409,7 +409,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(
                 CONF_TEMP_ENTITY,
                 description={"suggested_value": defaults.get(CONF_TEMP_ENTITY)},
-            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
+            ): EntitySelector(EntitySelectorConfig(domain=["sensor", "weather"])),
             vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): BooleanSelector(),
             vol.Optional(CONF_CO2_THERMAL_GKM, default=defaults.get(CONF_CO2_THERMAL_GKM, DEFAULT_CO2_THERMAL_GKM)): NumberSelector(
                 NumberSelectorConfig(min=50, max=300, step=5, unit_of_measurement="g/km", mode=NumberSelectorMode.BOX)),
