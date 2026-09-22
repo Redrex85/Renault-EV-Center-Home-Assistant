@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.30";
+const REC_VER = "1.0.31";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -1609,6 +1609,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       }];
       if (trend.length) {
         series.push({
+          entity: this._sid("viaggi_recenti"),
           name: "Tendenza",
           type: "line",
           color: "#7cc4ff",

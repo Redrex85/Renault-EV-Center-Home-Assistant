@@ -821,6 +821,11 @@ try:
     assert "def save_auto_states" in co and "async def async_restore_auto_states" in co, \
         "lo stato on/off delle automazioni non persiste tra riavvii"
     assert "async_restore_auto_states()" in co, "il ripristino stato automazioni non è chiamato"
+    assert "if self._managed_auto_ids():" in co, \
+        "il ripristino automazioni non attende il caricamento (si perde la scelta)"
+    js0 = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert js0.count('entity: this._sid("viaggi_recenti")') >= 2, \
+        "la serie Tendenza del grafico temperatura non ha entity (errore apexcharts)"
     ok("pagina Wallbox ridisegnata + automazioni legacy/stato persistente")
 except Exception as e:
     bad(f"pagina Wallbox: {e}")

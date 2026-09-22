@@ -52,11 +52,25 @@ Tutto è calcolato **localmente nel tuo Home Assistant** e salvato in `.storage`
 
 ## 🖼️ Anteprima
 
-| Panoramica | Viaggi | Statistiche | Ricariche |
-|---|---|---|---|
-| Batteria, autonomia, carica live, ultima ricarica, viaggi recenti | Riepilogo periodi, grafici giornalieri, tabella dettagliata | Mese/anno, trend 30gg e 12 mesi, report mensile, risparmi | Wallbox, energie caricate, spese, storico sessioni |
+*Clicca su una schermata per ingrandirla.*
 
-*(Screenshot reali in arrivo — PR benvenute!)*
+<table>
+  <tr>
+    <td width="33%"><a href="docs/screenshots/panoramica.png"><img src="docs/screenshots/panoramica.png" width="100%" alt="Panoramica"></a></td>
+    <td width="33%"><a href="docs/screenshots/viaggi.png"><img src="docs/screenshots/viaggi.png" width="100%" alt="Viaggi"></a></td>
+    <td width="33%"><a href="docs/screenshots/statistiche.png"><img src="docs/screenshots/statistiche.png" width="100%" alt="Statistiche"></a></td>
+  </tr>
+  <tr>
+    <td width="33%"><a href="docs/screenshots/ricariche.png"><img src="docs/screenshots/ricariche.png" width="100%" alt="Ricariche"></a></td>
+    <td width="33%"><a href="docs/screenshots/risparmi.png"><img src="docs/screenshots/risparmi.png" width="100%" alt="Risparmi"></a></td>
+    <td width="33%"><a href="docs/screenshots/salute%20batteria.png"><img src="docs/screenshots/salute%20batteria.png" width="100%" alt="Salute batteria"></a></td>
+  </tr>
+  <tr>
+    <td width="33%"><a href="docs/screenshots/manutenzione.png"><img src="docs/screenshots/manutenzione.png" width="100%" alt="Manutenzione"></a></td>
+    <td width="33%"></td>
+    <td width="33%"></td>
+  </tr>
+</table>
 
 ## 📦 Requisiti
 
@@ -261,6 +275,28 @@ Renault EV Center is a free, open-source project kept alive in my spare time. If
   <a href="https://www.buymeacoffee.com/redrex72v"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-BuyMeACoffee-FFDD00?logo=buy-me-a-coffee" alt="BuyMeACoffee"></a>
 </p>
 
+### Preview
+
+*Click a screenshot to enlarge it.*
+
+<table>
+  <tr>
+    <td width="33%"><a href="docs/screenshots/panoramica.png"><img src="docs/screenshots/panoramica.png" width="100%" alt="Overview"></a></td>
+    <td width="33%"><a href="docs/screenshots/viaggi.png"><img src="docs/screenshots/viaggi.png" width="100%" alt="Trips"></a></td>
+    <td width="33%"><a href="docs/screenshots/statistiche.png"><img src="docs/screenshots/statistiche.png" width="100%" alt="Statistics"></a></td>
+  </tr>
+  <tr>
+    <td width="33%"><a href="docs/screenshots/ricariche.png"><img src="docs/screenshots/ricariche.png" width="100%" alt="Charges"></a></td>
+    <td width="33%"><a href="docs/screenshots/risparmi.png"><img src="docs/screenshots/risparmi.png" width="100%" alt="Savings"></a></td>
+    <td width="33%"><a href="docs/screenshots/salute%20batteria.png"><img src="docs/screenshots/salute%20batteria.png" width="100%" alt="Battery health"></a></td>
+  </tr>
+  <tr>
+    <td width="33%"><a href="docs/screenshots/manutenzione.png"><img src="docs/screenshots/manutenzione.png" width="100%" alt="Maintenance"></a></td>
+    <td width="33%"></td>
+    <td width="33%"></td>
+  </tr>
+</table>
+
 ### Highlights
 
 - **Automatic trip detection** from the odometer: distance, battery used, kWh, efficiency, auto-close after idle timeout
@@ -324,7 +360,25 @@ Tout est calculé **localement dans votre Home Assistant** et sauvegardé dans `
 
 ## 🖼️ Aperçu
 
-*(Captures d'écran réelles à venir — PR bienvenues !)*
+*Cliquez sur une capture pour l'agrandir.*
+
+<table>
+  <tr>
+    <td width="33%"><a href="docs/screenshots/panoramica.png"><img src="docs/screenshots/panoramica.png" width="100%" alt="Panoramica"></a></td>
+    <td width="33%"><a href="docs/screenshots/viaggi.png"><img src="docs/screenshots/viaggi.png" width="100%" alt="Viaggi"></a></td>
+    <td width="33%"><a href="docs/screenshots/statistiche.png"><img src="docs/screenshots/statistiche.png" width="100%" alt="Statistiche"></a></td>
+  </tr>
+  <tr>
+    <td width="33%"><a href="docs/screenshots/ricariche.png"><img src="docs/screenshots/ricariche.png" width="100%" alt="Ricariche"></a></td>
+    <td width="33%"><a href="docs/screenshots/risparmi.png"><img src="docs/screenshots/risparmi.png" width="100%" alt="Risparmi"></a></td>
+    <td width="33%"><a href="docs/screenshots/salute%20batteria.png"><img src="docs/screenshots/salute%20batteria.png" width="100%" alt="Salute batteria"></a></td>
+  </tr>
+  <tr>
+    <td width="33%"><a href="docs/screenshots/manutenzione.png"><img src="docs/screenshots/manutenzione.png" width="100%" alt="Manutenzione"></a></td>
+    <td width="33%"></td>
+    <td width="33%"></td>
+  </tr>
+</table>
 
 ## 📦 Prérequis
 

@@ -1627,17 +1627,19 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         await self._apply_gse(wb_state, bool(data.get("charging")))
         data["balance"] = dict(self.store.data.get("counters", {}).get("balance_last", {}))
         data["home_balance"] = dict(self._home_last)
-        # stato on/off delle automazioni gestite: ripristina una volta, poi memorizza
+        # stato on/off automazioni: aspetto che siano CARICATE, ripristino la scelta, poi memorizzo
         if not self._auto_restored:
-            self._auto_restored = True
+            if self._managed_auto_ids():
+                try:
+                    await self.async_restore_auto_states()
+                except Exception:  # noqa: BLE001
+                    pass
+                self._auto_restored = True
+        else:
             try:
-                await self.async_restore_auto_states()
+                self.save_auto_states()
             except Exception:  # noqa: BLE001
                 pass
-        try:
-            self.save_auto_states()
-        except Exception:  # noqa: BLE001
-            pass
         return data
 
     # ------------------------------------------------------------ fine ricarica
