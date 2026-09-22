@@ -154,6 +154,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for coord in _all_coordinators(hass):
             await coord.service_refresh_car()
 
+    async def handle_set_auto_state(call: ServiceCall) -> None:
+        entity_id = str(call.data["entity_id"])
+        state = str(call.data.get("state", "on"))
+        for coord in _all_coordinators(hass):
+            await coord.service_set_auto_state(entity_id, state)
+
     async def handle_add_maintenance(call: ServiceCall) -> None:
         for coord in _all_coordinators(hass):
             rec = coord.service_add_maintenance(
@@ -281,6 +287,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _register(SERVICE_CREATE_DASHBOARD, handle_create_dashboard)
     _register(SERVICE_CREATE_AUTOMATIONS, handle_create_automations)
     _register("refresh_car", handle_refresh_car)
+    _register("set_auto_state", handle_set_auto_state, schema=vol.Schema({
+        vol.Required("entity_id"): str,
+        vol.Required("state"): vol.In(["on", "off"]),
+    }))
     _register(SERVICE_SET_LOW_SOC_DAYS, handle_set_low_soc_days,
               vol.Schema({vol.Optional("giorni"): vol.All(list, [vol.In(WEEKDAYS)])}))
     _register("set_schedule", handle_set_schedule, schema=vol.Schema({

@@ -1627,17 +1627,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         await self._apply_gse(wb_state, bool(data.get("charging")))
         data["balance"] = dict(self.store.data.get("counters", {}).get("balance_last", {}))
         data["home_balance"] = dict(self._home_last)
-        # stato on/off automazioni: aspetto che siano CARICATE, ripristino la scelta, poi memorizzo
-        if not self._auto_restored:
-            if self._managed_auto_ids():
-                try:
-                    await self.async_restore_auto_states()
-                except Exception:  # noqa: BLE001
-                    pass
-                self._auto_restored = True
-        else:
+        # stato on/off automazioni: seed una volta (dopo il caricamento), poi IMPONI la scelta
+        if not self._auto_restored and self._managed_auto_ids():
+            self.save_auto_states()
+            self._auto_restored = True
+        if self._auto_restored:
             try:
-                self.save_auto_states()
+                await self.async_restore_auto_states()
             except Exception:  # noqa: BLE001
                 pass
         return data
@@ -2541,26 +2537,40 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         return out
 
     def save_auto_states(self) -> None:
-        """Memorizza lo stato on/off delle automazioni gestite (persiste tra riavvii/update)."""
+        """Seed iniziale: memorizza lo stato on/off delle automazioni gestite (una volta)."""
         states: dict[str, str] = {}
         for eid in self._managed_auto_ids():
             s = self.hass.states.get(eid)
             if s is not None:
                 states[eid] = s.state
-        if states and states != self.store.data.get("auto_states"):
+        if states and not self.store.data.get("auto_states"):
             self.store.data["auto_states"] = states
             self.persist()
 
     async def async_restore_auto_states(self) -> None:
-        """Riapplica lo stato on/off scelto dall'utente: quelle spente restano spente."""
+        """IMPONE lo stato on/off scelto dall'utente: quelle spente restano spente.
+
+        Gira a ogni ciclo (lo store è la fonte di verità): così HA non può riaccenderle
+        al refresh/riavvio/update.
+        """
         saved = self.store.data.get("auto_states") or {}
         for eid, stt in saved.items():
-            if stt != "off":
+            if stt not in ("on", "off"):
                 continue
             cur = self.hass.states.get(eid)
-            if cur is not None and cur.state == "on":
+            if cur is not None and cur.state != stt:
                 await self.hass.services.async_call(
-                    "automation", "turn_off", {"entity_id": eid}, blocking=False)
+                    "automation", "turn_on" if stt == "on" else "turn_off",
+                    {"entity_id": eid}, blocking=False)
+
+    async def service_set_auto_state(self, entity_id: str, state: str) -> None:
+        """Accende/spegne un'automazione e MEMORIZZA la scelta (così non si riattiva più)."""
+        saved = dict(self.store.data.get("auto_states") or {})
+        saved[entity_id] = "on" if state == "on" else "off"
+        self.store.data["auto_states"] = saved
+        self.persist(force=True)
+        await self.hass.services.async_call(
+            "automation", saved[entity_id], {"entity_id": entity_id}, blocking=False)
 
     async def _enable_automation(self, alias: str) -> None:
         """Accende l'automazione (id derivato dall'alias) e lo segnala nel log."""

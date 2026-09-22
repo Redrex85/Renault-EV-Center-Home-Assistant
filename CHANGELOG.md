@@ -5,18 +5,27 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.31 — Wallbox, surplus batteria, refresh auto e fix
+## 1.0.32 — Stato automazioni "a prova di riavvio"
 
-> Include anche **1.0.28 · 1.0.29 · 1.0.30** (mai pubblicate separatamente).
+> Include anche **1.0.28 · 1.0.29 · 1.0.30 · 1.0.31** (mai pubblicate separatamente).
+
+### Correzioni
+- **Automazioni che si riattivano** (es. *Programma clima*) su F5 / riavvio / update: ora lo **store è la
+  fonte di verità** — l'integrazione **impone** a ogni ciclo lo stato on/off scelto. Il toggle del
+  pannello chiama il nuovo servizio `renault_ev_center.set_auto_state` (salva + applica), quindi la tua
+  scelta **non viene più sovrascritta** da HA.
 
 ### Guida
-- **README**: sezione **Anteprima** con gli **screenshot reali** (3 per rigo, cliccabili per ingrandire).
+- **README**: sezione **Anteprima** con gli screenshot reali (3 per rigo, cliccabili).
 
 ### Correzioni
 - **Programma clima che si riattiva**: lo stato on/off delle automazioni viene ripristinato **solo
   dopo che sono caricate** (prima il ripristino poteva girare a vuoto e poi sovrascrivere con «on»).
-- **Grafico «Consumi vs temperatura» — "Errore di configurazione"**: la serie *Tendenza* di
-  apexcharts-card non aveva `entity` (obbligatoria) → errore. Aggiunta.
+- **Grafico «Consumi vs temperatura» — "Errore di configurazione"**: apexcharts-card accetta solo
+  `line`/`area`/`column` in `series.type` (non `scatter`); per i punti si usa `chart_type: scatter`.
+  Corretto (+ `entity` sulla serie *Tendenza*).
+- **«Best efficienza» sempre 0,0**: leggeva `efficienza_best`/`best`/`record`, ma il sensore espone
+  `migliore_efficienza`. Corretto.
 - **Aggiorna posizione auto (forzato)**: nuovo tasto in *Panoramica* (sopra la mappa) + servizio
   `renault_ev_center.refresh_car` — chiede a HA di rileggere dal cloud Renault posizione, odometro,
   batteria, autonomia, spina e stato carica (il cloud a volte resta indietro).

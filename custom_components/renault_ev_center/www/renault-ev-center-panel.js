@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.31";
+const REC_VER = "1.0.32";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -891,7 +891,8 @@ class RenaultEvCenterPanel extends HTMLElement {
         }).join("")
         : `<div style="color:var(--muted);font-size:12px">Nessuna automazione Renault trovata. Usa "Crea automazioni consigliate" in Impostazioni.</div>`;
       host.querySelectorAll("[data-auto]").forEach((el) => el.addEventListener("change", () =>
-        S._call("homeassistant", el.checked ? "turn_on" : "turn_off", { entity_id: el.dataset.auto },
+        S._call("renault_ev_center", "set_auto_state",
+          { entity_id: el.dataset.auto, state: el.checked ? "on" : "off" },
           el.checked ? "Automazione attivata" : "Automazione disattivata")));
     }
     // stato sempre allineato a HA, senza toccare quello che l'utente sta cliccando
@@ -1603,7 +1604,6 @@ class RenaultEvCenterPanel extends HTMLElement {
       const series = [{
         entity: this._sid("viaggi_recenti"),
         name: "Elettrico (kWh/100 km)",
-        type: "scatter",
         color: "#3ea6ff",
         data_generator: () => vis.map((p) => [p.t, p.e]),
       }];
@@ -1620,6 +1620,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       const card = helpers.createCardElement({
         type: "custom:apexcharts-card",
+        chart_type: "scatter",
         graph_span: "1y",
         update_interval: "30min",
         apex_config: {
@@ -2021,7 +2022,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     set("tot_viaggi", this._i(parseFloat(g(["totale_viaggi", "n_trip", "viaggi"])) || 0));
     set("tot_km", this._i(parseFloat(g(["km_totali", "km"])) || 0));
     set("eff_media", this._fmt(parseFloat(g(["kwh_per_100km", "efficienza_media", "kwh_100km"])) || 0, 1));
-    set("eff_best", this._fmt(parseFloat(g(["efficienza_best", "best", "record"])) || 0, 1));
+    set("eff_best", this._fmt(parseFloat(g(["migliore_efficienza", "efficienza_best", "best", "record"])) || 0, 1));
     const min = parseFloat(g(["durata_totale_min", "tempo_guida"])) || 0;
     set("tempo", this._fmt(min / 60, 0) + " h");
     set("energia", this._i(parseFloat(g(["kwh_totali", "energia_usata", "kwh_totali_viaggi"])) || 0));
