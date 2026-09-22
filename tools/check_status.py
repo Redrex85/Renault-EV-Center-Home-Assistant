@@ -870,6 +870,23 @@ try:
 except Exception as e:
     bad(f"config flow default: {e}")
 
+print("\n[35] Refresh forzato auto (posizione/odometro dal cloud)")
+try:
+    co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert "async def service_refresh_car" in co and '"homeassistant", "update_entity"' in co, \
+        "manca il refresh forzato delle entità auto"
+    ini = open(os.path.join(CC, "__init__.py"), encoding="utf-8").read()
+    assert 'handle_refresh_car' in ini and '_register("refresh_car"' in ini, \
+        "il servizio refresh_car non è registrato"
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert 'data-cmd="refresh_car"' in js and 'case "refresh_car"' in js, \
+        "manca il tasto Aggiorna auto nel pannello"
+    assert "_refresh_auto" in co and '"action": "renault_ev_center.refresh_car"' in co, \
+        "manca l'automazione periodica Aggiorna posizione auto"
+    ok("refresh forzato auto: servizio + tasto + automazione periodica")
+except Exception as e:
+    bad(f"refresh auto: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

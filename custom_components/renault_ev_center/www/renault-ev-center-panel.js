@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.29";
+const REC_VER = "1.0.30";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -865,6 +865,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (/riassunt|giornalier/.test(t)) return "📊";
     if (/clima|condizion|ac\b/.test(t)) return "❄️";
     if (/bilanciament|solar/.test(t)) return "☀️";
+    if (/aggiorna|posizione|refresh/.test(t)) return "🔄";
     if (/programma|ricarica/.test(t)) return "⏰";
     return "🤖";
   }
@@ -939,6 +940,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "openmap": this._moreInfo(this._car("device_tracker", "posizione") || "device_tracker.megane_posizione"); break;
       case "csv": this._call(D, "export_trips_csv", {}, "📥 CSV esportato"); break;
       case "create_automations": this._call(D, "create_automations", {}, "✨ Automazioni create"); break;
+      case "refresh_car": this._call(D, "refresh_car", {}, "🔄 Aggiornamento auto richiesto"); break;
       case "schsave_ricarica": this._saveSchedule("ricarica"); break;
       case "schsave_clima": this._saveSchedule("clima"); break;
       case "schsave_promemoria": this._saveSchedule("promemoria"); break;
@@ -2283,7 +2285,10 @@ const PAGES = {
   </div>
 
   <div class="grid g2" style="margin-top:16px;grid-auto-rows:330px">
-    <div class="mapbox" id="evmap"></div>
+    <div style="display:flex;flex-direction:column;min-height:0">
+      <div class="btn" data-cmd="refresh_car" style="flex:0 0 auto;margin-bottom:8px;padding:8px 14px;font-size:13px">🔄 Aggiorna posizione auto</div>
+      <div class="mapbox" id="evmap" style="flex:1;min-height:0"></div>
+    </div>
     <div class="card"><h3>📈 Km percorsi (7 giorni)</h3>
       <div id="kmchart" style="min-height:150px"></div>
     </div>

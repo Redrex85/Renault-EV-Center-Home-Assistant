@@ -2266,6 +2266,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                                 "Costo/km: {{ states('sensor." + n + "_costo_per_km') }} €/km")],
                 "mode": "single",
             },
+            f"renault_ev_center_{n}_refresh_auto": {
+                "alias": f"Renault EV Center — Aggiorna posizione auto ({n})",
+                "trigger": [{"trigger": "time_pattern", "minutes": "/30"}],
+                "condition": [],
+                "action": [{"action": "renault_ev_center.refresh_car"}],
+                "mode": "single",
+            },
         }
 
         # la notifica "batteria bassa" è gestita NATIVAMENTE dall'integrazione (soglia, fascia
@@ -2288,7 +2295,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # suffissi gestiti dall'integrazione: un id con slug diverso è un orfano (nome auto cambiato)
         gestiti = ("_ricarica_completata", "_avvio_ricarica", "_batteria_bassa",
                    "_riassunto_giornaliero", "_promemoria", "_programma_ricarica",
-                   "_programma_clima", "_scadenze", "_promemoria_batteria")
+                   "_programma_clima", "_scadenze", "_promemoria_batteria", "_refresh_auto")
 
         def _orfana(aid: object) -> bool:
             if not isinstance(aid, str) or not aid.startswith("renault_ev_center_"):
@@ -2947,6 +2954,28 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             _LOGGER.info("Carica programmata: target impostato a %s%%", int(battery))
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Stop carica programmata fallito: %s", err)
+
+    async def service_refresh_car(self) -> list[str]:
+        """Forza la rilettura dal cloud Renault (posizione, odometro, batteria, autonomia…).
+
+        Utile quando la posizione/lo stato restano indietro: chiede a HA di aggiornare
+        le entità dell'auto (l'integrazione Renault ufficiale rifà il poll dal cloud).
+        """
+        ents = [
+            self.opts.get(CONF_ODOMETER), self.opts.get(CONF_BATTERY_LEVEL),
+            self.opts.get(CONF_RANGE), self.opts.get(CONF_CHARGING_ENTITY),
+            self.opts.get(CONF_PLUG_ENTITY), self.opts.get(CONF_LOCATION_ENTITY),
+        ]
+        ents = [e for e in ents if e and self.hass.states.get(e) is not None]
+        if not ents:
+            return []
+        try:
+            await self.hass.services.async_call(
+                "homeassistant", "update_entity", {"entity_id": ents}, blocking=False)
+            _LOGGER.info("Aggiornamento auto forzato: %s", ", ".join(ents))
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Aggiornamento auto forzato fallito: %s", err)
+        return ents
 
     async def service_export_csv(self) -> str:
         """Esporta viaggi e ricariche in CSV dentro config/renault_ev_center_export."""

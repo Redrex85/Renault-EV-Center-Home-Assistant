@@ -5,11 +5,16 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.29 — Wallbox, surplus batteria e fix
+## 1.0.30 — Wallbox, surplus batteria, refresh auto e fix
 
-> Include anche **1.0.28** (mai pubblicata separatamente).
+> Include anche **1.0.28 · 1.0.29** (mai pubblicate separatamente).
 
 ### Correzioni
+- **Aggiorna posizione auto (forzato)**: nuovo tasto in *Panoramica* (sopra la mappa) + servizio
+  `renault_ev_center.refresh_car` — chiede a HA di rileggere dal cloud Renault posizione, odometro,
+  batteria, autonomia, spina e stato carica (il cloud a volte resta indietro).
+  In più l'automazione **«Aggiorna posizione auto»** (ogni 30 min), **attivabile/disattivabile** dalla
+  vista *Automazioni*.
 - **Configurazione — errori di validazione risolti**: *Contatore di casa* aveva default `"6.0"` mentre le
   opzioni sono `"3" · "4.5" · "6" · "10"` (`value must be one of…`); *Data acquisto* passava un
   `suggested_value` vuoto al `DateSelector` (`Could not parse date`). Ora i default sono validi.
