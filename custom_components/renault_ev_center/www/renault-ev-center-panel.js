@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.32";
+const REC_VER = "1.0.33";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -1564,83 +1564,51 @@ class RenaultEvCenterPanel extends HTMLElement {
     const mode = sel ? sel.value : "month";
     const s = this._st(this._sid("viaggi_recenti"));
     const pts = (s && Array.isArray(s.attributes.consumi_temp)) ? s.attributes.consumi_temp : [];
-    if (!pts.length) {
-      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">
-        Nessun dato: servono viaggi ≥3 km con la <b>temperatura esterna</b> configurata.</div>`;
-      this._tempChart = null;
-      return;
-    }
-    const hasApex = typeof customElements !== "undefined" && !!customElements.get("apexcharts-card");
-    if (!hasApex) {
-      box.innerHTML = `<div style="padding:12px;border:1px dashed var(--accent);border-radius:12px;font-size:12.5px;color:var(--muted)">
-        📦 Per questo grafico installa <b>apexcharts-card</b> da HACS → Frontend.</div>`;
-      this._tempChart = null;
-      return;
-    }
-    // il filtro cambia i dati: la card va ricostruita quando cambia il periodo
-    if (this._tempChart && this._tempMode === mode) { this._tempChart.hass = this._hass; return; }
     const days = { week: 7, month: 31, season: 90, all: 100000 }[mode] || 31;
     const lim = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
     const vis = pts.filter((p) => !p.d || p.d >= lim);
     if (!vis.length) {
-      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio nel periodo scelto.</div>`;
-      this._tempChart = null;
+      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio nel periodo scelto (servono viaggi ≥3 km con la temperatura esterna).</div>`;
       return;
     }
-    // regressione lineare per la linea di tendenza
-    const n = vis.length;
-    const sx = vis.reduce((a, p) => a + p.t, 0), sy = vis.reduce((a, p) => a + p.e, 0);
-    const sxx = vis.reduce((a, p) => a + p.t * p.t, 0), sxy = vis.reduce((a, p) => a + p.t * p.e, 0);
-    const den = n * sxx - sx * sx;
-    const xs = vis.map((p) => p.t);
-    const minx = Math.min(...xs), maxx = Math.max(...xs);
-    const trend = (den !== 0 && maxx > minx)
-      ? [[minx, ((n * sxy - sx * sy) / den) * minx + (sy - ((n * sxy - sx * sy) / den) * sx) / n],
-         [maxx, ((n * sxy - sx * sy) / den) * maxx + (sy - ((n * sxy - sx * sy) / den) * sx) / n]]
-      : [];
-    if (typeof window.loadCardHelpers !== "function") return;
-    try {
-      const helpers = await window.loadCardHelpers();
-      const series = [{
-        entity: this._sid("viaggi_recenti"),
-        name: "Elettrico (kWh/100 km)",
-        color: "#3ea6ff",
-        data_generator: () => vis.map((p) => [p.t, p.e]),
-      }];
-      if (trend.length) {
-        series.push({
-          entity: this._sid("viaggi_recenti"),
-          name: "Tendenza",
-          type: "line",
-          color: "#7cc4ff",
-          stroke_width: 2,
-          curve: "straight",
-          data_generator: () => trend,
-        });
-      }
-      const card = helpers.createCardElement({
-        type: "custom:apexcharts-card",
-        chart_type: "scatter",
-        graph_span: "1y",
-        update_interval: "30min",
-        apex_config: {
-          chart: { height: 240 },
-          xaxis: { type: "numeric", title: { text: "°C" }, tickAmount: 6 },
-          yaxis: { title: { text: "kWh/100km" } },
-          markers: { size: 4 },
-        },
-        series,
-      });
-      card.hass = this._hass;
-      card.style.display = "block";
-      box.innerHTML = "";
-      box.appendChild(card);
-      this._tempChart = card;
-      this._tempMode = mode;
-    } catch (e) {
-      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Grafico non disponibile.</div>`;
-      this._tempChart = null;
+    // scatter SVG nativo: x = temperatura esterna (°C), y = consumo (kWh/100km)
+    const W = 640, H = 280, pl = 52, pr = 18, pt = 18, pb = 40;
+    const iw = W - pl - pr, ih = H - pt - pb;
+    const xs = vis.map((p) => p.t), ys = vis.map((p) => p.e);
+    let x0 = Math.min(...xs), x1 = Math.max(...xs);
+    let y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const pad = (a, b, m) => { const d = (b - a) * 0.12 || m; return [a - d, b + d]; };
+    [x0, x1] = pad(x0, x1, 2); [y0, y1] = pad(y0, y1, 1);
+    y0 = Math.max(0, y0);
+    const X = (v) => pl + (v - x0) / (x1 - x0) * iw;
+    const Y = (v) => pt + (1 - (v - y0) / (y1 - y0)) * ih;
+    const f1 = (v) => this._fmt(v, 1);
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`;
+    for (let i = 0; i <= 4; i++) {
+      const gx = X(x0 + (x1 - x0) * i / 4), gy = Y(y0 + (y1 - y0) * i / 4);
+      svg += `<line x1="${gx}" y1="${pt}" x2="${gx}" y2="${pt + ih}" stroke="var(--line)" stroke-width="1"/>`;
+      svg += `<text x="${gx}" y="${pt + ih + 15}" fill="var(--muted)" font-size="11" text-anchor="middle">${f1(x0 + (x1 - x0) * i / 4)}°</text>`;
+      svg += `<line x1="${pl}" y1="${gy}" x2="${pl + iw}" y2="${gy}" stroke="var(--line)" stroke-width="1"/>`;
+      svg += `<text x="${pl - 6}" y="${gy + 4}" fill="var(--muted)" font-size="11" text-anchor="end">${f1(y0 + (y1 - y0) * i / 4)}</text>`;
     }
+    const n = vis.length;
+    if (n >= 2) {
+      const sx = xs.reduce((a, b) => a + b, 0), sy = ys.reduce((a, b) => a + b, 0);
+      const sxx = xs.reduce((a, b) => a + b * b, 0);
+      const sxy = xs.reduce((a, b, i) => a + b * ys[i], 0);
+      const den = n * sxx - sx * sx;
+      if (den !== 0) {
+        const m = (n * sxy - sx * sy) / den, q = (sy - m * sx) / n;
+        svg += `<line x1="${X(x0)}" y1="${Y(m * x0 + q)}" x2="${X(x1)}" y2="${Y(m * x1 + q)}" stroke="#7cc4ff" stroke-width="2" stroke-dasharray="6 4"/>`;
+      }
+    }
+    vis.forEach((p) => {
+      svg += `<circle cx="${X(p.t)}" cy="${Y(p.e)}" r="4.5" fill="#3ea6ff" fill-opacity="0.85" stroke="#0d1522" stroke-width="1"><title>${f1(p.t)}°C · ${f1(p.e)} kWh/100km</title></circle>`;
+    });
+    svg += `<text x="${pl + iw / 2}" y="${H - 4}" fill="var(--muted)" font-size="11" text-anchor="middle">Temperatura esterna (°C)</text>`;
+    svg += `<text x="13" y="${pt + ih / 2}" fill="var(--muted)" font-size="11" text-anchor="middle" transform="rotate(-90 13 ${pt + ih / 2})">kWh/100km</text>`;
+    svg += `</svg>`;
+    box.innerHTML = svg;
   }
   /** trova un sensore dell'integrazione per prefisso (il nome carburante è configurabile) */
   _sensorByPrefix(prefix) {

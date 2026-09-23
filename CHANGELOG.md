@@ -5,9 +5,9 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.32 — Stato automazioni "a prova di riavvio"
+## 1.0.33 — Consumi vs temperatura + fix
 
-> Include anche **1.0.28 · 1.0.29 · 1.0.30 · 1.0.31** (mai pubblicate separatamente).
+> Include anche **1.0.28 · 1.0.29 · 1.0.30 · 1.0.31 · 1.0.32** (mai pubblicate separatamente).
 
 ### Correzioni
 - **Automazioni che si riattivano** (es. *Programma clima*) su F5 / riavvio / update: ora lo **store è la

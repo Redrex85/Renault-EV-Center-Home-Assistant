@@ -826,10 +826,8 @@ try:
     assert '_register("set_auto_state"' in open(os.path.join(CC, "__init__.py"), encoding="utf-8").read(), \
         "il servizio set_auto_state non è registrato"
     js0 = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
-    assert js0.count('entity: this._sid("viaggi_recenti")') >= 2, \
-        "la serie Tendenza del grafico temperatura non ha entity (errore apexcharts)"
-    assert 'chart_type: "scatter"' in js0, \
-        "il grafico temperatura non usa chart_type scatter (series.type scatter non è valido)"
+    assert "Temperatura esterna (°C)" in js0 and "kWh/100km" in js0, \
+        "il grafico consumi vs temperatura non è lo scatter SVG nativo (x = °C)"
     ok("pagina Wallbox ridisegnata + automazioni legacy/stato persistente")
 except Exception as e:
     bad(f"pagina Wallbox: {e}")
