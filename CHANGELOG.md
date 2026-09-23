@@ -5,6 +5,44 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.36 — Range: WLTP casa madre + box affiancato
+
+### Fix
+- **Range reale vs dichiarato**: il "Dichiarato" usava `sensor.autonomia_della_batteria`
+  (autonomia **residua** all'attuale SoC, es. 161 km al 40%) → appariva troppo basso.
+  Ora usa il **WLTP ufficiale a 100% batteria** del modello selezionato in wizard.
+- **Reale** ora usa la **media di tutti i viaggi** (`efficienza_media` di `stats_all`),
+  non più il sensore live dell'ultimo tratto.
+
+### Tabella WLTP (km a 100% batteria, varianti per capacità)
+| Modello | WLTP km |
+|---|---|
+| Megane E-Tech | 40→310 · 60→**470** |
+| New Megane E-Tech | 67→**501** |
+| Scenic E-Tech | 60→400 · 87→**625** |
+| Renault 5 | 40→300 · 52→**400** |
+| Renault 4 | 40→322 · 52→**409** |
+| Zoe | 41→300 · 52→**395** |
+| Twingo E-Tech | 27,5→**263** |
+| Alpine A290 | 52→**380** |
+
+Sceglie la variante batteria più vicina alla capacità configurata. Modello `Custom`
+→ fallback sul sensore di autonomia residua.
+
+### Box affiancato
+- **Sinistra** = *Reale · media viaggi* (con kWh/100km e capacità sotto).
+- **Destra** = *Dichiarato · WLTP* (casa madre al 100%).
+
+### Altre correzioni pagina Extra
+- **Efficienza per zona**: media **pesata per km** (`sum(e×km)÷sum(km)`); prima era
+  divisa per il numero di viaggi → valori gonfiati (309, 346, 408…). Nomi zona
+  `home`/`not_home` normalizzati in **Casa**/**Fuori**.
+- **Orario di partenza**: conteggi senza decimali (`dec: 0`).
+
+### Controlli
+- `check_status.py` **[38]** — guardia tabella WLTP, attributo `wltp_km`, media
+  e ordine del box (sinistra reale, destra dichiarato) → **123 controlli**.
+
 ## 1.0.35 — Pagina Extra: 8 grafici
 
 > Include anche **1.0.28 → 1.0.34** (mai pubblicate separatamente).

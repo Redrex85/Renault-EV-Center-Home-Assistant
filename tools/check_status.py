@@ -937,6 +937,28 @@ try:
 except Exception as e:
     bad(f"refresh auto: {e}")
 
+print("\n[38] Range: dichiarato = WLTP casa madre, reale = media viaggi")
+try:
+    se = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
+    assert "WLTP_RANGES" in se and "def wltp_km" in se, "manca la tabella WLTP"
+    for m in ("Megane E-Tech", "New Megane E-Tech", "Scenic E-Tech", "Renault 5",
+              "Renault 4", "Zoe", "Twingo E-Tech", "Alpine A290"):
+        assert f'"{m}"' in se, f"tabella WLTP senza {m}"
+    assert '"wltp_km": wltp_km(' in se, "StatisticheViaggi non espone wltp_km"
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    body = js[js.find("  _drawRange(root)"):js.find("  _drawPrezzoMese(root)")]
+    assert '["wltp_km", "wltp"]' in body, "il dichiarato non usa il WLTP"
+    assert '["efficienza_media", "kwh_per_100km"]' in body, \
+        "il reale non usa la media di tutti i viaggi"
+    assert "_num(this._sid(\"kwh_per_100km\"))" in body, "manca il fallback sensore live"
+    assert "display:flex" in body and "Dichiarato · WLTP" in body, \
+        "il box range non è affiancato (media a sinistra, dichiarato a destra)"
+    assert body.find("Reale · media") < body.find("Dichiarato · WLTP"), \
+        "ordine errato: prima Reale (sinistra) poi Dichiarato (destra)"
+    ok("range: WLTP 100% a destra + reale da media a sinistra")
+except Exception as e:
+    bad(f"range WLTP: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.35";
+const REC_VER = "1.0.36";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -1708,9 +1708,11 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     rows.forEach((r, i) => {
       const h = Math.max(2, r.v / max * ih), x = pl + bw * i + bw * 0.15, y = pt + ih - h;
-      const tip = r.l + ": " + f1(r.v) + (r.u || "") + (r.n !== undefined ? " (" + r.n + ")" : "");
+      const dec = r.dec !== undefined ? r.dec : 1;
+      const vtxt = this._fmt(r.v, dec);
+      const tip = r.l + ": " + vtxt + (r.u || "") + (r.n !== undefined ? " (" + r.n + ")" : "");
       svg += `<rect x="${x}" y="${y}" width="${bw * 0.7}" height="${h}" rx="4" fill="${r.color || "#3ea6ff"}" fill-opacity="0.85"><title>${tip}</title></rect>`;
-      svg += `<text x="${x + bw * 0.35}" y="${y - 5}" fill="var(--txt)" font-size="10" text-anchor="middle">${f1(r.v)}</text>`;
+      svg += `<text x="${x + bw * 0.35}" y="${y - 5}" fill="var(--txt)" font-size="10" text-anchor="middle">${vtxt}</text>`;
       svg += `<text x="${x + bw * 0.35}" y="${pt + ih + 14}" fill="var(--muted)" font-size="9" text-anchor="middle">${r.l}</text>`;
     });
     if (xLabel) svg += `<text x="${pl + iw / 2}" y="${H - 3}" fill="var(--muted)" font-size="10" text-anchor="middle">${xLabel}</text>`;
@@ -1748,16 +1750,20 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (!trips.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio.</div>`; return; }
     const byZ = {};
     trips.forEach((t) => {
-      const z = String(t.zona_arrivo || "Sconosciuto");
+      let z = String(t.zona_arrivo || "Sconosciuto");
+      // normalizza i nomi zona (home → Casa, not_home → Fuori, etc.)
+      if (z === "home" || z === "not_home") z = this._zn(z);
       const e = parseFloat(t.kwh_per_100km);
       const km = parseFloat(t.km) || 0;
       if (isNaN(e) || e <= 0 || km < 1) return;
-      (byZ[z] = byZ[z] || { tot: 0, n: 0 });
-      byZ[z].tot += e * km;
+      (byZ[z] = byZ[z] || { tot: 0, km: 0, n: 0 });
+      byZ[z].tot += e * km;   // somma pesata: e × km
+      byZ[z].km += km;
       byZ[z].n += 1;
     });
+    // media pesata per km: sum(e×km) / sum(km) = kWh/100km medio reale
     const rows = Object.keys(byZ)
-      .map((z) => ({ l: z, v: byZ[z].tot > 0 ? byZ[z].tot / byZ[z].n : 0, n: byZ[z].n }))
+      .map((z) => ({ l: z, v: byZ[z].km > 0 ? byZ[z].tot / byZ[z].km : 0, n: byZ[z].n }))
       .filter((r) => r.v > 0)
       .sort((a, b) => a.v - b.v);
     this._svgBars(box, rows, "kWh/100km", "zona d'arrivo");
@@ -1817,7 +1823,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     });
     const rows = [];
     for (let h = 0; h < 24; h++) {
-      if (byH[h]) rows.push({ l: String(h).padStart(2, "0"), v: byH[h], u: " viaggi" });
+      if (byH[h]) rows.push({ l: String(h).padStart(2, "0"), v: byH[h], u: " viaggi", dec: 0 });
     }
     this._svgBars(box, rows, "n. viaggi", "ora di partenza");
   }
@@ -1825,15 +1831,31 @@ class RenaultEvCenterPanel extends HTMLElement {
   _drawRange(root) {
     const box = root.querySelector('[data-c="range_cmp"]');
     if (!box) return;
-    const declared = this._num(this._ov("range"), this._car("sensor", "range_electric"), this._sid("autonomia_della_batteria"));
-    const kwh100 = this._num(this._sid("kwh_per_100km"));
-    const cap = this._num(this._nid("capacita_batteria")) || 60;
+    const st = this._st(this._sid("statistiche_viaggi"));
+    // Dichiarato = WLTP costruttore a 100% batteria (sensore autonomia residua = fallback)
+    const wl = st ? parseFloat(this._attrAny(st, ["wltp_km", "wltp"])) : NaN;
+    const declared = wl > 0 ? wl
+      : this._num(this._ov("range"), this._car("sensor", "range_electric"), this._sid("autonomia_della_batteria"));
+    // Reale = capacità ÷ MEDIA kWh/100km di TUTTI i viaggi (fallback: sensore live)
+    const avg = st ? parseFloat(this._attrAny(st, ["efficienza_media", "kwh_per_100km"])) : NaN;
+    const kwh100 = avg > 0 ? avg : this._num(this._sid("kwh_per_100km"));
+    const cap = this._num(this._nid("capacita_batteria")) || parseFloat(this._cfg.capacity) || 60;
     const real = kwh100 && kwh100 > 0 ? (cap / kwh100) * 100 : null;
-    if (declared === null && real === null) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Dati insufficienti.</div>`; return; }
-    const rows = [];
-    if (declared !== null) rows.push({ l: "Dichiarato", v: declared, color: "#3ea6ff", u: " km" });
-    if (real !== null) rows.push({ l: "Reale", v: real, color: "#22c55e", u: " km" });
-    this._svgBars(box, rows, "km", "");
+    const okD = declared !== null && declared !== undefined && !isNaN(declared);
+    if (!okD && real === null) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Dati insufficienti.</div>`; return; }
+    const cell = (label, val, color, sub, right) =>
+      `<div style="flex:1;min-width:0;padding:10px 12px;border-radius:10px;background:rgba(128,128,128,.10);text-align:${right ? "right" : "left"}">
+         <div style="font-size:11px;color:var(--muted)">${label}</div>
+         <div style="font-size:28px;font-weight:700;color:${color};line-height:1.3">${this._i(val)}<span style="font-size:13px;font-weight:400;color:var(--muted)"> km</span></div>
+         <div style="font-size:11px;color:var(--muted)">${sub}</div>
+       </div>`;
+    // sinistra = reale (dalla media di tutti i viaggi), destra = dichiarato WLTP casa madre
+    let html = `<div style="display:flex;gap:10px;align-items:stretch">`;
+    if (real !== null) html += cell("Reale · media viaggi", real, "#22c55e",
+      (kwh100 > 0 ? this._fmt(kwh100, 1) + " kWh/100km · " : "") + this._fmt(cap, 0) + " kWh", false);
+    if (okD) html += cell("Dichiarato · WLTP", declared, "#3ea6ff", "casa madre al 100%", true);
+    html += `</div>`;
+    box.innerHTML = html;
   }
 
   _drawPrezzoMese(root) {
@@ -2799,7 +2821,7 @@ const PAGES = {
     <div class="card"><h3>🕐 Orario di partenza</h3><div data-c="orari" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">A che ora parti di più: histogram per ora.</div></div>
     <div class="card"><h3>🧭 Range reale vs dichiarato</h3><div data-c="range_cmp" style="min-height:160px"></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Autonomia reale (capacità ÷ consumo) vs dichiarata dal costruttore.</div></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">WLTP casa madre a 100% batteria vs reale (capacità ÷ media di tutti i viaggi).</div></div>
   </div>
   <div class="card" style="margin-top:16px"><h3>ℹ️ Note</h3>
     <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2 evitata vs termica (termica − rete).<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div>`,

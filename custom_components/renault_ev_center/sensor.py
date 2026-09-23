@@ -26,6 +26,31 @@ PERIOD_LABELS_IT = {
     "yearly": ("Annuali", "Annuale", "annuale"),
 }
 
+# Autonomia WLTP ufficiale a 100% batteria (km), per modello e variante di capacità.
+# Fonti: schede tecniche Renault (WLTP combined, Evolution/fisso).
+WLTP_RANGES: dict[str, dict[float, int]] = {
+    "Megane E-Tech": {40: 310, 60: 470},
+    "New Megane E-Tech": {67: 501},
+    "Scenic E-Tech": {60: 400, 87: 625},
+    "Renault 5": {40: 300, 52: 400},
+    "Renault 4": {40: 322, 52: 409},
+    "Zoe": {41: 300, 52: 395},
+    "Twingo E-Tech": {27.5: 263},
+    "Alpine A290": {52: 380},
+}
+
+
+def wltp_km(model: Any, capacity: Any) -> int | None:
+    """Chilometri WLTP a 100% per il modello scelto, sulla variante batteria più vicina."""
+    table = WLTP_RANGES.get(str(model or ""))
+    if not table:
+        return None
+    try:
+        cap = float(capacity or 0)
+    except (TypeError, ValueError):
+        cap = 0.0
+    return int(table[min(table, key=lambda k: abs(k - cap))])
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -593,6 +618,8 @@ class StatisticheViaggi(MateSensor):
             "ore_guida_totali": round(d["stats_all"]["durata_totale_min"] / 60.0, 1),
             "migliore_efficienza": d.get("best_eff", 0.0),
             "efficienza_media": d["stats_all"]["kwh_per_100km"],
+            "wltp_km": wltp_km(self.coordinator.opts.get("model"),
+                               self.coordinator.capacity),
             "caricata_casa": d.get("charges_by_type", {}).get("Casa"),
             "caricata_fotovoltaico": d.get("charges_by_type", {}).get("Fotovoltaico"),
             "caricata_pubblica": d.get("charges_by_type", {}).get("Pubblica"),
