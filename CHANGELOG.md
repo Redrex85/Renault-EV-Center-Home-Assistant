@@ -5,20 +5,32 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.34 — Pagina Extra: 2 grafici affiancati
+## 1.0.35 — Pagina Extra: 8 grafici
 
-> Include anche **1.0.28 → 1.0.33** (mai pubblicate separatamente).
+> Include anche **1.0.28 → 1.0.34** (mai pubblicate separatamente).
 
 ### Nuova funzione
+- **Pagina Extra → 8 nuovi grafici** (SVG nativi, con tooltip):
+  1. **📈 Trend mensile kWh/100km** — media per mese: migliora o peggiora?
+  2. **📍 Efficienza per zona** — kWh/100km medi per zona d'arrivo (dove consumi di più)
+  3. **🔋 Vampire drain (7 gg)** — % batteria persa da fermo, giorno per giorno
+  4. **💶 Costo ricarica per mese** — € spesi mese per mese
+  5. **€/kWh per mese** — prezzo medio di ogni kWh ricaricato
+  6. **💰 Risparmio vs termica** — termica vs elettrica vs netto
+  7. **🕐 Orario di partenza** — a che ora parti di più
+  8. **🧭 Range reale vs dichiarato** — autonomia reale vs costruttore
 - **📍 Cronologia posizione** (Panoramica): timeline dei cambi di zona (In casa / Lavoro / Non
   disponibile) con orario — stile cronologia Home Assistant ma dentro una card del pannello.
   Registrata dal coordinator e salvata nello store.
+- Il **drain giornaliero** ora viene salvato nello storico (serve per il grafico 3).
 
 ### Correzioni
-- **Pagina Extra → Consumi vs temperatura**: ora **2 grafici affiancati**:
-  1. **Scatter colorato** (freddo = blu, caldo = rosso) con linea di tendenza e **tooltip** sui punti;
-  2. **Barre per fascia di temperatura** (media kWh/100km) con **tooltip**.
-  SVG ridotto (560×260) e più chiaro — come `preview/v3.html`.
+- **Pagina Extra → Consumi vs temperatura**: ora **2 grafici affiancati** (`grid g2`):
+  1. **Scatter colorato** (freddo = blu, caldo = rosso) con tendenza e **tooltip** sui punti;
+  2. **Barre per fascia** (4 fasce: **0–10 · 10–18 · 18–26 · ≥26 °C**) con **tooltip**.
+  SVG ridotto (560×150, ~metà dell'altezza precedente) — come `preview/v3.html`.
+  Selettore periodo (Settimana/Mese/Stagione/Tutto) applicato a **entrambi**.
+  Niente più dipendenza da `apexcharts-card` per questi due grafici.
 - **"Programma clima" sembrava attivo dopo l'update**: lo switch *Attivo* aveva `checked` fisso nel
   markup e, se lo scheduler non esisteva, non veniva sovrascritto → appariva sempre acceso. Ora lo
   switch viene **sempre** impostato dallo store (`false` se lo scheduler non c'è).

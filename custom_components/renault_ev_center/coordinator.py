@@ -989,6 +989,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "km": round(km_oggi, 1),
             "kwh": round(kwh_oggi, 2),
             "pct": round(_f(self.pct_daily["down"].value), 1),
+            "drain": round(_f(self.drain_meter.value), 1),
             "temp": round(temp_out, 1) if temp_out is not None else None,
         })
         self.today_rec["eff"] = (

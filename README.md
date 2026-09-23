@@ -47,6 +47,8 @@ L'integrazione **Renault** ti dà i numeri grezzi (% batteria, autonomia, odomet
 | 🖼️ **Installazione guidata** | Scelta del **modello** (imposta la foto dell'auto) e **dashboard creata automaticamente** nella barra laterale con tutte le 10+ viste già configurate |
 | 📱 **Vista Mobile** | Pagina compatta pensata per il telefono; tutte le altre viste si adattano comunque allo schermo |
 | 🛣️ **Viaggi verificati** | Doppia verifica all'arrivo: chiusura immediata se colleghi la carica + **coordinate GPS reali** salvate per ogni viaggio |
+| 📈 **Pagina Extra** | 8 grafici di analisi: trend mensile kWh/100km, efficienza per zona, vampire drain settimanale, costo €/mese, prezzo €/kWh, risparmio vs termica, orario di partenza, range reale vs dichiarato |
+| 📍 **Cronologia posizione** | Timeline dei cambi di zona (In casa / Lavoro / Non disponibile) con orario, dentro il pannello |
 
 Tutto è calcolato **localmente nel tuo Home Assistant** e salvato in `.storage` (persistente tra riavvii). Niente pyscript, niente package YAML, niente utility_meter da configurare a mano.
 
@@ -90,6 +92,11 @@ Tutto è calcolato **localmente nel tuo Home Assistant** e salvato in `.storage`
 4. Cerca **Renault EV Center** → Scarica
 5. **Riavvia Home Assistant**
 6. **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → "Renault EV Center"**
+
+> ⚠️ **Dopo aver aggiunto l'integrazione a volte la dashboard non si apre**: la prima volta che apri il
+> pannello può risultare vuoto o non caricato. **Riavvia nuovamente Home Assistant** (una seconda volta)
+> e ricarica la pagina con **Ctrl+Shift+R**. Serve perché la dashboard e le risorse vengono copiate
+> durante il setup e HA ha bisogno di un ciclo completo per registrarle.
 
 ### Manuale
 

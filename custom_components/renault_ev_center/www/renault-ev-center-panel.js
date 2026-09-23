@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.34";
+const REC_VER = "1.0.35";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -1220,6 +1220,14 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     if (root.querySelector("#tempchart")) {
       this._drawTempChart(root);
+      this._drawTrendMese(root);
+      this._drawEffZona(root);
+      this._drawDrainWeek(root);
+      this._drawCostMese(root);
+      this._drawPrezzoMese(root);
+      this._drawRisparmio(root);
+      this._drawOrari(root);
+      this._drawRange(root);
       if (this._tempChart) this._tempChart.hass = this._hass;
     }
     this._drawSavings(root);
@@ -1601,7 +1609,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       return;
     }
     // scatter SVG nativo: x = temperatura esterna (°C), y = consumo (kWh/100km)
-    const W = 560, H = 260, pl = 48, pr = 14, pt = 16, pb = 36;
+    const W = 560, H = 150, pl = 44, pr = 12, pt = 14, pb = 30;
     const iw = W - pl - pr, ih = H - pt - pb;
     const xs = vis.map((p) => p.t), ys = vis.map((p) => p.e);
     let x0 = Math.min(...xs), x1 = Math.max(...xs);
@@ -1650,7 +1658,7 @@ class RenaultEvCenterPanel extends HTMLElement {
   _drawTempBars(box, vis) {
     if (!box) return;
     if (!vis || !vis.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio.</div>`; return; }
-    const bins = [[0, 10], [10, 18], [18, 26], [26, 34], [34, 99]];
+    const bins = [[0, 10], [10, 18], [18, 26], [26, 99]];
     const rows = [];
     bins.forEach(([a, b]) => {
       const v = vis.filter((p) => p.t >= a && p.t < b);
@@ -1660,7 +1668,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
     });
     if (!rows.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun dato per le fasce.</div>`; return; }
-    const W = 560, H = 260, pl = 48, pr = 14, pt = 16, pb = 36;
+    const W = 560, H = 150, pl = 44, pr = 12, pt = 14, pb = 30;
     const iw = W - pl - pr, ih = H - pt - pb;
     const max = Math.max(...rows.map((r) => r.v)) * 1.15;
     const bw = iw / rows.length;
@@ -1683,7 +1691,169 @@ class RenaultEvCenterPanel extends HTMLElement {
     svg += `</svg>`;
     box.innerHTML = svg;
   }
-  /** trova un sensore dell'integrazione per prefisso (il nome carburante è configurabile) */
+    /** Grafico a barre generico: rows = [{l, v, n?, u?, color?}] */
+  _svgBars(box, rows, yLabel, xLabel) {
+    if (!box) return;
+    if (!rows || !rows.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun dato.</div>`; return; }
+    const W = 560, H = 150, pl = 44, pr = 12, pt = 14, pb = 30;
+    const iw = W - pl - pr, ih = H - pt - pb;
+    const max = Math.max.apply(null, rows.map((r) => r.v)) * 1.15 || 1;
+    const bw = iw / rows.length;
+    const f1 = (v) => this._fmt(v, 1);
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`;
+    for (let i = 0; i <= 4; i++) {
+      const gy = pt + ih - (ih * i / 4);
+      svg += `<line x1="${pl}" y1="${gy}" x2="${pl + iw}" y2="${gy}" stroke="var(--line)" stroke-width="1"/>`;
+      svg += `<text x="${pl - 6}" y="${gy + 4}" fill="var(--muted)" font-size="10" text-anchor="end">${f1(max * i / 4)}</text>`;
+    }
+    rows.forEach((r, i) => {
+      const h = Math.max(2, r.v / max * ih), x = pl + bw * i + bw * 0.15, y = pt + ih - h;
+      const tip = r.l + ": " + f1(r.v) + (r.u || "") + (r.n !== undefined ? " (" + r.n + ")" : "");
+      svg += `<rect x="${x}" y="${y}" width="${bw * 0.7}" height="${h}" rx="4" fill="${r.color || "#3ea6ff"}" fill-opacity="0.85"><title>${tip}</title></rect>`;
+      svg += `<text x="${x + bw * 0.35}" y="${y - 5}" fill="var(--txt)" font-size="10" text-anchor="middle">${f1(r.v)}</text>`;
+      svg += `<text x="${x + bw * 0.35}" y="${pt + ih + 14}" fill="var(--muted)" font-size="9" text-anchor="middle">${r.l}</text>`;
+    });
+    if (xLabel) svg += `<text x="${pl + iw / 2}" y="${H - 3}" fill="var(--muted)" font-size="10" text-anchor="middle">${xLabel}</text>`;
+    if (yLabel) svg += `<text x="13" y="${pt + ih / 2}" fill="var(--muted)" font-size="10" text-anchor="middle" transform="rotate(-90 13 ${pt + ih / 2})">${yLabel}</text>`;
+    svg += `</svg>`;
+    box.innerHTML = svg;
+  }
+
+  _drawTrendMese(root) {
+    const box = root.querySelector('[data-c="trend_mese"]');
+    if (!box) return;
+    const s = this._st(this._sid("storico_giornaliero"));
+    const days = (s && Array.isArray(s.attributes.days)) ? s.attributes.days : [];
+    if (!days.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun dato storico.</div>`; return; }
+    const byM = {};
+    days.forEach((d) => {
+      const m = String(d.data || "").slice(0, 7);
+      if (!m) return;
+      const e = parseFloat(d.kwh_per_100km);
+      if (isNaN(e) || e <= 0) return;
+      (byM[m] = byM[m] || []).push(e);
+    });
+    const rows = Object.keys(byM).sort().map((m) => {
+      const arr = byM[m];
+      return { l: m.slice(5) + "/" + m.slice(2, 4), v: arr.reduce((a, b) => a + b, 0) / arr.length, n: arr.length };
+    });
+    this._svgBars(box, rows, "kWh/100km", "mese");
+  }
+
+  _drawEffZona(root) {
+    const box = root.querySelector('[data-c="eff_zona"]');
+    if (!box) return;
+    const s = this._st(this._sid("viaggi_recenti"));
+    const trips = (s && Array.isArray(s.attributes.trips)) ? s.attributes.trips : [];
+    if (!trips.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio.</div>`; return; }
+    const byZ = {};
+    trips.forEach((t) => {
+      const z = String(t.zona_arrivo || "Sconosciuto");
+      const e = parseFloat(t.kwh_per_100km);
+      const km = parseFloat(t.km) || 0;
+      if (isNaN(e) || e <= 0 || km < 1) return;
+      (byZ[z] = byZ[z] || { tot: 0, n: 0 });
+      byZ[z].tot += e * km;
+      byZ[z].n += 1;
+    });
+    const rows = Object.keys(byZ)
+      .map((z) => ({ l: z, v: byZ[z].tot > 0 ? byZ[z].tot / byZ[z].n : 0, n: byZ[z].n }))
+      .filter((r) => r.v > 0)
+      .sort((a, b) => a.v - b.v);
+    this._svgBars(box, rows, "kWh/100km", "zona d'arrivo");
+  }
+
+  _drawDrainWeek(root) {
+    const box = root.querySelector('[data-c="drain_week"]');
+    if (!box) return;
+    const s = this._st(this._sid("storico_giornaliero"));
+    const days = (s && Array.isArray(s.attributes.days)) ? s.attributes.days : [];
+    const week = days.filter((d) => {
+      const dt = new Date(String(d.data || ""));
+      return !isNaN(dt) && (Date.now() - dt.getTime()) < 7 * 86400000;
+    });
+    const rows = week.map((d) => ({ l: String(d.data).slice(8) + "/" + String(d.data).slice(5, 7), v: parseFloat(d.drain) || 0 }));
+    this._svgBars(box, rows, "%", "giorno");
+  }
+
+  _drawCostMese(root) {
+    const box = root.querySelector('[data-c="cost_mese"]');
+    if (!box) return;
+    const s = this._st(this._sid("storico_giornaliero"));
+    const mesi = (s && s.attributes.mesi) ? s.attributes.mesi : {};
+    const rows = [];
+    Object.keys(mesi).sort().forEach((y) => {
+      Object.keys(mesi[y]).sort().forEach((m) => {
+        rows.push({ l: m + "/" + y.slice(2), v: parseFloat(mesi[y][m].costo) || 0 });
+      });
+    });
+    this._svgBars(box, rows, "€", "mese");
+  }
+
+  _drawRisparmio(root) {
+    const box = root.querySelector('[data-c="risp_cmp"]');
+    if (!box) return;
+    const s = this._sensorByPrefix("risparmio_totale_vs");
+    const a = s && s.attributes ? s.attributes : {};
+    const rows = [
+      { l: "Termica", v: parseFloat(a.termica_totale) || 0, color: "#f97316" },
+      { l: "Elettrica", v: parseFloat(a.elettrico_totale) || 0, color: "#3ea6ff" },
+      { l: "Netto", v: parseFloat(a.netto) || 0, color: a.netto >= 0 ? "#22c55e" : "#ef4444" },
+    ];
+    if (!rows.some((r) => r.v > 0)) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun dato risparmio.</div>`; return; }
+    this._svgBars(box, rows, "€", "");
+  }
+
+  _drawOrari(root) {
+    const box = root.querySelector('[data-c="orari"]');
+    if (!box) return;
+    const s = this._st(this._sid("viaggi_recenti"));
+    const trips = (s && Array.isArray(s.attributes.trips)) ? s.attributes.trips : [];
+    if (!trips.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio.</div>`; return; }
+    const byH = {};
+    trips.forEach((t) => {
+      const h = parseInt(String(t.ora_inizio || "").split(":")[0], 10);
+      if (!isNaN(h) && h >= 0 && h < 24) byH[h] = (byH[h] || 0) + 1;
+    });
+    const rows = [];
+    for (let h = 0; h < 24; h++) {
+      if (byH[h]) rows.push({ l: String(h).padStart(2, "0"), v: byH[h], u: " viaggi" });
+    }
+    this._svgBars(box, rows, "n. viaggi", "ora di partenza");
+  }
+
+  _drawRange(root) {
+    const box = root.querySelector('[data-c="range_cmp"]');
+    if (!box) return;
+    const declared = this._num(this._ov("range"), this._car("sensor", "range_electric"), this._sid("autonomia_della_batteria"));
+    const kwh100 = this._num(this._sid("kwh_per_100km"));
+    const cap = this._num(this._nid("capacita_batteria")) || 60;
+    const real = kwh100 && kwh100 > 0 ? (cap / kwh100) * 100 : null;
+    if (declared === null && real === null) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Dati insufficienti.</div>`; return; }
+    const rows = [];
+    if (declared !== null) rows.push({ l: "Dichiarato", v: declared, color: "#3ea6ff", u: " km" });
+    if (real !== null) rows.push({ l: "Reale", v: real, color: "#22c55e", u: " km" });
+    this._svgBars(box, rows, "km", "");
+  }
+
+  _drawPrezzoMese(root) {
+    const box = root.querySelector('[data-c="prezzo_mese"]');
+    if (!box) return;
+    const s = this._st(this._sid("storico_giornaliero"));
+    const mesi = (s && s.attributes.mesi) ? s.attributes.mesi : {};
+    const rows = [];
+    Object.keys(mesi).sort().forEach((y) => {
+      Object.keys(mesi[y]).sort().forEach((m) => {
+        const d = mesi[y][m];
+        const kwh = parseFloat(d.kwh) || 0;
+        const costo = parseFloat(d.costo) || 0;
+        if (kwh > 0) rows.push({ l: m + "/" + y.slice(2), v: costo / kwh });
+      });
+    });
+    this._svgBars(box, rows, "€/kWh", "mese");
+  }
+
+/** trova un sensore dell'integrazione per prefisso (il nome carburante è configurabile) */
   _sensorByPrefix(prefix) {
     const base = `sensor.${this._slug(this._cfg.name)}_${prefix}`;
     if (this._hass.states[base]) return this._hass.states[base];
@@ -2601,11 +2771,35 @@ const PAGES = {
           <option value="all">Tutto</option>
         </select>
       </div>
-      <div id="tempchart" style="min-height:250px"></div>
+      <div id="tempchart" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Un punto per viaggio (≥3 km): kWh/100km vs temperatura. <b>Freddo = blu, caldo = rosso</b>. La linea tratteggiata è la tendenza. Passa il mouse sui punti per i dettagli.</div></div>
     <div class="card"><h3>📊 Consumi per fascia</h3>
-      <div id="tempbars" style="min-height:250px"></div>
+      <div id="tempbars" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Media kWh/100km in ogni fascia di temperatura. Passa il mouse sulle barre per i dettagli.</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>📈 Trend mensile kWh/100km</h3><div data-c="trend_mese" style="min-height:160px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Media mensile del consumo: vedi se migliora o peggiora.</div></div>
+    <div class="card"><h3>📍 Efficienza per zona</h3><div data-c="eff_zona" style="min-height:160px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">kWh/100km medi per zona d'arrivo: dove consumi di più.</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>🔋 Vampire drain (7 gg)</h3><div data-c="drain_week" style="min-height:160px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">% batteria persa da fermo ogni giorno.</div></div>
+    <div class="card"><h3>💶 Costo ricarica per mese</h3><div data-c="cost_mese" style="min-height:160px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">€ spesi in ricariche, mese per mese.</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>€/kWh per mese</h3><div data-c="prezzo_mese" style="min-height:160px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Prezzo medio di ogni kWh ricaricato.</div></div>
+    <div class="card"><h3>💰 Risparmio vs termica</h3><div data-c="risp_cmp" style="min-height:160px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Quanto avresti speso a termica vs quanto hai speso con l'EV.</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>🕐 Orario di partenza</h3><div data-c="orari" style="min-height:160px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">A che ora parti di più: histogram per ora.</div></div>
+    <div class="card"><h3>🧭 Range reale vs dichiarato</h3><div data-c="range_cmp" style="min-height:160px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Autonomia reale (capacità ÷ consumo) vs dichiarata dal costruttore.</div></div>
   </div>
   <div class="card" style="margin-top:16px"><h3>ℹ️ Note</h3>
     <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2 evitata vs termica (termica − rete).<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div>`,

@@ -881,10 +881,26 @@ try:
     i = js.find("Consumi vs temperatura")
     body = js[max(0, i - 400):i + 900]
     assert "grid g2" in body, "i 2 grafici non sono affiancati"
-    assert "min-height:250px" in body, "il grafico scatter non è ridotto"
+    assert "min-height:160px" in body, "il grafico scatter non è ridotto"
     ok("pagina Extra: scatter + barre affiancati con SVG ridotto")
 except Exception as e:
     bad(f"pagina Extra: {e}")
+
+print("\n[37] Pagina Extra: 8 grafici")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    for fn in ("_drawTrendMese", "_drawEffZona", "_drawDrainWeek", "_drawCostMese",
+               "_drawPrezzoMese", "_drawRisparmio", "_drawOrari", "_drawRange"):
+        assert f"  {fn}(root)" in js, f"manca {fn}"
+    for c in ("trend_mese", "eff_zona", "drain_week", "cost_mese",
+              "prezzo_mese", "risp_cmp", "orari", "range_cmp"):
+        assert f'data-c="{c}"' in js, f"manca il contenitore {c}"
+    co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert '"drain": round(_f(self.drain_meter.value), 1)' in co, \
+        "il drain giornaliero non è salvato nello storico"
+    ok("8 grafici pagina Extra + drain nello storico")
+except Exception as e:
+    bad(f"grafici Extra: {e}")
 
 print("\n[34] Config flow: default validi (contatore, data acquisto)")
 try:

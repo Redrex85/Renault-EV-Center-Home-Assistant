@@ -30,6 +30,11 @@ Tempo richiesto: **~10 minuti**.
 7. Dopo il riavvio: **Impostazioni → Dispositivi e servizi → + Aggiungi integrazione** →
    cerca **"Renault EV Center"** e **avvia la configurazione guidata** (vedi §2)
 
+> ⚠️ **A volte la dashboard non si apre alla prima apertura**: se dopo aver aggiunto l'integrazione
+> il pannello risulta vuoto o non caricato, **riavvia nuovamente Home Assistant** (una seconda volta)
+> e ricarica la pagina con **Ctrl+Shift+R**. La dashboard e le risorse JS vengono copiate durante il
+> setup: HA ha bisogno di un ciclo completo per registrarle.
+
 > In breve: **repo → cerca in HACS → scarica → riavvia → aggiungi l'integrazione → configura**.
 > Il riavvio serve perché HA carica le integrazioni nuove solo all'avvio; senza di esso
 > "Renault EV Center" non compare nella ricerca delle integrazioni.
