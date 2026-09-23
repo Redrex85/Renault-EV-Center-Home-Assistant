@@ -855,9 +855,36 @@ try:
     assert '"battery_night_only"' in sw, "manca lo switch batteria-solo-senza-sole"
     co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
     assert '_switch_on("battery_night_only")' in co, "il bilanciamento ignora lo switch batteria-notte"
-    ok("multi-auto + grafico 48h + switch Batteria solo senza sole")
+    assert "_last_pos_loc" in co and '"pos_history"' in co, \
+        "la cronologia posizione non viene registrata"
+    assert "_drawPosHistory" in js and 'data-c="pos-history"' in js, \
+        "manca la card Cronologia posizione nel pannello"
+    ok("multi-auto + grafico 48h + switch Batteria solo senza sole + cronologia posizione")
 except Exception as e:
     bad(f"multi-auto: {e}")
+
+print("\n[35] Form schedulazioni: switch coerente con lo store")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert 'onEl.checked = !!(v && v.attivo)' in js, \
+        "lo switch 'Attivo' non viene imposto dallo store (resta il checked del markup)"
+    assert 'data-schon="clima" checked' not in js and 'data-schon="ricarica" checked' not in js, \
+        "il markup ha ancora checked di default sugli switch schedulazione"
+    ok("form schedulazioni: switch dallo store, no checked di default")
+except Exception as e:
+    bad(f"form schedulazioni: {e}")
+
+print("\n[36] Pagina Extra: 2 grafici affiancati (scatter + barre)")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert 'id="tempbars"' in js and "_drawTempBars" in js, "manca il grafico a barre per fascia"
+    i = js.find("Consumi vs temperatura")
+    body = js[max(0, i - 400):i + 900]
+    assert "grid g2" in body, "i 2 grafici non sono affiancati"
+    assert "min-height:250px" in body, "il grafico scatter non è ridotto"
+    ok("pagina Extra: scatter + barre affiancati con SVG ridotto")
+except Exception as e:
+    bad(f"pagina Extra: {e}")
 
 print("\n[34] Config flow: default validi (contatore, data acquisto)")
 try:

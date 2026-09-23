@@ -614,7 +614,8 @@ class ViaggiRecenti(MateSensor):
     @property
     def extra_state_attributes(self):
         return {"trips": self.coordinator.data["trips_recent"],
-                "consumi_temp": self.coordinator.data.get("consumi_temp", [])}
+                "consumi_temp": self.coordinator.data.get("consumi_temp", []),
+                "pos_history": self.coordinator.data.get("pos_history", [])}
 
 
 class StoricoGiornaliero(MateSensor):

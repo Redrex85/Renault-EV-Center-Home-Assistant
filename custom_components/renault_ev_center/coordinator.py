@@ -328,6 +328,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.home_reduce_amps = _f(opts.get(CONF_HOME_REDUCE_AMPS), DEFAULT_HOME_REDUCE_AMPS)
         self._home_hi_since: float | None = None
         self._auto_restored = False
+        self._last_pos_loc = ""
         self._home_lo_since: float | None = None
         self._home_last: dict[str, Any] = {}
         self.charge_sched_enabled = bool(opts.get(CONF_CHARGE_SCHED_ENABLED, False))
@@ -1627,6 +1628,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         await self._apply_gse(wb_state, bool(data.get("charging")))
         data["balance"] = dict(self.store.data.get("counters", {}).get("balance_last", {}))
         data["home_balance"] = dict(self._home_last)
+        # cronologia posizione (timeline nel pannello): registra i cambi di zona
+        _loc = str(data.get("location") or "")
+        if _loc and _loc != self._last_pos_loc:
+            hist = self.store.data.setdefault("pos_history", [])
+            hist.append({"ts": datetime.now().isoformat(timespec="seconds"),
+                         "loc": self._zone_label(_loc)})
+            del hist[:-200]
+            self._last_pos_loc = _loc
+            self.persist(force=True)
+        data["pos_history"] = list(self.store.data.get("pos_history", []))
         # stato on/off automazioni: seed una volta (dopo il caricamento), poi IMPONI la scelta
         if not self._auto_restored and self._managed_auto_ids():
             self.save_auto_states()

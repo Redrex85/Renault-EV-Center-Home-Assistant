@@ -5,9 +5,23 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.33 — Consumi vs temperatura + fix
+## 1.0.34 — Pagina Extra: 2 grafici affiancati
 
-> Include anche **1.0.28 · 1.0.29 · 1.0.30 · 1.0.31 · 1.0.32** (mai pubblicate separatamente).
+> Include anche **1.0.28 → 1.0.33** (mai pubblicate separatamente).
+
+### Nuova funzione
+- **📍 Cronologia posizione** (Panoramica): timeline dei cambi di zona (In casa / Lavoro / Non
+  disponibile) con orario — stile cronologia Home Assistant ma dentro una card del pannello.
+  Registrata dal coordinator e salvata nello store.
+
+### Correzioni
+- **Pagina Extra → Consumi vs temperatura**: ora **2 grafici affiancati**:
+  1. **Scatter colorato** (freddo = blu, caldo = rosso) con linea di tendenza e **tooltip** sui punti;
+  2. **Barre per fascia di temperatura** (media kWh/100km) con **tooltip**.
+  SVG ridotto (560×260) e più chiaro — come `preview/v3.html`.
+- **"Programma clima" sembrava attivo dopo l'update**: lo switch *Attivo* aveva `checked` fisso nel
+  markup e, se lo scheduler non esisteva, non veniva sovrascritto → appariva sempre acceso. Ora lo
+  switch viene **sempre** impostato dallo store (`false` se lo scheduler non c'è).
 
 ### Correzioni
 - **Automazioni che si riattivano** (es. *Programma clima*) su F5 / riavvio / update: ora lo **store è la

@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.33";
+const REC_VER = "1.0.34";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -842,6 +842,33 @@ class RenaultEvCenterPanel extends HTMLElement {
     set("home_state", homeSw ? (homeSw.state === "on" ? "attivo" : "spento") : "—");
   }
   /** Elenco delle automazioni attive (Renault / Wallbox / Bilanciamento). */
+  /** Timeline della posizione: cambi di zona registrati dal coordinator (stile cronologia HA). */
+  _drawPosHistory(root) {
+    const host = root.querySelector('[data-c="pos-history"]');
+    if (!host) return;
+    const s = this._st(this._sid("viaggi_recenti"));
+    const hist = (s && Array.isArray(s.attributes.pos_history)) ? s.attributes.pos_history : [];
+    if (!hist.length) {
+      host.innerHTML = `<div style="color:var(--muted);font-size:12px">Nessun cambio di posizione registrato.</div>`;
+      return;
+    }
+    const byDay = {};
+    for (let i = hist.length - 1; i >= 0; i--) {
+      const h = hist[i];
+      const day = String(h.ts || "").slice(0, 10);
+      const t = String(h.ts || "").slice(11, 19);
+      (byDay[day] = byDay[day] || []).push({ t: t, loc: h.loc || "—" });
+    }
+    let html = "";
+    for (const day of Object.keys(byDay).reverse()) {
+      html += `<div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">${this._d(day)}</div>`;
+      for (const e of byDay[day]) {
+        html += `<div class="row"><span style="font-family:monospace;min-width:64px">${e.t}</span><b>📍 ${e.loc}</b></div>`;
+      }
+    }
+    host.innerHTML = html;
+  }
+
   _drawAutos(root) {
     const host = root.querySelector('[data-c="autos-on"]');
     if (!host) return;
@@ -1090,9 +1117,10 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (_sch) {
       for (const tipo of ["ricarica", "clima", "promemoria"]) {
         const v = _sch[tipo];
-        if (!v) continue;
+        // SEMPRE imposto lo switch: se lo scheduler non esiste resta spento (non il checked del markup)
         const onEl = root.querySelector(`input[data-schon="${tipo}"]`);
-        if (onEl && document.activeElement !== onEl) onEl.checked = !!v.attivo;
+        if (onEl && document.activeElement !== onEl) onEl.checked = !!(v && v.attivo);
+        if (!v) continue;
         for (const k of ["inizio", "fine", "soc", "modo", "temperatura"]) {
           const el = root.querySelector(`[data-sch="${tipo}"][data-k="${k}"]`);
           if (el && document.activeElement !== el && v[k] !== undefined && v[k] !== null && v[k] !== "") {
@@ -1181,7 +1209,8 @@ class RenaultEvCenterPanel extends HTMLElement {
     });
     this._tableRotte(root);
     this._drawWallbox(root);
-    this._drawAutos(root);
+      this._drawAutos(root);
+      this._drawPosHistory(root);
     this._drawAutoToggles(root);
     // statistiche ricariche (ciambelle + tile) e grafico potenza wallbox
     this._drawChargesStats(root);
@@ -1572,7 +1601,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       return;
     }
     // scatter SVG nativo: x = temperatura esterna (°C), y = consumo (kWh/100km)
-    const W = 640, H = 280, pl = 52, pr = 18, pt = 18, pb = 40;
+    const W = 560, H = 260, pl = 48, pr = 14, pt = 16, pb = 36;
     const iw = W - pl - pr, ih = H - pt - pb;
     const xs = vis.map((p) => p.t), ys = vis.map((p) => p.e);
     let x0 = Math.min(...xs), x1 = Math.max(...xs);
@@ -1602,11 +1631,55 @@ class RenaultEvCenterPanel extends HTMLElement {
         svg += `<line x1="${X(x0)}" y1="${Y(m * x0 + q)}" x2="${X(x1)}" y2="${Y(m * x1 + q)}" stroke="#7cc4ff" stroke-width="2" stroke-dasharray="6 4"/>`;
       }
     }
+    const tMin = Math.min(...xs), tMax = Math.max(...xs);
     vis.forEach((p) => {
-      svg += `<circle cx="${X(p.t)}" cy="${Y(p.e)}" r="4.5" fill="#3ea6ff" fill-opacity="0.85" stroke="#0d1522" stroke-width="1"><title>${f1(p.t)}°C · ${f1(p.e)} kWh/100km</title></circle>`;
+      const kk = (p.t - tMin) / (tMax - tMin || 1);
+      const col = `rgb(${Math.round(90 + 165 * kk)},${Math.round(170 - 80 * kk)},${Math.round(255 - 200 * kk)})`;
+      svg += `<circle cx="${X(p.t)}" cy="${Y(p.e)}" r="5" fill="${col}" stroke="#0d1522" stroke-width="1"><title>${f1(p.t)}°C · ${f1(p.e)} kWh/100km</title></circle>`;
     });
     svg += `<text x="${pl + iw / 2}" y="${H - 4}" fill="var(--muted)" font-size="11" text-anchor="middle">Temperatura esterna (°C)</text>`;
     svg += `<text x="13" y="${pt + ih / 2}" fill="var(--muted)" font-size="11" text-anchor="middle" transform="rotate(-90 13 ${pt + ih / 2})">kWh/100km</text>`;
+    svg += `</svg>`;
+    box.innerHTML = svg;
+    // barre per fascia (stesso periodo) — affiancate
+    const boxB = root.querySelector("#tempbars");
+    if (boxB) this._drawTempBars(boxB, vis);
+  }
+
+  /** Barre per fasce di temperatura: media kWh/100km in ogni fascia. */
+  _drawTempBars(box, vis) {
+    if (!box) return;
+    if (!vis || !vis.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio.</div>`; return; }
+    const bins = [[0, 10], [10, 18], [18, 26], [26, 34], [34, 99]];
+    const rows = [];
+    bins.forEach(([a, b]) => {
+      const v = vis.filter((p) => p.t >= a && p.t < b);
+      if (v.length) {
+        const sum = v.reduce((x, p) => x + p.e, 0);
+        rows.push({ l: `${a}–${b >= 99 ? "∞" : b}°`, v: sum / v.length, n: v.length });
+      }
+    });
+    if (!rows.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun dato per le fasce.</div>`; return; }
+    const W = 560, H = 260, pl = 48, pr = 14, pt = 16, pb = 36;
+    const iw = W - pl - pr, ih = H - pt - pb;
+    const max = Math.max(...rows.map((r) => r.v)) * 1.15;
+    const bw = iw / rows.length;
+    const f1 = (v) => this._fmt(v, 1);
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`;
+    for (let i = 0; i <= 4; i++) {
+      const gy = pt + ih - (ih * i / 4);
+      svg += `<line x1="${pl}" y1="${gy}" x2="${pl + iw}" y2="${gy}" stroke="var(--line)" stroke-width="1"/>`;
+      svg += `<text x="${pl - 6}" y="${gy + 4}" fill="var(--muted)" font-size="10" text-anchor="end">${f1(max * i / 4)}</text>`;
+    }
+    rows.forEach((r, i) => {
+      const h = r.v / max * ih, x = pl + bw * i + bw * 0.2, y = pt + ih - h;
+      svg += `<rect x="${x}" y="${y}" width="${bw * 0.6}" height="${h}" rx="5" fill="#3ea6ff" fill-opacity="0.85"><title>${r.l} = ${f1(r.v)} kWh/100km (${r.n} viaggi)</title></rect>`;
+      svg += `<text x="${x + bw * 0.3}" y="${y - 5}" fill="var(--txt)" font-size="11" text-anchor="middle">${f1(r.v)}</text>`;
+      svg += `<text x="${x + bw * 0.3}" y="${pt + ih + 15}" fill="var(--muted)" font-size="10" text-anchor="middle">${r.l}</text>`;
+      svg += `<text x="${x + bw * 0.3}" y="${pt + ih + 28}" fill="var(--muted)" font-size="9" text-anchor="middle">${r.n} viaggi</text>`;
+    });
+    svg += `<text x="${pl + iw / 2}" y="${H - 4}" fill="var(--muted)" font-size="10" text-anchor="middle">Fascia di temperatura</text>`;
+    svg += `<text x="13" y="${pt + ih / 2}" fill="var(--muted)" font-size="10" text-anchor="middle" transform="rotate(-90 13 ${pt + ih / 2})">kWh/100km (media)</text>`;
     svg += `</svg>`;
     box.innerHTML = svg;
   }
@@ -2264,6 +2337,10 @@ const PAGES = {
     </div>
   </div>
 
+  <div class="card" style="margin-top:16px"><h3>📍 Cronologia posizione</h3>
+    <div data-c="pos-history"><div style="color:var(--muted);font-size:12px">Nessun cambio di posizione registrato.</div></div>
+  </div>
+
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>🤖 Automazioni attive</h3>
       <div data-c="autos-on"></div>
@@ -2514,19 +2591,22 @@ const PAGES = {
       <div class="row"><span>Peggiore</span><b><span data-topstop="peggiore|kwh_per_100km">—</span> kWh/100km</b></div>
       <div class="row"><span>Energia casa (totale)</span><b><span data-f="energia_casa">—</span> kWh</b></div></div>
   </div>
-  <div class="card" style="margin-top:16px"><h3>🌡️ Consumi vs temperatura esterna</h3>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <select data-trend="trend" style="width:auto">
-        <option value="week">Settimana</option>
-        <option value="month" selected>Mese</option>
-        <option value="season">Stagione (90 gg)</option>
-        <option value="all">Tutto</option>
-      </select>
-    </div>
-    <div id="tempchart" style="min-height:220px"></div>
-    <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Un punto per viaggio (≥3 km): consumo kWh/100km
-      sulla temperatura esterna. La linea tratteggiata è la tendenza. Richiede <b>apexcharts-card</b> e il
-      sensore <b>Temperatura esterna</b> mappato in Configura.</div></div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>🌡️ Consumi vs temperatura</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <select data-trend="trend" style="width:auto">
+          <option value="week">Settimana</option>
+          <option value="month" selected>Mese</option>
+          <option value="season">Stagione (90 gg)</option>
+          <option value="all">Tutto</option>
+        </select>
+      </div>
+      <div id="tempchart" style="min-height:250px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Un punto per viaggio (≥3 km): kWh/100km vs temperatura. <b>Freddo = blu, caldo = rosso</b>. La linea tratteggiata è la tendenza. Passa il mouse sui punti per i dettagli.</div></div>
+    <div class="card"><h3>📊 Consumi per fascia</h3>
+      <div id="tempbars" style="min-height:250px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Media kWh/100km in ogni fascia di temperatura. Passa il mouse sulle barre per i dettagli.</div></div>
+  </div>
   <div class="card" style="margin-top:16px"><h3>ℹ️ Note</h3>
     <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2 evitata vs termica (termica − rete).<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div>`,
 
@@ -2540,7 +2620,7 @@ const PAGES = {
         <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Sono le automazioni create in Home Assistant (Impostazioni → Automazioni). Accendile/spegni da qui, senza YAML.</div>
       </div></div>
     <div class="card"><h3>⏰ Programma ricarica</h3>
-      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="ricarica" checked><span></span></label></div>
+      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="ricarica"><span></span></label></div>
       <div class="row"><span>Inizio</span><input type="time" data-sch="ricarica" data-k="inizio" value="23:30"></div>
       <div class="row"><span>Fine</span><input type="time" data-sch="ricarica" data-k="fine" value="07:00"></div>
       <div class="row"><span>SoC obiettivo %</span><input type="number" data-sch="ricarica" data-k="soc" value="80" min="50" max="100" style="width:80px"></div>
@@ -2550,7 +2630,7 @@ const PAGES = {
       <div class="btn" data-cmd="schsave_ricarica" style="margin-top:10px">💾 Salva programma ricarica</div>
     </div>
     <div class="card"><h3>❄️ Programma clima</h3>
-      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="clima" checked><span></span></label></div>
+      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="clima"><span></span></label></div>
       <div class="row"><span>Orario</span><input type="time" data-sch="clima" data-k="inizio" value="07:00"></div>
       <div class="row" style="flex-wrap:wrap;gap:6px"><span>Giorni</span>
         <span><span class="chip dchip" data-schday="clima|mon">Lun</span><span class="chip dchip" data-schday="clima|tue">Mar</span><span class="chip dchip" data-schday="clima|wed">Mer</span><span class="chip dchip" data-schday="clima|thu">Gio</span><span class="chip dchip" data-schday="clima|fri">Ven</span><span class="chip dchip" data-schday="clima|sat">Sab</span><span class="chip dchip" data-schday="clima|sun">Dom</span></span>
