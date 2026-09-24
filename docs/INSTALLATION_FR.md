@@ -64,9 +64,13 @@ et/ou **« € dépensés avant »** (voir §4.2 — sinon les économies parais
 
 ## 3. Tableaux de bord
 
-Si vous avez coché **Créer le tableau de bord automatiquement**, il apparaît seul dans la barre latérale. Sinon, importez les YAML de [`dashboards/`](../dashboards/) manuellement.
+Si vous avez coché **Créer le tableau de bord automatiquement**, il apparaît seul dans la barre latérale (panneau 3D
+avec les 11 vues). Sinon — ou s'il a été supprimé — lancez le service `renault_ev_center.create_dashboard`
+(Outils développeur → Actions) : il reconstruit le panneau **avec le bon préfixe d'entités**, sans YAML manuel.
 
-Préfixe différent de `Renault` ? Faites Rechercher/Remplacer `sensor.renault_`.
+> ⚠️ Les fichiers YAML de [`dashboards/`](../dashboards/) sont **obsolètes** : ils codent en dur
+> le préfixe `sensor.renault_` et cassent donc toute voiture qui ne s'appelle pas
+> littéralement `Renault`. Ne les importez pas — le panneau auto-créé couvre déjà tout.
 
 ## 4.1 Confidentialité et adresses (géocodage)
 

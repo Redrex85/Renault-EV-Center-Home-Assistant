@@ -1076,6 +1076,36 @@ try:
 except Exception as e:
     bad(f"nome auto/overrides: {e}")
 
+print("\n[42] Capacità da modello · no entry duplicate · niente import YAML legacy")
+try:
+    const = open(os.path.join(CC, "const.py"), encoding="utf-8").read()
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    # A) default capacità dal modello (R5/R4/Zoe/Twingo/A290 non hanno 60 kWh)
+    assert "MODEL_CAPACITY" in const, "manca MODEL_CAPACITY in const.py"
+    for model, cap in (("Renault 5", "52.0"), ("Renault 4", "52.0"),
+                       ("Twingo E-Tech", "27.5"), ("Alpine A290", "52.0")):
+        assert f'"{model}": {cap}' in const, f"MANCA {model} -> {cap} kWh"
+    assert "def _capacity_for_model(" in flow, "manca _capacity_for_model()"
+    assert flow.count("_capacity_for_model(") >= 3, \
+        "_capacity_for_model() non chiamato in wizard e options"
+    assert "MODEL_CAPACITY.get(str(defaults.get(CONF_MODEL)" in flow, \
+        "lo schema non precompila la capacità dal modello"
+    # C) unique_id sullo slug (non .lower() grezzo) + pre-check sulle entry esistenti
+    assert "def _slug_name(" in flow, "manca _slug_name()"
+    assert 'f"{DOMAIN}_{nuovo}"' in flow, "il unique_id non usa lo slug"
+    assert "async_entries(DOMAIN)" in flow and 'reason="already_configured"' in flow, \
+        "manca il rifiuto delle entry con stesso prefisso"
+    # B) i doc non devono più invitare a importare i YAML legacy
+    for doc in ("docs/INSTALLATION.md", "docs/INSTALLATION_FR.md", "docs/INSTALLAZIONE.md"):
+        d = open(os.path.join(BASE, doc), encoding="utf-8").read().lower()
+        assert "import the yaml files" not in d and "importez les yaml" not in d \
+            and "incolla." not in d, f"{doc} invita ancora a importare dashboards/"
+        assert "create_dashboard" in d, f"{doc} non indica più il servizio create_dashboard"
+        assert "legacy" in d or "obsol" in d, f"{doc} non avverte che dashboards/ è legacy"
+    ok("capacità da modello · no entry duplicate · YAML legacy deprecati")
+except Exception as e:
+    bad(f"modello/entry/doc: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

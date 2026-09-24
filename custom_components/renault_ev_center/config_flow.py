@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
+from homeassistant.util import slugify
 from homeassistant.helpers.selector import (
     BooleanSelector,
     EntitySelector,
@@ -142,6 +143,7 @@ from .const import (
     DEFAULT_BOLLO_EV,
     DEFAULT_BOLLO_TERMICO,
     DEFAULT_CAPACITY,
+    MODEL_CAPACITY,
     DEFAULT_CO2_GRID_GKWH,
     DEFAULT_CO2_THERMAL_GKM,
     DEFAULT_EFFICIENCY,
@@ -205,7 +207,7 @@ def _meter_opt(v: Any) -> str:
 
 
 def _sugg_date(v: Any) -> dict:
-    """suggested_value per DateSelector: SOLO se è una data non vuota (altrimenti errore di parsing)."""
+    """suggested_value per DateSelector: SOLO se è una data non vuota (altrimento errore di parsing)."""
     s = str(v or "").strip()
     return {"description": {"suggested_value": s}} if s else {}
 
@@ -343,10 +345,37 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
     return vol.Schema(schema)
 
 
+def _slug_name(v: Any) -> str:
+    """Prefisso come lo genererebbe HA per gli entity_id.
+
+    Il unique_id vecchio usava `.lower()` grezzo: "Renault " e "Renault" avevano
+    unique_id diversi ma slug identico → due entry, entità col suffisso `_2`.
+    """
+    return slugify(str(v or ""))
+
+
+def _entry_name(e: "config_entries.ConfigEntry") -> str:
+    """Stessa risoluzione del nome usata dalle piattaforme (vedi dashboard.entry_name)."""
+    return str(e.data.get("name") or e.title or "")
+
+
+def _capacity_for_model(user_input: dict[str, Any]) -> None:
+    """Se la capacità è ancora il default 60 e il modello ha una nota, usala."""
+    real = MODEL_CAPACITY.get(str(user_input.get(CONF_MODEL) or ""))
+    if not real or float(real) == float(DEFAULT_CAPACITY):
+        return
+    cap = user_input.get(CONF_CAPACITY)
+    if cap is None or float(cap) == float(DEFAULT_CAPACITY):
+        user_input[CONF_CAPACITY] = real
+
+
 def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema({
         vol.Required("battery"): section(vol.Schema({
-            vol.Required(CONF_CAPACITY, default=defaults.get(CONF_CAPACITY, DEFAULT_CAPACITY)): NumberSelector(
+            vol.Required(CONF_CAPACITY, default=defaults.get(
+                CONF_CAPACITY,
+                MODEL_CAPACITY.get(str(defaults.get(CONF_MODEL) or ""), DEFAULT_CAPACITY),
+            )): NumberSelector(
                 NumberSelectorConfig(min=20, max=150, step=0.5, unit_of_measurement="kWh", mode=NumberSelectorMode.BOX)),
             vol.Required(CONF_TARGET_SOC, default=defaults.get(CONF_TARGET_SOC, DEFAULT_TARGET_SOC)): NumberSelector(
                 NumberSelectorConfig(min=50, max=100, step=1, unit_of_measurement="%")),
@@ -469,8 +498,15 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Schermata UNICA di configurazione: tutte le sezioni (come le Opzioni)."""
         if user_input is not None:
             user_input = _flat(user_input)
-            await self.async_set_unique_id(f"{DOMAIN}_{str(user_input.get(CONF_NAME, '')).lower()}")
+            # rifiuta la seconda entry che produrrebbe lo STESSO prefisso
+            # (→ entità col suffisso `_2`, dashboard che punta a quelle vecchie)
+            nuovo = _slug_name(user_input.get(CONF_NAME))
+            for e in self.hass.config_entries.async_entries(DOMAIN):
+                if _slug_name(_entry_name(e)) == nuovo:
+                    return self.async_abort(reason="already_configured")
+            await self.async_set_unique_id(f"{DOMAIN}_{nuovo}")
             self._abort_if_unique_id_configured()
+            _capacity_for_model(user_input)
             prof = self._profile()
             user_input[CONF_WALLBOX_ENABLED] = prof != PROFILE_BASE
             user_input[CONF_HAS_PV] = prof == PROFILE_ENTERPRISE
@@ -524,7 +560,9 @@ class RenaultMateOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         if user_input is not None:
-            return self.async_create_entry(title="", data=_flat(user_input))
+            data = _flat(user_input)
+            _capacity_for_model(data)
+            return self.async_create_entry(title="", data=data)
         base = {**self.config_entry.data, **self.config_entry.options}
         return self.async_show_form(
             step_id="init",

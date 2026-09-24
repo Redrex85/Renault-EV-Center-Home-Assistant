@@ -68,9 +68,14 @@ Everything can be changed later from the integration's Configure dialog.
 
 ## 3. Dashboards
 
-With "Create dashboard" enabled, the sidebar panel is created automatically (11 views + the custom 3D panel).
-To set it up manually, import the YAML files from [`dashboards/`](../dashboards/).
-If your car isn't named `Megane`, find & replace the `sensor.megane_` prefix.
+With "Create dashboard" enabled, the sidebar panel is created automatically (custom 3D
+panel with all 11 views). If you disabled it, or it got removed, run the
+`renault_ev_center.create_dashboard` service (Developer Tools → Actions): it rebuilds
+the panel **with the right entity prefix** — no manual YAML involved.
+
+> ⚠️ The YAML files in [`dashboards/`](../dashboards/) are **legacy**. They hardcode the
+> `sensor.renault_` prefix, so they break on every car that isn't literally named
+> `Renault`. Don't import them — the auto-created panel already covers everything.
 
 ## 4. Services
 
@@ -168,6 +173,6 @@ car's whole life — not only inside the comparison box. Leave them empty and "a
 | Daily km stays 0 | Wrong odometer entity selected |
 | Costs stay 0 | Set prices; without wallbox use manual charges |
 | Trips never close | Lower the trip timeout option |
-| Dashboard "entity not found" | Replace the `sensor.megane_` prefix |
+| Dashboard "entity not found" | Wrong prefix: run `renault_ev_center.create_dashboard` (rebuilds the panel with the right prefix). The YAML files in `dashboards/` are legacy — don't import them |
 
 Data lives in `<config>/.storage/renault_ev_center.<entry_id>` — include `.storage` in backups.

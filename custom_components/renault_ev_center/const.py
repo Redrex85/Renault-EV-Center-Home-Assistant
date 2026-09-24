@@ -173,6 +173,18 @@ CONF_SOLAR_ZONE = "solar_zone"
 # --- valori predefiniti -------------------------------------------------------
 DEFAULT_NAME = "Renault"
 DEFAULT_CAPACITY = 60.0
+# capacità di fabbrica (kWh) per modello: usata come default nel wizard.
+# Renault 5 / 4 / Zoe / Twingo / A290 NON hanno una variante da 60 kWh.
+MODEL_CAPACITY: dict[str, float] = {
+    "Megane E-Tech": 60.0,
+    "New Megane E-Tech": 60.0,
+    "Scenic E-Tech": 60.0,
+    "Renault 5": 52.0,
+    "Renault 4": 52.0,
+    "Zoe": 52.0,
+    "Twingo E-Tech": 27.5,
+    "Alpine A290": 52.0,
+}
 DEFAULT_TARGET_SOC = 80.0
 DEFAULT_PRICE_HOME = 0.25
 DEFAULT_PRICE_PUBLIC = 0.45

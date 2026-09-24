@@ -139,10 +139,13 @@ Con l'opzione attiva **non devi fare nulla**: la plancia appare da sola nella ba
 con 11 viste (Panoramica, Viaggi, Statistiche, Ricariche, Salute batteria, Manutenzione,
 Risparmi, Extra, Automazioni, Impostazioni, Mobile).
 
-Se l'hai disattivata o vuoi farla a mano: i file sono in [`dashboards/`](../dashboards/) —
-Impostazioni → Dashboard → Aggiungi → matita → ⋮ → *Modifica configurazione UI in YAML* → incolla.
+Se l'hai disattivata o è stata rimossa: esegui il servizio `renault_ev_center.create_dashboard`
+(Strumenti per sviluppatori → Azioni) — ricostruisce il pannello **con il prefisso entità giusto**,
+senza YAML manuale.
 
-> 🔄 Prefisso sbagliato? Trova-sostituisci `sensor.renault_` nei file con il tuo prefisso.
+> ⚠️ I file in [`dashboards/`](../dashboards/) sono **legacy**: hanno `sensor.renault_` scritto
+> in fisso, quindi si rompono con qualsiasi auto non chiamata letteralmente `Renault`.
+> Non importarli — il pannello auto-creato copre già tutto.
 >
 > 🗺️ La card **mappa** richiede il tracker GPS: se non lo hai, elimina quel blocco.
 
@@ -292,7 +295,7 @@ tenere il prelievo da rete ~0: di notte l'auto **segue la batteria**, non la ret
 | Km giornalieri sempre 0 | Controlla di aver scelto il giusto odometro nel config flow |
 | Costi a zero | Verifica i prezzi nelle opzioni; senza wallbox i costi si accumulano solo su ricariche manuali |
 | I viaggi non si chiudono | Riduci il "timeout viaggi" nelle opzioni (es. 10 min) |
-| Dashboard mostrano "entità non trovata" | Prefisso sbagliato: trova-sostituisci `sensor.megane_` nei file YAML |
+| Dashboard mostrano "entità non trovata" | Prefisso sbagliato: esegui `renault_ev_center.create_dashboard` (ricostruisce il pannello col prefisso giusto). I file YAML in `dashboards/` sono legacy e vanno evitati |
 
 ## 7. Backup e dati
 

@@ -5,6 +5,40 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.40 — Capacità dal modello · no entry duplicate · YAML legacy chiusi
+
+### Capacità batteria dal modello scelto
+`DEFAULT_CAPACITY = 60` veniva usata per **tutte** le auto. Ma **Renault 5 e Renault 4**
+(nonché Zoe, Twingo E-Tech, Alpine A290) **non esistono in una variante da 60 kWh**:
+sbagliava `kWh a bordo`, `kWh per 1%` e la **variante WLTP** scelta dal confronto.
+
+- `const.py` → `MODEL_CAPACITY` (R5/R4/Zoe/A290 **52**, Twingo **27,5**, Megane/Scenic **60**)
+- `config_flow.py` → `_capacity_for_model()`: se la capacità è ancora il default 60 e il
+  modello ha una capacità nota, la usa. Chi la ha impostata a mano resta invariato.
+- Lo schema la precompila già dal modello nelle Opzioni.
+
+### Niente più entry doppia (entità con suffisso `_2`)
+Il `unique_id` usava `.lower()` grezzo mentre l'`entity_id` usa `slugify()`: nomi che
+differiscono per maiuscole/spazi/punteggiatura (`Renault ` vs `Renault`) passavano il
+controllo, producevano **due entry** e gli `entity_id` venivano generati **uguali** →
+seconda serie con `_2`, e la dashboard punta alla serie sbagliata.
+
+Ora: `unique_id` costruito sullo **stesso slug** + pre-check su tutte le entry esistenti
+(`already_configured`) confrontando il prefisso effettivo.
+
+### Percorso YAML legacy chiuso
+`dashboards/*.yaml` contiene **182 riferimenti hardcoded a `sensor.renault_`**: con un auto
+diversa da "Renault" si rompe tutto (vedi caso reale: `sensor.renault_scenic_*` vs `renault_`).
+
+Le 3 guide (IT/EN/FR) **non invitano più** a importarli: indicano il servizio
+`renault_ev_center.create_dashboard`, che ricostruisce il pannello col prefisso giusto,
+e segnalano i file come **legacy**.
+
+### Controlli
+- `check_status.py` **[42]**: `MODEL_CAPACITY` per modello, `_capacity_for_model()` chiamato
+  in wizard **e** options, `unique_id` su slug, rifiuto entry duplicate, 3 doc senza invito
+  all'import + con `create_dashboard` e avviso legacy → **127 controlli**.
+
 ## 1.0.39 — Dashboard e entità finalmente con lo stesso nome
 
 ### Bug: pannello vuoto con sensori popolati
