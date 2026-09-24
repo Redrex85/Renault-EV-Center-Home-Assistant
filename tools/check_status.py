@@ -959,6 +959,67 @@ try:
 except Exception as e:
     bad(f"range WLTP: {e}")
 
+print("\n[39] Ricariche: controllo spina + wallbox di un'altra auto")
+try:
+    cn = open(os.path.join(CC, "const.py"), encoding="utf-8").read()
+    assert "PLUG_CONNECTED_VALUES" in cn, "manca PLUG_CONNECTED_VALUES"
+    co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert "def _plug_connected" in co, "manca il controllo della spina"
+    assert "plug_ours = self._plug_connected() is not False" in co, \
+        "l'energia wallbox non viene vincolata alla nostra auto"
+    # i contatori/la spina devono vincolare TUTTI e 3 i punti: meter, costo, sessione
+    assert "allow=wb_enabled and plug_ours and wb_state" in co, \
+        "i meter wallbox contano anche con spina scollegata"
+    assert "if charging_wb and wb_delta > 0 and plug_ours:" in co, \
+        "il costo della wallbox viene contato anche per un'altra auto"
+    assert '"wb_accum": 0.0' in co and '"plug_ok": self._plug_connected()' in co, \
+        "la sessione non registra delta passo-passo e stato spina"
+    assert 'if s.get("plug_ok") is False:' in co and "_charge_energy(\n            measured, accum" in co, \
+        "_finalize_charge non scarta la wallbox con spina scollegata"
+    assert 'accum = max(_f(s.get("kwh_accum")), _f(s.get("wb_accum")))' in co, \
+        "manca il delta passo-passo tra le sorgenti di energia"
+    ok("ricariche: spina verificata, wallbox altrui non conteggiata, delta passo-passo")
+except Exception as e:
+    bad(f"controllo spina wallbox: {e}")
+
+print("\n[40] Pagina Extra: range nel box Top&Stop, costo+€/kWh accorpati")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    tpl = js[js.find("  p8: `"):js.find("  p9: `")]
+    assert tpl, "template pagina Extra (p8) non trovato"
+    # range accorpato dentro Top & Stop, niente card dedicata
+    assert "Top &amp; Stop" in tpl and 'data-c="range_cmp"' in tpl, \
+        "manca range_cmp nel template Extra"
+    assert tpl.find("Top &amp; Stop") < tpl.find('data-c="range_cmp"'), \
+        "range_cmp non è dentro il box Top & Stop"
+    assert '<h3>🧭 Range reale vs dichiarato</h3>' not in tpl, \
+        "la card autonoma del range non è stata rimossa"
+    assert tpl.count('data-c="range_cmp"') == 1, "range_cmp duplicato"
+    # costo ricarica + prezzo €/kWh nello stesso box
+    i = tpl.find("<h3>💶 Costo ricarica · mese</h3>")
+    assert i >= 0, "manca il box Costo ricarica · mese"
+    j = tpl.find('data-c="cost_mese"', i)
+    k = tpl.find('data-c="prezzo_mese"', i)
+    assert j > i and k > j, "cost_mese e prezzo_mese non sono nello stesso box"
+    assert '<h3>€/kWh per mese</h3>' not in tpl, "la card €/kWh separata non è stata rimossa"
+    # README: zona casa fortemente consigliata + valori che servono km
+    md = open(os.path.join(BASE, "README.md"), encoding="utf-8").read()
+    assert "Fortemente consigliato" in md and "zona Casa" in md, \
+        "manca nel README l'avviso sulla zona Casa"
+    assert "qualche decina di km" in md, \
+        "manca nel README l'avviso sui valori che servono dopo aver guidato"
+    # stessi avvisi nelle guide di installazione (IT/EN/FR)
+    for doc, zona, km in (
+        ("docs/INSTALLAZIONE.md", "zona Casa", "qualche decina di km"),
+        ("docs/INSTALLATION.md", "Home zone", "few tens of km"),
+        ("docs/INSTALLATION_FR.md", "zone Maison", "quelques dizaines de km"),
+    ):
+        d = open(os.path.join(BASE, doc), encoding="utf-8").read()
+        assert zona in d and km in d, f"manca l'avviso zona/km in {doc}"
+    ok("Extra: range in Top&Stop, costo+€/kWh accorpati, README+3 guide avvisi")
+except Exception as e:
+    bad(f"layout Extra/README: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

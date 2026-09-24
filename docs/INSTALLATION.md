@@ -8,6 +8,16 @@ From install to a fully working dashboard in **~10 minutes**.
 - The official **Renault integration** configured with your vehicle
 - *(Optional)* A wallbox integrated into HA (Wallbox, go-e, Easee, OCPP, Shelly EM…)
 
+> ⚠️ **Strongly recommended: at least the Home zone.** In HA go to **Settings → Zones**
+> and make sure a `Home` zone exists (correct latitude/longitude) with the **car GPS
+> tracker** inside it. Without the `home` zone the integration **cannot tell a home
+> charge from a public charger**: everything is logged as *Public* and the home/solar
+> prices never apply.
+
+> ⚠️ **Some values only populate after driving**: trips, kWh/100km, per-zone efficiency,
+> departure time, real range and monthly history stay empty until the car has covered
+> **a few tens of km**. Seeing `—` right after install is normal.
+
 ## 1. Install
 
 **HACS:** HACS → ⋮ → Custom repositories → add `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant` (category: Integration) → **then search "Renault EV Center" in HACS → open it → Download** → **restart Home Assistant** → **Settings → Devices & Services → Add Integration → "Renault EV Center"** → run the setup wizard.

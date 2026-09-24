@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.36";
+const REC_VER = "1.0.37";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -2781,7 +2781,12 @@ const PAGES = {
     <div class="card"><h3>🏆 Top &amp; Stop · mese</h3>
       <div class="row"><span>Migliore</span><b><span data-topstop="migliore|kwh_per_100km">—</span> kWh/100km</b></div>
       <div class="row"><span>Peggiore</span><b><span data-topstop="peggiore|kwh_per_100km">—</span> kWh/100km</b></div>
-      <div class="row"><span>Energia casa (totale)</span><b><span data-f="energia_casa">—</span> kWh</b></div></div>
+      <div class="row"><span>Energia casa (totale)</span><b><span data-f="energia_casa">—</span> kWh</b></div>
+      <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+        <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🧭 Range reale vs dichiarato</div>
+        <div data-c="range_cmp" style="min-height:96px"></div>
+        <div style="color:var(--muted);font-size:11.5px;margin-top:6px">WLTP casa madre a 100% vs reale (capacità ÷ media di tutti i viaggi).</div>
+      </div></div>
   </div>
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>🌡️ Consumi vs temperatura</h3>
@@ -2808,20 +2813,18 @@ const PAGES = {
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>🔋 Vampire drain (7 gg)</h3><div data-c="drain_week" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">% batteria persa da fermo ogni giorno.</div></div>
-    <div class="card"><h3>💶 Costo ricarica per mese</h3><div data-c="cost_mese" style="min-height:160px"></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">€ spesi in ricariche, mese per mese.</div></div>
+    <div class="card"><h3>💶 Costo ricarica · mese</h3>
+      <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">€ spesi in ricariche</div>
+      <div data-c="cost_mese" style="min-height:130px"></div>
+      <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px">Prezzo medio €/kWh</div>
+      <div data-c="prezzo_mese" style="min-height:130px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Quanto spendi ogni mese e quanto costa ogni kWh ricaricato.</div></div>
   </div>
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>€/kWh per mese</h3><div data-c="prezzo_mese" style="min-height:160px"></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Prezzo medio di ogni kWh ricaricato.</div></div>
     <div class="card"><h3>💰 Risparmio vs termica</h3><div data-c="risp_cmp" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Quanto avresti speso a termica vs quanto hai speso con l'EV.</div></div>
-  </div>
-  <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>🕐 Orario di partenza</h3><div data-c="orari" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">A che ora parti di più: histogram per ora.</div></div>
-    <div class="card"><h3>🧭 Range reale vs dichiarato</h3><div data-c="range_cmp" style="min-height:160px"></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">WLTP casa madre a 100% batteria vs reale (capacità ÷ media di tutti i viaggi).</div></div>
   </div>
   <div class="card" style="margin-top:16px"><h3>ℹ️ Note</h3>
     <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2 evitata vs termica (termica − rete).<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div>`,

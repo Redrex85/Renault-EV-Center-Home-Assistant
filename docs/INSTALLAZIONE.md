@@ -12,6 +12,16 @@ Tempo richiesto: **~10 minuti**.
   (*Impostazioni → Dispositivi e servizi → Renault*): devi vedere la tua auto con i sensori attivi
 - *(Opzionale ma consigliato)* Wallbox integrata in HA
 
+> ⚠️ **Fortemente consigliato: almeno la zona Casa.** In HA vai su
+> **Impostazioni → Zone** e assicurati che esista una zona `Casa` (latitudine e
+> longitudine corrette) con dentro il **tracker GPS dell'auto**. Senza la zona `home`
+> l'integrazione **non distingue una ricarica a casa da una colonnina pubblica**:
+> tutto finisce come *Pubblica* e i prezzi casa/fotovoltaico non si applicano.
+
+> ⚠️ **Alcuni valori si popolano solo guidando**: viaggi, kWh/100km, efficienza per
+> zona, orario di partenza, range reale e storico mensile restano vuoti finché l'auto
+> non percorre **qualche decina di km**. Subito dopo l'installazione è normale vedere `—`.
+
 > 💡 **Come verificare:** cerca `sensor.mileage` in Strumenti per sviluppatori → Stati. Se esiste ed è aggiornata, sei a posto.
 
 ## 1. Installare l'integrazione

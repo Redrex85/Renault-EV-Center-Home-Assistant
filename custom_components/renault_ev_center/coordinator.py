@@ -20,6 +20,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CHARGE_STATE_ON_VALUES,
+    PLUG_CONNECTED_VALUES,
     MESI_FILTRO,
     CONF_BATTERY_LEVEL,
     CONF_BOLLO_EV,
@@ -642,6 +643,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         v = (value or "").lower()
         return v in CHARGE_STATE_ON_VALUES
 
+    def _plug_connected(self) -> bool | None:
+        """Spina dell'auto collegata? True/False, None se l'entità manca o è ignota."""
+        ent = self.opts.get(CONF_PLUG_ENTITY)
+        if not ent:
+            return None
+        v = (_txt(self.hass, ent) or "").lower()
+        if not v or v in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return None
+        return v in PLUG_CONNECTED_VALUES
+
     def _wb_counter(self) -> float | None:
         sess = self.opts.get(CONF_WB_SESSION_ENERGY)
         tot = self.opts.get(CONF_WB_TOTAL_ENERGY)
@@ -784,6 +795,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         wb_enabled = bool(o.get(CONF_WALLBOX_ENABLED))
         wb_power = self._wb_power_kw() if wb_enabled else 0.0
         wb_state = _txt(hass, o.get(CONF_WB_STATE)).lower() if wb_enabled else ""
+        # L'energia della wallbox è della NOSTRA auto solo con la spina collegata:
+        # una wallbox può erogare verso un'altra macchina (la Renault è a casa ferma
+        # e scollegata) → quella corrente non va conteggiata né come kWh né come costo.
+        # None (entità spina non configurata) = nessun vincolo, come prima.
+        plug_ours = self._plug_connected() is not False
 
         self._apply_number_settings()
 
@@ -827,7 +843,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             self.wb_meters[p].tick(
                 keys[p],
                 self._wb_counter(),
-                allow=wb_enabled and wb_state in WALLBOX_CHARGING_STATES,
+                allow=wb_enabled and plug_ours and wb_state in WALLBOX_CHARGING_STATES,
                 max_delta=30.0,
             )
             self.kwh_meters[p]["up"].tick(keys[p], avail_kwh, allow=True, max_delta=self.capacity * 0.35)
@@ -864,7 +880,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     if 0 < d <= 10:
                         wb_delta = d
                 self._wb_counter_ref = counter
-            if charging_wb and wb_delta > 0:
+            if charging_wb and wb_delta > 0 and plug_ours:
                 prezzo = self._price_for_zone(location or "home")
                 aggiunta = wb_delta * prezzo
                 for p in PERIODS:
@@ -933,6 +949,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     "counter_start": self._wb_counter(),
                     "total_start": self._wb_total_counter(),
                     "kwh_accum": 0.0,
+                    # delta wallbox passo-passo: supera i contatori che si azzerano
+                    # o fanno salti a metà sessione (per questo 13 kWh → 4,67)
+                    "wb_accum": 0.0,
+                    # spina collegata al momento di avvio della sessione
+                    "plug_ok": self._plug_connected(),
                     "ts_last": time.time(),
                     "power_max_kw": 0.0,
                     "odometro_inizio": odometer,
@@ -941,9 +962,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 started_charge = True
             self.charge_session["soc_now"] = battery
             self.charge_session["power_kw"] = wb_power
+            # la spina può scollegarsi a metà: il valore peggiore vince
+            if self._plug_connected() is False:
+                self.charge_session["plug_ok"] = False
             # picco di potenza della sessione: serve a distinguere AC (≤22 kW) da DC (fast)
             if wb_power > _f(self.charge_session.get("power_max_kw")):
                 self.charge_session["power_max_kw"] = round(wb_power, 2)
+            # energia wallbox accumulata a ogni ciclo (0 < delta ≤ 10 kWh per poll)
+            if wb_delta > 0:
+                self.charge_session["wb_accum"] = round(
+                    _f(self.charge_session.get("wb_accum")) + wb_delta, 4)
             # integrale della potenza istantanea: conta i kWh se i contatori wallbox mancano
             _now_ts = time.time()
             _dt_h = max(_now_ts - _f(self.charge_session.get("ts_last"), _now_ts), 0.0) / 3600.0
@@ -1664,13 +1692,21 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             tipo = "Fotovoltaico"
         else:
             tipo = "Pubblica"
-        # delta misurati (i contatori azzerati a metà sessione, es. mezzanotte, vengono scartati)
-        kwh, origine = _charge_energy(
-            _best_measured_delta((
+        # Spina scollegata a metà sessione → la wallbox stava erogando verso un'altra
+        # auto: l'energia misurata NON è della nostra Renault, si ricade sul delta SoC.
+        if s.get("plug_ok") is False:
+            measured = 0.0
+            accum = 0.0
+        else:
+            measured = _best_measured_delta((
                 (s.get("counter_start"), counter_end),
                 (s.get("total_start"), total_end),
-            )),
-            s.get("kwh_accum"), tipo, s.get("soc_start"), battery, self.capacity,
+            ))
+            # i contatori fanno salti (reset, sessioni altrui): il delta passo-passo
+            # della sessione è la misura più affidabile, si prende il migliore
+            accum = max(_f(s.get("kwh_accum")), _f(s.get("wb_accum")))
+        kwh, origine = _charge_energy(
+            measured, accum, tipo, s.get("soc_start"), battery, self.capacity,
         )
         if origine == "casa_senza_misura":
             _LOGGER.warning(

@@ -8,6 +8,16 @@ De l'installation au tableau de bord opérationnel en **~10 minutes**.
 - L'intégration officielle **Renault** configurée avec votre véhicule
 - *(Optionnel)* Une wallbox intégrée dans HA (Wallbox, go-e, Easee, OCPP, Shelly EM…)
 
+> ⚠️ **Fortement recommandé : au moins la zone Maison.** Dans HA, allez dans
+> **Paramètres → Zones** et vérifiez qu'une zone `Maison` existe (coordonnées correctes)
+> contenant le **tracker GPS de la voiture**. Sans la zone `home`, l'intégration
+> **ne distingue pas une recharge à maison d'une borne publique** : tout est classé
+> *Public* et les prix maison/solaire ne s'appliquent jamais.
+
+> ⚠️ **Certaines valeurs ne se remplissent qu'en roulant** : trajets, kWh/100 km,
+> efficacité par zone, heure de départ, autonomie réelle et historique mensuel restent
+> vides tant que la voiture n'a pas parcouru **quelques dizaines de km**.
+
 ## 1. Installation
 
 **HACS :** HACS → ⋮ → Dépôts personnalisés → ajouter `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant` (catégorie : Intégration) → **puis cherchez « Renault EV Center » dans HACS → ouvrez-le → Télécharger** → **redémarrez Home Assistant** → **Paramètres → Appareils et services → Ajouter une intégration → « Renault EV Center »** → lancez l'assistant.

@@ -187,6 +187,9 @@ DEFAULT_SOLAR_ZONE = "beb"
 
 CHARGE_STATE_ON_VALUES = {"on", "charging", "charge_in_progress"}
 WALLBOX_CHARGING_STATES = {"charging"}
+# stati dell'entità plug_entity che significano "spina collegata" (Renault + comuni)
+PLUG_CONNECTED_VALUES = {"connected", "completed", "plugged", "plugged_in",
+                         "cable_connected", "on", "true", "1"}
 
 TRIP_MIN_KM = 0.5
 TRIP_MIN_MINUTES = 2

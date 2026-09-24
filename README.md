@@ -47,7 +47,7 @@ L'integrazione **Renault** ti dà i numeri grezzi (% batteria, autonomia, odomet
 | 🖼️ **Installazione guidata** | Scelta del **modello** (imposta la foto dell'auto) e **dashboard creata automaticamente** nella barra laterale con tutte le 10+ viste già configurate |
 | 📱 **Vista Mobile** | Pagina compatta pensata per il telefono; tutte le altre viste si adattano comunque allo schermo |
 | 🛣️ **Viaggi verificati** | Doppia verifica all'arrivo: chiusura immediata se colleghi la carica + **coordinate GPS reali** salvate per ogni viaggio |
-| 📈 **Pagina Extra** | 8 grafici di analisi: trend mensile kWh/100km, efficienza per zona, vampire drain settimanale, costo €/mese, prezzo €/kWh, risparmio vs termica, orario di partenza, range reale vs dichiarato |
+| 📈 **Pagina Extra** | 8 grafici di analisi: trend mensile kWh/100km, efficienza per zona, vampire drain settimanale, **costo €/mese + prezzo €/kWh (accorpati)**, risparmio vs termica, orario di partenza, **range reale vs dichiarato (nel box Top & Stop)** |
 | 📍 **Cronologia posizione** | Timeline dei cambi di zona (In casa / Lavoro / Non disponibile) con orario, dentro il pannello |
 
 Tutto è calcolato **localmente nel tuo Home Assistant** e salvato in `.storage` (persistente tra riavvii). Niente pyscript, niente package YAML, niente utility_meter da configurare a mano.
@@ -79,6 +79,17 @@ Tutto è calcolato **localmente nel tuo Home Assistant** e salvato in `.storage`
 1. Home Assistant **2025.11+** (le dashboard usano la card nativa *metric*)
 2. L'integrazione **[Renault](https://www.home-assistant.io/integrations/renault/)** configurata (con il veicolo collegato)
 3. *(Opzionale)* Una wallbox integrata in HA: Wallbox, go-e, Easee, Zappi, OCPP, Shelly EM dedicato…
+
+> ⚠️ **Fortemente consigliato**: in Home Assistant definisci **almeno la zona Casa**
+> (Impostazioni → **Zone** → nome `Casa` + latitudine/longitudine) e configura il
+> **tracker GPS dell'auto**. Senza la zona `home` l'integrazione **non distingue una
+> ricarica a casa da una colonnina pubblica**: tutto finisce come *Pubblica*, i prezzi
+> casa/fotovoltaico non si applicano e le statistiche di costo si sbagliano.
+
+> ⚠️ **Alcuni valori si popolano solo guidando**: viaggi, kWh/100km, efficienza per
+> zona, orario di partenza, range reale, storico mensile e risparmi restano vuoti finché
+> l'auto non percorre **qualche decina di km** con l'integrazione attiva. Subito dopo
+> l'installazione è normale vedere ancora `—`.
 
 > Funziona anche senza wallbox: le ricariche pubbliche vengono stimate dal delta SoC e puoi registrarle a mano col servizio `add_manual_charge`.
 

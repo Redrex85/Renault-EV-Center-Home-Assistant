@@ -5,6 +5,42 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.37 — Ricariche verificate + pagina Extra accorpata
+
+### Ricariche: controllo spina e wallbox di un'altra auto
+- **Bug**: `CONF_PLUG_ENTITY` veniva letto ma **mai usato** → nessuna verifica che la
+  corrente della wallbox fosse della *nostra* Renault.
+- Ora l'energia della wallbox è attribuita all'auto **solo con la spina collegata**:
+  una wallbox condivisa che carica un'altra macchina **non viene più conteggiata**
+  (né kWh né €). Vincolo applicato in **3 punti**: meter, accumulo costo, sessione.
+- `plug_ok` è **peggiorativo**: se la spina si stacca a metà sessione, alla fine si
+  scarta la misura wallbox e si ricade sul delta SoC.
+- Entità spina non configurata → nessun vincolo (compatibilità con l'installazione
+  di prima).
+
+### Fix del "13 kWh → 4,67 kWh"
+- **Causa**: `counter_start` preso all'avvio sessione HA + `_best_measured_delta`
+  che scarta i delta negativi (reset contatore a metà sessione) → misura a 0 →
+  fallback sul **delta SoC** (4,67 ≈ 8% × 58 kWh).
+- Ora la sessione accumula il delta wallbox **passo-passo** (`wb_accum`, 0 < Δ ≤ 10 kWh
+  per poll): immune a reset e ad avvii in ritardo. In finalize si prende
+  `max(kwh_accum, wb_accum)`.
+
+### Pagina Extra accorpata
+- **Range reale vs dichiarato** è ora dentro il box **🏆 Top & Stop · mese**
+  (eliminata la card autonoma).
+- **Costo ricarica per mese** + **€/kWh per mese** → un solo box **💶 Costo ricarica ·
+  mese** con i due grafici impilati (dicono pressoché la stessa cosa).
+
+### Guida
+- **README + guide installazione (IT/EN/FR)**: avviso **Fortemente consigliato** —
+  definire in HA **almeno la zona Casa** (altrimenti le ricariche non si distinguono
+  dalle pubbliche e i prezzi casa non si applicano) e nota che **alcuni valori si
+  popolano solo guidando qualche decina di km**.
+
+### Controlli
+- `check_status.py` **[39]** spina/wallbox · **[40]** layout Extra + README → **125 controlli**.
+
 ## 1.0.36 — Range: WLTP casa madre + box affiancato
 
 ### Fix
