@@ -5,6 +5,50 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.39 — Dashboard e entità finalmente con lo stesso nome
+
+### Bug: pannello vuoto con sensori popolati
+Un utente aveva **~100 entità tutte funzionanti** e la **Panoramica completamente vuota**
+(compresi i tagliandi inseriti a mano). Causa: **due fallback diversi per lo stesso campo**.
+
+```python
+# sensor.py (+ altre 8 piattaforme) → entità
+name = str(entry.data.get("name") or entry.title or "Auto")   # → "Renault Scenic"
+
+# __init__.py → dashboard
+str(opts.get(CONF_NAME, "Renault"))                            # → "Renault"
+```
+
+Quando `entry.data` **non contiene la chiave `name`**, le entità nascono come
+`sensor.renault_scenic_*` mentre la card riceve `name: Renault` e cerca
+`sensor.renault_*` → **zero match, tutto `—`**.
+
+- **`dashboard.py` → `entry_name(entry)`**: unico punto che risolve il nome
+  (`entry.data` → `entry.title` → default), **stessa espressione delle piattaforme**.
+- **`__init__.py`**: le 3 chiamate (`setup` / `create_dashboard` / `remove_entry`)
+  usano `entry_name()`; rimosso `opts.get(CONF_NAME, "Renault")`.
+
+### Bug: batteria/range/odometro sempre vuoti con device Renault diverso
+Il wizard raccoglie `battery_level_entity`, `range_entity`, `odometer_entity`,
+`charging_entity`… ma **`dashboard.py` non li inoltrava mai in `overrides`**, mentre
+il pannello li legge (`_ov("battery"|"range"|"odometer"|"charging")`).
+
+Risultato: cadeva sui fallback `_car()` che presumono `sensor.<nome_entry>_battery_level`,
+ma il device dell'integrazione Renault ufficiale può chiamarsi diversamente
+(es. **`gy966mh`** vs entry `Renault`) → batteria/range/odometro vuoti.
+
+Ora le 4 entità scelte in wizard arrivano in `overrides` e il pannello le usa **prima** dei fallback.
+
+### Fix collaterale
+`async_remove_entry`: la riga `await async_remove_dashboard(...)` era stata
+commentata da un edit precedente → la dashboard non veniva più rimossa
+all'eliminazione dell'integrazione. Ripristinata.
+
+### Controlli
+- `check_status.py` **[41]**: `entry_name()` unico, nessun `opts.get(CONF_NAME)`
+  in `__init__.py`, testa `data → title` nelle 9 piattaforme, 4 override forwardati
+  → **126 controlli**.
+
 ## 1.0.38 — README trilingue completo + riga Extra a 3 card
 
 ### Pagina Extra

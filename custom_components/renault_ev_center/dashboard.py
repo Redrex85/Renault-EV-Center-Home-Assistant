@@ -14,6 +14,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import CONF_AC_BUTTON, CONF_CHARGE_START_BUTTON, CONF_CLIMATE_ENTITY
 from .const import (
+    CONF_BATTERY_LEVEL, CONF_CHARGING_ENTITY, CONF_ODOMETER, CONF_RANGE,
     CONF_LOCATION_ENTITY, CONF_LIGHT_ENTITY, CONF_HORN_ENTITY, CONF_WB_STOP_SWITCH,
     CONF_WB_POWER, CONF_WB_STATE, CONF_WB_SESSION_ENERGY, CONF_WB_TOTAL_ENERGY,
     CONF_WB_MAX_CURRENT, CONF_WB_CHARGE_SWITCH,
@@ -28,6 +29,17 @@ WWW_DIR = "renault-ev-center"
 def slugify(text: str) -> str:
     s = re.sub(r"[^\w\s]", "", str(text).lower())
     return re.sub(r"\s+", "_", s.strip())
+
+
+def entry_name(entry: ConfigEntry) -> str:
+    """Nome auto con la STESSA risoluzione usata dalle piattaforme.
+
+    `entry.data` non ha sempre la chiave "name": in quel caso le piattaforme
+    cadono su `entry.title`, mentre un default fisso qui ("Renault") produceva
+    un prefisso diverso e la dashboard cercava `sensor.<altro>_…` inesistenti →
+    pannello tutto vuoto pur con i sensori popolati.
+    """
+    return str(entry.data.get("name") or entry.title or "Renault")
 
 
 def _pkg_dir(*parts: str) -> str:
@@ -234,6 +246,13 @@ async def async_setup_dashboard(hass: HomeAssistant, entry: ConfigEntry, name: s
     title = f"{name} EV Center"
     opts = {**entry.data, **entry.options}
     _ov = {
+        # entità scelte nel wizard: il pannello le usa PRIMA dei fallback _car(),
+        # che presumono che il device Renault ufficiale si chiami come l'entry
+        # (es. device `gy966mh` ≠ entry "Renault" → prima erano tutte vuote)
+        "battery": opts.get(CONF_BATTERY_LEVEL),
+        "range": opts.get(CONF_RANGE),
+        "odometer": opts.get(CONF_ODOMETER),
+        "charging": opts.get(CONF_CHARGING_ENTITY),
         "start_charge": opts.get(CONF_CHARGE_START_BUTTON),
         "ac_button": opts.get(CONF_AC_BUTTON),
         "climate": opts.get(CONF_CLIMATE_ENTITY),

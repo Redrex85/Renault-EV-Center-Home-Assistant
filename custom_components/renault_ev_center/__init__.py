@@ -15,11 +15,12 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_CREATE_DASHBOARD, CONF_NAME, DOMAIN, PLATFORMS, WEEKDAYS
+from .const import CONF_CREATE_DASHBOARD, DOMAIN, PLATFORMS, WEEKDAYS
 from .coordinator import RenaultMateCoordinator
 from .dashboard import (
     async_remove_dashboard,
     async_setup_dashboard,
+    entry_name,
     register_card_resource,
     setup_card_js,
     setup_car_image,
@@ -96,7 +97,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # foto del modello + dashboard automatica nella barra laterale
     if opts.get(CONF_CREATE_DASHBOARD, True):
         try:
-            await async_setup_dashboard(hass, entry, str(opts.get(CONF_NAME, "Renault")),
+            await async_setup_dashboard(hass, entry, entry_name(entry),
                                         coordinator.version)
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Dashboard automatica non creata: %s", err)
@@ -201,7 +202,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def handle_create_dashboard(call: ServiceCall) -> None:
         for coord in _all_coordinators(hass):
-            await async_setup_dashboard(hass, coord.entry, str(coord.opts.get(CONF_NAME, "Renault")),
+            await async_setup_dashboard(hass, coord.entry, entry_name(coord.entry),
                                         getattr(coord, "version", ""))
 
     async def handle_set_low_soc_days(call: ServiceCall) -> None:
@@ -334,8 +335,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Rimozione integrazione: pulizia di dashboard, file, storage e notifiche."""
-    opts = {**entry.data, **entry.options}
-    name = str(opts.get(CONF_NAME, "Renault"))
+    name = entry_name(entry)
 
     # 1) dashboard laterale creata dall'integrazione
     await async_remove_dashboard(hass, name)

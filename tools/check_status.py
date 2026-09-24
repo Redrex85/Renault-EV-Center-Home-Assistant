@@ -1046,6 +1046,36 @@ try:
 except Exception as e:
     bad(f"layout Extra/README: {e}")
 
+print("\n[41] Nome auto: dashboard e piattaforme devono usare la stessa sorgente")
+try:
+    dash = open(os.path.join(CC, "dashboard.py"), encoding="utf-8").read()
+    init = open(os.path.join(CC, "__init__.py"), encoding="utf-8").read()
+    # helper: stessa risoluzione di sensor.py (entry.data → entry.title)
+    i = dash.find("def entry_name(")
+    assert i >= 0, "manca entry_name() in dashboard.py"
+    helper = dash[i:i + 600]
+    assert 'entry.data.get("name")' in helper and "entry.title" in helper, \
+        "entry_name() non risolve più data → title"
+    # la dashboard non deve più usare un default fisso diverso
+    assert "opts.get(CONF_NAME" not in init, \
+        "__init__.py usa ancora opts.get(CONF_NAME) con default fisso"
+    assert init.count("entry_name(entry") >= 2 and "entry_name(coord.entry)" in init, \
+        "entry_name() non usato in tutte le chiamate a async_setup_dashboard"
+    # le 9 piattaforme leggono entry.data → entry.title (testa comune)
+    for pf in ("sensor", "binary_sensor", "button", "climate", "device_tracker",
+               "number", "select", "switch", "time"):
+        src = open(os.path.join(CC, f"{pf}.py"), encoding="utf-8").read()
+        assert 'entry.data.get("name") or entry.title' in src, \
+            f"{pf}.py non usa più data → title"
+    # fix: entità scelte nel wizard forwardate al pannello via overrides
+    i = dash.find("_ov = {")
+    ov = dash[i:i + 900]
+    for k in ("battery", "range", "odometer", "charging"):
+        assert f'"{k}": opts.get(' in ov, f'manca override {k} nel pannello'
+    ok("entry_name() unico · overrides batteria/range/odometro/carica inoltrati")
+except Exception as e:
+    bad(f"nome auto/overrides: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:
