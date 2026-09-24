@@ -982,7 +982,7 @@ try:
 except Exception as e:
     bad(f"controllo spina wallbox: {e}")
 
-print("\n[40] Pagina Extra: range nel box Top&Stop, costo+€/kWh accorpati")
+print("\n[40] Pagina Extra: range nel box Top&Stop, drain+costo+prezzo su una riga g3")
 try:
     js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
     tpl = js[js.find("  p8: `"):js.find("  p9: `")]
@@ -995,19 +995,45 @@ try:
     assert '<h3>🧭 Range reale vs dichiarato</h3>' not in tpl, \
         "la card autonoma del range non è stata rimossa"
     assert tpl.count('data-c="range_cmp"') == 1, "range_cmp duplicato"
-    # costo ricarica + prezzo €/kWh nello stesso box
-    i = tpl.find("<h3>💶 Costo ricarica · mese</h3>")
-    assert i >= 0, "manca il box Costo ricarica · mese"
-    j = tpl.find('data-c="cost_mese"', i)
-    k = tpl.find('data-c="prezzo_mese"', i)
-    assert j > i and k > j, "cost_mese e prezzo_mese non sono nello stesso box"
-    assert '<h3>€/kWh per mese</h3>' not in tpl, "la card €/kWh separata non è stata rimossa"
+    # drain + costo ricarica + prezzo medio: tre card, stessa riga g3
+    h_drain = tpl.find("<h3>🔋 Vampire drain (7 gg)</h3>")
+    h_cost = tpl.find("<h3>💶 Costo ricarica · mese</h3>")
+    h_prez = tpl.find("<h3>⚡ Prezzo medio €/kWh</h3>")
+    assert h_drain >= 0 and h_cost >= 0 and h_prez >= 0, \
+        "manca una delle tre card (drain / costo / prezzo)"
+    gi = tpl.rfind('class="grid g3"', 0, h_drain)
+    assert gi >= 0, "la riga drain+costo+prezzo non usa grid g3"
+    assert gi < h_drain < h_cost < h_prez, "le tre card non sono nella stessa riga g3"
+    assert 'class="grid g2"' not in tpl[gi:h_prez], \
+        "c'è ancora una grid g2 dentro la riga drain/costo/prezzo"
+    assert tpl.rfind('<div class="card"', gi, h_cost) != tpl.rfind('<div class="card"', gi, h_prez), \
+        "costo e prezzo devono restare due card separate"
+    assert tpl.count('data-c="cost_mese"') == 1 and tpl.count('data-c="prezzo_mese"') == 1, \
+        "cost_mese/prezzo_mese duplicati"
     # README: zona casa fortemente consigliata + valori che servono km
     md = open(os.path.join(BASE, "README.md"), encoding="utf-8").read()
     assert "Fortemente consigliato" in md and "zona Casa" in md, \
         "manca nel README l'avviso sulla zona Casa"
     assert "qualche decina di km" in md, \
         "manca nel README l'avviso sui valori che servono dopo aver guidato"
+    # README trilingue: la sezione EN deve coprire tutto l'IT, la FR tutto l'IT
+    i_en = md.find("# \U0001F1EC\U0001F1E7 English")
+    i_fr = md.find("# \U0001F1EB\U0001F1F7 Français")
+    assert i_en > 0 and i_fr > i_en, "sezioni EN/FR mancanti nel README"
+    en = md[i_en:i_fr]
+    fr = md[i_fr:]
+    for s in ("Strongly recommended: at least the Home zone",
+              "few tens of km",
+              "### Requirements", "### Setup", "### What it creates",
+              "### Included dashboards", "### Services", "### FAQ",
+              "create_dashboard", "add_manual_charge"):
+        assert s in en, f"sezione inglese incompleta: manca {s!r}"
+    for s in ("Fortement recommandé : au moins la zone Maison",
+              "quelques dizaines de km",
+              "## 📈 Ce que ça crée", "## 🎛️ Tableaux de bord inclus",
+              "## 🛠️ Services", "## ❓ FAQ",
+              "create_dashboard", "add_manual_charge"):
+        assert s in fr, f"sezione francese incompleta: manca {s!r}"
     # stessi avvisi nelle guide di installazione (IT/EN/FR)
     for doc, zona, km in (
         ("docs/INSTALLAZIONE.md", "zona Casa", "qualche decina di km"),
@@ -1016,7 +1042,7 @@ try:
     ):
         d = open(os.path.join(BASE, doc), encoding="utf-8").read()
         assert zona in d and km in d, f"manca l'avviso zona/km in {doc}"
-    ok("Extra: range in Top&Stop, costo+€/kWh accorpati, README+3 guide avvisi")
+    ok("Extra: 3 card su riga g3, README trilingue completo")
 except Exception as e:
     bad(f"layout Extra/README: {e}")
 

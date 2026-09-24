@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.37";
+const REC_VER = "1.0.38";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -2810,15 +2810,13 @@ const PAGES = {
     <div class="card"><h3>📍 Efficienza per zona</h3><div data-c="eff_zona" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">kWh/100km medi per zona d'arrivo: dove consumi di più.</div></div>
   </div>
-  <div class="grid g2" style="margin-top:16px">
+  <div class="grid g3" style="margin-top:16px">
     <div class="card"><h3>🔋 Vampire drain (7 gg)</h3><div data-c="drain_week" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">% batteria persa da fermo ogni giorno.</div></div>
-    <div class="card"><h3>💶 Costo ricarica · mese</h3>
-      <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">€ spesi in ricariche</div>
-      <div data-c="cost_mese" style="min-height:130px"></div>
-      <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px">Prezzo medio €/kWh</div>
-      <div data-c="prezzo_mese" style="min-height:130px"></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Quanto spendi ogni mese e quanto costa ogni kWh ricaricato.</div></div>
+    <div class="card"><h3>💶 Costo ricarica · mese</h3><div data-c="cost_mese" style="min-height:160px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Quanto spendi ogni mese in ricariche.</div></div>
+    <div class="card"><h3>⚡ Prezzo medio €/kWh</h3><div data-c="prezzo_mese" style="min-height:160px"></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Prezzo medio di ogni kWh ricaricato.</div></div>
   </div>
   <div class="grid g2" style="margin-top:16px">
     <div class="card"><h3>💰 Risparmio vs termica</h3><div data-c="risp_cmp" style="min-height:160px"></div>

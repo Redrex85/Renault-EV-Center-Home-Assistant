@@ -5,6 +5,31 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.38 — README trilingue completo + riga Extra a 3 card
+
+### Pagina Extra
+- **Vampire drain**, **Costo ricarica · mese** e **Prezzo medio €/kWh** tornano **tre card
+  separate su un'unica riga** (`.g3`): prima il costo e il prezzo erano fusi in un box.
+- Layout: `Top & Stop` (con dentro il range) / `Consumi vs temperatura` / `Consumi per
+  fascia` / `Trend mensile` / `Efficienza per zona` / **riga g3: drain · costo · prezzo** /
+  `Risparmio vs termica` / `Orario di partenza`.
+
+### README trilingue
+- **Sezione inglese riscritta per intero**: prima erano ~60 righe e rimandava "vedi la
+  sezione italiana"; ora copre **tutto** l'italiano — Requisiti (+ i 2 avvisi ⚠️ zona Casa
+  e "servono km"), Installazione (con avviso doppio riavvio), Configurazione 4 schermate
+  con le 3 tabelle, **Cosa crea** (90+ entità), **Dashboard incluse** (11 viste), **Servizi**
+  (tutti gli 8), **FAQ** (tutte le 8) e Crediti.
+- **Sezione francese completata**: aggiunti i **2 avvisi ⚠️**, l'**avviso doppio riavvio**,
+  le voci mancanti di "C'est quoi" (lista ricariche, vista mobile, viaggi verificati,
+  pagina Extra, cronologia posizione), **Ce que ça crée**, **Tableaux de bord inclus**,
+  **4 servizi** mancanti (`create_dashboard`, `create_automations`, `add_maintenance`,
+  `renew_insurance`, `set_scadenza`, `set_tagliando`) e **3 FAQ**.
+
+### Controlli
+- `check_status.py` **[40]** → **layout 3 card su riga g3** + **parità EN/FR del README**
+  (controlla gli heading e le stringhe chiave di entrambe le sezioni) → **125 controlli**.
+
 ## 1.0.37 — Ricariche verificate + pagina Extra accorpata
 
 ### Ricariche: controllo spina e wallbox di un'altra auto
