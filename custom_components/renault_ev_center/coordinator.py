@@ -100,6 +100,7 @@ DEFAULT_WB_START_W,
     CONF_PRICE_SOLAR,
     CONF_PRE_KWH,
     CONF_PRE_EUR,
+    CONF_INSTALL_ODO,
     CONF_RANGE,
     CONF_SCAD_ASSICURAZIONE,
     CONF_SCAD_BOLLO,
@@ -991,7 +992,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # --- base odometro all'installazione: serve al confronto "km da quando usi l'integrazione"
         if odometer and odometer > 0:
             _inst = self.store.data.setdefault("install", {})
-            if not _inst.get("odometer"):
+            _man = _f(self.opts.get(CONF_INSTALL_ODO), 0.0)
+            if _man > 0:
+                # baseline scelta a mano in Configura: vale piu' della cattura automatica
+                if _inst.get("odometer") != _man:
+                    _inst["odometer"] = _man
+                    _inst["date"] = _inst.get("date") or today_key
+            elif not _inst.get("odometer"):
                 _inst["odometer"] = round(odometer, 1)
                 _inst["date"] = today_key
         if not self.today_rec or self.today_rec.get("data") != today_key:
@@ -2617,8 +2624,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         saved[entity_id] = "on" if state == "on" else "off"
         self.store.data["auto_states"] = saved
         self.persist(force=True)
+        # i servizi automation sono turn_on/turn_off: passare "on"/"off" produce
+        # "La servizia automation.off non e stata trovata"
         await self.hass.services.async_call(
-            "automation", saved[entity_id], {"entity_id": entity_id}, blocking=False)
+            "automation", "turn_on" if saved[entity_id] == "on" else "turn_off",
+            {"entity_id": entity_id}, blocking=False)
 
     async def _enable_automation(self, alias: str) -> None:
         """Accende l'automazione (id derivato dall'alias) e lo segnala nel log."""

@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.40";
+const REC_VER = "1.0.43";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -153,6 +153,16 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     return null;
   }
+  /** prima ENTITÀ tra i candidati, ignorando lo stato: i `button.` sono sempre "unknown" */
+  _cmdEnt(...cands) {
+    for (const c of cands) {
+      const id = typeof c === "string" ? c : null;
+      if (!id) continue;
+      const s = this._hass.states[id];
+      if (s) return s;
+    }
+    return null;
+  }
   _num(...cands) {
     const s = this._st(...cands);
     if (!s) return null;
@@ -225,14 +235,16 @@ class RenaultEvCenterPanel extends HTMLElement {
     const S = this;
     switch (k) {
       // Panoramica
-      case "batt": return S._ov("battery") ? S._num(S._ov("battery")) : S._num(S._car("sensor", "battery"), S._car("sensor", "battery_level"), S._sid("batteria"));
-      case "range": return S._ov("range") ? S._num(S._ov("range")) : S._num(S._car("sensor", "range_electric"), S._car("sensor", "battery_autonomy"), S._sid("autonomia_della_batteria"));
-      case "odo": return S._ov("odometer") ? S._num(S._ov("odometer")) : S._num(S._car("sensor", "odometer"), S._sid("chilometraggio"));
+      // Gli override hanno PRIORITÀ ma NON cortocircuiano: se l'entità mappata
+      // è sparita/rinominata si cade sui fallback invece di mostrare "-".
+      case "batt": return S._num(S._ov("battery"), S._car("sensor", "battery"), S._car("sensor", "battery_level"), S._sid("batteria"));
+      case "range": return S._num(S._ov("range"), S._car("sensor", "range_electric"), S._car("sensor", "battery_autonomy"), S._sid("autonomia_della_batteria"));
+      case "odo": return S._num(S._ov("odometer"), S._car("sensor", "odometer"), S._sid("chilometraggio"));
       case "loc": {
-        const s = S._ov("location") ? S._hass.states[S._ov("location")] : (S._hass.states[S._car("device_tracker", "location")] || S._hass.states[S._sid("posizione")]);
+        const s = S._st(S._ov("location"), S._car("device_tracker", "location"), S._sid("posizione"));
         return s ? (s.attributes.friendly_name || s.state) : null;
       }
-      case "charging": return S._ov("charging") ? S._hass.states[S._ov("charging")] : S._st(S._bid("in_carica"), S._sid("stato_di_carica"), S._sid("stato_ricarica_attuale"), S._car("sensor", "battery_state"), S._car("sensor", "charging_mode"), `binary_sensor.wallbox_${c}`);
+      case "charging": return S._st(S._ov("charging"), S._bid("in_carica"), S._sid("stato_di_carica"), S._sid("stato_ricarica_attuale"), S._car("sensor", "battery_state"), S._car("sensor", "charging_mode"), `binary_sensor.wallbox_${c}`);
       case "plug": return S._st(S._car("binary_sensor", "plug_status"), S._car("binary_sensor", "plugged_in"), S._sid("stato_della_spina"), `binary_sensor.wallbox_${c}`);
       case "batt_kwh": return S._num(S._sid("batteria_kwh_disponibili"), "sensor.megane_battery_available_energy_2", S._car("sensor", "battery_remaining_capacity"));
       case "km_oggi": {
@@ -352,8 +364,10 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       case "cap_stim": {
         const nom = S._field("cap_nom");
-        const soh = S._num(S._sid("soh_stimato"), "sensor.megane_soh_stimato");
-        return (typeof nom === "number" && soh !== null && soh > 0) ? Math.round(nom * soh / 100 * 10) / 10 : null;
+        const n = (typeof nom === "number") ? nom : null;
+        // SOH UFFICIALE della concessionaria PRIMA, poi quello stimato dalle cariche
+        const soh = S._num(S._nid("soh_ufficiale"), S._sid("soh_stimato"), "sensor.megane_soh_stimato");
+        return (n !== null && soh !== null && soh > 0) ? Math.round(n * soh / 100 * 10) / 10 : null;
       }
       case "soh_off": return S._num(S._nid("soh_ufficiale"), "sensor.megane_soh_ufficiale");
       case "soh_est": return S._num(S._sid("soh_stimato"), "sensor.megane_soh_stimato");
@@ -361,6 +375,15 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "eff_ric": return S._num(S._sid("efficienza_ricarica"), "sensor.megane_efficienza");
       case "perdite": return S._st(S._sid("perdite_ultima_ricarica"));
       case "batt_ult": return S._num(S._sid("energia_batteria_ultima_ricarica"), S._sid("energia_teorica_sessione"), "sensor.megane_energia_teorica_sessione");
+      // costo della ULTIMA ricarica (record), non quello stimato della carica in corso:
+      // a carica finita costo_stimato = needed_kwh * prezzo = 0 e il box mostrava 0 €
+      case "costo_ult": {
+        const s = S._st(S._sid("ultima_ricarica"));
+        const v = s ? S._attrAny(s, ["costo"]) : null;
+        const n = v === null || v === undefined ? NaN : parseFloat(v);
+        if (!isNaN(n)) return n;
+        return S._num(S._sid("costo_ricarica_corrente_stimato"), "sensor.costo_ricarica_corrente_stimato");
+      }
       case "rete_ult": { const s = S._st(S._sid("energia_batteria_ultima_ricarica")); const v = s ? S._attrAny(s, ["dalla_rete_kwh"]) : null; return v === null ? S._num(S._sid("ultima_ricarica")) : parseFloat(v); }
       case "dispersa_ult": { const s = S._st(S._sid("energia_batteria_ultima_ricarica")); const v = s ? S._attrAny(s, ["dispersa_kwh"]) : null; return v === null ? null : parseFloat(v); }
       // Manutenzione
@@ -777,10 +800,13 @@ class RenaultEvCenterPanel extends HTMLElement {
 
     const power = S._num(S._ov("wallbox_power"), S._sid("wallbox_potenza"), "sensor.wallbox_instant_power");
     set("power", power === null ? "—" : S._fmt(power) + " kW");
-    const curEnt = S._st(S._ov("wallbox_current")) || S._findState("sensor", "wallbox", "current");
+    const curEnt = S._st(S._ov("wallbox_current")) || S._findState("sensor", "wallbox", "current")
+      || S._findState("sensor", "wallbox", "amp") || S._findState("sensor", "current");
     const cur = curEnt ? parseFloat(String(curEnt.state).replace(",", ".")) : null;
-    set("current", (cur === null || isNaN(cur)) ? "—" : S._fmt(cur, 1) + " A");
-    const voltEnt = S._st(S._ov("wallbox_voltage")) || S._findState("sensor", "wallbox", "voltage");
+    set("current", (cur === null || isNaN(cur)) ? "-" : S._fmt(cur, 1) + " A");
+    const voltEnt = S._st(S._ov("wallbox_voltage")) || S._findState("sensor", "wallbox", "volt")
+      || S._findState("sensor", "wallbox", "tension") || S._findState("sensor", "voltage")
+      || S._findState("sensor", "tensione");
     const volt = voltEnt ? parseFloat(String(voltEnt.state).replace(",", ".")) : null;
     set("voltage", (volt === null || isNaN(volt)) ? "—" : S._fmt(volt, 0) + " V");
     const tempEnt = S._st(S._ov("wallbox_temperature"))
@@ -949,8 +975,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       case "charge": {
         // comando dell'AUTO (app Renault): avvia la ricarica lato veicolo
-        const b = this._st(
-          this._ov("start_charge"),
+        const b = this._cmdEnt(this._ov("start_charge")) || this._st(
           this._car("button", "start_charge"),
           this._car("button", "avviare_la_ricarica"),
           "button.start_charge",
@@ -988,15 +1013,15 @@ class RenaultEvCenterPanel extends HTMLElement {
         break;
       }
       case "wb_start": {
-        const b = this._st(this._ov("wb_charge_switch"), "button.wallbox_charger_start");
+        const b = this._cmdEnt(this._ov("wb_charge_switch")) || this._st("button.wallbox_charger_start");
         if (!b) { this._toast("⚠️ Comando avvio wallbox non trovato (configura la wallbox)"); break; }
         if (b.entity_id.startsWith("switch.")) this._call("switch", "turn_on", { entity_id: b.entity_id }, "🔌 Ricarica avviata");
         else this._call("button", "press", { entity_id: b.entity_id }, "🔌 Ricarica avviata");
         break;
       }
       case "wb_stop": {
-        const b = this._st(this._ov("wb_stop_switch"), this._car("button", "stop_charge"),
-                            "button.wallbox_charger_stop", "button.wallbox_charge_stop");
+        const b = this._cmdEnt(this._ov("wb_stop_switch"))
+          || this._st(this._car("button", "stop_charge"), "button.wallbox_charger_stop", "button.wallbox_charge_stop");
         if (!b) { this._toast("⚠️ Stop wallbox non mappato (Configura → Wallbox → Stop carica)"); break; }
         if (b.entity_id.startsWith("switch.")) this._call("switch", "turn_off", { entity_id: b.entity_id }, "⏹️ Ricarica fermata");
         else this._call("button", "press", { entity_id: b.entity_id }, "⏹️ Ricarica fermata");
@@ -1063,7 +1088,8 @@ class RenaultEvCenterPanel extends HTMLElement {
         break;
       }
       case "charge_stop": {
-        const b = this._st(this._ov("wb_stop_switch"), this._car("button", "stop_charge"), "button.wallbox_charger_stop");
+        const b = this._cmdEnt(this._ov("wb_stop_switch"))
+          || this._st(this._car("button", "stop_charge"), "button.wallbox_charger_stop");
         if (!b) { this._toast("⚠️ Stop carica non mappato (Configura → Wallbox)"); break; }
         const d = String(b.entity_id).split(".")[0];
         if (d === "switch") this._call("switch", "turn_off", { entity_id: b.entity_id }, "⏹ Stop carica");
@@ -1869,7 +1895,8 @@ class RenaultEvCenterPanel extends HTMLElement {
         const d = mesi[y][m];
         const kwh = parseFloat(d.kwh) || 0;
         const costo = parseFloat(d.costo) || 0;
-        if (kwh > 0) rows.push({ l: m + "/" + y.slice(2), v: costo / kwh });
+        if (kwh > 0) rows.push({ l: m + "/" + y.slice(2),
+          v: Math.ceil((costo / kwh) * 100 - 1e-9) / 100, dec: 2 });
       });
     });
     this._svgBars(box, rows, "€/kWh", "mese");
@@ -2515,7 +2542,7 @@ const PAGES = {
       <div class="row"><span>Energia</span><b><span data-f="batt_ult">—</span> kWh</b></div>
       <div class="row"><span>Batteria</span><b data-f="batt_ult_pct">—</b></div>
       <div class="row"><span>Media</span><b><span data-f="media_ult">—</span> kW</b></div>
-      <div class="row"><span>Costo · Eff.</span><b><span data-f="costo_corr">—</span> € · <span data-f="eff_ric">—</span>%</b></div>
+      <div class="row"><span>Costo · Eff.</span><b><span data-f="costo_ult" data-dec="2">—</span> € · <span data-f="eff_ric">—</span>%</b></div>
     </div>
   </div>
 

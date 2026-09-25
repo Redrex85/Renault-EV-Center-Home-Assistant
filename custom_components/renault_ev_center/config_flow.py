@@ -99,6 +99,7 @@ from .const import (
     CONF_PRICE_SOLAR,
     CONF_PRE_KWH,
     CONF_PRE_EUR,
+    CONF_INSTALL_ODO,
     CONF_RANGE,
     CONF_SCAD_ASSICURAZIONE,
     CONF_SCAD_BOLLO,
@@ -270,10 +271,13 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
     if profile != PROFILE_BASE:
         schema[vol.Required("wallbox")] = section(vol.Schema({
             vol.Required(CONF_WALLBOX_ENABLED, default=defaults.get(CONF_WALLBOX_ENABLED, True)): BooleanSelector(),
-            vol.Optional(
+            # OBBLIGATORI in Pro/Enterprise: senza potenza e stato la pagina Wallbox
+            # è vuota e il bilanciamento non ha nulla da leggere.
+            # Avvio/stop restano opzionali: non tutte le wallbox li espongono.
+            vol.Required(
                 CONF_WB_POWER, description={"suggested_value": defaults.get(CONF_WB_POWER)}
             ): EntitySelector(EntitySelectorConfig(domain=["sensor", "number"])),
-            vol.Optional(
+            vol.Required(
                 CONF_WB_STATE, description={"suggested_value": defaults.get(CONF_WB_STATE)}
             ): EntitySelector(EntitySelectorConfig(domain=["sensor", "binary_sensor"])),
             vol.Optional(
@@ -395,6 +399,10 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                                      mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_PRE_EUR, default=defaults.get(CONF_PRE_EUR, 0.0)): NumberSelector(
                 NumberSelectorConfig(min=0, max=200000, step=1, unit_of_measurement="€",
+                                     mode=NumberSelectorMode.BOX)),
+            # baseline del confronto "da installazione": 0 = catturata al primo avvio
+            vol.Optional(CONF_INSTALL_ODO, default=defaults.get(CONF_INSTALL_ODO, 0.0)): NumberSelector(
+                NumberSelectorConfig(min=0, max=1000000, step=1, unit_of_measurement="km",
                                      mode=NumberSelectorMode.BOX)),
         }), {"collapsed": True}),
         vol.Required("fuel"): section(vol.Schema({

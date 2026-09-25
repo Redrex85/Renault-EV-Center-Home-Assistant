@@ -12,7 +12,7 @@ from homeassistant.components import frontend
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_AC_BUTTON, CONF_CHARGE_START_BUTTON, CONF_CLIMATE_ENTITY
+from .const import DOMAIN, CONF_AC_BUTTON, CONF_CHARGE_START_BUTTON, CONF_CLIMATE_ENTITY
 from .const import (
     CONF_BATTERY_LEVEL, CONF_CHARGING_ENTITY, CONF_ODOMETER, CONF_RANGE,
     CONF_LOCATION_ENTITY, CONF_LIGHT_ENTITY, CONF_HORN_ENTITY, CONF_WB_STOP_SWITCH,
@@ -239,6 +239,45 @@ async def _create_new_api(hass: HomeAssistant, dashboards: dict, url_path: str, 
         return None
 
 
+_DASH_PREFIX = "renault-ev-center-"
+
+
+def _renault_dash_paths(dashboards: Any) -> list[str]:
+    """url_path di TUTTE le dashboard laterali create da noi."""
+    try:
+        if isinstance(dashboards, dict):
+            return [str(k) for k in dashboards if str(k).startswith(_DASH_PREFIX)]
+        if hasattr(dashboards, "async_items"):
+            return [str(i.get("url_path") or "") for i in dashboards.async_items()
+                    if str(i.get("url_path") or "").startswith(_DASH_PREFIX)]
+    except Exception:  # noqa: BLE001
+        return []
+    return []
+
+
+async def _purge_orphans(hass: HomeAssistant, keep: str) -> None:
+    """Cancella le dashboard laterali create con un nome di entry precedente.
+
+    Rinominare l'entry cambia lo `url_path`: la vecchia restava in sidebar e
+    l'utente apriva quella, che non aveva i sensori nuovi.
+    """
+    if len(hass.config_entries.async_entries(DOMAIN)) != 1:
+        # con piu' entry la regola "una sola per installazione" non regge:
+        # ognuna si ricreerebbe cancellando quella dell'altra a ogni avvio.
+        return
+    dashboards = _get_dashboards(hass)
+    if dashboards is None:
+        return
+    for old in _renault_dash_paths(dashboards):
+        if not old or old == keep:
+            continue
+        try:
+            await async_remove_dashboard(hass, old[len(_DASH_PREFIX):])
+            _LOGGER.info("Dashboard orfana rimossa: %s", old)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Rimozione dashboard orfana '%s' fallita: %s", old, err)
+
+
 async def async_setup_dashboard(hass: HomeAssistant, entry: ConfigEntry, name: str,
                                 version: str = "") -> None:
     """Crea (una sola volta) la dashboard laterale con la vista panel."""
@@ -338,6 +377,7 @@ async def async_setup_dashboard(hass: HomeAssistant, entry: ConfigEntry, name: s
     try:
         await store.async_save({"views": views})
         _LOGGER.info("Dashboard '%s': salvate %d viste", title, len(views))
+        await _purge_orphans(hass, url_path)
     except Exception as err:  # noqa: BLE001
         _LOGGER.error("Salvataggio viste fallito: %s — uso il piano B", err)
         await piano_b()

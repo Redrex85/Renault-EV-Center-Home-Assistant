@@ -161,6 +161,7 @@
               "price_home": "Prix énergie maison",
               "price_public": "Prix bornes publiques",
               "price_solar": "Coût photovoltaïque (0 = gratuit)",
+              "install_odo": "Kilométrage à l'installation (km, 0 = lu au premier démarrage)",
               "solar_zone": "Nom de la zone photovoltaïque/BEB (vide = aucune)",
               "pre_kwh": "kWh rechargés AVANT d'utiliser l'intégration (pour le calcul des économies)",
               "pre_eur": "€ déjà dépensés en recharges avant l'intégration (priorité sur les kWh)"
@@ -355,6 +356,7 @@
               "price_home": "Prix énergie maison",
               "price_public": "Prix bornes publiques",
               "price_solar": "Coût photovoltaïque (0 = gratuit)",
+              "install_odo": "Kilométrage à l'installation (km, 0 = lu au premier démarrage)",
               "solar_zone": "Nom de la zone photovoltaïque/BEB (vide = aucune)",
               "pre_kwh": "kWh rechargés AVANT d'utiliser l'intégration (pour le calcul des économies)",
               "pre_eur": "€ déjà dépensés en recharges avant l'intégration (priorité sur les kWh)"

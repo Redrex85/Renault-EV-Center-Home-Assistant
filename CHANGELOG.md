@@ -5,6 +5,84 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.43 — "Ultima ricarica" mostrava 0 € di costo
+
+La riga **Costo · Eff.** della card *Ultima ricarica* leggeva
+`sensor.…_costo_ricarica_corrente_stimato`, che vale
+`needed_kwh × prezzo casa`. Appena la carica arriva al target
+(`needed_pct <= 0`) il necessario è 0 → **il costo spariva e diventava 0 €**,
+mentre kWh, % e potenza media continuavano a mostrare la carica appena chiusa.
+
+Ora la card legge l'attributo `costo` del record **ultima_ricarica** (quello vero,
+dai `charges`), con in coda il vecchio stimato solo se il record manca.
+`data-dec="2"` → virgola italiana. Lo stimato resta dov'è servito: pagina *Ricarica*.
+
+---
+
+## 1.0.42 — automation.off inesistente · baseline installazione configurabile
+
+### `set_auto_state` chiamava un servizio che non esiste
+Spegnere "Aggiorna posizione" da `renault_ev_center.set_auto_state` falliva con
+*"La servizia automation.off non è stata trovata"*: `service_set_auto_state` passava
+lo **stato** (`on`/`off`) come nome del servizio, ma in Home Assistant si chiamano
+`automation.turn_on` / `automation.turn_off`. Stesso errore in `async_restore_auto_states`?
+No — quella era già corretta, l'errore era solo nel servizio.
+
+### Configura → Prezzi energia → "Odometro all'installazione"
+Il confronto **Da installazione** prendeva la baseline dal primo ciclo in cui
+l'odometro leggeva > 0, senza possibilità di correggerla: se la prima lettura arrivava
+dal cloud Renault in ritardo (0 o un valore sbagliato) la baseline restava sbagliata
+per sempre, e un'auto **comprata usata** non poteva dichiarare da quanti km far partire
+il confronto.
+
+- `const.py` → `CONF_INSTALL_ODO`
+- `config_flow.py` → campo numerico in **Prezzi energia** (`0` = come prima, automatico)
+- `coordinator.py` → se valorizzato **prevale** sulla cattura automatica
+- label in `strings.json` + `translations/{it,en,fr}.json`
+
+Risponde: **sì, serve solo ai Risparmi** — `install.odometer` alimenta esclusivamente
+il box "Da installazione" (e l'avviso "questo valore è gonfiato"). Non tocca efficienza,
+km giornalieri, trip o stime di fine carica.
+
+---
+
+## 1.0.41 — Stop carica mappata · SOH ufficiale · override con fallback · dashboard orfane
+
+### Stop carica: l'entità mappata veniva ignorata
+`button.*` in Home Assistant hanno **sempre stato `unknown`**, e `_st()` scarta gli
+stati `unknown`/`unavailable`. Un tasto avvio/stop **correttamente mappato** nello
+wizard veniva quindi saltato e il pannello rispondeva "non mappato".
+
+- `_cmdEnt(...cands)`: nuovo lookup dei **comandi** che ignora lo stato (i KPI invece
+  restano su `_st()`), usato per `wb_start`, `wb_stop`, `charge` e `charge_stop`.
+
+### Override: priorità ma senza cortocircuito
+Da 1.0.39 le entità scelte nello wizard avevano priorità **ma sostituivano del tutto**
+i fallback: se l'entità mappata spariva o veniva rinominata, il valore diventava `—`
+anche se gli altri candidati c'erano ("aggiunto l'odometro, persi batteria e autonomia").
+Ora l'override è il **primo candidato di una lista**, non un blocco.
+
+### Capacità stimata ignorava il SOH ufficiale
+`cap_stim` usava solo `soh_stimato` (ricavato dalle cariche). Ora prende prima il
+**SOH ufficiale della concessionaria**, come già faceva `_eff_capacity()`.
+
+### Prezzo medio €/kWh
+Mostrato a **2 decimali** e **arrotondato per eccesso** (`Math.ceil`), con la virgola
+decimale italiana.
+
+### Dashboard orfana dopo il cambio nome
+Rinominare l'entry cambia lo `url_path` della dashboard laterale: la vecchia restava
+in sidebar e apriva il pannello senza i sensori nuovi. `dashboard.py` →
+`_purge_orphans()` la rimuove (solo con una sola entry, per non farsi guerre tra
+installazioni multiple).
+
+### Wallbox: potenza e stato obbligatori
+In **Pro/Enterprise** `CONF_WB_POWER` e `CONF_WB_STATE` sono ora `vol.Required`:
+senza di loro la pagina Wallbox e il bilanciamento non hanno nulla da leggere.
+Avvio/stop restano opzionali, non tutte le wallbox li espongono.
+
+---
+
 ## 1.0.40 — Capacità dal modello · no entry duplicate · YAML legacy chiusi
 
 ### Capacità batteria dal modello scelto

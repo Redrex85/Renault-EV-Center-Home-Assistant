@@ -1106,6 +1106,83 @@ try:
 except Exception as e:
     bad(f"modello/entry/doc: {e}")
 
+print("\n[43] Stop carica mappata � SOH ufficiale � prezzo kWh � dashboard orfane")
+try:
+    panel = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    dash = open(os.path.join(CC, "dashboard.py"), encoding="utf-8").read()
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    # A) i button sono SEMPRE "unknown" in HA: il lookup dei comandi deve ignorare lo stato
+    assert "_cmdEnt(...cands) {" in panel, "manca _cmdEnt() (lookup senza filtro sullo stato)"
+    for call in ('_cmdEnt(this._ov("wb_stop_switch"))',
+                 '_cmdEnt(this._ov("wb_charge_switch"))',
+                 '_cmdEnt(this._ov("start_charge"))'):
+        assert call in panel, f"comando senza _cmdEnt: {call}"
+    assert "_ent(this._ov(" not in panel, "_ent() collide con il metodo KPI _ent(k)"
+    # B) le override non devono cortocircuitare i fallback (entita' mappata sparita = "-")
+    assert 'case "batt": return S._num(S._ov("battery"), S._car(' in panel, \
+        "l'override battery cortocircuita ancora i fallback"
+    assert 'case "charging": return S._st(S._ov("charging"), S._bid(' in panel, \
+        "l'override charging cortocircuita ancora i fallback"
+    # C) capacita' stimata: SOH UFFICIALE della concessionaria prima di quello stimato
+    assert 'S._num(S._nid("soh_ufficiale"), S._sid("soh_stimato")' in panel, \
+        "cap_stim ignora ancora il SOH ufficiale"
+    # D) prezzo medio kwh: 2 decimali, arrotondato per eccesso
+    assert "dec: 2" in panel, "prezzo medio €/kWh senza 2 decimali"
+    assert "Math.ceil((costo / kwh) * 100" in panel, "prezzo medio kwh non arrotondato per eccesso"
+    # E) wallbox: potenza e stato OBBLIGATORI in pro/enterprise
+    flat = "".join(flow.split())
+    assert "vol.Required(CONF_WB_POWER" in flat, "CONF_WB_POWER non obbligatorio"
+    assert "vol.Required(CONF_WB_STATE" in flat, "CONF_WB_STATE non obbligatorio"
+    assert "vol.Optional(CONF_WB_POWER" not in flat, "CONF_WB_POWER tornato opzionale"
+    # F) rinominare l'entry lasciava la vecchia dashboard in sidebar
+    assert "def _purge_orphans(" in dash, "manca _purge_orphans()"
+    assert "_purge_orphans(hass, url_path)" in dash, "_purge_orphans() mai chiamata"
+    assert "_DASH_PREFIX" in dash, "manca _DASH_PREFIX"
+    ok("comandi senza filtro stato � override con fallback � SOH ufficiale � kWh 2 dec � wallbox Required � dashboard orfane")
+except Exception as e:
+    bad(f"comandi/override/dashboard: {e}")
+
+print("\n[44] set_auto_state usa turn_on/turn_off � baseline installazione configurabile")
+try:
+    const = open(os.path.join(CC, "const.py"), encoding="utf-8").read()
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    coord = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    strings = open(os.path.join(CC, "strings.json"), encoding="utf-8").read()
+    # A) i servizi automation sono turn_on/turn_off, mai on/off
+    assert "CONF_INSTALL_ODO" in const, "manca CONF_INSTALL_ODO in const.py"
+    assert '"turn_on" if saved[entity_id] == "on" else "turn_off"' in coord, \
+        "service_set_auto_state non usa turn_on/turn_off"
+    assert '"automation", saved[entity_id]' not in coord, \
+        "service_set_auto_state chiama ancora automation.on/off (servizio inesistente)"
+    # B) baseline del confronto "da installazione": campo nel wizard + logica in coordinatore
+    assert "CONF_INSTALL_ODO" in flow, "il campo odometro installazione non e' nello schema"
+    assert flow.count("CONF_INSTALL_ODO") >= 2, "import o campo CONF_INSTALL_ODO mancante"
+    assert '_man = _f(self.opts.get(CONF_INSTALL_ODO), 0.0)' in coord, \
+        "il coordinatore non legge la baseline manuale"
+    assert "_man > 0" in coord and '_inst["odometer"] = _man' in coord, \
+        "la baseline manuale non prevale su quella automatica"
+    assert strings.count('"install_odo"') >= 2, "install_odo non tradotto in strings.json"
+    ok("automation turn_on/turn_off � odometro installazione in Configura")
+except Exception as e:
+    bad(f"set_auto_state/baseline install: {e}")
+
+print("\n[45] Card Ultima ricarica: costo dal record, non dalla stima in corso")
+try:
+    panel = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    # la riga "Costo · Eff." della card Ultima ricarica deve leggere l'attributo
+    # costo del record ultima_ricarica: costo_stimato = needed_kwh * prezzo = 0
+    # appena la carica finisce (needed_pct <= 0)
+    assert 'case "costo_ult": {' in panel, "manca case costo_ult"
+    assert '_attrAny(s, ["costo"])' in panel, "costo_ult non legge l'attributo costo"
+    assert 'data-f="costo_ult"' in panel, "la card Ultima ricarica non usa costo_ult"
+    assert 'data-f="costo_ult" data-dec="2"' in panel, "costo_ult senza 2 decimali"
+    # costo_corr resta solo per la stima a carica in corso (pagina Ricarica)
+    assert panel.count('data-f="costo_corr"') == 1, \
+        "costo_corr compare ancora piu' di una volta nel markup"
+    ok("costo ultima ricarica dal record + 2 decimali")
+except Exception as e:
+    bad(f"costo ultima ricarica: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

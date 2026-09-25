@@ -41,6 +41,9 @@ CONF_PRICE_SOLAR = "price_solar"
 # ricariche fatte PRIMA di installare l'integrazione (per il calcolo dei risparmi)
 CONF_PRE_KWH = "pre_kwh"
 CONF_PRE_EUR = "pre_eur"
+# odometro al momento dell'installazione: baseline del confronto "da installazione"
+# (0 = la cattura da sola al primo avvio; serve per auto usate o baseline sbagliata)
+CONF_INSTALL_ODO = "install_odo"
 CONF_CHARGING_EFFICIENCY = "charging_efficiency"
 CONF_POLL_INTERVAL = "poll_interval"
 CONF_TRIP_TIMEOUT = "trip_timeout"
