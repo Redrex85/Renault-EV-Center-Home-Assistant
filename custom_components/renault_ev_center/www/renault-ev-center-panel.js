@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.44";
+const REC_VER = "1.0.46";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -197,12 +197,48 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
 
   /** id entità integrazione: sensor.<slug>_<rest> */
-  _sid(rest) { return `sensor.${this._slug(this._cfg.name)}_${rest}`; }
-  _nid(rest) { return `number.${this._slug(this._cfg.name)}_${rest}`; }
-  _bid(rest) { return `binary_sensor.${this._slug(this._cfg.name)}_${rest}`; }
-  _swid(rest) { return `switch.${this._slug(this._cfg.name)}_${rest}`; }
-  _tid(rest) { return `time.${this._slug(this._cfg.name)}_${rest}`; }
-  _selid(rest) { return `select.${this._slug(this._cfg.name)}_${rest}`; }
+  /** Prefisso REALE delle entità dell'integrazione (es. "sensor.renault_scenic").
+   *  Se il nome scritto nella card non combacia (entry rinominata, slug diverso,
+   *  card ritocata a mano) i sensori NON si trovano: lo scopriamo dal registro
+   *  invece di indovinare. Se ci sono piu' famiglie (orfani di una entry
+   *  cancellata) vince quella con le entità vive; a parità nessuna -> niente
+   *  scelte a caso. */
+  _pfx() {
+    if (this._pfxV && Date.now() - this._pfxT < 30000) return this._pfxV;
+    const suff = "_tagliandi";           // ancoraggio: questo sensore esiste sempre
+    const vivi = new Map();
+    for (const id of Object.keys(this._hass.states)) {
+      if (id.startsWith("sensor.") && id.endsWith(suff)) {
+        const st = this._hass.states[id];
+        const vivo = st && st.state !== "unavailable" && st.state !== "unknown" ? 1 : 0;
+        vivi.set(id.slice(0, -suff.length), vivo);
+      }
+    }
+    let best = null, bestN = 0, pari = false;
+    for (const [p, n] of vivi) {
+      if (n > bestN) { best = p; bestN = n; pari = false; }
+      else if (n === bestN && p !== best) pari = true;
+    }
+    this._pfxV = bestN > 0 && !pari ? best : null;
+    this._pfxT = Date.now();
+    return this._pfxV;
+  }
+
+  /** id entita integrazione: <dom>.<slug(name)>_<rest>, o il prefisso REALE se non esiste */
+  _eid(dom, rest) {
+    const d = `${dom}.${this._slug(this._cfg.name)}_${rest}`;
+    const st = this._hass ? this._hass.states : null;
+    if (!st) return d;
+    if (st[d]) return d;
+    const p = this._pfx();
+    return p ? `${dom}.${p.split(".")[1]}_${rest}` : d;
+  }
+  _sid(rest) { return this._eid("sensor", rest); }
+  _nid(rest) { return this._eid("number", rest); }
+  _bid(rest) { return this._eid("binary_sensor", rest); }
+  _swid(rest) { return this._eid("switch", rest); }
+  _tid(rest) { return this._eid("time", rest); }
+  _selid(rest) { return this._eid("select", rest); }
   _car(dom, rest) { return `${dom}.${this._slug(this._cfg.car)}${rest ? "_" + rest : ""}`; }
 
   /** chiamata servizio con toast di conferma */

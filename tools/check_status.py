@@ -1191,6 +1191,30 @@ try:
 except Exception as e:
     bad(f"costo ultima ricarica: {e}")
 
+print("\n[46] Il pannello deve trovare i sensori anche se il nome della card non combacia")
+try:
+    panel = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    # il pannello costruiva gli id col solo slug(name): se la card dice
+    # "Renault" ma le entita' sono sensor.renault_scenic_* la pagina resta vuota.
+    assert "  _pfx() {" in panel, "manca _pfx() (prefisso reale delle entita')"
+    assert "  _eid(dom, rest) {" in panel, "manca _eid()"
+    # 6 metodi devono passare da _eid() e non costruire l'id a mano
+    for dom in ("sensor", "number", "binary_sensor", "switch", "time", "select"):
+        assert f'_eid("{dom}", rest)' in panel, f"{dom} non usa _eid()"
+    assert panel.count("this._slug(this._cfg.name)}_${rest}`; }") == 0, \
+        "restano metodi che costruiscono l'id solo con il nome della card"
+    # ambiguita' con piu' entry: meglio nessun prefisso che uno indovinato
+    assert "bestN > 0 && !pari" in panel, \
+        "con piu' famiglie vive il prefisso deve restare ambiguo (niente indovinamenti)"
+    # ... ma se una famiglia e' morta (orfani di una entry cancellata) vince quella viva
+    assert 'st.state !== "unavailable"' in panel, \
+        "_pfx() non distingue entita' vive da orfane unavailable"
+    assert "this._hass ? this._hass.states : null" in panel, \
+        "_eid() deve tollerare hass non ancora assegnato"
+    ok("prefisso reale delle entita' con fallback al nome della card")
+except Exception as e:
+    bad(f"prefisso entita' pannello: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

@@ -5,6 +5,43 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.46 — Il prefisso reale scarta le famiglie di entità morte
+
+Raffinamento di 1.0.45: quando nel registro coesistono più famiglie di prefissi
+(es. i `sensor.renault_*` rimasti orfani da un'entry cancellata, o una entry
+rinominata le cui piattaforme non sono state ricaricate), `_pfx()` ora **sceglie la
+famiglia con le entità vive** invece di dichiarare ambiguo tutto.
+
+- entità `unavailable`/`unknown` non contano → se una famiglia è morta e l'altra no,
+  vince quella viva
+- **a parità nessun prefisso**: con 2 entry attive non si indovina, il pannello resta
+  com'è e serve configurare il nome giusto
+
+---
+
+## 1.0.45 — Il pannello trovava i sensori solo col nome scritto nella card
+
+La card dice `name: Renault`, ma le entità dell'integrazione si chiamano
+`sensor.renault_scenic_*`. Tutti i `_sid()` costruivano l'id **solo** da
+`_slug(name)` → `sensor.renault_*` → inesistente → mezza pagina a `-`
+(foto 1: 325 km e 13683 km grazie agli override, ma *kWh a bordo*,
+*consumata oggi*, *km/kWh*, *kWh/100km* tutti vuoti).
+Scrivendo `renault_scenic` al posto di `Renault` tornava tutto (foto 2).
+
+- `_pfx()` scopre il **prefisso reale** dal registro (`*_tagliandi` è l'ancoraggio:
+  esiste sempre) e lo riusa in tutti i domini
+- `_eid(dom, rest)`: prova col nome della card, se quell'id **non esiste** usa il
+  prefisso reale — quindi la card torna corretta anche dopo un rinominamento
+- **con più entry i candidati sono ambigui → nessun prefisso**: niente scelte a caso
+- valido per `sensor`/`number`/`binary_sensor`/`switch`/`time`/`select`
+
+**Nota:** se nel tuo HA ci sono **due entry** (es. una "Renault" e una
+"Renault Scenic"), i sensori di quella vecchia restano vivi e il prefisso diventa
+ ambiguo: in quel caso il fallback non scatta e la causa va risolta cancellando
+l'entry obsoleta.
+
+---
+
 ## 1.0.44 — Riassunto giornaliero: prefisso entità sbagliato nelle automazioni
 
 Il riassunto delle 21:30 è un'automazione con **condizione**
