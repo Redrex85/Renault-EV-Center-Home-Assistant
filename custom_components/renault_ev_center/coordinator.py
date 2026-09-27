@@ -2259,9 +2259,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
     async def service_create_automations(self) -> list[str]:
         """Crea (solo se assenti) le automazioni consigliate in automations.yaml."""
-        from .dashboard import slugify
+        from .dashboard import entry_name, slugify
 
-        n = slugify(str(self.opts.get(CONF_NAME, "Renault")))
+        n = slugify(entry_name(self.entry))
         batt = str(self.opts.get("battery_level_entity") or f"sensor.{n}_batteria")
         range_e = str(self.opts.get("range_entity") or f"sensor.{n}_autonomia_della_batteria")
         # il nostro binary_sensor è SEMPRE on/off: l'entità sorgente può essere un sensore
@@ -2342,9 +2342,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         from homeassistant.util.yaml import dump as _yaml_dump
         from homeassistant.util.yaml import load_yaml as _yaml_load
 
-        from .dashboard import slugify
+        from .dashboard import entry_name, slugify
 
-        nome = slugify(str(self.opts.get(CONF_NAME, "Renault")))
+        nome = slugify(entry_name(self.entry))
         # suffissi gestiti dall'integrazione: un id con slug diverso è un orfano (nome auto cambiato)
         gestiti = ("_ricarica_completata", "_avvio_ricarica", "_batteria_bassa",
                    "_riassunto_giornaliero", "_promemoria", "_programma_ricarica",
@@ -2439,9 +2439,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                                    fine: str, soc: int, modo: str, temperatura: int,
                                    giorni: list[str]) -> list[str]:
         """Crea/aggiorna l'automazione di schedulazione ricarica o clima."""
-        from .dashboard import slugify
+        from .dashboard import entry_name, slugify
 
-        n = slugify(str(self.opts.get(CONF_NAME, "Renault")))
+        n = slugify(entry_name(self.entry))
         aid = f"renault_ev_center_{n}_programma_{tipo}"
         # memorizzo i valori: il pannello li usa per ripopolare il form dopo un refresh
         self.store.data.setdefault("schedule", {})[tipo] = {
@@ -2520,7 +2520,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         from homeassistant.config import AUTOMATION_CONFIG_PATH
         from homeassistant.util.yaml import load_yaml as _yaml_load
 
-        from .dashboard import slugify
+        from .dashboard import entry_name, slugify
 
         sch = self.store.data.setdefault("schedule", {})
         cur = dict(sch.get("ricarica") or {})
@@ -2529,7 +2529,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             data = await self.hass.async_add_executor_job(_yaml_load, path)
         except Exception:  # noqa: BLE001
             return
-        n = slugify(str(self.opts.get(CONF_NAME, "Renault")))
+        n = slugify(entry_name(self.entry))
         aid = f"renault_ev_center_{n}_programma_ricarica"
         autos = data if isinstance(data, list) else []
         for a in autos:
@@ -2632,7 +2632,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
     async def _enable_automation(self, alias: str) -> None:
         """Accende l'automazione (id derivato dall'alias) e lo segnala nel log."""
-        from .dashboard import slugify
+        from .dashboard import entry_name, slugify
 
         eid = f"automation.{slugify(alias)}"
         st = self.hass.states.get(eid)

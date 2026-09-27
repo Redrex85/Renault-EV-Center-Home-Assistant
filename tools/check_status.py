@@ -1059,6 +1059,14 @@ try:
     # la dashboard non deve più usare un default fisso diverso
     assert "opts.get(CONF_NAME" not in init, \
         "__init__.py usa ancora opts.get(CONF_NAME) con default fisso"
+    # id/alias/condizioni delle automazioni: stesso prefisso dei sensori, altrimenti
+    # la condizione del riepilogo giornaliero punta a sensor.<altro>_km_giornalieri
+    # inesistente e la notifica non parte MAI
+    coord = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert "opts.get(CONF_NAME" not in coord, \
+        "coordinator.py usa ancora opts.get(CONF_NAME) con default fisso"
+    assert coord.count("slugify(entry_name(self.entry))") >= 4, \
+        "automazioni/schedule del coordinatore non usano entry_name()"
     assert init.count("entry_name(entry") >= 2 and "entry_name(coord.entry)" in init, \
         "entry_name() non usato in tutte le chiamate a async_setup_dashboard"
     # le 9 piattaforme leggono entry.data → entry.title (testa comune)

@@ -5,6 +5,29 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.44 — Riassunto giornaliero: prefisso entità sbagliato nelle automazioni
+
+Il riassunto delle 21:30 è un'automazione con **condizione**
+`sensor.<prefisso>_km_giornalieri > 0.5`. Il prefisso veniva calcolato con
+
+```python
+slugify(str(self.opts.get("name", "Renault")))
+```
+
+mentre i sensori li crea `sensor.py` con `entry.data.get("name") or entry.title`.
+Se la chiave `name` manca, è vuota o il default scatta, la condizione punta a un
+`sensor.…` **inesistente** → `numeric_state` mai soddisfatto → **notifica mai inviata**.
+
+Stessa radice del bug 1.0.39 (pannello vuoto con `car: renault`): il fix di allora
+aveva coperto `dashboard.py` e `__init__.py`, ma non le **4 occorrenze** in
+`coordinator.py` (`service_create_automations`, `_automations_apply`,
+`service_set_schedule`, `async_sync_schedule_from_automation`).
+
+- `coordinator.py` → tutte e 4 ora usano `slugify(entry_name(self.entry))`
+- guardia `[41]` estesa a `coordinator.py`
+
+---
+
 ## 1.0.43 — "Ultima ricarica" mostrava 0 € di costo
 
 La riga **Costo · Eff.** della card *Ultima ricarica* leggeva
