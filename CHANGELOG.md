@@ -5,6 +5,32 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.47 — Tagliando/bollo che non si mantengono · media consumi che crolla
+
+### I valori inseriti in Configura venivano buttati
+Al salvataggio dello wizard, i campi di manutenzione venivano rimossi con
+`user_input.pop(...)` **incondizionato** quando la feature era spenta. Compilavi
+tagliando/bollo/scadenze, salvavi, e al prossimo save ritrovavi i default:
+"non mantiene i valori".
+
+- `_pop_vuoti()` rimuove solo ciò che è **davvero vuoto** (`None` o `""`), mai
+  quello che l'utente ha scritto
+- copy-paste bug: `notify_service` / `notify_days` venivano rimossi insieme ai campi
+  della manutenzione (non dipendono da quella) — ora non vengono più toccati
+- `tagliando_data`, `assicurazione_data`, `scad_bollo`, `scad_revisione`,
+  `scad_assicurazione` sopravvivono al save
+
+### Media consumi a 7 giorni che crolla
+`eff_kwh_100 = 100 × kWh_disponibili / autonomia`. Quando i dati non bastano
+(auto ferma, autonomia non aggiornata, polling che fallisce) il sensore **andava
+a 0**, e con `group_by: avg` su `1day` la media di quei giorni si azzava.
+
+- l'ultima efficienza valida resta memorizzata (`_prev_eff_*`) e viene riusata
+  quando i dati mancano
+- lo **schema apexcharts che già usi va bene com'è**, non va cambiato
+
+---
+
 ## 1.0.46 — Il prefisso reale scarta le famiglie di entità morte
 
 Raffinamento di 1.0.45: quando nel registro coesistono più famiglie di prefissi

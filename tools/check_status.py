@@ -1215,6 +1215,35 @@ try:
 except Exception as e:
     bad(f"prefisso entita' pannello: {e}")
 
+print("\n[47] Configura mantiene i valori inseriti � efficienza non va a 0")
+try:
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    coord = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    # A) niente pop() incondizionati: i valori inseriti devono restare anche se la
+    #    feature e' spenta (tagliando, bollo, scadenze)
+    assert "def _pop_vuoti(" in flow, "manca _pop_vuoti()"
+    assert "user_input.pop(CONF_NOTIFY_SERVICE" not in flow, \
+        "notify_service viene rimosso: non dipende dalla manutenzione"
+    assert "user_input.pop(CONF_NOTIFY_DAYS" not in flow, \
+        "notify_days viene rimosso: non dipende dalla manutenzione"
+    assert "user_input.pop(CONF_TAGLIANDO_DATA" not in flow, \
+        "tagliando_data viene rimosso ancora"
+    assert "user_input.pop(CONF_SCAD_BOLLO" not in flow, \
+        "scadenza bollo viene rimossa ancora"
+    # B) efficienza live: senza dati (auto ferma, range/batteria non aggiornati)
+    #    mantieni l'ultima media utile, non azzerare (la media a 7gg crollava)
+    assert "self._prev_eff_km_kwh" in coord and "self._prev_eff_kwh_100" in coord, \
+        "manca la memoria dell'ultima efficienza valida"
+    assert "_prev_eff_km_kwh, self._prev_eff_kwh_100 = eff_km_kwh, eff_kwh_100" in coord, \
+        "l'ultima efficienza valida non viene memorizzata"
+    assert "eff_km_kwh = self._prev_eff_km_kwh" in coord, \
+        "l'efficienza non viene mantenuta quando i dati mancano"
+    azzerati = [l for l in coord.splitlines() if re.match(r"\s+eff_km_kwh = 0\.0$", l)]
+    assert not azzerati, f"l'efficienza viene ancora azzerata: {azzerati}"
+    ok("Configura non perde i valori inseriti � efficienza mantiene la media")
+except Exception as e:
+    bad(f"valori config/efficienza: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

@@ -520,31 +520,32 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             user_input[CONF_HAS_PV] = prof == PROFILE_ENTERPRISE
             eff = float(user_input.get(CONF_CHARGING_EFFICIENCY, DEFAULT_EFFICIENCY * 100))
             user_input[CONF_CHARGING_EFFICIENCY] = eff
+            # I valori INSERITI dall'utente NON si buttano mai, anche se la feature
+            # corrispondente e' spenta: prima venivano rimossi con un pop() incondizionato
+            # e l'utente li ritrovava azzerati ("non mantiene tagliando e bollo").
+            # Si rimuove solo cio' che e' davvero vuoto (None o stringa vuota).
+            def _pop_vuoti(keys: tuple[str, ...]) -> None:
+                for k in keys:
+                    if user_input.get(k) in (None, ""):
+                        user_input.pop(k, None)
+
             if not user_input.get(CONF_FUEL_ENABLED):
-                user_input.pop(CONF_FUEL_LABEL, None)
-                user_input.pop(CONF_FUEL_CONSUMPTION, None)
-                user_input.pop(CONF_FUEL_PRICE, None)
-                user_input.pop(CONF_DIESEL_PRICE_ENTITY, None)
+                _pop_vuoti((CONF_FUEL_LABEL, CONF_FUEL_CONSUMPTION,
+                            CONF_FUEL_PRICE, CONF_DIESEL_PRICE_ENTITY))
             if not user_input.get(CONF_MAINT_ENABLED):
-                for k in (CONF_TAG_TERMICO, CONF_TAG_EV, CONF_BOLLO_TERMICO,
-                          CONF_BOLLO_EV, CONF_TAGLIANDO_INTERVALLO):
-                    user_input.pop(k, None)
+                _pop_vuoti((CONF_TAG_TERMICO, CONF_TAG_EV, CONF_BOLLO_TERMICO,
+                            CONF_BOLLO_EV, CONF_TAGLIANDO_INTERVALLO,
+                            CONF_TAGLIANDO_MODE, CONF_TAGLIANDO_DATA,
+                            CONF_ASSICURAZIONE_COSTO, CONF_ASSICURAZIONE_DATA))
             if not user_input.get(CONF_CO2_ENABLED):
-                for k in (CONF_CO2_THERMAL_GKM, CONF_CO2_GRID_GKWH):
-                    user_input.pop(k, None)
+                _pop_vuoti((CONF_CO2_THERMAL_GKM, CONF_CO2_GRID_GKWH))
             if not user_input.get(CONF_SCADENZE_ENABLED):
-                for k in (CONF_SCAD_BOLLO, CONF_SCAD_REVISIONE, CONF_SCAD_ASSICURAZIONE):
-                    user_input.pop(k, None)
+                _pop_vuoti((CONF_SCAD_BOLLO, CONF_SCAD_REVISIONE, CONF_SCAD_ASSICURAZIONE))
             if not user_input.get(CONF_LOW_SOC_ENABLED):
-                for k in (CONF_LOW_SOC_THRESHOLD, CONF_LOW_SOC_START, CONF_LOW_SOC_END, CONF_LOW_SOC_DAYS):
-                    user_input.pop(k, None)
-            if not user_input.get(CONF_MAINT_ENABLED):
-                user_input.pop(CONF_NOTIFY_SERVICE, None)
-                user_input.pop(CONF_NOTIFY_DAYS, None)
-                user_input.pop(CONF_TAGLIANDO_MODE, None)
-                user_input.pop(CONF_TAGLIANDO_DATA, None)
-                user_input.pop(CONF_ASSICURAZIONE_COSTO, None)
-                user_input.pop(CONF_ASSICURAZIONE_DATA, None)
+                _pop_vuoti((CONF_LOW_SOC_THRESHOLD, CONF_LOW_SOC_START,
+                            CONF_LOW_SOC_END, CONF_LOW_SOC_DAYS))
+            # notify_* NON dipendono dalla manutenzione: mai rimossi (erano nel blocco
+            # sbagliato per un copia-incolla)
             self._data.update(user_input)
             return self.async_create_entry(title=self._data[CONF_NAME], data=self._data)
         # schermata unica: auto + comandi + wallbox (dal profilo) + tutte le impostazioni

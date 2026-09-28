@@ -300,6 +300,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.tagliando_mode = str(opts.get(CONF_TAGLIANDO_MODE) or "km")
         self.tagliando_data = str(opts.get(CONF_TAGLIANDO_DATA) or "")
         self.assicurazione_costo = _f(opts.get(CONF_ASSICURAZIONE_COSTO), 400.0)
+        # ultima efficienza valida: se i dati non bastano (auto ferma, range o
+        # batteria non aggiornati) il sensore NON va a 0 e la media a 7 giorni
+        # non crolla nei giorni senza viaggio
+        self._prev_eff_km_kwh = 0.0
+        self._prev_eff_kwh_100 = 0.0
 
         # vampire drain: SoC persa da fermo (non in carica, odometro fermo)
         self.drain_meter = DeltaMeter("down")
@@ -834,9 +839,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if rng > 1 and avail_kwh > 0.5:
             eff_km_kwh = round(rng / avail_kwh, 2)
             eff_kwh_100 = round(100.0 * avail_kwh / rng, 2)
+            self._prev_eff_km_kwh, self._prev_eff_kwh_100 = eff_km_kwh, eff_kwh_100
         else:
-            eff_km_kwh = 0.0
-            eff_kwh_100 = 0.0
+            # dati insufficienti: mantiene l'ultima media utile invece di azzerare
+            eff_km_kwh = self._prev_eff_km_kwh
+            eff_kwh_100 = self._prev_eff_kwh_100
 
         # --- contatori -----------------------------------------------------------
         for p in PERIODS:
