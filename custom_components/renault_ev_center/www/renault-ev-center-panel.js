@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.47";
+const REC_VER = "1.0.49";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -239,7 +239,28 @@ class RenaultEvCenterPanel extends HTMLElement {
   _swid(rest) { return this._eid("switch", rest); }
   _tid(rest) { return this._eid("time", rest); }
   _selid(rest) { return this._eid("select", rest); }
-  _car(dom, rest) { return `${dom}.${this._slug(this._cfg.car)}${rest ? "_" + rest : ""}`; }
+  _car(dom, rest) {
+    const sfx = rest ? "_" + rest : "";
+    const cands = [
+      `${dom}.${this._slug(this._cfg.car)}${sfx}`,
+      `${dom}.${this._slug(this._cfg.name)}${sfx}`,
+    ];
+    const st = this._hass ? this._hass.states : null;
+    if (!st) return cands[0];
+    for (const c of cands) if (st[c]) return c;
+    // device Renault ufficiale: prima entita di quel dominio che finisce con
+    // _<rest> e NON appartiene a questa integrazione (prefisso gia' scartato)
+    if (rest) {
+      const mine = (this._pfx() || "").split(".")[1];
+      for (const id of Object.keys(st)) {
+        if (!id.startsWith(dom + ".") || !id.endsWith(sfx)) continue;
+        const base = id.slice(dom.length + 1, -sfx.length);
+        if (mine && base === mine) continue;
+        return id;
+      }
+    }
+    return cands[0];
+  }
 
   /** chiamata servizio con toast di conferma */
   _call(domain, service, data, msg) {
@@ -523,12 +544,18 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
   }
   _txt(v) {
-    if (v === null || v === undefined) return "—";
+    if (v === null || v === undefined) return "-";
     if (typeof v === "object") {
       const s = v.state;
-      return s === undefined || s === null || s === "unavailable" || s === "unknown" ? "—" : String(s);
+      return s === undefined || s === null || s === "unavailable" || s === "unknown" ? "-" : this._txt(s);
     }
-    return String(v);
+    const s = String(v);
+    const n = Number(s);
+    // decimali con la virgola (it-IT); interi senza separatore migliaia
+    if (s !== "" && !isNaN(n) && Number.isFinite(n)) {
+      return Number.isInteger(n) ? s : String(n).replace(".", ",");
+    }
+    return s;
   }
   _f(k) { return this._txt(this._field(k)); }
   /** primo entity_id live per un campo KPI cliccabile */

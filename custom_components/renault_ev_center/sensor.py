@@ -58,7 +58,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: RenaultMateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    name = str(entry.data.get("name") or entry.title or "Auto")
+    name = str(entry.data.get("name") or entry.title or "Renault")
     wb = bool(entry.options.get(CONF_WALLBOX_ENABLED, entry.data.get(CONF_WALLBOX_ENABLED, False)))
 
     entities: list[SensorEntity] = [

@@ -272,8 +272,9 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
         schema[vol.Required("wallbox")] = section(vol.Schema({
             vol.Required(CONF_WALLBOX_ENABLED, default=defaults.get(CONF_WALLBOX_ENABLED, True)): BooleanSelector(),
             # OBBLIGATORI in Pro/Enterprise: senza potenza e stato la pagina Wallbox
-            # è vuota e il bilanciamento non ha nulla da leggere.
-            # Avvio/stop restano opzionali: non tutte le wallbox li espongono.
+            # e' vuota e il bilanciamento non ha nulla da leggere.
+            # Avvio/stop OBBLIGATORI pure loro (Pro/Enterprise): senza comandi la
+            # pagina Wallbox non puo' avviare ne' fermare la ricarica.
             vol.Required(
                 CONF_WB_POWER, description={"suggested_value": defaults.get(CONF_WB_POWER)}
             ): EntitySelector(EntitySelectorConfig(domain=["sensor", "number"])),
@@ -292,10 +293,10 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
             vol.Optional(
                 CONF_WB_SESSION_TIME, description={"suggested_value": defaults.get(CONF_WB_SESSION_TIME)}
             ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-            vol.Optional(
+            vol.Required(
                 CONF_WB_CHARGE_SWITCH, description={"suggested_value": defaults.get(CONF_WB_CHARGE_SWITCH)}
             ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
-            vol.Optional(
+            vol.Required(
                 CONF_WB_STOP_SWITCH, description={"suggested_value": defaults.get(CONF_WB_STOP_SWITCH)}
             ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
         }), {"collapsed": True})
@@ -360,7 +361,7 @@ def _slug_name(v: Any) -> str:
 
 def _entry_name(e: "config_entries.ConfigEntry") -> str:
     """Stessa risoluzione del nome usata dalle piattaforme (vedi dashboard.entry_name)."""
-    return str(e.data.get("name") or e.title or "")
+    return str(e.data.get("name") or e.title or "Renault")
 
 
 def _capacity_for_model(user_input: dict[str, Any]) -> None:
@@ -434,7 +435,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_PURCHASE_DATE, **_sugg_date(defaults.get(CONF_PURCHASE_DATE))): DateSelector(),
             vol.Optional(CONF_ASSICURAZIONE_COSTO, default=defaults.get(CONF_ASSICURAZIONE_COSTO, DEFAULT_ASSICURAZIONE_COSTO)): NumberSelector(
                 NumberSelectorConfig(min=0, max=3000, step=10, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
-            vol.Optional(CONF_ASSICURAZIONE_DATA, description={"suggested_value": defaults.get(CONF_ASSICURAZIONE_DATA, "")}): TextSelector(),
+            vol.Optional(CONF_ASSICURAZIONE_DATA, **_sugg_date(defaults.get(CONF_ASSICURAZIONE_DATA))): DateSelector(),
         }), {"collapsed": True}),
         vol.Required("notify"): section(vol.Schema({
             vol.Optional(CONF_NOTIFY_SERVICE, description={"suggested_value": defaults.get(CONF_NOTIFY_SERVICE, "")}): TextSelector(),
@@ -457,7 +458,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                 NumberSelectorConfig(min=5, max=60, step=1, unit_of_measurement="min")),
             vol.Optional(CONF_TAGLIANDO_MODE, default=defaults.get(CONF_TAGLIANDO_MODE, "km")): SelectSelector(
                 SelectSelectorConfig(options=["km", "data"])),
-            vol.Optional(CONF_TAGLIANDO_DATA, description={"suggested_value": defaults.get(CONF_TAGLIANDO_DATA, "")}): TextSelector(),
+            vol.Optional(CONF_TAGLIANDO_DATA, **_sugg_date(defaults.get(CONF_TAGLIANDO_DATA))): DateSelector(),
             vol.Optional(
                 CONF_TEMP_ENTITY,
                 description={"suggested_value": defaults.get(CONF_TEMP_ENTITY)},
@@ -471,9 +472,9 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_AVG_KMH, default=defaults.get(CONF_AVG_KMH, 30.0)): NumberSelector(
                 NumberSelectorConfig(min=10, max=120, step=1, unit_of_measurement="km/h", mode=NumberSelectorMode.BOX)),
             vol.Required(CONF_SCADENZE_ENABLED, default=defaults.get(CONF_SCADENZE_ENABLED, False)): BooleanSelector(),
-            vol.Optional(CONF_SCAD_BOLLO, description={"suggested_value": defaults.get(CONF_SCAD_BOLLO)}): TextSelector(),
-            vol.Optional(CONF_SCAD_REVISIONE, description={"suggested_value": defaults.get(CONF_SCAD_REVISIONE)}): TextSelector(),
-            vol.Optional(CONF_SCAD_ASSICURAZIONE, description={"suggested_value": defaults.get(CONF_SCAD_ASSICURAZIONE)}): TextSelector(),
+            vol.Optional(CONF_SCAD_BOLLO, **_sugg_date(defaults.get(CONF_SCAD_BOLLO))): DateSelector(),
+            vol.Optional(CONF_SCAD_REVISIONE, **_sugg_date(defaults.get(CONF_SCAD_REVISIONE))): DateSelector(),
+            vol.Optional(CONF_SCAD_ASSICURAZIONE, **_sugg_date(defaults.get(CONF_SCAD_ASSICURAZIONE))): DateSelector(),
         }), {"collapsed": True}),
     })
 

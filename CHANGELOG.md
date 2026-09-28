@@ -5,6 +5,87 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.49 — Il viaggio non si chiudeva (due cause, entrambe risolte)
+
+**Causa 1 — riavvio di HA.** `TripEngine.should_close()` confrontava
+`time.monotonic()` con `mono_last_change`, che `restore()` riprende dallo store.
+Dopo un riavvio `monotonic()` riparte da un **altro** valore (o `mono_last_change`
+era un timestamp wall, se il record era di vecchio formato) → l'elapsed risultava
+**negativo** → `elapsed >= timeout` mai vero → il viaggio restava aperto per sempre.
+Fix: se `elapsed_min < 0` o `> 24h` (fuori scala) → ripiego sull'orologio di parete
+(`time.time() - ts_last_change`).
+
+**Causa 2 — GPS fluttuante in casa.** Il timer di chiusura viene rinfrescato da
+`moved_gps` (soglia `0.0005°` ≈ 55 m), che serve a non chiudere il viaggio durante
+la guida (il cloud Renault aggiorna l'odometro solo a motore spento). In casa il
+GPS fluttua oltre quella soglia → `mono_last_change` si aggiornava a ogni poll →
+il timeout non scadeva mai.
+Fix: **chiusura per zona di partenza** — se l'auto torna nella zona da cui è
+partita (≥ 5 min di viaggio) il viaggio si chiude subito.
+
+Per chiudere subito il viaggio aperto: bottone **"Chiudi viaggio ora"** nella
+pagina Viaggi del pannello.
+
+### Fix km/kWh del viaggio (stessa release)
+
+**Causa 3 — il viaggio veniva scartato.** `close()` rifiutava il record se
+`km < 0.5` **in OR** con la durata: il cloud Renault aggiorna l'odometro solo a
+motore spento, quindi i viaggi chiudevano con `km = 0` e sparivano del tutto —
+niente km, niente kWh. E `self.active = False` veniva impostato **prima** dello
+scarto, così il poll dopo riapriva un viaggio nuovo col seed corrente:
+da qui il **9%** in dashboard (60 → 51) invece del **21%** reale (72 → 51).
+
+- lo scarto ora è in **AND**: il viaggio conta se c'è km, **oppure** consumo di
+  batteria (≥ 1%), **oppure** durata minima
+- il viaggio resta **aperto** se l'odometro non si è ancora aggiornato ma c'è
+  consumo: chiudere subito darebbe km = 0 e kWh = 0 (limite 6 h)
+- riferimento confermato: **km = delta odometro**, **kWh = delta batteria × capacità**
+
+---
+
+## 1.0.49 — Fix A→E (naming, date, decimali, device Renault)
+
+- **A — naming unificato.** `sensor.py` / `button.py` / `binary_sensor.py` usavano il
+  default `"Auto"`, gli altri `"Renault"`: con `name` e `title` vuoti le entità si
+  sparpagliavano su prefissi diversi. Ora tutte e 9 le piattaforme + `config_flow`
+  usano lo stesso default (`"Renault"`).
+- **B — `_entry_name()` non ritorna più `""`**: unique_id vuoto per più entry.
+- **C — `_car()` multi-prefisso.** Prima provava solo `slugify(car)`, quindi i
+  fallback puntavano a `sensor.renault_*` inesistenti. Ora prova `car`, poi
+  `name`, poi la prima entità di quel dominio che **non** è dell'integrazione
+  (device Renault ufficiale, es. `sensor.gy966mh_battery`).
+- **D — virgola it-IT.** `_txt()` lasciava `String(v)` → `34.97` col punto.
+  Decimali con la virgola, interi senza separatore migliaia (l'odometro non
+  deve diventare `34.567`).
+- **E — campi data come `DateSelector`.** `CONF_ASSICURAZIONE_DATA`,
+  `CONF_TAGLIANDO_DATA`, `CONF_SCAD_BOLLO`, `CONF_SCAD_REVISIONE`,
+  `CONF_SCAD_ASSICURAZIONE` erano `TextSelector` (incoerente con
+  `CONF_PURCHASE_DATE`); ora `DateSelector` con `_sugg_date`.
+- **F — wallbox: avvio/stop obbligatori.** In Pro/Enterprise sono ora `Required`
+  insieme a potenza e stato: senza i comandi la pagina Wallbox non può avviare
+  né fermare la ricarica. (La sezione resta assente in Base.)
+
+---
+
+## 1.0.48 — slugify allineato a HA · audit naming
+
+`dashboard.py` aveva uno `slugify` locale che **cancellava** la punteggiatura
+invece di convertirla in `_`: `Clio E-Tech` → `clio_etech` mentre HA genera
+`clio_e_tech` per gli `entity_id`. Consequenza: il campo `car:` della card non
+trovava i fallback del device Renault, e l'`url_path` della dashboard non
+combaciava con quello che ci si aspetta.
+
+- `dashboard.py` → delega a `homeassistant.util.slugify`
+- guardia `[48]` + verifica dei 4 default del nome ancora presenti
+
+### Audit naming (aperto)
+Restano **4 risoluzioni diverse del nome** quando `name` e `title` sono vuoti:
+`sensor/button/binary_sensor` → `"Auto"` · `climate/number/select/switch/time/device_tracker`
+→ `"Renault"` · `dashboard.entry_name()` → `"Renault"` · `config_flow._entry_name()` → `""`.
+Con `name` obbligatorio nel wizard non scattano, ma vanno allineate: è il prossimo intervento.
+
+---
+
 ## 1.0.47 — Tagliando/bollo che non si mantengono · media consumi che crolla
 
 ### I valori inseriti in Configura venivano buttati

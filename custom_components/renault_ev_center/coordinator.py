@@ -927,12 +927,29 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 lon = _st.attributes.get("longitude")
         opened, _ = self.trip.tick(odometer, battery, location, eff_kwh_100, now_wall, now_mono, lat, lon)
         trip_opened = opened
-        if self.trip.should_close(now_mono) or self.trip.arrived or (self.trip.active and (now_wall - self.trip.ts_start) > 6 * 3600):
-            closed_trip = self.trip.close(location, eff_kwh_100, now_wall)
-            if closed_trip is not None:
-                self._enrich_trip(closed_trip)
-                self.store.data["trips"].append(closed_trip)
-                self._queue_geocode(closed_trip)
+        # chiusura per zona di partenza: l'auto e' tornata da dove e' partita.
+        # Serve perche' il GPS in casa fluttua oltre la soglia di moved_gps (55 m) e
+        # tiene sveglio il timeout -> il viaggio restava aperto per sempre.
+        tornato_a_base = (
+            self.trip.active
+            and self.trip.zone_start not in ("", "unknown", None)
+            and location == self.trip.zone_start
+            and (now_wall - self.trip.ts_start) > 300
+        )
+        if self.trip.should_close(now_mono) or self.trip.arrived or tornato_a_base or (self.trip.active and (now_wall - self.trip.ts_start) > 6 * 3600):
+            # se l'odometro non si e' ancora aggiornato (cloud Renault: solo a motore
+            # spento) ma c'e' consumo, il viaggio resta aperto finche' arrivano i km:
+            # chiudere subito avrebbe dato km = 0 e kWh = 0
+            km_zero = self.trip.mileage_now <= self.trip.mileage_start
+            consumo = (self.trip.battery_start - self.trip.battery_now) >= 1.0
+            if km_zero and consumo and not self.trip.arrived and (now_wall - self.trip.ts_start) < 6 * 3600:
+                pass
+            else:
+                closed_trip = self.trip.close(location, eff_kwh_100, now_wall)
+                if closed_trip is not None:
+                    self._enrich_trip(closed_trip)
+                    self.store.data["trips"].append(closed_trip)
+                    self._queue_geocode(closed_trip)
 
         # --- sessione di ricarica -------------------------------------------------
         finished_charge = None

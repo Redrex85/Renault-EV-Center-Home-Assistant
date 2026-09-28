@@ -21,7 +21,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: RenaultMateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    name = str(entry.data.get("name") or entry.title or "Auto")
+    name = str(entry.data.get("name") or entry.title or "Renault")
     entry_id = entry.entry_id
     async_add_entities([
         MateButton(coordinator, name, f"{entry_id}_btn_close_trip",

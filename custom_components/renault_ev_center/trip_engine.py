@@ -218,6 +218,11 @@ class TripEngine:
             return False
         mono = now_mono if now_mono is not None else time.monotonic()
         elapsed_min = (mono - self.mono_last_change) / 60.0
+        if elapsed_min < 0 or elapsed_min > 24 * 60:
+            # ripristino dallo store dopo un riavvio: mono_last_change non e'
+            # allineato al time.monotonic() attuale (o e' un timestamp wall) e il
+            # confronto restituiva un tempo negativo -> il viaggio NON si chiudeva mai
+            elapsed_min = (time.time() - self.ts_last_change) / 60.0
         return elapsed_min >= self.timeout_minuti
 
     def close(self, zone_arrivo: str, eff_live_kwh_100km: float,
@@ -230,9 +235,14 @@ class TripEngine:
         batt_delta = round(self.battery_start - self.battery_now, 1)
         durata_min = int((now - self.ts_start) / 60)
 
+        # il viaggio conta se c'e' chilometri, oppure consumo di batteria, oppure durata.
+        # Prima veniva scartato con `km < min_km` in OR: il cloud Renault aggiorna
+        # l'odometro solo a motore spento, quindi i viaggi con km = 0 sparivano del
+        # tutto e non restavano ne' i km ne' i kWh.
+        scartato = km < self.min_km and batt_delta < 1.0 and durata_min < self.min_minutes
         self.active = False
         self.seed_odometer = None
-        if km < self.min_km or durata_min < self.min_minutes:
+        if scartato:
             return None
 
         # PRIORITÀ al SoC REALE della batteria: il consumo effettivo è il delta % (× capacità).

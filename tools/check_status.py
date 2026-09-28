@@ -1244,6 +1244,103 @@ try:
 except Exception as e:
     bad(f"valori config/efficienza: {e}")
 
+print("\n[48] slugify dello dashboard = slugify di HA (niente clivo_etech)")
+try:
+    dash = open(os.path.join(CC, "dashboard.py"), encoding="utf-8").read()
+    # la funzione locale cancellava i trattini: "Clio E-Tech" -> "clio_etech"
+    # mentre HA genera "clio_e_tech" per gli entity_id -> campo car: errato
+    assert "from homeassistant.util import slugify as _ha_slugify" in dash, \
+        "dashboard.py non importa lo slugify di HA"
+    assert "_ha_slugify(str(text or" in dash, "slugify() non delega a HA"
+    assert 're.sub(r"\\s+", "_"' not in dash and 're.sub(r"[^\\w\\s]", "", ' not in dash, \
+        "resta la regex locale di slugify"
+    # default del nome: tutte le piattaforme e config_flow usano lo stesso ("Renault")
+    for pf in ("sensor", "button", "binary_sensor", "climate", "number",
+               "select", "switch", "time", "device_tracker"):
+        src = open(os.path.join(CC, f"{pf}.py"), encoding="utf-8").read()
+        assert 'or "Renault")' in src, f"{pf}.py default nome inatteso (atteso \"Renault\")"
+    ok("slugify di HA + default nome unificato su tutte le piattaforme")
+except Exception as e:
+    bad(f"slugify/naming: {e}")
+
+print("\n[49] Chiusura viaggio robusta ai riavvii di HA")
+try:
+    eng = open(os.path.join(CC, "trip_engine.py"), encoding="utf-8").read()
+    # mono_last_change ripristinato dallo store: dopo un riavvio time.monotonic()
+    # riparte da un altro valore -> elapsed_min negativo -> il viaggio non si chiudeva mai
+    assert "if elapsed_min < 0 or elapsed_min > 24 * 60:" in eng, \
+        "should_close() non rileva i mono fuori scala"
+    assert "time.time() - self.ts_last_change" in eng, \
+        "manca il ripiego sull'orologio di parete"
+    ok("chiusura viaggio con ripiego wall-clock dopo i riavvii")
+except Exception as e:
+    bad(f"chiusura viaggio: {e}")
+
+print("\n[50] Chiusura viaggio per zona di partenza (GPS fluttuante in casa)")
+try:
+    coo = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert "tornato_a_base" in coo, "manca la chiusura per zona di partenza"
+    assert "location == self.trip.zone_start" in coo, \
+        "la zona di arrivo non viene confrontata con quella di partenza"
+    ok("viaggio chiuso al ritorno nella zona di partenza (>= 5 min)")
+except Exception as e:
+    bad(f"chiusura per zona: {e}")
+
+print("\n[51] Viaggio salvato con delta batteria + odometro (mai perso)")
+try:
+    eng = open(os.path.join(CC, "trip_engine.py"), encoding="utf-8").read()
+    coo = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    # prima: `km < min_km or durata < min` scartava il viaggio, e il cloud Renault
+    # aggiorna l'odometro solo a motore spento -> km = 0 -> il viaggio spariva del tutto
+    assert "scartato = km < self.min_km and batt_delta < 1.0" in eng, \
+        "close() scarta ancora i viaggi con solo consumo di batteria"
+    assert "if km < self.min_km or durata_min" not in eng, \
+        "rimasto lo scarto in OR che perdeva i viaggi"
+    assert "km_zero and consumo" in coo, \
+        "manca l'attesa dell'odometro prima di chiudere"
+    ok("viaggio sempre registrato: delta batteria + delta odometro")
+except Exception as e:
+    bad(f"registro viaggi: {e}")
+
+print("\n[52] Naming unificato + date come DateSelector + virgola it-IT")
+try:
+    # A: stesso default del nome in TUTTE le piattaforme (prima "Auto" vs "Renault")
+    plat = ["sensor.py", "button.py", "binary_sensor.py", "climate.py", "number.py",
+            "select.py", "switch.py", "time.py", "device_tracker.py"]
+    badn = [f for f in plat
+            if 'or "Renault")' not in open(os.path.join(CC, f), encoding="utf-8").read()]
+    assert not badn, f"default nome non allineato: {badn}"
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    assert 'or e.title or "Renault")' in flow, \
+        "_entry_name non usa lo stesso default (unique_id vuoto)"
+    # B/E: campi data con DateSelector + _sugg_date, non TextSelector
+    for k in ("CONF_ASSICURAZIONE_DATA", "CONF_TAGLIANDO_DATA", "CONF_SCAD_BOLLO",
+              "CONF_SCAD_REVISIONE", "CONF_SCAD_ASSICURAZIONE"):
+        assert f"{k}, **_sugg_date" in flow, f"{k} non usa DateSelector"
+        assert f"{k}, description" not in flow, f"{k} ancora TextSelector"
+    # C: _car() prova piu' prefissi (config, name, device Renault ufficiale)
+    pan = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    assert "for (const c of cands) if (st[c]) return c;" in pan, \
+        "_car() prova un solo prefisso"
+    # D: _txt() forma i decimali con la virgola
+    assert 'String(n).replace(".", ",")' in pan, "_txt() lascia il punto decimale"
+    ok("naming unificato, date DateSelector, virgola it-IT, _car multi-prefisso")
+except Exception as e:
+    bad(f"naming/date/decimali: {e}")
+
+print("\n[53] Wallbox: avvio/stop obbligatori in Pro/Enterprise")
+try:
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    i = flow.find("def _wallbox_schema")
+    j = flow.find("# fotovoltaico: SOLO enterprise")
+    blk = flow[i:j if j > i else i + 4000]
+    for k in ("CONF_WB_POWER", "CONF_WB_STATE", "CONF_WB_CHARGE_SWITCH", "CONF_WB_STOP_SWITCH"):
+        assert f"vol.Required(\n                {k}" in blk, f"{k} non e' Required"
+        assert f"vol.Optional(\n                {k}" not in blk, f"{k} ancora Optional"
+    ok("wallbox: potenza, stato, avvio e stop obbligatori (Pro/Enterprise)")
+except Exception as e:
+    bad(f"wallbox required: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

@@ -11,6 +11,7 @@ from typing import Any
 from homeassistant.components import frontend
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.util import slugify as _ha_slugify
 
 from .const import DOMAIN, CONF_AC_BUTTON, CONF_CHARGE_START_BUTTON, CONF_CLIMATE_ENTITY
 from .const import (
@@ -27,8 +28,10 @@ WWW_DIR = "renault-ev-center"
 
 
 def slugify(text: str) -> str:
-    s = re.sub(r"[^\w\s]", "", str(text).lower())
-    return re.sub(r"\s+", "_", s.strip())
+    # STESSO slug che HA usa per gli entity_id: la funzione locale prima
+    # cancellava i trattini invece di renderli "_" ("Clio E-Tech" -> "clio_etech"
+    # invece di "clio_e_tech") e il campo car: della card non trovava i fallback.
+    return _ha_slugify(str(text or ""))
 
 
 def entry_name(entry: ConfigEntry) -> str:
