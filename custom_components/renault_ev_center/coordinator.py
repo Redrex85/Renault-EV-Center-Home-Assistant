@@ -256,10 +256,16 @@ def _new_cost_meter() -> dict[str, Any]:
 class RenaultMateCoordinator(DataUpdateCoordinator):
     """Raccoglie i dati dalle entità selezionate e calcola tutto il resto."""
 
+    @property
+    def opts(self) -> dict[str, Any]:
+        """Opzioni sempre fresche: entry.data/entry.options cambiano SENZA reload.
+        Prima erano copiate una volta in __init__, quindi un valore impostato in
+        Configura non veniva piu' letto fino al prossimo riavvio dell'integrazione."""
+        return {**self.entry.data, **self.entry.options}
+
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         opts = {**entry.data, **entry.options}
         self.entry = entry
-        self.opts = opts
         self.geocode_enabled = bool(opts.get(CONF_GEOCODE_ENABLED, True))
         self._geocode_backfilled = False
         self.purchase_date = str(opts.get(CONF_PURCHASE_DATE) or "")
@@ -1172,13 +1178,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             carb_ev = _f(savings.get("elettrico_totale"))
             tag_termica = tag_ev = bollo_termica = bollo_ev = 0.0
             if self.maint_enabled:
-                anni = max(km_tot / 15000.0, 0.1)
+                # VALORI CONFIGURATI (bollo annuo, tagliando per intervento), non
+                # proporzionati ai km: l'utente imposta 236 e deve vedere 236, non
+                # il valore scalato dagli anni stimati (km_tot/15000) = 211.
                 tagliandi_termici = int(km_tot // self.tagliando_intervallo)
-                tag_termica = tagliandi_termici * self.tag_termico
+                tag_termica = self.tag_termico
                 tag_ev = round(
                     sum(_f(m.get("costo")) for m in self.store.data.get("maintenance", [])), 2)
-                bollo_termica = anni * self.bollo_termico
-                bollo_ev = anni * self.bollo_ev
+                bollo_termica = self.bollo_termico
+                bollo_ev = self.bollo_ev
                 savings["tagliandi"] = round(tag_termica - tag_ev, 2)
                 savings["tagliandi_teoria"] = round(tag_termica, 2)
                 savings["tagliandi_reale"] = tag_ev

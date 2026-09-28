@@ -1341,6 +1341,52 @@ try:
 except Exception as e:
     bad(f"wallbox required: {e}")
 
+print("\n[54] Valori configurati non proporzionati + consumo giornaliero + install_odo in car")
+try:
+    coo = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    sen = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    # bollo/tagliando: valori CONFIGURATI, non scalati dagli anni stimati (km/15000)
+    assert "anni * self.bollo" not in coo, "bollo ancora proporzionato agli anni"
+    assert "bollo_ev = self.bollo_ev" in coo, "bollo EV non usa il valore configurato"
+    assert "tag_termica = self.tag_termico" in coo, "tagliando non usa il costo per intervento"
+    # % utilizzo giornaliero: massimo tra delta netto, DeltaMeter e percorrenza
+    assert 'if self._direction == "down":' in sen and "val = max(val," in sen, \
+        "il consumo giornaliero usa solo il delta netto (crolla con le ricariche)"
+    # install_odo: nel menu Auto, non in Prezzi energia
+    i = flow.find("def _car_schema"); j = flow.find("def _wallbox_schema")
+    assert "CONF_INSTALL_ODO" in flow[i:j], "install_odo non e' nel menu Auto"
+    k = flow.find("def _settings_schema")
+    assert "CONF_INSTALL_ODO" not in flow[k:], "install_odo ancora in Prezzi energia"
+    # etichetta aggiornata in tutte le lingue
+    for rel in ("strings.json", "translations/it.json", "translations/en.json",
+                "translations/fr.json"):
+        txt = open(os.path.join(CC, rel), encoding="utf-8").read()
+        assert "install_odo" in txt, f"{rel}: chiave install_odo scomparsa"
+        assert "Odometro all'installazione" not in txt and "Odometer at installation" not in txt, \
+            f"{rel}: etichetta install_odo non aggiornata"
+    ok("valori configurati, consumo giornaliero corretto, install_odo in menu Auto")
+except Exception as e:
+    bad(f"valori/consumo/install_odo: {e}")
+
+print("\n[55] Opzioni sempre fresche + etichetta Chilometri all'attivazione")
+try:
+    coo = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    # opts copiata una volta in __init__ -> un valore impostato in Configura
+    # non veniva piu' letto fino al reload (install_odo "non si salvava")
+    assert "def opts(self)" in coo, "self.opts non e' una proprieta'"
+    assert "self.opts = " not in coo, "self.opts ancora copiata una volta in __init__"
+    assert "{**self.entry.data, **self.entry.options}" in coo, \
+        "opts non legge entry.data/entry.options direttamente"
+    # etichetta italiana esatta
+    for rel in ("strings.json", "translations/it.json"):
+        txt = open(os.path.join(CC, rel), encoding="utf-8").read()
+        assert "Chilometri all'attivazione" in txt, f"{rel}: etichetta errata"
+        assert '"Kilometri all' not in txt, f"{rel}: ortografia vecchia (Kilometri)"
+    ok("opts fresche senza reload + etichetta Chilometri all'attivazione")
+except Exception as e:
+    bad(f"opts/etichetta: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

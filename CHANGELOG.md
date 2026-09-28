@@ -5,6 +5,28 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.50 — Opzioni lette in tempo reale + Chilometri all'attivazione
+
+- **`install_odo` (e ogni altra opzione) "non si salvava".** `self.opts` era copiata
+  **una sola volta** in `__init__`: un valore impostato in *Configura* restava
+  nell'entry ma non veniva piu' letto fino al reload dell'integrazione. Ora
+  `self.opts` e' una **proprieta'** che legge `entry.data` + `entry.options` a
+  ogni accesso → il valore ha effetto subito.
+- **Bollo/tagliando senza calcoli.** Confermato: il prezzo inserito e' quello che
+  deve apparire (236 = 236). Tolto il proporzionamento `anni = km/15000` che
+  riscriveva il bollo a 211 e il tagliando a un multiplo dei km.
+- **Ortografia**: **"Chilometri all'attivazione"** (it + strings; EN/FR con i
+  loro termini: *Kilometres at activation*, *Kilométrage à l'activation*).
+- **% di utilizzo a 2% SENZA ricarica intermedia**: la baseline
+  `soc_start_oggi` e' il massimo SoC osservato **del record di oggi**, che si
+  ricostruisce da zero se il record viene perso (es. riavvio): la partenza reale
+  a 72% non era piu' in memoria e restava solo il valore finale (51%). Il
+  consumo ora e' il **massimo** tra delta netto, `DeltaMeter("down")` e la
+  percorrenza di oggi → torna il 21% reale. *(Il contatore di oggi si azzera
+  comunque a mezzanotte, quindi da domani segna bene anche senza fix.)*
+
+---
+
 ## 1.0.49 — Il viaggio non si chiudeva (due cause, entrambe risolte)
 
 **Causa 1 — riavvio di HA.** `TripEngine.should_close()` confrontava
@@ -64,6 +86,26 @@ da qui il **9%** in dashboard (60 → 51) invece del **21%** reale (72 → 51).
 - **F — wallbox: avvio/stop obbligatori.** In Pro/Enterprise sono ora `Required`
   insieme a potenza e stato: senza i comandi la pagina Wallbox non può avviare
   né fermare la ricarica. (La sezione resta assente in Base.)
+
+---
+
+## 1.0.49 — Valori configurati, consumo giornaliero, install_odo
+
+- **Bollo 236 € → 211 in dashboard.** `anni = km_tot/15000` proporzionava il bollo
+  ai km percorsi: il valore inserito non compariva mai. Ora il box di confronto
+  mostra il **valore configurato** (bollo annuo, tagliando per intervento);
+  il proporzionamento resta solo dove serve (stima anni di possesso).
+- **Stessa cosa per il tagliando**: `tag_termica = tagliandi_termici × costo` →
+  ora `costo per intervento`.
+- **% di utilizzo scesa a 2%.** Il consumo giornaliero usava solo il delta netto
+  (`SoC inizio giornata → attuale`): ricaricando in mezzo il valore crollava
+  (72 → 51 → 85 ⇒ 72-85 < 0 ⇒ 0-2%). Ora è il **massimo** tra delta netto,
+  `DeltaMeter("down")` e la % della percorrenza di oggi. **Da domani segna bene**
+  anche senza questo fix (il contatore riparte a mezzanotte), ma con la ricarica
+  intermedia restava sbagliato.
+- **`install_odo` non si salvava** perché stava in *Prezzi energia* (sezione
+  `collapsed`, facile da non vedere). Ora è nel menu **Auto**, etichetta
+  **"Kilometri all'attivazione"** (`strings.json` + it/en/fr).
 
 ---
 

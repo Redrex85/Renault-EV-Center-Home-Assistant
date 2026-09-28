@@ -81,7 +81,8 @@
               "range_entity": "Sensore autonomia residua",
               "charging_entity": "Sensore/binary sensor in carica",
               "plug_entity": "Stato spina collegata (opzionale)",
-              "location_entity": "Tracker GPS posizione auto (opzionale)"
+              "location_entity": "Tracker GPS posizione auto (opzionale)",
+              "install_odo": "Chilometri all'attivazione (km, 0 = rilevato al primo avvio)"
             }
           },
           "commands": {
@@ -157,7 +158,6 @@
               "price_home": "Prezzo energia a casa",
               "price_public": "Prezzo colonnine pubbliche",
               "price_solar": "Costo fotovoltaico (0 = gratis)",
-              "install_odo": "Odometro all'installazione (km, 0 = rilevato al primo avvio)",
               "solar_zone": "Nome della zona fotovoltaico/BEB (vuoto = nessuna)",
               "pre_kwh": "kWh caricati PRIMA di usare l'integrazione (per il calcolo dei risparmi)",
               "pre_eur": "€ già spesi in ricariche prima dell'integrazione (ha priorità sui kWh)"
@@ -272,7 +272,8 @@
               "range_entity": "Sensore autonomia residua",
               "charging_entity": "Sensore/binary sensor in carica",
               "plug_entity": "Stato spina collegata (opzionale)",
-              "location_entity": "Tracker GPS posizione auto (opzionale)"
+              "location_entity": "Tracker GPS posizione auto (opzionale)",
+              "install_odo": "Chilometri all'attivazione (km, 0 = rilevato al primo avvio)"
             }
           },
           "commands": {
@@ -348,7 +349,6 @@
               "price_home": "Prezzo energia a casa",
               "price_public": "Prezzo colonnine pubbliche",
               "price_solar": "Costo fotovoltaico (0 = gratis)",
-              "install_odo": "Odometro all'installazione (km, 0 = rilevato al primo avvio)",
               "solar_zone": "Nome della zona fotovoltaico/BEB (vuoto = nessuna)",
               "pre_kwh": "kWh caricati PRIMA di usare l'integrazione (per il calcolo dei risparmi)",
               "pre_eur": "€ già spesi in ricariche prima dell'integrazione (ha priorità sui kWh)"
