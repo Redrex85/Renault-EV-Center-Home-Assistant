@@ -303,6 +303,11 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
             vol.Required(
                 CONF_WB_STOP_SWITCH, description={"suggested_value": defaults.get(CONF_WB_STOP_SWITCH)}
             ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
+            # temperatura wallbox: senza questa entita' mappata la pagina Wallbox
+            # mostrava 0,0 C (il fallback cercava solo *wallbox*temperature*)
+            vol.Optional(
+                "wallbox_temp_entity", description={"suggested_value": defaults.get("wallbox_temp_entity", "")}
+            ): EntitySelector(EntitySelectorConfig(domain="sensor")),
         }), {"collapsed": True})
         schema[vol.Required("home")] = section(vol.Schema({
             vol.Optional(
@@ -569,11 +574,18 @@ class RenaultMateOptionsFlow(config_entries.OptionsFlow):
     """Modifica entità e impostazioni dopo l'installazione."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
+        base = {**self.config_entry.data, **self.config_entry.options}
         if user_input is not None:
             data = _flat(user_input)
             _capacity_for_model(data)
+            # I campi dentro una sezione collapsed possono NON essere riusati dal
+            # form: async_create_entry(data=...) SOSTITUISCE entry.options, quindi
+            # una chiave non inviata spariva del tutto e al riaprire tornava a 0
+            # (es. "Chilometri all'attivazione"). Preserva i valori gia' salvati;
+            # un valore esplicitamente vuoto (None/"") resta vuoto.
+            for k, v in base.items():
+                data.setdefault(k, v)
             return self.async_create_entry(title="", data=data)
-        base = {**self.config_entry.data, **self.config_entry.options}
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema({

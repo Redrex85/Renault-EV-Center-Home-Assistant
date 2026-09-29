@@ -1291,9 +1291,14 @@ try:
     eng = open(os.path.join(CC, "trip_engine.py"), encoding="utf-8").read()
     coo = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
     # prima: `km < min_km or durata < min` scartava il viaggio, e il cloud Renault
-    # aggiorna l'odometro solo a motore spento -> km = 0 -> il viaggio spariva del tutto
-    assert "scartato = km < self.min_km and batt_delta < 1.0" in eng, \
-        "close() scarta ancora i viaggi con solo consumo di batteria"
+    # aggiorna l'odometro solo a motore spento -> km = 0 -> il viaggio spariva.
+    # Ora: salva se c'e' l'odometro oppure una guida plausibile (batt >= 5% in <= 4h),
+    # altrimenti lo scarta (standby = viaggio fantasma 0 km Casa->Casa).
+    assert "ok_km = km >= self.min_km" in eng, "manca il criterio di salvataggio km"
+    assert "ok_batt = batt_delta >= 5.0 and durata_min <= 240" in eng, \
+        "manca il criterio guida plausibile senza odometro"
+    assert "scartato = (not (ok_km or ok_batt))" in eng, \
+        "la logica di scarto non tiene conto dei due criteri"
     assert "if km < self.min_km or durata_min" not in eng, \
         "rimasto lo scarto in OR che perdeva i viaggi"
     assert "km_zero and consumo" in coo, \
@@ -1346,10 +1351,12 @@ try:
     coo = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
     sen = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
     flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
-    # bollo/tagliando: valori CONFIGURATI, non scalati dagli anni stimati (km/15000)
+    # bollo = valore CONFIGURATI (non scalato dagli anni stimati km/15000);
+    # tagliandi termici = TOTALE stimato (km/intervallo x costo), non 1 intervento
     assert "anni * self.bollo" not in coo, "bollo ancora proporzionato agli anni"
     assert "bollo_ev = self.bollo_ev" in coo, "bollo EV non usa il valore configurato"
-    assert "tag_termica = self.tag_termico" in coo, "tagliando non usa il costo per intervento"
+    assert "tag_termica = tagliandi_termici * self.tag_termico" in coo, \
+        "tagliando termico non e' il totale stimato"
     # % utilizzo giornaliero: massimo tra delta netto, DeltaMeter e percorrenza
     assert 'if self._direction == "down":' in sen and "val = max(val," in sen, \
         "il consumo giornaliero usa solo il delta netto (crolla con le ricariche)"
@@ -1386,6 +1393,64 @@ try:
     ok("opts fresche senza reload + etichetta Chilometri all'attivazione")
 except Exception as e:
     bad(f"opts/etichetta: {e}")
+
+print("\n[56] Tagliandi termici totali + viaggio fantasma + temp wallbox mappabile")
+try:
+    coo = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    eng = open(os.path.join(CC, "trip_engine.py"), encoding="utf-8").read()
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    dash = open(os.path.join(CC, "dashboard.py"), encoding="utf-8").read()
+    # tagliandi: termica = TOTALE stimato (km/intervallo x costo), non 1 intervento
+    assert "tag_termica = tagliandi_termici * self.tag_termico" in coo, \
+        "termica dei tagliandi non e' il totale stimato"
+    assert "tag_termica = self.tag_termico" not in coo, \
+        "la termica e' ancora il costo di un singolo intervento"
+    # viaggio fantasma (0 km, standby, Casa->Casa): non salvare
+    assert "ok_batt = batt_delta >= 5.0 and durata_min <= 240" in eng, \
+        "manca il filtro guida plausibile senza odometro"
+    # temp wallbox: campo mappabile + override passato al pannello
+    assert '"wallbox_temp_entity"' in flow, "manca il campo temperatura wallbox"
+    assert '"wallbox_temperature": opts.get("wallbox_temp_entity")' in dash, \
+        "l'override wallbox_temperature non arriva alla card"
+    for rel in ("strings.json", "translations/it.json"):
+        txt = open(os.path.join(CC, rel), encoding="utf-8").read()
+        assert "wallbox_temp_entity" in txt, f"{rel}: etichetta temp wallbox assente"
+    ok("tagliandi totali, viaggio fantasma bloccato, temp wallbox mappabile")
+except Exception as e:
+    bad(f"tagliandi/viaggio/temp: {e}")
+
+print("\n[57] Tile 'Best efficienza' rimosso + record con filtro km")
+try:
+    js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
+    coo = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    # il tile era il minimo di TUTTI i viaggi: tratti da 1-2 km battevano il record
+    # e producevano 4 kWh/100km (impossibile per un'EV)
+    assert 'data-t="eff_best"' not in js, "il tile Best efficienza non e' stato rimosso"
+    assert '"Best efficienza"' not in js, "l'etichetta Best efficienza e' rimasta"
+    assert "set(\"eff_best\"" not in js, "c'e' ancora il set di eff_best"
+    assert 'if _f(t.get("km")) < 3.0:' in coo, "best_eff non filtra i viaggi corti"
+    assert "0 < e <= 40.0" in coo, "best_eff non ha la soglia massima"
+    ok("tile Best efficienza rimosso, record limitato a viaggi >= 3 km")
+except Exception as e:
+    bad(f"best_eff: {e}")
+
+print("\n[58] Opzioni: i valori gia' salvati non sparisccono se il form non li riusa")
+try:
+    flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    i = flow.find("class RenaultMateOptionsFlow")
+    blk = flow[i:]
+    # async_create_entry(data=...) sostituisce entry.options: senza preserve una
+    # chiave non inviata (sezione collapsed) spariva e tornava a 0
+    assert "for k, v in base.items():" in blk, "manca la preservazione dei valori"
+    assert "data.setdefault(k, v)" in blk, "manca il setdefault nei valori salvati"
+    assert blk.find("data = _flat(user_input)") < blk.find("data.setdefault(k, v)"), \
+        "l'ordine dello preserve e' sbagliato"
+    # e install_odo resta un solo campo (non duplicato che sovrascrive)
+    assert flow.count("vol.Optional(CONF_INSTALL_ODO") == 1, \
+        "CONF_INSTALL_ODO appare piu' di una volta nello schema"
+    ok("opzioni non perdono piu' i valori non riusati dal form")
+except Exception as e:
+    bad(f"preserve opzioni: {e}")
 
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)

@@ -28,7 +28,8 @@
               "wallbox_max_current_entity": "Max charging current number (optional)",
               "wallbox_session_time_entity": "Wallbox session time (s/min/h) — optional, else internal timer",
               "wb_charge_switch": "Wallbox charge start (switch or button) — used by Start charge and the automation",
-              "wb_stop_switch": "Wallbox charge stop (switch or button) — used by Stop charge"
+              "wb_stop_switch": "Wallbox charge stop (switch or button) — used by Stop charge",
+              "wallbox_temp_entity": "Wallbox temperature sensor (optional)"
             }
           },
           "gse": {
@@ -111,7 +112,8 @@
               "wallbox_max_current_entity": "Max charging current number (optional)",
               "wallbox_session_time_entity": "Wallbox session time (s/min/h) — optional, else internal timer",
               "wb_charge_switch": "Wallbox charge start (switch or button) — used by Start charge and the automation",
-              "wb_stop_switch": "Wallbox charge stop (switch or button) — used by Stop charge"
+              "wb_stop_switch": "Wallbox charge stop (switch or button) — used by Stop charge",
+              "wallbox_temp_entity": "Wallbox temperature sensor (optional)"
             }
           },
           "gse": {
@@ -306,7 +308,8 @@
               "wallbox_max_current_entity": "Max charging current number (optional)",
               "wallbox_session_time_entity": "Wallbox session time (s/min/h) — optional, else internal timer",
               "wb_charge_switch": "Wallbox charge start (switch or button) — used by Start charge and the automation",
-              "wb_stop_switch": "Wallbox charge stop (switch or button) — used by Stop charge"
+              "wb_stop_switch": "Wallbox charge stop (switch or button) — used by Stop charge",
+              "wallbox_temp_entity": "Wallbox temperature sensor (optional)"
             }
           },
           "gse": {

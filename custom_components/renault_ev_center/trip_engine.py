@@ -235,11 +235,14 @@ class TripEngine:
         batt_delta = round(self.battery_start - self.battery_now, 1)
         durata_min = int((now - self.ts_start) / 60)
 
-        # il viaggio conta se c'e' chilometri, oppure consumo di batteria, oppure durata.
-        # Prima veniva scartato con `km < min_km` in OR: il cloud Renault aggiorna
-        # l'odometro solo a motore spento, quindi i viaggi con km = 0 sparivano del
-        # tutto e non restavano ne' i km ne' i kWh.
-        scartato = km < self.min_km and batt_delta < 1.0 and durata_min < self.min_minutes
+        # il viaggio conta se c'e' il MOVIMENTO dall'odometro, oppure una guida
+        # plausibile senza odometro (il cloud Renault aggiorna l'odometro solo a
+        # motore spento: batt >= 5% in max 4h). Un auto FERMA con 0 km e un paio
+        # di punti % di standby NON e' un viaggio: era il "viaggio fantasma"
+        # 00:01-08:05 (0 km, 49%->47%, Casa->Casa, 8 ore).
+        ok_km = km >= self.min_km
+        ok_batt = batt_delta >= 5.0 and durata_min <= 240
+        scartato = (not (ok_km or ok_batt)) or durata_min < self.min_minutes
         self.active = False
         self.seed_odometer = None
         if scartato:

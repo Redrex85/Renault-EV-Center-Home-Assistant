@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.50";
+const REC_VER = "1.0.51";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -2345,7 +2345,6 @@ class RenaultEvCenterPanel extends HTMLElement {
     set("tot_viaggi", this._i(parseFloat(g(["totale_viaggi", "n_trip", "viaggi"])) || 0));
     set("tot_km", this._i(parseFloat(g(["km_totali", "km"])) || 0));
     set("eff_media", this._fmt(parseFloat(g(["kwh_per_100km", "efficienza_media", "kwh_100km"])) || 0, 1));
-    set("eff_best", this._fmt(parseFloat(g(["migliore_efficienza", "efficienza_best", "best", "record"])) || 0, 1));
     const min = parseFloat(g(["durata_totale_min", "tempo_guida"])) || 0;
     set("tempo", this._fmt(min / 60, 0) + " h");
     set("energia", this._i(parseFloat(g(["kwh_totali", "energia_usata", "kwh_totali_viaggi"])) || 0));
@@ -2657,7 +2656,6 @@ const PAGES = {
     <div class="tile"><div class="em">🏁</div><div><div class="v" style="color:var(--accent)" data-t="tot_viaggi">—</div><div class="l">Totale viaggi</div></div></div>
     <div class="tile"><div class="em">🛣️</div><div><div class="v" data-t="tot_km">—</div><div class="l">Distanza km</div></div></div>
     <div class="tile"><div class="em">📊</div><div><div class="v" data-t="eff_media">—</div><div class="l">Avg efficienza</div></div></div>
-    <div class="tile"><div class="em">🏆</div><div><div class="v" style="color:var(--accent)" data-t="eff_best">—</div><div class="l">Best efficienza</div></div></div>
     <div class="tile"><div class="em">⏱️</div><div><div class="v" data-t="tempo">—</div><div class="l">Tempo di guida</div></div></div>
     <div class="tile"><div class="em">🔋</div><div><div class="v" data-t="energia">—</div><div class="l">Energia usata kWh</div></div></div>
     <div class="tile"><div class="em">🔌</div><div><div class="v" data-t="n_ricariche">—</div><div class="l">Ricariche</div></div></div>

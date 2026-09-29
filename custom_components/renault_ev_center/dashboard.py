@@ -308,6 +308,7 @@ async def async_setup_dashboard(hass: HomeAssistant, entry: ConfigEntry, name: s
         "wallbox_max_current": opts.get(CONF_WB_MAX_CURRENT),
         "wb_charge_switch": opts.get(CONF_WB_CHARGE_SWITCH),
         "wb_stop_switch": opts.get(CONF_WB_STOP_SWITCH),
+        "wallbox_temperature": opts.get("wallbox_temp_entity"),
     }
     overrides = {k: v for k, v in _ov.items() if v}
     views = [_panel_view(name, None, overrides, version,

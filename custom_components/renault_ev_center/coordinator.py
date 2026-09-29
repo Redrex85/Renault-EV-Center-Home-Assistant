@@ -709,10 +709,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         mese_key = keys["monthly"]
         charges_mese = [c for c in charges if str(c.get("data", ""))[:7] == mese_key]
         stats_all = aggregate(trips)
+        # best_eff: solo viaggi di ALMENO 3 km (come il grafico consumi vs temperatura).
+        # Senza filtro il "record" veniva battuto da tratti da 1-2 km o con delta
+        # batteria rumoroso: risultava 4 kWh/100km, impossibile per un'EV (12-20).
         best_eff = 0.0
         for t in trips:
+            if _f(t.get("km")) < 3.0:
+                continue
             e = _f(t.get("kwh_per_100km"))
-            if e > 0 and (best_eff == 0 or e < best_eff):
+            if 0 < e <= 40.0 and (best_eff == 0 or e < best_eff):
                 best_eff = e
         rotte: dict[str, dict[str, float]] = {}
         for t in trips:
@@ -1178,11 +1183,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             carb_ev = _f(savings.get("elettrico_totale"))
             tag_termica = tag_ev = bollo_termica = bollo_ev = 0.0
             if self.maint_enabled:
-                # VALORI CONFIGURATI (bollo annuo, tagliando per intervento), non
-                # proporzionati ai km: l'utente imposta 236 e deve vedere 236, non
-                # il valore scalato dagli anni stimati (km_tot/15000) = 211.
+                # Termica = TOTALE stimato su tutti i km (quanto avresti speso
+                # col diesel), non il costo di un singolo intervento: altrimenti
+                # la colonna "termica" resta piu' bassa di quella reale.
+                # Il costo PER INTERVENTO resta esposto dalla card Manutenzione
+                # (teo_tagliandi = floor(km/intervallo) x costo).
+                # Bollo = VALORE CONFIGURATO (annuo), non proporzionato.
                 tagliandi_termici = int(km_tot // self.tagliando_intervallo)
-                tag_termica = self.tag_termico
+                tag_termica = tagliandi_termici * self.tag_termico
                 tag_ev = round(
                     sum(_f(m.get("costo")) for m in self.store.data.get("maintenance", [])), 2)
                 bollo_termica = self.bollo_termico

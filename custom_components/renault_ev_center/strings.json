@@ -24,7 +24,8 @@
               "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
               "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
               "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione",
-              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»"
+              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»",
+              "wallbox_temp_entity": "Sensore temperatura wallbox (opzionale)"
             }
           },
           "gse": {
@@ -107,7 +108,8 @@
               "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
               "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
               "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione",
-              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»"
+              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»",
+              "wallbox_temp_entity": "Sensore temperatura wallbox (opzionale)"
             }
           },
           "gse": {
@@ -298,7 +300,8 @@
               "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
               "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
               "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione",
-              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»"
+              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»",
+              "wallbox_temp_entity": "Sensore temperatura wallbox (opzionale)"
             }
           },
           "gse": {

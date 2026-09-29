@@ -5,8 +5,36 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.51 — Rimosso "Best efficienza" (valore sballato)
+
+Il tile prendeva il **minimo** `kwh/100km` su **tutti** i viaggi, senza filtro: un
+tratto da 1-2 km o con delta batteria rumoroso batteva il record e dava
+**4 kWh/100km**, impossibile per un'EV (12-20 reali).
+
+- **Tile "Best efficienza" rimosso** dalla pagina Statistiche (era sballato per
+  tutti, non solo per chi configura ora).
+- Il valore resta negli attributi ma ora è **calcolato su viaggi ≥ 3 km** (stessa
+  soglia del grafico *Consumi vs temperatura*) con soglia massima 40 kWh/100km.
+- **"Chilometri all'attivazione" non si salvava.** `async_create_entry(data=...)`
+  nello options flow **sostituisce** `entry.options`: se il form non riusava un
+  campo (sezione *Auto* collapsed) la chiave spariva e al riaprire tornava a 0.
+  Ora i valori già salvati vengono **preservati** (`setdefault`).
+
+---
+
 ## 1.0.50 — Opzioni lette in tempo reale + Chilometri all'attivazione
 
+- **Tagliandi: la colonna "termica" era troppo bassa.** Era il costo di **un**
+  intervento (450) invece del **totale stimato** (`km_totali / intervallo × costo`).
+  Con 45.000 km e 15.000 km d'intervallo → 3 interventi → 1.350. Il costo per
+  intervento resta nella card *Manutenzione* (`teo_tagliandi`).
+- **Viaggio fantasma 00:01–08:05** (0 km, 49% → 47%, Casa → Casa): creato dal fix
+  precedente che salvava anche i viaggi con km=0 e solo ≥1% di batteria (standby).
+  Ora salva solo se c'è l'**odometro** (km ≥ 0,5) oppure una **guida plausibile**
+  senza odometro (≥5% di batteria in max 4 h). Standby = scartato.
+- **Temperatura wallbox 0,0 °C**: il fallback cercava solo entità con *wallbox* e
+  *temperature* nello stesso id. Nuovo campo **"Sensore temperatura wallbox"**
+  nella sezione Wallbox → passa alla card come override `wallbox_temperature`.
 - **`install_odo` (e ogni altra opzione) "non si salvava".** `self.opts` era copiata
   **una sola volta** in `__init__`: un valore impostato in *Configura* restava
   nell'entry ma non veniva piu' letto fino al reload dell'integrazione. Ora
