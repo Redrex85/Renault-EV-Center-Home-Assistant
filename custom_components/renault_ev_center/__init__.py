@@ -317,6 +317,15 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    # persisti PRIMA di buttare il coordinator: un reload (aggiornamento HACS)
+    # non passa per EVENT_HOMEASSISTANT_STOP, senza questo i contatori
+    # accumulati dall'ultimo persist() periodico venivano persi.
+    coord = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if coord is not None:
+        try:
+            coord.persist(force=True)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Persist all'unload fallito: %s", err)
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)

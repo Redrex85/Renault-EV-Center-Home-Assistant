@@ -1452,6 +1452,86 @@ try:
 except Exception as e:
     bad(f"preserve opzioni: {e}")
 
+# ---------------------------------------------------------------- [59] risparmio
+print("\n[59] Risparmio: solo i TAGLIANDI entrano, non gomme/riparazioni")
+try:
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    i = src.find("tagliandi_termici = int(km_tot")
+    j = src.find("bollo_termica = self.bollo_termico")
+    blk = src[i:j]
+    assert 'm.get("tipo")' in blk, "tag_ev non filtra per tipo intervento"
+    assert '"tagliando"' in blk, "manca il filtro tipo == 'tagliando'"
+    assert "sum(_f(m.get(\"costo\")) for m in self.store.data.get(\"maintenance\", [])), 2)" \
+        not in blk, "tag_ev conta ancora TUTTI i costi manutenzione (gomme incluse)"
+    ok("gomme/riparazioni escluse dal risparmio, contano solo i tagliandi")
+except Exception as e:
+    bad(f"filtro tagliandi risparmio: {e}")
+
+# ---------------------------------------------------------------- [60] persist
+print("\n[60] Persist anche su early-exit e unload (restart non perde i contatori)")
+try:
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    i = src.find("if self._last_inputs == _curr_inputs")
+    j = src.find("self._last_inputs = _curr_inputs", i)
+    blk = src[i:j]
+    assert blk.rstrip().endswith("return self.data"), "struttura early-exit cambiata"
+    assert "self.persist()" in blk, "early-exit non salva piu' (restart perde i contatori)"
+    init = open(os.path.join(CC, "__init__.py"), encoding="utf-8").read()
+    u = init.find("async def async_unload_entry")
+    v = init.find("async def async_remove_entry", u)
+    ublk = init[u:v]
+    assert "persist(force=True)" in ublk, "unload non persiste (reload perde i contatori)"
+    assert ublk.find("persist(force=True)") < ublk.find("async_unload_platforms"), \
+        "persist all'unload avviene dopo il rilascio del coordinator"
+    ok("salvataggio su early-exit + unload: il riavvio/riavvio integrazione non azzera piu'")
+except Exception as e:
+    bad(f"persist early-exit/unload: {e}")
+
+# ---------------------------------------------------------------- [61] shutdown save
+print("\n[61] Shutdown: il file resta nella forma letta da async_load (counters/install/schedule)")
+try:
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    i = src.find("async def _async_save_on_stop")
+    j = src.find("def persist", i)
+    blk = src[i:j]
+    assert "store.save_now()" in blk, "shutdown non usa piu' save_now()"
+    assert 'store.data["counters"] |' not in blk, \
+        "shutdown salva i contatori appiattiti al top-level (al riavvio tornano vuoti)"
+    st = open(os.path.join(CC, "store.py"), encoding="utf-8").read()
+    a = st.find("def _payload")
+    b = st.find("async def save_now", a)
+    pay = st[a:b]
+    for k in ("counters", "install", "schedule", "trips", "charges"):
+        assert f'"{k}"' in pay, f"_payload() non scrive piu' la chiave {k}"
+    assert st.find("async_delay_save(self._payload") > 0, "save() differito non usa piu' _payload"
+    ok("salvataggio shutdown con la stessa forma di async_load: contatori/install/schedule non sparisco")
+except Exception as e:
+    bad(f"shutdown save: {e}")
+
+# ---------------------------------------------------------------- [62] pavimento viaggi
+print("\n[62] Periodi lunghi: km/kWh mai sotto il valore dei viaggi + kWh disponibili con SOH")
+try:
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert "def _km_shown" in src, "manca _km_shown (pavimento dai viaggi)"
+    assert "def _kwh_shown" in src, "manca _kwh_shown (pavimento dai viaggi)"
+    assert '"km": {p: {**self.km_meters[p].to_dict(), "value": self._km_shown(p)}' in src, \
+        "data['km'] non applica piu' il pavimento dai viaggi"
+    assert '"value": (self._kwh_shown(p)' in src, "data['kwh_batt']['down'] senza pavimento"
+    assert 'arch_mese[mese_key_now] = round(self._km_shown("monthly"), 1)' in src, \
+        "l'archivio mensile puo' essere congelato a 0"
+    assert 'self._km_shown("monthly")' in src and 'self._km_shown("yearly")' in src, \
+        "risparmio mese/anno usa ancora il meter crudo"
+    assert '"battery_kwh": round(battery * self._eff_capacity() / 100.0, 2)' in src, \
+        "kWh disponibili usa la capacita' nominale e smentisce kwh_per_1pct"
+    assert "self._floor_off = {p: keys[p] for p in PERIODS}" in src, \
+        "reset 'Azzera km' non spegne il pavimento: il reset non si vedrebbe"
+    assert "self._kwh_floor_off = {p: keys[p] for p in PERIODS}" in src, \
+        "reset energia non spegne il pavimento kWh"
+    assert 'getattr(self, "_floor_off", None)' in src, "_km_shown non legge lo stato del reset"
+    ok("km/kWh periodici pavimentati coi viaggi, archivio mensile protetto, kWh con SOH")
+except Exception as e:
+    bad(f"pavimento viaggi: {e}")
+
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)
 if problemi:

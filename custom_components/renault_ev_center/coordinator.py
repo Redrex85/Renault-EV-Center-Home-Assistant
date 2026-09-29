@@ -493,9 +493,12 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             c["drain_down"] = self.drain_meter.to_dict()
             c["drain_month_down"] = self.drain_mesi.to_dict()
             self.store.data.setdefault("counters", {}).update(c)
-            await self.store._store.async_save(self.store.data["counters"] | {"trips": self.store.data["trips"][-2000:], "charges": self.store.data["charges"][-2000:], "daily": self.store.data["daily"][-365:], "health": self.store.data.get("health", {}), "maintenance": self.store.data.get("maintenance", [])[-200:], "monthly_km": self.store.data.get("monthly_km", {}), "scadenze": self.store.data.get("scadenze", {})})
-        except Exception:  # noqa: BLE001
-            pass
+            # stessa forma di store.save(): annidare counters, non appiattirli
+            await self.store.save_now()
+        except Exception as err:  # noqa: BLE001
+            # non silenziare: se il salvataggio allo shutdown fallisce il dato
+            # ripristinato al riavvio e' quello vecchio, e nessuno se ne accorge
+            _LOGGER.error("Salvataggio contatori allo shutdown fallito: %s", err, exc_info=True)
 
     def persist(self, force: bool = False) -> None:
         now = time.time()
@@ -570,6 +573,27 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         """
         soh = max(self._setting_num("soh_official", 100.0), 40.0)
         return (self.capacity or 60.0) * (soh / 100.0)
+
+    def _km_shown(self, p: str) -> float:
+        """km del periodo: il meter, con pavimento dai VIAGGI (fonte di verità).
+
+        I meter dei periodi lunghi si azzerano se il conteggio salvato nel file va
+        perso (shutdown/riavvio integrazione): senza il pavimento «km mensili»
+        resterebbe a 0. `_km_floor` è ricalcolato ogni ciclo da `trips`.
+        Dopo un reset manuale il pavimento sparisce per il periodo in corso,
+        sennò il pulsante «Azzera» non si vedrebbe.
+        """
+        v = _f(self.km_meters[p].value)
+        if (getattr(self, "_floor_off", None) or {}).get(p) == period_keys(dt_util.now())[p]:
+            return v
+        return max(v, _f((getattr(self, "_km_floor", None) or {}).get(p)))
+
+    def _kwh_shown(self, p: str) -> float:
+        """kWh scaricati nel periodo: meter o somma dei viaggi, il maggiore."""
+        v = abs(_f(self.kwh_meters[p]["down"].value))
+        if (getattr(self, "_kwh_floor_off", None) or {}).get(p) == period_keys(dt_util.now())[p]:
+            return v
+        return max(v, _f((getattr(self, "_kwh_floor", None) or {}).get(p)))
 
     def _read_temp(self) -> float | None:
         """Temperatura esterna: dal sensore mappato; se manca/unknown ripiega su un'entità
@@ -832,6 +856,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             keys["daily"],
         )
         if self._last_inputs == _curr_inputs and not self.trip.active and not self.charge_session and self.data:
+            # early-exit: MANCAVA persist() -> con auto ferma nessun input cambia,
+            # il file restava fermo all'ultimo salvataggio (15 min prima) e un
+            # riavvio di HA ripristinava contatori vecchi (14% -> 11%).
+            self.persist()
             return self.data
         self._last_inputs = _curr_inputs
 
@@ -1053,8 +1081,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             _soc_rif = round(_f(battery), 1)
             if self.today_rec.get("soc_start") is None or _soc_rif > self.today_rec["soc_start"]:
                 self.today_rec["soc_start"] = _soc_rif
-        km_oggi = _f(self.km_meters["daily"].value)
-        kwh_oggi = _f(self.kwh_meters["daily"]["down"].value)
+        km_oggi = self._km_shown("daily")
+        kwh_oggi = self._kwh_shown("daily")
         self.today_rec.update({
             "km": round(km_oggi, 1),
             "kwh": round(kwh_oggi, 2),
@@ -1070,7 +1098,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         #     congelati al cambio mese (cosi lo storico anni funziona per sempre)
         arch_mese = self.store.data.setdefault("monthly_km", {})
         mese_key_now = today_key[:7]
-        arch_mese[mese_key_now] = round(_f(self.km_meters["monthly"].value), 1)
+        # _km_floor è quello del ciclo precedente (calcolato dopo, con i viaggi):
+        # senza il max il mese corrente verrebbe congelato a 0 se il meter si azzera
+        arch_mese[mese_key_now] = round(self._km_shown("monthly"), 1)
         prev_mese = (now - timedelta(days=1)).strftime("%Y-%m")
         if prev_mese != mese_key_now and prev_mese not in arch_mese:
             # primo tick dopo il cambio mese: congela il mese appena chiuso
@@ -1172,9 +1202,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
             _periodo("totale", lambda d: True, km_tot)
             _periodo("mese", lambda d: d[:7] == keys["monthly"],
-                     _f(self.km_meters["monthly"].value))
+                     self._km_shown("monthly"))
             _periodo("anno", lambda d: d[:4] == keys["yearly"],
-                     _f(self.km_meters["yearly"].value))
+                     self._km_shown("yearly"))
             savings["prezzo_termico"] = prezzo_l
             savings["km_totali"] = round(km_tot, 1)
 
@@ -1191,8 +1221,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 # Bollo = VALORE CONFIGURATO (annuo), non proporzionato.
                 tagliandi_termici = int(km_tot // self.tagliando_intervallo)
                 tag_termica = tagliandi_termici * self.tag_termico
-                tag_ev = round(
-                    sum(_f(m.get("costo")) for m in self.store.data.get("maintenance", [])), 2)
+                # Solo i TAGLIANDI entrano nel risparmio: gomme, riparazioni e
+                # altro sono spese che avresti fatto ANCHE con la termica, quindi
+                # gonfiavano la colonna EV (es. 850 di gomme) e falsavano il
+                # confronto. La spesa extra resta registrata nella tabella
+                # "Interventi registrati", ma non entra in questo conteggio.
+                tag_ev = round(sum(
+                    _f(m.get("costo")) for m in self.store.data.get("maintenance", [])
+                    if str(m.get("tipo") or "Tagliando").strip().lower() == "tagliando"), 2)
                 bollo_termica = self.bollo_termico
                 bollo_ev = self.bollo_ev
                 savings["tagliandi"] = round(tag_termica - tag_ev, 2)
@@ -1334,7 +1370,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                                  "giorni": (prossima - oggi_d).days})
 
             # tagliando / cambio gomme: scadenza per km e/o data
-            km_anno = max(_f(self.km_meters["yearly"].value), 1.0)
+            km_anno = max(self._km_shown("yearly"), 1.0)
             km_giorno = km_anno / 365.0
             manutenzioni = self.store.data.get("maintenance", [])
 
@@ -1444,6 +1480,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         w_km, w_kwh, _ = _trips_sum(lambda d: _week_key(d) == keys["weekly"])
         m_km, m_kwh, _ = _trips_sum(lambda d: d[:7] == keys["monthly"])
         y_km, y_kwh, _ = _trips_sum(lambda d: d[:4] == keys["yearly"])
+        # i meter dei periodi lunghi si azzerano se il conteggio salvato nel file
+        # va perso: il valore mostrato non deve mai scendere sotto quello dei viaggi
+        self._km_floor = {"daily": o_km, "weekly": w_km, "monthly": m_km, "yearly": y_km}
+        self._kwh_floor = {"daily": o_kwh, "weekly": w_kwh, "monthly": m_kwh, "yearly": y_kwh}
 
         def _pct_from_kwh(kwh: float) -> float:
             cap = self.capacity or 60.0
@@ -1601,17 +1641,23 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "location": location,
             "capacity": self.capacity,
             "target_soc": target,
-            "battery_kwh": round(avail_kwh, 2),
+            # capacità EFFETTIVA (SOH): 1% = 0,564 kWh, come kwh_per_1pct —
+            # con la nominale (0,6) questa entità smentiva quella a fianco
+            "battery_kwh": round(battery * self._eff_capacity() / 100.0, 2),
             "eff_km_per_kwh": eff_km_kwh,
             "eff_kwh_100km": eff_kwh_100,
-            "km": {p: self.km_meters[p].to_dict() for p in PERIODS},
+            "km": {p: {**self.km_meters[p].to_dict(), "value": self._km_shown(p)}
+                   for p in PERIODS},
             # energia/costo per periodo dai RECORD: i meter live restano come "last"
             "wb_energy": {p: {"value": chg[p][0], "last": _prev_of(p)[0]} for p in PERIODS},
             "cost": {p: {"value": chg[p][1], "last": _prev_of(p)[1]} for p in PERIODS},
             "cost_total": round(self.cost_total, 2),
             "pct_daily": {k: v.to_dict() for k, v in self.pct_daily.items()},
             "kwh_batt": {
-                p: {d: self.kwh_meters[p][d].to_dict() for d in ("up", "down")}
+                p: {d: {**self.kwh_meters[p][d].to_dict(),
+                        "value": (self._kwh_shown(p)
+                                  if d == "down" else self.kwh_meters[p][d].value)}
+                    for d in ("up", "down")}
                 for p in PERIODS
             },
             "wb_power_kw": round(wb_power, 2),
@@ -2037,7 +2083,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
         def km_di(giorno: str) -> float:
             if giorno == today_key:
-                return _f(self.km_meters["daily"].value)
+                return self._km_shown("daily")
             rec = history.get(giorno)
             return _f(rec.get("km")) if rec else 0.0
 
@@ -2053,10 +2099,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
              "km": round(km_di(today_key), 0)},
             {"periodo": "Mese", "costo": somma_per(costo_giorno, mese_key),
              "kwh": somma_per(kwh_giorno, mese_key),
-             "km": round(_f(self.km_meters["monthly"].value), 0)},
+             "km": round(self._km_shown("monthly"), 0)},
             {"periodo": "Anno", "costo": somma_per(costo_giorno, anno_key),
              "kwh": somma_per(kwh_giorno, anno_key),
-             "km": round(_f(self.km_meters["yearly"].value), 0)},
+             "km": round(self._km_shown("yearly"), 0)},
         ]
 
         giorni_it = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
@@ -2091,7 +2137,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                         km_tot += _f(rec.get("km"))
                 # il mese corrente dell'anno selezionato usa anche i dati live di oggi
                 if mk == mese_key:
-                    km_tot += _f(self.km_meters["daily"].value)
+                    km_tot += self._km_shown("daily")
             mensile.append({
                 "mese": mesi_it[m - 1],
                 "anno": anno_sel,
@@ -2140,6 +2186,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 mm.last = 0.0
                 mm.key = keys[p]
                 mm.baseline = odometer if odometer > 0 else None
+            # i viaggi restano: senza spegnere il pavimento il reset non si vedrebbe
+            self._floor_off = {p: keys[p] for p in PERIODS}
         if scope in ("energia", "all"):
             for p in PERIODS:
                 wm = self.wb_meters[p]
@@ -2153,6 +2201,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     kd.last = 0.0
                     kd.key = keys[p]
                     kd.ref_last = None
+            self._kwh_floor_off = {p: keys[p] for p in PERIODS}
             for d in ("up", "down"):
                 pd = self.pct_daily[d]
                 pd.value = 0.0

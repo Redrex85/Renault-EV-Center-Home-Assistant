@@ -5,6 +5,32 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.51.1 — Shutdown: contatori, install e schedule non spariscono più
+
+**Bug radice** trovato a audit su HA reale. `_async_save_on_stop` salvava il
+file **appiattito** (`counters | {trips, …}` al top-level), mentre `async_load`
+legge `raw["counters"]`, `raw["install"]`, `raw["schedule"]`: ogni shutdown
+pulito lasciava un file senza quelle chiavi e al riavvio **tutti i contatori
+tornavano a 0**, sparivano *Chilometri all'attivazione* e la programmazione di
+ricarica.
+
+- **Salvataggio allo shutdown con la stessa forma di `save()`** —
+  `MateStore._payload()` + `save_now()`: `counters`, `install` e `schedule`
+  restano annidati. Guardia `[61]`.
+- **km/kWh dei periodi lunghi non scendono più sotto i viaggi.** Misurato:
+  `km_settimanali/mensili/annuali = 0` e
+  `energia_batteria_settimanale/mensile/annuale = 0`, mentre l'archivio viaggi
+  diceva 102 / 627 / 627 km e 11,28 / 91,37 / 91,37 kWh. Solo i valori *giorno*
+  sembravano OK perché lì esisteva già un fallback. Ora `_km_shown()` e
+  `_kwh_shown()` prendono il **maggiore** fra meter e somma viaggi — la stessa
+  "fonte di verità" già usata per costi ed energia wallbox. Esteso a risparmio
+  mese/anno, CO₂, `km_anno`, report generale e `today_rec`.
+- **Archivio mensile protetto.** `arch_mese[mese corrente]` veniva congelato col
+  valore del meter: con il meter a 0 anche lo storico anni perdeva il mese.
+- **kWh disponibili con SOH.** `battery_kwh` usava la capacità **nominale**
+  (60 kWh → 21,0) mentre `kwh_per_1_batteria` usava quella **effettiva**
+  (56,4 → 0,564): due entità che si contraddicevano. Guardia `[62]`.
+
 ## 1.0.51 — Rimosso "Best efficienza" (valore sballato)
 
 Il tile prendeva il **minimo** `kwh/100km` su **tutti** i viaggi, senza filtro: un
@@ -19,6 +45,19 @@ tratto da 1-2 km o con delta batteria rumoroso batteva il record e dava
   nello options flow **sostituisce** `entry.options`: se il form non riusava un
   campo (sezione *Auto* collapsed) la chiave spariva e al riaprire tornava a 0.
   Ora i valori già salvati vengono **preservati** (`setdefault`).
+- **Risparmio falsato dalle gomme.** `tag_ev` sommava **tutti** i costi in
+  *Interventi registrati*, quindi 850 € di gomme finivano nella colonna EV e
+  venivano addebitati alla ricarica. Le gomme (e riparazioni/altro) le avresti
+  fatte **anche con la termica**: ora nel confronto contano **solo gli
+  interventi con tipo `Tagliando`**. Gli altri restano nella tabella ma fuori
+  dal risparmio.
+- **Riavvio di HA azzerava i contatori giornalieri.** Con l'auto ferma nessun
+  input cambia, quindi l'early-exit del polling tornava indietro **senza**
+  chiamare `persist()`: il file restava fermo all'ultimo salvataggio e al
+  riavvio venivano ripristinati valori vecchi (% scaricata 14  11, persa da
+  fermo 14  0). Ora l'early-exit persiste, l'unload dell'entry persiste (un
+  reload/aggiornamento non passa per `EVENT_HOMEASSISTANT_STOP`) e il
+  salvataggio allo shutdown non viene piu' silenziato da `except: pass`.
 
 ---
 

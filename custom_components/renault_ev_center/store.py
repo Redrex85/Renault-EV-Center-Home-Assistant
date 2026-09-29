@@ -68,9 +68,10 @@ class MateStore:
         _LOGGER.debug("Store caricato: %d viaggi, %d ricariche, %d giorni",
                       len(self.data["trips"]), len(self.data["charges"]), len(self.data["daily"]))
 
-    def save(self) -> None:
-        """Salvataggio differito (debounce)."""
-        payload = {
+    def _payload(self) -> dict[str, Any]:
+        # forma identica a quella letta da async_load: contatori/install/schedule
+        # devono restare annidati, altrimenti al riavvio tornano vuoti
+        return {
             "trips": self.data["trips"][-2000:],
             "charges": self.data["charges"][-2000:],
             "daily": self.data["daily"][-365:],
@@ -82,4 +83,11 @@ class MateStore:
             "install": self.data.get("install", {}),
             "schedule": self.data.get("schedule", {}),
         }
-        self._store.async_delay_save(lambda: payload, SAVE_DELAY)
+
+    def save(self) -> None:
+        """Salvataggio differito (debounce)."""
+        self._store.async_delay_save(self._payload, SAVE_DELAY)
+
+    async def save_now(self) -> None:
+        """Salvataggio immediato (shutdown), stessa forma di save()."""
+        await self._store.async_save(self._payload())
