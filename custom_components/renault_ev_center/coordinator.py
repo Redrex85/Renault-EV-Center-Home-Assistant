@@ -71,7 +71,6 @@ from .const import (
     DEFAULT_GSE_KW_RIDOTTA,
     DEFAULT_GSE_START,
     DEFAULT_GSE_END,
-    CONF_CHARGE_SCHED_ENABLED,
     CONF_CHARGE_SCHED_MODE,
     CONF_CHARGE_START_TIME,
     CONF_CHARGE_STOP_TIME,
@@ -344,7 +343,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self._last_pos_loc = ""
         self._home_lo_since: float | None = None
         self._home_last: dict[str, Any] = {}
-        self.charge_sched_enabled = bool(opts.get(CONF_CHARGE_SCHED_ENABLED, False))
         self.charge_sched_mode = str(opts.get(CONF_CHARGE_SCHED_MODE) or "orario")
         self.charge_start_time = str(opts.get(CONF_CHARGE_START_TIME) or "23:30")
         self.charge_stop_time = str(opts.get(CONF_CHARGE_STOP_TIME) or "07:00")
@@ -354,7 +352,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # entità di STOP dedicata (switch/button): senza, con un button si ripremeva l'avvio
         self.wb_stop_switch = opts.get(CONF_WB_STOP_SWITCH) or ""
         self.charge_target_number = opts.get(CONF_CHARGE_TARGET_NUMBER) or ""
-        self._sched_done_key = ""
         self.balance_grid_sensor = opts.get(CONF_BALANCE_GRID_SENSOR) or ""
         self.balance_battery_sensor = opts.get(CONF_BALANCE_BATTERY_SENSOR) or ""
         self.balance_invert_grid = bool(opts.get(CONF_BALANCE_INVERT_GRID, False))
@@ -2790,8 +2787,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         - fallback: number target di carica Renault (stop portando il target al SoC attuale)
         """
         ent = self.charge_start_button  # avvio (switch/button wallbox)
-        # per FERMARE uso lo stop dedicato se mappato: un "button" di avvio ripremuto NON ferma
-        target_ent = ent if avvia else (self.wb_stop_switch or ent)
+        # per FERMARE: stop dedicato, poi target Renault, e SOLO in ultimo luogo il
+        # button di avvio (ripremuto NON ferma)
+        target_ent = ent if avvia else (self.wb_stop_switch or self.charge_target_number or ent)
         try:
             domain = target_ent.split(".")[0] if target_ent else ""
             if target_ent and domain == "switch":
@@ -3056,14 +3054,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 self.persist(force=True)
 
         # --- carica programmata (orario o percentuale) ------------------------------
-        if not (self.charge_sched_enabled and self._switch_on("charge_sched")):
+        # gate SOLO sullo switch: l'opzione charge_sched_enabled non compare in
+        # nessuno schema del config flow (resta sempre False), quindi il fermo a
+        # SoC obiettivo / a fine finestra non partiva MAI e la carica arrivava a 100%.
+        if not self._switch_on("charge_sched"):
             return
-        if not self.charge_start_button:
+        if not (self.wb_stop_switch or self.charge_start_button):
             return
         charging = bool(data.get("charging"))
         battery = data.get("battery", 100.0)
         hhmm = now.strftime("%H:%M")
-        today_key = now.strftime("%Y-%m-%d")
 
         mode = self._setting_opt("charge_sched_mode", self.charge_sched_mode)
         # SoC/orari di stop: quelli dell'AUTOMAZIONE salvata (vista Automazioni) hanno
@@ -3071,23 +3071,19 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         _sc_prog = (self.store.data.get("schedule", {}) or {}).get("ricarica") or {}
         avvio_ora_s = str(_sc_prog.get("inizio") or "") or self._setting_time("charge_start_time", self.charge_start_time)
         stop_ora_s = str(_sc_prog.get("fine") or "") or self._setting_time("charge_stop_time", self.charge_stop_time)
-        avvio_soc = self._setting_num("charge_start_soc", self.charge_start_soc)
         stop_soc = self._setting_num("charge_stop_soc", self.charge_stop_soc)
         stop_target = _f(_sc_prog.get("soc"), 0.0) or stop_soc
 
+        # SOLO FERMO: l'AVVIO lo fa unicamente l'automazione della vista Automazioni.
+        # Premendo anche da qui, la carica partiva DUE volte (automazione alle 23:05
+        # e poll del coordinatore nello stesso istante).
         if mode == "orario":
             in_window = _in_window(hhmm, avvio_ora_s, stop_ora_s)
-            # avvio: all'interno della finestra, una volta al giorno
-            if not charging and in_window and self._sched_done_key != f"start_{today_key}":
-                await self._wb_charge(True, battery)
-                self._sched_done_key = f"start_{today_key}"
             # stop: fuori dalla finestra OPPURE SoC obiettivo raggiunto
             # (prima il SoC veniva ignorato: la carica proseguiva oltre il 70%)
             if charging and (not in_window or battery >= stop_target):
                 await self._wb_charge(False, battery)
         else:  # percentuale
-            if not charging and battery <= avvio_soc:
-                await self._wb_charge(True, battery)
             if charging and battery >= min(stop_soc, stop_target):
                 await self._wb_charge(False, battery)
 

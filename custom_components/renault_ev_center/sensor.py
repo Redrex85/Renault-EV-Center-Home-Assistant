@@ -342,14 +342,14 @@ class PctBatteriaOggi(MateSensor):
     @property
     def native_value(self):
         if self._direction == "down":
-            # consumo giornaliero = MASSIMO tra le fonti. Il solo delta netto
-            # (SoC inizio giornata -> attuale) crolla se ricarichi in mezzo:
-            # da 21% reale a 2% (72 -> 51 -> 85 => 72-85 < 0).
-            val = abs(self.coordinator.data["pct_daily"]["down"]["value"])
+            # consumo giornaliero = MASSIMO tra i VIAGGI e il delta dal SoC piu'
+            # alto della giornata. Il lordo (somma di TUTTE le discese) non va
+            # bene: un rimbalzo di misura (95 -> 96 -> 95) viene ricontato e da
+            # 14 invece di 13. Il netto da solo crolla se ricarichi in mezzo
+            # (72 -> 51 -> 85): lo salva la somma dei delta batteria dei viaggi.
             rows = self.coordinator.data.get("percorrenza", []) or []
             r = next((x for x in rows if str(x.get("nome", "")).lower() == "oggi"), None)
-            if r:
-                val = max(val, float(r.get("pct") or 0))
+            val = float(r.get("pct") or 0) if r else 0.0
             start = self.coordinator.data.get("soc_start_oggi")
             batt = self.coordinator.data.get("battery")
             if start is not None and batt is not None:

@@ -911,11 +911,15 @@ try:
         "la data acquisto usa un suggested_value vuoto (errore di parsing)"
     # il default non deve produrre '.0'
     import typing as _ty
-    ns: dict = {"Any": _ty.Any}
+    import logging as _lg
+    from datetime import datetime as _dt
+    ns: dict = {"Any": _ty.Any, "datetime": _dt, "_LOGGER": _lg.getLogger(__name__)}
     src = flow[flow.find("def _meter_opt"):flow.find("def _car_schema")]
     exec(src, ns)  # noqa: S102
     assert ns["_meter_opt"](6.0) == "6" and ns["_meter_opt"](4.5) == "4.5", "_meter_opt errato"
     assert ns["_sugg_date"]("") == {} and ns["_sugg_date"]("2026-01-01"), "_sugg_date errato"
+    assert ns["_norm_date"]("15/03/2027") == "2027-03-15", "_norm_date non normalizza"
+    assert ns["_norm_date"]("1789638036") == "", "_norm_date accetta un numero come data"
     ok("config flow: contatore e data acquisto con default validi")
 except Exception as e:
     bad(f"config flow default: {e}")
@@ -1531,6 +1535,59 @@ try:
     ok("km/kWh periodici pavimentati coi viaggi, archivio mensile protetto, kWh con SOH")
 except Exception as e:
     bad(f"pavimento viaggi: {e}")
+
+# ---------------------------------------------------------------- [63] carica programmata
+print("\n[63] Carica programmata: il fermo (SoC/fine finestra) non e' piu' irraggiungibile")
+try:
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert "self.charge_sched_enabled" not in src, \
+        "il gate usa ancora charge_sched_enabled, opzione assente da ogni schema -> sempre False"
+    i = src.find("# --- carica programmata")
+    j = src.find("return", i)
+    blk = src[i:j]
+    assert 'if not self._switch_on("charge_sched")' in blk, \
+        "gate carica programmata cambiato: controlla lo switch"
+    assert "_switch_on(\"charge_sched\")" in blk, "manca il gate sullo switch"
+    assert "battery >= stop_target" in src, "ferma a SoC obiettivo rimossa"
+    assert "not in_window" in src, "ferma a fine finestra rimosso"
+    cf = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    assert 'CONF_CHARGE_SCHED_ENABLED, description' not in cf, \
+        "l'opzione e' ora nello schema: valuta di riattivarla invece di cancellarla"
+    ok("ferma carica attivo con lo switch: SoC obiettivo e fine finestra raggiungibili")
+except Exception as e:
+    bad(f"carica programmata: {e}")
+
+# ---------------------------------------------------------------- [64] solo l'automazione avvia
+print("\n[64] Carica programmata: l'AVVIO lo fa solo l'automazione, il coordinatore ferma")
+try:
+    src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
+    assert "_wb_charge(True" not in src, "il coordinatore preme ancora l'avvio (doppio start)"
+    assert "_sched_done_key" not in src, "residuo contatore di avvio giornaliero"
+    i = src.find("# SOLO FERMO")
+    assert i > 0, "manca il blocco 'solo ferma'"
+    blk = src[i:src.find("_press_start", i)]
+    assert "_wb_charge(False" in blk, "il fermo e' sparito dal blocco carica programmata"
+    assert "wb_stop_switch or self.charge_target_number or ent" in src, \
+        "stop senza fallback sul target Renault"
+    ok("coordinatore non avvia piu': parte solo l'automazione della vista Automazioni")
+except Exception as e:
+    bad(f"avvio carica: {e}")
+
+# ---------------------------------------------------------------- [65] date configurazione
+print("\n[65] Date del modulo Configura sempre in formato ISO (DateSelector)")
+try:
+    cf = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
+    assert "def _norm_date" in cf, "manca la normalizzazione delle date"
+    assert 'datetime.strptime(s, fmt).strftime("%Y-%m-%d")' in cf, \
+        "la normalizzazione non riporta a YYYY-MM-DD"
+    i = cf.find("async def async_step_init")
+    assert "for _k in (CONF_PURCHASE_DATE" in cf[i:], \
+        "base non sanificata: la data vecchia resta in entry.options e il modulo non si apre"
+    assert 'return {"description": {"suggested_value": s}} if s else {}' in cf, \
+        "_sugg_date puo' ancora passare un valore non valido"
+    ok("date normalizzate a YYYY-MM-DD prima del DateSelector, sei campi coperti")
+except Exception as e:
+    bad(f"date configurazione: {e}")
 
 # ---------------------------------------------------------------- esito
 print("\n" + "=" * 62)

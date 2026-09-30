@@ -5,6 +5,36 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.51.2 — Carica programmata: avviava due volte, non fermava mai, date rotte
+
+Tre difetti trovati sulla carica notturna reale (23:05 → **100% alle 06:13**,
+nessuno stop né alle 80% né alle 07:00):
+
+- **Il fermo non partiva MAI.** Il gate era
+  `if not (self.charge_sched_enabled and self._switch_on("charge_sched")): return`
+  ma **`CONF_CHARGE_SCHED_ENABLED` non compare in nessuno schema del config
+  flow** (solo import) → restava sempre `False` → il blocco era irraggiungibile
+  anche con lo switch acceso. Ora il gate è **solo** sullo switch
+  *Carica Programmata*; l'opzione morta è stata rimossa. Guardia `[63]`.
+- **Avvio unico: solo l'automazione della vista Automazioni.** Il coordinatore
+  premeva *Avvia* anche lui (in `orario` e in `percentuale`), così la carica
+  partiva **due volte**: automazione alle 23:05 + poll nello stesso istante.
+  Ora `_handle_charge_events` **ferma e basta** — `_wb_charge(True)` non esiste
+  più, via anche `_sched_done_key` e `avvio_soc`. Di conseguenza il numero
+  *Carica avvio sotto* non ha più effetto: è l'automazione a decidere quando
+  parte. Guardia `[64]`.
+- **Stop con catena di fallback.** `wb_stop_switch` → `charge_target_number`
+  (porta il target al SoC attuale) → in ultimo il button di avvio: prima, senza
+  stop mappato, si ripremeva l'avvio che non ferma nulla.
+- **`Could not parse date at 'advanced.tagliando_data'`.** `_sugg_date`
+  passava al `DateSelector` qualsiasi stringa non vuota: un valore salvato in
+  un altro formato (campo testo nelle vecchie versioni) faceva fallire la
+  validazione e il modulo **Configura non si apriva**. Ora `_norm_date()`
+  riporta a `YYYY-MM-DD` i sei campi data (acquisto, assicurazione, tagliando,
+  bollo, revisione, assicurazione2), normalizza `15/03/2027` e `2027-3-5`,
+  azzera il resto con un warning in log — e lofa **anche su `base`**, sennò il
+  valore vecchio restava in `entry.options` e il problema tornava. Guardia `[65]`.
+
 ## 1.0.51.1 — Shutdown: contatori, install e schedule non spariscono più
 
 **Bug radice** trovato a audit su HA reale. `_async_save_on_stop` salvava il

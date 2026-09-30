@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Any
 
 import voluptuous as vol
@@ -207,9 +208,27 @@ def _meter_opt(v: Any) -> str:
     return str(int(f)) if f == int(f) else str(f)
 
 
-def _sugg_date(v: Any) -> dict:
-    """suggested_value per DateSelector: SOLO se è una data non vuota (altrimento errore di parsing)."""
+def _norm_date(v: Any) -> str:
+    """Riporta al formato ISO YYYY-MM-DD, l'unico che il DateSelector di HA accetta.
+
+    Un valore vuoto o non interpretabile diventa "": il campo resta vuoto invece
+    di far saltare la validazione con «Could not parse date at 'sezione.campo'».
+    """
     s = str(v or "").strip()
+    if not s:
+        return ""
+    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y%m%d", "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y"):
+        try:
+            return datetime.strptime(s, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    _LOGGER.warning("Data non valida nel modulo Configura (%r): campo azzerato", v)
+    return ""
+
+
+def _sugg_date(v: Any) -> dict:
+    """suggested_value per DateSelector: SOLO una data ISO valida (altrimento errore di parsing)."""
+    s = _norm_date(v)
     return {"description": {"suggested_value": s}} if s else {}
 
 
@@ -575,6 +594,13 @@ class RenaultMateOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         base = {**self.config_entry.data, **self.config_entry.options}
+        # date salvate in un formato che il frontend non sa leggere (campo testo nelle
+        # vecchie versioni): normalizzate qui, sennò restano in entry.options e il
+        # modulo «Configura» non si apre più.
+        for _k in (CONF_PURCHASE_DATE, CONF_ASSICURAZIONE_DATA, CONF_TAGLIANDO_DATA,
+                   CONF_SCAD_BOLLO, CONF_SCAD_REVISIONE, CONF_SCAD_ASSICURAZIONE):
+            if _k in base:
+                base[_k] = _norm_date(base[_k])
         if user_input is not None:
             data = _flat(user_input)
             _capacity_for_model(data)
