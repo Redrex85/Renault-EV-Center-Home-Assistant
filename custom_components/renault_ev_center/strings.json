@@ -179,7 +179,7 @@
             "name": "🔧 Manutenzione e bollo",
             "data": {
               "maint_comparison": "Confronto costi manutenzione termico vs EV",
-              "service_cost_thermal": "Costo tagliando termico (€)",
+              "service_cost_thermal": "Costo tagliando termico (€/anno)",
               "service_cost_ev": "Costo tagliando EV (€)",
               "service_interval_km": "Intervallo tagliando (km)",
               "tyre_interval_km": "Intervallo cambio gomme (km)",
@@ -371,7 +371,7 @@
             "name": "🔧 Manutenzione e bollo",
             "data": {
               "maint_comparison": "Confronto costi manutenzione termico vs EV",
-              "service_cost_thermal": "Costo tagliando termico (€)",
+              "service_cost_thermal": "Costo tagliando termico (€/anno)",
               "service_cost_ev": "Costo tagliando EV (€)",
               "service_interval_km": "Intervallo tagliando (km)",
               "tyre_interval_km": "Intervallo cambio gomme (km)",

@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.51.2";
+const REC_VER = "1.0.51.3";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -2851,8 +2851,8 @@ const PAGES = {
   p8: `<h1>Extra</h1>
   <div class="grid g3">
     <div class="card"><h3>🔋 Vampire drain</h3><div class="big" style="font-size:32px;color:var(--accent)"><span data-f="vampire" data-dec="1">—</span><small>% oggi</small></div>
-      <div style="color:var(--muted);font-size:12px;margin-top:6px">≈ <span data-attr="batteria_persa_da_fermo_oggi|equivalente_kwh">—</span> kWh oggi</div>
-      <div style="color:var(--muted);font-size:12px;margin-top:4px">Mese ferma: <b><span data-attr="batteria_persa_da_fermo_mese|equivalente_kwh">—</span> kWh</b> (<span data-f="drain_mese_pct" data-dec="1">—</span>%)</div></div>
+      <div style="color:var(--muted);font-size:12px;margin-top:6px">≈ <span data-attr="batteria_persa_da_fermo_oggi|equivalente_kwh">—</span> kWh oggi · ieri <b><span data-attr="batteria_persa_da_fermo_oggi|ieri_pct">—</span>%</b> (<span data-attr="batteria_persa_da_fermo_oggi|ieri_kwh">—</span> kWh)</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px">Settimana: <b><span data-attr="batteria_persa_da_fermo_oggi|settimana_pct">—</span>%</b> (<span data-attr="batteria_persa_da_fermo_oggi|settimana_kwh">—</span> kWh) · Mese: <b><span data-f="drain_mese_pct" data-dec="1">—</span>%</b> (<span data-attr="batteria_persa_da_fermo_mese|equivalente_kwh">—</span> kWh)</div></div>
     <div class="card"><h3>🌍 CO2 evitata</h3><div class="big" style="font-size:32px;color:var(--good)"><span data-f="co2">—</span> <small>kg</small></div>
       <div style="color:var(--muted);font-size:12px;margin-top:6px">Anno: <span data-attr="co2_risparmiata|quest_anno">—</span> kg</div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:4px">evitata = termica − rete</div></div>

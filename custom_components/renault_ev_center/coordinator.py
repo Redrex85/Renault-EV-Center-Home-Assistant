@@ -311,11 +311,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self._prev_eff_km_kwh = 0.0
         self._prev_eff_kwh_100 = 0.0
 
-        # vampire drain: SoC persa da fermo (non in carica, odometro fermo)
-        self.drain_meter = DeltaMeter("down")
-        self.drain_mesi = DeltaMeter("down")
-        self._drain_odom_ref: float | None = None
-
         # notifiche / automazioni ricarica
         self.notify_charge_start = bool(opts.get(CONF_NOTIFY_CHARGE_START, True))
         self.notify_charge_end = bool(opts.get(CONF_NOTIFY_CHARGE_END, True))
@@ -462,8 +457,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "up": DeltaMeter.from_dict(counters.get("pct_up"), "up"),
             "down": DeltaMeter.from_dict(counters.get("pct_down"), "down"),
         }
-        self.drain_meter = DeltaMeter.from_dict(counters.get("drain_down"), "down")
-        self.drain_mesi = DeltaMeter.from_dict(counters.get("drain_month_down"), "down")
         # costo totale = somma delle ricariche registrate (fonte di verità).
         # Ricalcolato anche qui: i record già presenti non devono restare fuori dal totale.
         _somma_costi = round(sum(_f(c.get("costo")) for c in self.store.data["charges"]), 2)
@@ -487,8 +480,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 c[f"kwh_{p}_down"] = self.kwh_meters[p]["down"].to_dict()
             c["pct_up"] = self.pct_daily["up"].to_dict()
             c["pct_down"] = self.pct_daily["down"].to_dict()
-            c["drain_down"] = self.drain_meter.to_dict()
-            c["drain_month_down"] = self.drain_mesi.to_dict()
             self.store.data.setdefault("counters", {}).update(c)
             # stessa forma di store.save(): annidare counters, non appiattirli
             await self.store.save_now()
@@ -502,6 +493,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # salvataggio periodico ogni 15 min (i viaggi/ricariche si salvano subito con force=True)
         if not force and (now - self._last_save) < 900:
             return
+        # force = un SERVIZIO ha cambiato lo store (manutenzione, scadenze, assicurazione).
+        # L'early-exit confronta solo odometro/SoC/stato: con l'auto ferma nulla cambia e il
+        # nuovo record restava invisibile finche' non saliva il pedale. Invalida la firma.
+        if force:
+            self._last_inputs = None
         self._last_save = now
         c: dict[str, Any] = {"cost_total": round(self.cost_total, 4),
                              "trip": self.trip.dump(), "today_rec": self.today_rec}
@@ -513,8 +509,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             c[f"kwh_{p}_down"] = self.kwh_meters[p]["down"].to_dict()
         c["pct_up"] = self.pct_daily["up"].to_dict()
         c["pct_down"] = self.pct_daily["down"].to_dict()
-        c["drain_down"] = self.drain_meter.to_dict()
-        c["drain_month_down"] = self.drain_mesi.to_dict()
         self.store.data.setdefault("counters", {}).update(c)
         self.store.save()
 
@@ -900,19 +894,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # --- temperatura esterna (opzionale) --------------------------------------
         temp_out = self._read_temp()
 
-        # --- vampire drain: SoC persa da fermo (non carica, odometro fermo) --------
-        fermo = (
-            not charging
-            and self._drain_odom_ref is not None
-            and odometer <= self._drain_odom_ref + 0.05
-        )
-        if odometer > 0:
-            self._drain_odom_ref = odometer
-        self.drain_meter.tick(keys["daily"], battery if 0 <= battery <= 100 else None,
-                              allow=fermo, max_delta=10.0)
-        self.drain_mesi.tick(keys["monthly"], battery if 0 <= battery <= 100 else None,
-                             allow=fermo, max_delta=10.0)
-
         # --- energia erogata in questo ciclo → accumula costi --------------------
         wb_delta = 0.0
         if wb_enabled:
@@ -1067,11 +1048,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 km_prev = _f(prev.get("km"))
                 if km_prev >= 0.5:
                     prev["eff"] = round(_f(prev.get("kwh")) / km_prev * 100, 2) if km_prev else 0.0
-                    history.append(prev)
+                # anche i giorni a 0 km vanno in archivio: sono proprio quelli in cui
+                # l'auto resta ferma, e senza riga non c'e' "ieri" da leggere
+                history.append(prev)
                 history.sort(key=lambda d: d.get("data", ""))
                 del history[:-365]
             self.today_rec = {"data": today_key, "km": 0.0, "kwh": 0.0, "pct": 0.0, "eff": 0.0,
-                              "soc_start": None}
+                              "soc_start": None, "soc_end": None}
         # riferimento reale (SoC dall'app Renault): massimo della giornata NON in carica.
         # Il massimo evita che un riavvio di HA a metà giornata sposti la baseline per errore.
         if not charging:
@@ -1080,13 +1063,46 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 self.today_rec["soc_start"] = _soc_rif
         km_oggi = self._km_shown("daily")
         kwh_oggi = self._kwh_shown("daily")
+        # vampire drain = delta del SoC su un giorno SENZA viaggi. Se l'auto ha girato
+        # la discesa e' guida, non stand-by: il vecchio gate odometro non lo distingue
+        # perche' il cloud Renault riporta l'odometro solo a fine tratta.
+        _soc_end = (round(_f(battery), 1) if 0 < _f(battery) <= 100
+                    else self.today_rec.get("soc_end"))
+        _viaggi_oggi = any(str(t.get("data", "")) == today_key
+                           for t in self.store.data["trips"])
+        _ss = self.today_rec.get("soc_start")
+        _vamp_oggi = (0.0 if (_viaggi_oggi or _ss is None or _soc_end is None)
+                      else round(max(_f(_ss) - _soc_end, 0.0), 1))
         self.today_rec.update({
             "km": round(km_oggi, 1),
             "kwh": round(kwh_oggi, 2),
             "pct": round(_f(self.pct_daily["down"].value), 1),
-            "drain": round(_f(self.drain_meter.value), 1),
+            "drain": round(_vamp_oggi, 1),
+            "soc_end": _soc_end,
             "temp": round(temp_out, 1) if temp_out is not None else None,
         })
+        _storico = self.store.data["daily"]
+        _trip_day: dict[str, int] = {}
+        for _t in self.store.data["trips"]:
+            _gd = str(_t.get("data", ""))
+            _trip_day[_gd] = _trip_day.get(_gd, 0) + 1
+
+        def _vamp_row(_r: dict) -> float:
+            if _trip_day.get(str(_r.get("data", "")), 0) > 0:
+                return 0.0
+            _s, _e = _r.get("soc_start"), _r.get("soc_end")
+            if _s is None or _e is None:
+                return 0.0
+            return round(max(_f(_s) - _f(_e), 0.0), 1)
+
+        _ieri = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+        _vamp_ieri = _vamp_row(next((r for r in _storico
+                                     if str(r.get("data", "")) == _ieri), {}))
+        _settimana = {(now - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)}
+        _vamp_sett = round(_vamp_oggi + sum(_vamp_row(r) for r in _storico
+                                            if str(r.get("data", "")) in _settimana), 1)
+        _vamp_mese = round(_vamp_oggi + sum(_vamp_row(r) for r in _storico
+                                            if str(r.get("data", ""))[:7] == today_key[:7]), 1)
         self.today_rec["eff"] = (
             round(kwh_oggi / km_oggi * 100, 2) if km_oggi > 0.5 else 0.0
         )
@@ -1210,13 +1226,24 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             carb_ev = _f(savings.get("elettrico_totale"))
             tag_termica = tag_ev = bollo_termica = bollo_ev = 0.0
             if self.maint_enabled:
-                # Termica = TOTALE stimato su tutti i km (quanto avresti speso
-                # col diesel), non il costo di un singolo intervento: altrimenti
-                # la colonna "termica" resta piu' bassa di quella reale.
+                # Bollo e tagliandi termici = COSTO ANNUO x ANNI dall'acquisto.
+                # Prima era "1 anno solo" (350) oppure "km/intervallo x costo" (4x450=1800):
+                # l'auto e' del 03/2023 -> 3 anni -> 1050 di bollo e 1350 di tagliandi.
+                # Senza data di acquisto resta il vecchio comportamento.
+                from datetime import date as _date
+                anni = 0
+                if self.purchase_date:
+                    try:
+                        _pd = _date.fromisoformat(str(self.purchase_date)[:10])
+                        _og = now.date()
+                        anni = max(_og.year - _pd.year
+                                   - ((_og.month, _og.day) < (_pd.month, _pd.day)), 0)
+                    except ValueError:
+                        anni = 0
+                # Tagliandi termici = TOTALE stimato (non 1 singolo intervento).
                 # Il costo PER INTERVENTO resta esposto dalla card Manutenzione
                 # (teo_tagliandi = floor(km/intervallo) x costo).
-                # Bollo = VALORE CONFIGURATO (annuo), non proporzionato.
-                tagliandi_termici = int(km_tot // self.tagliando_intervallo)
+                tagliandi_termici = anni or int(km_tot // self.tagliando_intervallo)
                 tag_termica = tagliandi_termici * self.tag_termico
                 # Solo i TAGLIANDI entrano nel risparmio: gomme, riparazioni e
                 # altro sono spese che avresti fatto ANCHE con la termica, quindi
@@ -1226,8 +1253,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 tag_ev = round(sum(
                     _f(m.get("costo")) for m in self.store.data.get("maintenance", [])
                     if str(m.get("tipo") or "Tagliando").strip().lower() == "tagliando"), 2)
-                bollo_termica = self.bollo_termico
-                bollo_ev = self.bollo_ev
+                bollo_termica = (anni or 1) * self.bollo_termico
+                bollo_ev = (anni or 1) * self.bollo_ev
                 savings["tagliandi"] = round(tag_termica - tag_ev, 2)
                 savings["tagliandi_teoria"] = round(tag_termica, 2)
                 savings["tagliandi_reale"] = tag_ev
@@ -1713,10 +1740,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "gse": self._gse_info(),
             "report": report,
             "temp_out": temp_out,
-            "drain_oggi_pct": round(self.drain_meter.value, 1),
-            "drain_oggi_kwh": round(self.drain_meter.value * kwh_per_1pct, 2),
-            "drain_mese_pct": round(self.drain_mesi.value, 1),
-            "drain_mese_kwh": round(self.drain_mesi.value * kwh_per_1pct, 2),
+            "drain_oggi_pct": round(_vamp_oggi, 1),
+            "drain_oggi_kwh": round(_vamp_oggi * kwh_per_1pct, 2),
+            "drain_ieri_pct": round(_vamp_ieri, 1),
+            "drain_ieri_kwh": round(_vamp_ieri * kwh_per_1pct, 2),
+            "drain_settimana_pct": round(_vamp_sett, 1),
+            "drain_settimana_kwh": round(_vamp_sett * kwh_per_1pct, 2),
+            "drain_mese_pct": round(_vamp_mese, 1),
+            "drain_mese_kwh": round(_vamp_mese * kwh_per_1pct, 2),
             "co2": co2,
             "scadenze": scadenze,
             "zone_routes": zone_routes,

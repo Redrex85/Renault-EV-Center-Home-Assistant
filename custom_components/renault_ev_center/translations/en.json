@@ -183,7 +183,7 @@
             "name": "🔧 Maintenance & road tax",
             "data": {
               "maint_comparison": "Compare maintenance costs thermal vs EV",
-              "service_cost_thermal": "Thermal service cost (€)",
+              "service_cost_thermal": "Thermal service cost (€/year)",
               "service_cost_ev": "EV service cost (€)",
               "service_interval_km": "Service interval (km)",
               "tyre_interval_km": "Tyre change interval (km)",
@@ -379,7 +379,7 @@
             "name": "🔧 Maintenance & road tax",
             "data": {
               "maint_comparison": "Compare maintenance costs thermal vs EV",
-              "service_cost_thermal": "Thermal service cost (€)",
+              "service_cost_thermal": "Thermal service cost (€/year)",
               "service_cost_ev": "EV service cost (€)",
               "service_interval_km": "Service interval (km)",
               "tyre_interval_km": "Tyre change interval (km)",

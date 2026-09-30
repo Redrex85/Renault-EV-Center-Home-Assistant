@@ -170,6 +170,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 call.data.get("tipo", "Tagliando"),
                 call.data.get("note", ""),
             )
+            # refresh SUBITO: il pannello deve mostrare la riga, non fra 2 minuti (eco poll)
+            await coord.async_request_refresh()
             _LOGGER.info("Manutenzione registrata: %s (%s km)", rec["data"], rec["km"])
 
     async def handle_set_maintenance(call: ServiceCall) -> None:
@@ -179,26 +181,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 call.data.get("km"),
                 str(call.data.get("data", "") or ""),
             )
+            await coord.async_request_refresh()
 
     async def handle_delete_maintenance(call: ServiceCall) -> None:
         mid = int(call.data["maintenance_id"])
         for coord in _all_coordinators(hass):
             coord.service_delete_maintenance(mid)
+            await coord.async_request_refresh()
 
     async def handle_renew_insurance(call: ServiceCall) -> None:
         mesi = int(call.data.get("mesi", 12))
         data = str(call.data.get("data", "") or "")
         for coord in _all_coordinators(hass):
             nuova = coord.service_renew_insurance(mesi, data)
+            await coord.async_request_refresh()
             _LOGGER.info("Assicurazione rinnovata fino al %s", nuova)
 
     async def handle_set_scadenza(call: ServiceCall) -> None:
         for coord in _all_coordinators(hass):
             coord.service_set_scadenza(call.data["nome"], call.data["data"])
+            await coord.async_request_refresh()
 
     async def handle_set_tagliando(call: ServiceCall) -> None:
         for coord in _all_coordinators(hass):
             coord.service_set_tagliando(call.data["mode"], str(call.data["valore"]))
+            await coord.async_request_refresh()
 
     async def handle_create_dashboard(call: ServiceCall) -> None:
         for coord in _all_coordinators(hass):

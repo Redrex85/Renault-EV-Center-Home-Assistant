@@ -5,6 +5,28 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.51.3 — Intervento invisibile, bollo/tagliandi senza anni, etichetta €/anno
+
+Quattro difetti sulla card Manutenzione:
+
+- **"Intervento registrato" ma la riga non compariva.** `persist(force=True)` non
+  invalidava l'early-exit: `_curr_inputs` guarda solo odometro/SoC/stato, quindi con
+  l'auto ferma nulla cambiava e il record restava fuori da `maintenance["items"]`.
+  Ora `persist(force)` azzera `_last_inputs` e i servizi manutenzione/scadenze
+  chiedono `async_request_refresh()` → la riga appare subito, non fra 2 minuti
+  (eco-poll minimo 120 s con la macchina ferma).
+- **Bollo termico contato per un solo anno** (`bollo_termica = bollo_termico` = 350).
+  Con acquisto 03/2023 servono 1050. Ora `anni dall'acquisto × costo annuo`, sia per
+  la termica sia per l'EV.
+- **Tagliandi termici calcolati sui km** (`km/15000 × 450` = 1800 con 70592 km).
+  Con costo impostato a 450 € e auto di 3 anni l'atteso è 1350. Ora
+  `anni × costo annuo`, con fallback al vecchio calcolo km-based se manca la data
+  di acquisto. Resta invariato `teo_tagliandi` della card Manutenzione, che è la
+  scadenza per intervento sull'intervallo km.
+- **Etichetta "Costo tagliando termico (€)"** → **"Costo tagliando termico (€/anno)"**
+  in Configura (it/en/fr + strings), con unità del selettore allineata a `€/anno`
+  come già accade per il bollo.
+
 ## 1.0.51.2 — Carica programmata: avviava due volte, non fermava mai, date rotte
 
 Tre difetti trovati sulla carica notturna reale (23:05 → **100% alle 06:13**,

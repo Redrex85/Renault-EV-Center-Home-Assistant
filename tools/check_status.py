@@ -896,7 +896,7 @@ try:
               "prezzo_mese", "risp_cmp", "orari", "range_cmp"):
         assert f'data-c="{c}"' in js, f"manca il contenitore {c}"
     co = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
-    assert '"drain": round(_f(self.drain_meter.value), 1)' in co, \
+    assert '"drain": round(_vamp_oggi, 1)' in co, \
         "il drain giornaliero non è salvato nello storico"
     ok("8 grafici pagina Extra + drain nello storico")
 except Exception as e:
@@ -1355,10 +1355,14 @@ try:
     coo = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
     sen = open(os.path.join(CC, "sensor.py"), encoding="utf-8").read()
     flow = open(os.path.join(CC, "config_flow.py"), encoding="utf-8").read()
-    # bollo = valore CONFIGURATI (non scalato dagli anni stimati km/15000);
-    # tagliandi termici = TOTALE stimato (km/intervallo x costo), non 1 intervento
-    assert "anni * self.bollo" not in coo, "bollo ancora proporzionato agli anni"
-    assert "bollo_ev = self.bollo_ev" in coo, "bollo EV non usa il valore configurato"
+    # bollo e tagliandi termici = costo ANNUO x ANNI dall'acquisto
+    # (350 x 3 = 1050, 450 x 3 = 1350); senza data si torna ai valori vecchi
+    assert "bollo_termica = (anni or 1) * self.bollo_termico" in coo, \
+        "bollo termico non e' moltiplicato per gli anni"
+    assert "bollo_ev = (anni or 1) * self.bollo_ev" in coo, \
+        "bollo EV non e' moltiplicato per gli anni"
+    assert "tagliandi_termici = anni or int(km_tot" in coo, \
+        "tagliandi termici non usano gli anni dall'acquisto"
     assert "tag_termica = tagliandi_termici * self.tag_termico" in coo, \
         "tagliando termico non e' il totale stimato"
     # % utilizzo giornaliero: massimo tra delta netto, DeltaMeter e percorrenza
@@ -1460,8 +1464,8 @@ except Exception as e:
 print("\n[59] Risparmio: solo i TAGLIANDI entrano, non gomme/riparazioni")
 try:
     src = open(os.path.join(CC, "coordinator.py"), encoding="utf-8").read()
-    i = src.find("tagliandi_termici = int(km_tot")
-    j = src.find("bollo_termica = self.bollo_termico")
+    i = src.find("tagliandi_termici = anni or int(km_tot")
+    j = src.find("bollo_termica = (anni or 1) * self.bollo_termico")
     blk = src[i:j]
     assert 'm.get("tipo")' in blk, "tag_ev non filtra per tipo intervento"
     assert '"tagliando"' in blk, "manca il filtro tipo == 'tagliando'"
@@ -1480,7 +1484,13 @@ try:
     blk = src[i:j]
     assert blk.rstrip().endswith("return self.data"), "struttura early-exit cambiata"
     assert "self.persist()" in blk, "early-exit non salva piu' (restart perde i contatori)"
+    ps = src.find("def persist")
+    pblk = src[ps:src.find("def register_setting", ps)]
+    assert "if force:" in pblk and "self._last_inputs = None" in pblk, \
+        "persist(force) non invalida l'early-exit: un record nuovo resta invisibile"
     init = open(os.path.join(CC, "__init__.py"), encoding="utf-8").read()
+    assert init.count("await coord.async_request_refresh()") >= 6, \
+        "i servizi manutenzione/scadenze non rifrescano subito (riga non appare)"
     u = init.find("async def async_unload_entry")
     v = init.find("async def async_remove_entry", u)
     ublk = init[u:v]

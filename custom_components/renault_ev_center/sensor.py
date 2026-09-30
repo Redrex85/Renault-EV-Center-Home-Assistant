@@ -1138,7 +1138,11 @@ class DrainFermo(MateSensor):
     @property
     def extra_state_attributes(self):
         d = self.coordinator.data
-        return {"equivalente_kwh": d.get("drain_oggi_kwh")}
+        return {"equivalente_kwh": d.get("drain_oggi_kwh"),
+                "ieri_pct": d.get("drain_ieri_pct", 0.0),
+                "ieri_kwh": d.get("drain_ieri_kwh", 0.0),
+                "settimana_pct": d.get("drain_settimana_pct", 0.0),
+                "settimana_kwh": d.get("drain_settimana_kwh", 0.0)}
 
 
 class DrainMese(MateSensor):

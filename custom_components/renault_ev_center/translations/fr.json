@@ -183,7 +183,7 @@
             "name": "🔧 Entretien et taxe",
             "data": {
               "maint_comparison": "Comparer coûts entretien thermique vs EV",
-              "service_cost_thermal": "Coût entretien thermique (€)",
+              "service_cost_thermal": "Coût entretien thermique (€/an)",
               "service_cost_ev": "Coût entretien EV (€)",
               "service_interval_km": "Intervalle entretien (km)",
               "tyre_interval_km": "Intervalle changement pneus (km)",
@@ -379,7 +379,7 @@
             "name": "🔧 Entretien et taxe",
             "data": {
               "maint_comparison": "Comparer coûts entretien thermique vs EV",
-              "service_cost_thermal": "Coût entretien thermique (€)",
+              "service_cost_thermal": "Coût entretien thermique (€/an)",
               "service_cost_ev": "Coût entretien EV (€)",
               "service_interval_km": "Intervalle entretien (km)",
               "tyre_interval_km": "Intervalle changement pneus (km)",

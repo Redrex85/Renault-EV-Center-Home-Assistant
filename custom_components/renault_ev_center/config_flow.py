@@ -445,7 +445,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
         vol.Required("maint"): section(vol.Schema({
             vol.Required(CONF_MAINT_ENABLED, default=defaults.get(CONF_MAINT_ENABLED, False)): BooleanSelector(),
             vol.Optional(CONF_TAG_TERMICO, default=defaults.get(CONF_TAG_TERMICO, DEFAULT_TAG_TERMICO)): NumberSelector(
-                NumberSelectorConfig(min=0, max=1000, step=5, unit_of_measurement="€", mode=NumberSelectorMode.BOX)),
+                NumberSelectorConfig(min=0, max=1000, step=5, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_TAG_EV, default=defaults.get(CONF_TAG_EV, DEFAULT_TAG_EV)): NumberSelector(
                 NumberSelectorConfig(min=0, max=1000, step=5, unit_of_measurement="€", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_BOLLO_TERMICO, default=defaults.get(CONF_BOLLO_TERMICO, DEFAULT_BOLLO_TERMICO)): NumberSelector(
