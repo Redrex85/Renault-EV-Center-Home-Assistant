@@ -688,6 +688,8 @@ try:
         "il filtro mese deve partire da Tutti: e' il periodo a dare la finestra"
     assert 'if num_mese:\n            start = ""' in src, \
         "il mese scelto non sostituisce la finestra: un mese non corrente resta vuoto"
+    assert "self._filtri_sig()" in src and "def _filtri_sig" in src, \
+        "i filtri ricariche non entrano nella firma dell'early-exit (lista sempre vecchia)"
     assert 'self._key != "filtro_mese"' in sel, "il filtro mese non deve ripristinare il vecchio valore"
     js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
     assert 'data-sw="sw_bal"' in js, "il bilanciamento solare non ha lo switch on/off"

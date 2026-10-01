@@ -5,6 +5,19 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.51.5 — Filtro ricariche che non filtrava
+
+Un difetto:
+
+- **Filtro ricariche che "non filtrava".** I select Tipo/Periodo/Mese/Anno **non
+  entravano nella firma dell'early-exit** del coordinatore: `async_select_option()`
+  chiedeva il refresh, ma `_async_update_data` usciva subito restituendo `self.data`
+  e `charges_filtered` restava quello del filtro precedente — mese "Ottobre" e la
+  tabella mostrava ancora Settembre. Ora `_curr_inputs` include `_filtri_sig()`.
+  Verificato sul campo: su una installazione con `periodo=Tutto` + `mese=Agosto`
+  uscivano **tutte** le 7 ricariche di Settembre, segno che il filtro non veniva mai
+  applicato dopo il cambio del select.
+
 ## 1.0.51.4 — Risparmi a "-" con un carburante diverso dal diesel
 
 Un difetto, segnalato da chi ha installato l'integrazione su un'altra auto:

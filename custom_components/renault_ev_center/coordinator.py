@@ -536,6 +536,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 return st.state
         return fallback
 
+    def _filtri_sig(self) -> tuple[str, ...]:
+        """Valori dei select dei filtri ricariche. Entrano nella firma dell'early-exit:
+        cambiando un filtro i dati filtrati DEVONO essere rifatti, altrimenti si
+        continua a vedere la lista calcolata col filtro precedente."""
+        return tuple(self._setting_opt(k, "") for k in
+                     ("filtro_tipo", "filtro_periodo", "filtro_mese", "filtro_anno"))
+
     def _setting_time(self, key: str, fallback: str) -> str:
         """Legge un'entità time ("HH:MM:SS") e la riduce a "HH:MM"."""
         entity_id = self.setting_ids.get(f"time.{key}")
@@ -845,6 +852,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             self._wb_counter(),
             self._automation_sig(),
             keys["daily"],
+            # filtri ricariche: senza, l'early-exit restituiva la lista VECCHIA e
+            # il filtro sembrava non funzionare (mese "Ottobre" -> usciva Settembre).
+            self._filtri_sig(),
         )
         if self._last_inputs == _curr_inputs and not self.trip.active and not self.charge_session and self.data:
             # early-exit: MANCAVA persist() -> con auto ferma nessun input cambia,
