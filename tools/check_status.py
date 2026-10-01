@@ -684,7 +684,10 @@ try:
     assert "prev_state" in src and "prev_auto" in src, \
         "le automazioni non conservano lo stato on/off al reload"
     sel = open(os.path.join(CC, "select.py"), encoding="utf-8").read()
-    assert "datetime.now().month" in sel, "il filtro mese non parte dal mese corrente"
+    assert '"filtro_mese", MESI, "Tutti"' in sel, \
+        "il filtro mese deve partire da Tutti: e' il periodo a dare la finestra"
+    assert 'if num_mese:\n            start = ""' in src, \
+        "il mese scelto non sostituisce la finestra: un mese non corrente resta vuoto"
     assert 'self._key != "filtro_mese"' in sel, "il filtro mese non deve ripristinare il vecchio valore"
     js = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
     assert 'data-sw="sw_bal"' in js, "il bilanciamento solare non ha lo switch on/off"
@@ -697,6 +700,12 @@ try:
         "il loop percorrenza tocca di nuovo le tile di Ricariche (data-per)"
     assert 'data-per="Settimana"' in js and 'data-per="Mese"' in js and 'data-per="Anno"' in js, \
         "le tile di Ricariche non hanno più il filtro data-per"
+    assert "prevKey" in js and 'k === prevKey ? "" : "open"' in js, \
+        "il mese precedente dell'albero viaggi non resta chiuso di default"
+    assert "_vs_diesel" not in js, \
+        "il pannello punta a '_vs_diesel' fisso: con un carburante diverso i risparmi restano '-'"
+    assert 'S._rispNum("totale")' in js and 'S._sensorByPrefix("risparmio_totale_vs")' in js, \
+        "i risparmi non cercano il sensore per prefisso (nome carburante configurabile)"
     ok("fix 1.0.24.1: orari automazione, stato toggle, filtro mese, switch solare, mappa")
 except Exception as e:
     bad(f"fix 1.0.24.1: {e}")

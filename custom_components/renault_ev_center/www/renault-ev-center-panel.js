@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.51.3";
+const REC_VER = "1.0.51.4";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -355,7 +355,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       case "ricarica_oggi_pct": return S._num(S._sid("batteria_caricata_oggi"), S._sid("battery_perc_giorno_charge"), "sensor.megane_battery_perc_giorno_charge");
       case "risp_tot": {
-        const rv = S._num(S._sid("risparmio_totale_vs_diesel"));
+        const rv = S._rispNum("totale");
         if (rv !== null) return rv;
         const t = S._spesaTeo(S._field("odo"));
         const c = S._num(S._sid("costo_ricarica_totale"));
@@ -448,20 +448,20 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "assic": return S._st(S._sid("assicurazione"));
       case "scadenze": return S._st(S._sid("prossima_scadenza"));
       case "teo_tagliandi": { const km = S._num(S._sid("chilometraggio"), S._ov("odometer"), S._car("sensor", "odometer")); const st = S._st(S._sid("tagliandi")); const iv = st ? (S._attrAny(st, ["intervallo_km"]) || 15000) : 15000; return km === null ? null : Math.floor(km / iv) * 450; }
-      case "risp_tagliandi": { const v0 = S._num(S._sid("risparmio_tagliandi_vs_diesel")); if (v0 !== null) return v0; const km = S._num(S._sid("chilometraggio"), S._ov("odometer"), S._car("sensor", "odometer")); const iv = S._num(S._sid("tagliandi")) === null ? null : (S._attrAny(S._st(S._sid("tagliandi")), ["intervallo_km"]) || 15000); const sp = S._num(S._sid("tagliandi")); return (km === null || iv === null || sp === null || iv <= 0) ? null : Math.floor(km / iv) * 450 - sp; }
-      case "risp_bollo": { const v = S._num(S._sid("risparmio_bollo_vs_diesel")); return v !== null ? v : (S._ov("bollo_termico") ? S._num(S._ov("bollo_termico")) : null); }
+      case "risp_tagliandi": { const v0 = S._rispNum("tagliandi"); if (v0 !== null) return v0; const km = S._num(S._sid("chilometraggio"), S._ov("odometer"), S._car("sensor", "odometer")); const iv = S._num(S._sid("tagliandi")) === null ? null : (S._attrAny(S._st(S._sid("tagliandi")), ["intervallo_km"]) || 15000); const sp = S._num(S._sid("tagliandi")); return (km === null || iv === null || sp === null || iv <= 0) ? null : Math.floor(km / iv) * 450 - sp; }
+      case "risp_bollo": { const v = S._rispNum("bollo"); return v !== null ? v : (S._ov("bollo_termico") ? S._num(S._ov("bollo_termico")) : null); }
       case "assic_costo": return S._num(S._nid("assic_costo"), S._nid("costo_assicurazione"));
       // Risparmi carburante: entità risparmio_* dell'integrazione, altrimenti calcolo client
-      case "risp_mese": { const v = S._num(S._sid("risparmio_mese_vs_diesel")); return v !== null ? v : S._rispKm(S._num(S._sid("km_mensili")), S._num(S._sid("costo_ricarica_mensile"), S._sid("costo_ricarica_mese"))); }
-      case "risp_anno": { const v = S._num(S._sid("risparmio_anno_vs_diesel")); return v !== null ? v : S._rispKm(S._num(S._sid("km_annuali")), S._num(S._sid("costo_ricarica_annuale"), S._sid("costo_ricarica_anno"))); }
+      case "risp_mese": { const v = S._rispNum("mese"); return v !== null ? v : S._rispKm(S._num(S._sid("km_mensili")), S._num(S._sid("costo_ricarica_mensile"), S._sid("costo_ricarica_mese"))); }
+      case "risp_anno": { const v = S._rispNum("anno"); return v !== null ? v : S._rispKm(S._num(S._sid("km_annuali")), S._num(S._sid("costo_ricarica_annuale"), S._sid("costo_ricarica_anno"))); }
       case "spesa_teorica": {
         if (S._ov("spesa_teorica")) return S._num(S._ov("spesa_teorica"));
-        const st = S._st(S._sid("risparmio_totale_vs_diesel"));
+        const st = S._sensorByPrefix("risparmio_totale_vs");
         const tt = st ? S._attrAny(st, ["termica_totale"]) : null;
         if (tt !== null) return tt;
         return S._spesaTeo(S._field("odo"));
       }
-      case "costo_ric_tot": { const v = S._num(S._sid("costo_ricarica_totale")); if (v) return v; const st = S._st(S._sid("risparmio_totale_vs_diesel")); const e = st ? S._attrAny(st, ["elettrico_totale"]) : null; if (e !== null && e !== undefined && e !== 0) return e; return v === 0 ? 0 : (S._ov("costo_ric_tot") ? S._num(S._ov("costo_ric_tot")) : null); }
+      case "costo_ric_tot": { const v = S._num(S._sid("costo_ricarica_totale")); if (v) return v; const st = S._sensorByPrefix("risparmio_totale_vs"); const e = st ? S._attrAny(st, ["elettrico_totale"]) : null; if (e !== null && e !== undefined && e !== 0) return e; return v === 0 ? 0 : (S._ov("costo_ric_tot") ? S._num(S._ov("costo_ric_tot")) : null); }
       // Extra
       case "drain": {
         // % consumata oggi = SoC reale della batteria (delta %). È il consumo effettivo:
@@ -1967,12 +1967,20 @@ class RenaultEvCenterPanel extends HTMLElement {
 
 /** trova un sensore dell'integrazione per prefisso (il nome carburante è configurabile) */
   _sensorByPrefix(prefix) {
-    const base = `sensor.${this._slug(this._cfg.name)}_${prefix}`;
+    const base = this._eid("sensor", prefix);
     if (this._hass.states[base]) return this._hass.states[base];
     for (const id of Object.keys(this._hass.states)) {
       if (id.startsWith(base)) return this._hass.states[id];
     }
     return null;
+  }
+  /** valore di un sensore risparmio vs carburante. Il nome del carburante è
+   *  configurabile ("Risparmio Totale vs Benzina"), quindi si cerca per prefisso:
+   *  puntando a "_diesel" fisso, chi non usa il diesel vedeva solo "-". */
+  _rispNum(periodo) {
+    const s = this._sensorByPrefix(`risparmio_${periodo}_vs`);
+    const v = s ? parseFloat(String(s.state).replace(",", ".")) : NaN;
+    return isNaN(v) ? null : v;
   }
   /** vista Risparmi: confronto termica vs elettrica + barre */
   _drawSavings(root) {
@@ -2308,7 +2316,16 @@ class RenaultEvCenterPanel extends HTMLElement {
     const effOf = (day) => day.n_eff ? (day.peso_eff / day.n_eff) : NaN;
     // stato aperto/chiuso ricordato per chiave: il re-render non riapre più i rami chiusi
     const opened = (this._treeOpen = this._treeOpen || {});
-    const op = (k) => (opened[k] === false ? "" : "open");
+    // il mese PRECEDENTE resta chiuso di default: con tutti i mesi aperti
+    // l'albero diventava lunghissimo. Un'apertura manuale viene ricordata.
+    const _d0 = new Date();
+    const prevKey = `${_d0.getMonth() ? _d0.getFullYear() : _d0.getFullYear() - 1}-` +
+      `${String(_d0.getMonth() || 12).padStart(2, "0")}`;
+    const op = (k) => {
+      if (opened[k] === true) return "open";
+      if (opened[k] === false) return "";
+      return k === prevKey ? "" : "open";
+    };
     box.innerHTML = Object.entries(tree).sort((a, b) => b[0].localeCompare(a[0])).map(([y, mesi]) => {
       const tot = Object.values(mesi).flat();
       const km = tot.reduce((a, r) => a + r.km, 0);

@@ -2058,7 +2058,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         mese = self._setting_opt("filtro_mese", "Tutti")
         anno = self._setting_opt("filtro_anno", "Tutti")
         d = now.date()
-        if periodo == "Settimana":
+        num_mese = MESI_FILTRO.index(mese) if mese in MESI_FILTRO else 0  # 0 = Tutti
+        # Se e' scelto un MESE preciso, quello decide la finestra. Prima veniva
+        # ANDato col "dal 1 del mese corrente": un mese diverso da quello in
+        # corso (es. Settembre a inizio Ottobre) restava SEMPRE vuoto.
+        if num_mese:
+            start = ""
+        elif periodo == "Settimana":
             start = (d - timedelta(days=d.weekday())).isoformat()
         elif periodo == "Mese":
             start = d.replace(day=1).isoformat()
@@ -2066,7 +2072,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             start = d.replace(month=1, day=1).isoformat()
         else:
             start = ""
-        num_mese = MESI_FILTRO.index(mese) if mese in MESI_FILTRO else 0  # 0 = Tutti
         items = []
         for c in charges:
             if tipo != "Tutte" and c.get("tipo") != tipo:

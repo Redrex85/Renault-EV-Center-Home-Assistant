@@ -5,9 +5,21 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.51.3 — Intervento invisibile, bollo/tagliandi senza anni, etichetta €/anno
+## 1.0.51.4 — Risparmi a "-" con un carburante diverso dal diesel
 
-Quattro difetti sulla card Manutenzione:
+Un difetto, segnalato da chi ha installato l'integrazione su un'altra auto:
+
+- **Risparmi a "-" per chi non ha il diesel.** Il pannello puntava a entità fisse
+  `..._risparmio_totale_vs_diesel` / `..._risp_mese_vs_diesel` / `..._bollo_vs_diesel`,
+  ma i sensori si chiamano `Risparmio Totale vs <nome carburante>`: con "Benzina",
+  "Gasolio" o un nome libero la stringa non combaciava e le tile mostravano "-" (le
+  viste Risparmi usavano già la ricerca per prefisso, le tile no). Ora c'è un helper
+  `_rispNum()` che cerca il sensore per prefisso, e `_sensorByPrefix` usa il prefisso
+  reale delle entità (serve anche se l'entry è stata rinominata). Guardie aggiornate.
+
+## 1.0.51.3 — Manutenzione invisibile, storico ricariche vuoto, bollo/tagliandi senza anni
+
+Sei difetti: quattro sulla card Manutenzione, due su pannello (viaggi/ricariche):
 
 - **"Intervento registrato" ma la riga non compariva.** `persist(force=True)` non
   invalidava l'early-exit: `_curr_inputs` guarda solo odometro/SoC/stato, quindi con
@@ -26,6 +38,15 @@ Quattro difetti sulla card Manutenzione:
 - **Etichetta "Costo tagliando termico (€)"** → **"Costo tagliando termico (€/anno)"**
   in Configura (it/en/fr + strings), con unità del selettore allineata a `€/anno`
   come già accade per il bollo.
+- **Storico ricariche vuoto, sia per il mese corrente sia per il precedente.** I due
+  filtri erano combinati con AND: `filtro_mese` = "Ottobre" **e** `filtro_periodo` =
+  "Mese" (dal 01/10). Un mese diverso da quello in corso restava quindi **sempre**
+  vuoto, e a inizio mese restava vuoto anche il mese corrente. Ora il mese scelto
+  **sostituisce** la finestra del periodo, e `filtro_mese` parte da "Tutti": sono i
+  pulsanti Settimana/Mese/Anno/Tutto a decidere (a inizio mese il risultato è lo
+  stesso di prima).
+- **Albero viaggi lunghissimo.** Il **mese precedente** ora resta chiuso di default;
+  un'apertura manuale viene ricordata come prima, il resto resta aperto.
 
 ## 1.0.51.2 — Carica programmata: avviava due volte, non fermava mai, date rotte
 
