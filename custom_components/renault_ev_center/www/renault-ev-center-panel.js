@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.51.6";
+const REC_VER = "1.0.51.8";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -238,9 +238,18 @@ class RenaultEvCenterPanel extends HTMLElement {
     const d = `${dom}.${this._slug(this._cfg.name)}_${rest}`;
     const st = this._hass ? this._hass.states : null;
     if (!st) return d;
-    if (st[d]) return d;
+    const cur = st[d];
+    // entita col nome della card VIVA: è quella giusta (niente sorprese)
+    if (cur && cur.state !== "unavailable" && cur.state !== "unknown") return d;
+    // altrimenti vince la famiglia REALE (le entita orfane di una entry
+    // cancellata restano in `states` come unavailable e rubavano il posto:
+    // il resto del pannello le mostrava stantie e i risparmi sparivano)
     const p = this._pfx();
-    return p ? `${dom}.${p.split(".")[1]}_${rest}` : d;
+    if (p) {
+      const alt = `${dom}.${p.split(".")[1]}_${rest}`;
+      if (st[alt]) return alt;
+    }
+    return d;
   }
   _sid(rest) { return this._eid("sensor", rest); }
   _nid(rest) { return this._eid("number", rest); }
@@ -830,6 +839,9 @@ class RenaultEvCenterPanel extends HTMLElement {
     localStorage.setItem("rec_panel_page", p);
     this.shadowRoot.querySelectorAll(".nav button, .mobilenav button").forEach((b) => b.classList.toggle("active", b.dataset.p === p));
     this.shadowRoot.querySelectorAll(".page").forEach((s) => s.classList.toggle("active", s.id === p));
+    // la mappa (WebGL) si crea solo ora che la pagina è visibile
+    const box = this.shadowRoot.querySelector("#evmap");
+    if (box && !this._mapCard && box.clientHeight) this._drawMap();
   }
   _theme_(t) {
     this._theme = t;
@@ -1462,10 +1474,17 @@ class RenaultEvCenterPanel extends HTMLElement {
     const la = st && st.attributes ? st.attributes.latitude : null;
     const lo = st && st.attributes ? st.attributes.longitude : null;
     const pos = (la === undefined || la === null || lo === undefined || lo === null) ? "" : `${la},${lo}`;
-    // posizione invariata → aggiorno solo hass (niente flicker). Cambiata → ricreo per ricentrare.
-    if (this._mapCard && pos && this._mapPos === pos) { this._mapCard.hass = this._hass; return; }
-    // Leaflet centra male se il box è ancora a 0 px: aspetto l'altezza definitiva
-    if (!box.clientHeight) { setTimeout(() => this._drawMap(), 200); return; }
+    // la card mappa è WebGL: nessun contesto se la pagina è nascosta (prima era un
+    // retry ogni 200 ms all'infinito). `_goto` la ridisegna quando torna visibile.
+    if (!box.clientHeight) return;
+    if (this._mapCard) {
+      this._mapCard.hass = this._hass;
+      // ricentrare = ricreare la card = contesto WebGL nuovo, e il browser scarta i
+      // vecchi ("WebGL context was lost" + subscription perse): solo se la posizione
+      // è cambiata, e mai più spesso di 5 minuti.
+      if (!pos || this._mapPos === pos) return;
+      if (this._mapPosT && Date.now() - this._mapPosT < 300000) return;
+    }
     if (typeof window.loadCardHelpers !== "function") return;
     try {
       const helpers = await window.loadCardHelpers();
@@ -1485,6 +1504,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       box.appendChild(card);
       this._mapCard = card;
       this._mapPos = pos;
+      this._mapPosT = Date.now();
       // il box prende l'altezza solo dopo il layout: ricalcolo e riallineo al centro
       [150, 600, 1500].forEach((ms) => setTimeout(() => {
         window.dispatchEvent(new Event("resize"));
@@ -1991,19 +2011,28 @@ class RenaultEvCenterPanel extends HTMLElement {
 /** trova un sensore dell'integrazione per prefisso (il nome carburante è configurabile) */
   _sensorByPrefix(prefix) {
     const base = this._eid("sensor", prefix);
-    if (this._hass.states[base]) return this._hass.states[base];
+    let trovato = null;
     for (const id of Object.keys(this._hass.states)) {
-      if (id.startsWith(base)) return this._hass.states[id];
+      if (id !== base && !id.startsWith(base)) continue;
+      const s = this._hass.states[id];
+      // tra omonimi (orfani di una entry cancellata, "_2") vince quello vivo
+      if (s && s.state !== "unavailable" && s.state !== "unknown") return s;
+      if (!trovato) trovato = s;
     }
-    return null;
+    return trovato;
   }
   /** valore di un sensore risparmio vs carburante. Il nome del carburante è
    *  configurabile ("Risparmio Totale vs Benzina"), quindi si cerca per prefisso:
-   *  puntando a "_diesel" fisso, chi non usa il diesel vedeva solo "-". */
+   *  puntando a "_diesel" fisso, chi non usa il diesel vedeva solo "-".
+   *  Se lo stato non è numerico (sensore unavailable) si usa l'attributo omonimo. */
   _rispNum(periodo) {
-    const s = this._sensorByPrefix(`risparmio_${periodo}_vs`);
-    const v = s ? parseFloat(String(s.state).replace(",", ".")) : NaN;
-    return isNaN(v) ? null : v;
+    const num = (x) => { const v = parseFloat(String(x).replace(",", ".")); return isNaN(v) ? null : v; };
+    for (const s of [this._sensorByPrefix(`risparmio_${periodo}_vs`), this._sensorByPrefix("risparmio_totale_vs")]) {
+      if (!s) continue;
+      const v = num(s.state) ?? num(this._attrAny(s, [periodo]));
+      if (v !== null) return v;
+    }
+    return null;
   }
   /** vista Risparmi: confronto termica vs elettrica + barre */
   _drawSavings(root) {
@@ -2616,9 +2645,9 @@ const PAGES = {
       </div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">💰 Risparmio netto</div>
-        <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)"><span data-f="risp_tot">—</span> €</b></div>
-        <div class="row"><span>+ Tagliandi</span><b><span data-f="risp_tagliandi">—</span> €</b></div>
-        <div class="row"><span>+ Bollo</span><b><span data-f="risp_bollo">—</span> €</b></div>
+        <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)"><span data-f="risp_tot" data-dec="2">—</span> €</b></div>
+        <div class="row"><span>+ Tagliandi</span><b><span data-f="risp_tagliandi" data-dec="2">—</span> €</b></div>
+        <div class="row"><span>+ Bollo</span><b><span data-f="risp_bollo" data-dec="2">—</span> €</b></div>
         <div class="row" style="border-top:2px solid var(--accent)"><span><b>★ NETTO</b></span><b style="color:var(--accent);font-size:17px"><span data-f="risp_netto_tot" data-dec="2">—</span> €</b></div>
       </div>
     </div>
@@ -2830,8 +2859,8 @@ const PAGES = {
   <div class="card netto" style="margin-top:16px"><h3>🏆 Risparmio manutenzione</h3>
     <div class="row"><span>Termica teorica (450 € × tagliandi)</span><b><span data-f="teo_tagliandi">—</span> €</b></div>
     <div class="row"><span>Spesa reale EV</span><b><span data-f="tagliandi">—</span> €</b></div>
-    <div class="row"><span>Risparmio tagliandi</span><b style="color:var(--good)"><span data-f="risp_tagliandi">—</span> €</b></div>
-    <div class="row"><span>Risparmio bollo</span><b><span data-f="risp_bollo">—</span> €</b></div></div>`,
+    <div class="row"><span>Risparmio tagliandi</span><b style="color:var(--good)"><span data-f="risp_tagliandi" data-dec="2">—</span> €</b></div>
+    <div class="row"><span>Risparmio bollo</span><b><span data-f="risp_bollo" data-dec="2">—</span> €</b></div></div>`,
 
   p7: `<h1>Risparmi</h1>
   <div class="card"><h3>⚖️ Termica vs Elettrica</h3>

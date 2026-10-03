@@ -5,6 +5,41 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.51.8 — Risparmi col prefisso sbagliato, stagione vera, mappa WebGL
+
+Cinque correzioni, tutte di pannello (nessuna entità rinominata, nessuna migrazione):
+
+- **Risparmi vuoti o con un numero sbagliato.** Il pannello costruiva l'id dei sensori
+  dal nome scritto nella card **senza controllare che l'entità fosse viva**: con una
+  famiglia omonima rimasta lì (entry rimossa o rinominata) i sensori `risparmio_*` non
+  venivano trovati, la card *Risparmio netto* mostrava il ripiego client
+  (spesa teorica − costo ricariche: 495 € invece dei 4,60 € reali) e la pagina
+  *Risparmi* restava a "—" col messaggio "Attiva il confronto con l'auto termica".
+  Ora `_eid()` accetta l'id col nome della card **solo se vivo**, altrimenti passa
+  alla famiglia reale eletta da `_pfx()`; `_sensorByPrefix()` preferisce l'omonimo
+  vivo; `_rispNum()` ripiega sull'attributo omonimo
+  (`totale`/`mese`/`anno`/`tagliandi`/`bollo`).
+- **Numeri non arrotondati.** *Carburante evitato*, *+ Tagliandi* e *+ Bollo* (in
+  Panoramica e in Manutenzione) non avevano `data-dec`: finivano nel ramo stringa e
+  stampavano il float grezzo (`495,04600000000005`). Ora sono a 2 decimali.
+- **"Consumi vs temperatura": periodi veri.** "Mese" erano *gli ultimi 31 giorni* e
+  "Stagione" *gli ultimi 90*: con 12 giorni di storico le voci Mese, Stagione e Tutto
+  restituivano gli stessi punti, e solo "Settimana" cambiava qualcosa. Ora
+  *Settimana* = ultimi 7 giorni, *Mese* = mese di calendario, *Stagione* = stagione
+  astronomica in corso (21/03, 21/06, 23/09, 21/12), *Tutto* = tutto; i punti senza
+  data restano fuori dalle finestre finite.
+- **Mappa: contesti WebGL a ripetizione.** La card mappa nativa (WebGL) veniva
+  ricreata a **ogni** cambio di posizione GPS e, con la pagina nascosta, la funzione
+  riprovava ogni 200 ms **all'infinito**: da lì i `WebGL context was lost` e le
+  `Subscription not found` in console. Ora la card si crea solo quando la pagina è
+  visibile (la ridisegna `_goto`), si ricentra al massimo una volta ogni 5 minuti e
+  il retry infinito non esiste più.
+- **README**: badge del canale Telegram ufficiale
+  ([t.me/redrex_domotica](https://t.me/redrex_domotica)) nelle tre sezioni (IT/EN/FR).
+
+Pannello allineato a **1.0.51.8** (`VERSION`, `manifest.json`, `REC_VER`, `CARD_VER`,
+`preview/index.html`).
+
 ## 1.0.51.6 — Risparmio calcolato sui km tuoi, wallbox in Wh
 
 Due correzioni:
