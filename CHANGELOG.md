@@ -5,6 +5,23 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.51.6 — Risparmio calcolato sui km tuoi, wallbox in Wh
+
+Due correzioni:
+
+- **Il costo termico usava l'odometro intero.** Su un'auto comprata usata (10.000 km
+  già percorsi) il confronto veniva fatto su 12.000 km invece che sui 2.000 tuoi, e
+  il risparmio risultava gonfiato. Ora la base è l'odometro **all'attivazione**
+  (`install.odometer`: *Chilometri all'attivazione* in Configura, oppure catturato al
+  primo avvio) → `km_tot = odometer − base`. Le etichette del pannello passano da
+  "Km percorsi / km totali (odometro)" a "Km miei (dall'attivazione)", e i blocchi
+  "Da sempre" diventano "Totale".
+- **Wallbox che espone i contatori in Wh.** Sessione ed energia totale venivano lette
+  come se fossero kWh: con un sensore in Wh i valori risultavano 1000× e i delta dei
+  contatori inquinavano kWh e costi di ricarica. Ora il coordinatore usa `_num_kwh()`,
+  che guarda `unit_of_measurement` e divide per 1000 se è "Wh"; il pannello fa lo
+  stesso con `_kwhE()` per le tile *Sessione* ed *Energia totale*.
+
 ## 1.0.51.5 — Filtro ricariche che non filtrava
 
 Un difetto:

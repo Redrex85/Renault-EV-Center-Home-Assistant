@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.51.5";
+const REC_VER = "1.0.51.6";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -168,6 +168,15 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (!s) return null;
     const v = parseFloat(String(s.state).replace(",", "."));
     return isNaN(v) ? null : v;
+  }
+  /** kWh da un sensore di energia: alcune wallbox espongono i contatori in Wh. */
+  _kwhE(...cands) {
+    const s = this._st(...cands);
+    if (!s) return null;
+    const v = parseFloat(String(s.state).replace(",", "."));
+    if (isNaN(v)) return null;
+    const u = String((s.attributes && s.attributes.unit_of_measurement) || "").trim().toLowerCase();
+    return u === "wh" ? v / 1000 : v;
   }
   _attrAny(state, keys) {
     if (!state || !state.attributes) return null;
@@ -880,14 +889,14 @@ class RenaultEvCenterPanel extends HTMLElement {
     const limEnt = S._st("sensor.wallbox_limit_reason") || S._findState("sensor", "wallbox", "limit");
     set("limit", limEnt ? limEnt.state : "—");
 
-    const skwh = S._num(S._ov("wallbox_session_energy"), "sensor.wallbox_session_energy");
+    const skwh = S._kwhE(S._ov("wallbox_session_energy"), "sensor.wallbox_session_energy");
     const stEnt = S._st(S._ov("wallbox_session_time"), S._sid("wallbox_tempo_sessione"), "sensor.wallbox_charging_time");
     const stime = S._num(S._ov("wallbox_session_time"), S._sid("wallbox_tempo_sessione"), "sensor.wallbox_charging_time");
     // la sessione conta SOLO se QUESTA auto è collegata/in carica: la stessa wallbox può caricare altre auto
     const autoColl = S._chargeOn() || S._plugOn();
     set("session_kwh", !autoColl ? "—" : (skwh === null ? "—" : S._fmt(skwh, 2) + " kWh"));
     set("session_time", !autoColl ? "—" : (stime === null ? "—" : S._dur(stime, stEnt ? stEnt.attributes.unit_of_measurement : "s")));
-    const tot = S._num(S._ov("wallbox_total_energy"), "sensor.wallbox_total_charged_energy");
+    const tot = S._kwhE(S._ov("wallbox_total_energy"), "sensor.wallbox_total_charged_energy");
     set("total_kwh", tot === null ? "—" : S._fmt(tot, 1) + " kWh");
 
     // slider ampere (number di config, fallback Lektrico)
@@ -1690,9 +1699,23 @@ class RenaultEvCenterPanel extends HTMLElement {
     const mode = sel ? sel.value : "month";
     const s = this._st(this._sid("viaggi_recenti"));
     const pts = (s && Array.isArray(s.attributes.consumi_temp)) ? s.attributes.consumi_temp : [];
-    const days = { week: 7, month: 31, season: 90, all: 100000 }[mode] || 31;
-    const lim = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
-    const vis = pts.filter((p) => !p.d || p.d >= lim);
+    // periodi: Settimana = ultimi 7 gg · Mese = mese di calendario · Stagione = stagione astronomica ufficiale
+    const now = new Date();
+    const p2 = (n) => String(n).padStart(2, "0");
+    const iso = (d) => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+    let lim = "0000-01-01";
+    if (mode === "week") { const d = new Date(now); d.setDate(d.getDate() - 6); lim = iso(d); }
+    else if (mode === "month") lim = `${now.getFullYear()}-${p2(now.getMonth() + 1)}-01`;
+    else if (mode === "season") {
+      // primavera 21/03 · estate 21/06 · autunno 23/09 · inverno 21/12 (emisfero nord)
+      const md = (now.getMonth() + 1) * 100 + now.getDate(), y = now.getFullYear();
+      if (md >= 1221) lim = `${y}-12-21`;
+      else if (md < 321) lim = `${y - 1}-12-21`;
+      else if (md < 621) lim = `${y}-03-21`;
+      else if (md < 923) lim = `${y}-06-21`;
+      else lim = `${y}-09-23`;
+    }
+    const vis = pts.filter((p) => (p.d || "0000-01-01") >= lim);
     if (!vis.length) {
       box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio nel periodo scelto (servono viaggi ≥3 km con la temperatura esterna).</div>`;
       return;
@@ -2832,8 +2855,8 @@ const PAGES = {
     <div class="card"><h3>📅 Risparmio per periodo</h3>
       <div class="row"><span>Mese</span><b style="color:var(--accent)"><span data-f="risp_mese" data-dec="2">—</span> €</b></div>
       <div class="row"><span>Anno</span><b style="color:var(--accent)"><span data-f="risp_anno" data-dec="2">—</span> €</b></div>
-      <div class="row" style="border-top:1px solid var(--line)"><span><b>Da sempre</b></span><b style="color:var(--accent)"><span data-sv="d_tot">—</span> €</b></div>
-      <div class="row"><span>Km percorsi</span><b><span data-sv="km">—</span> km</b></div>
+      <div class="row" style="border-top:1px solid var(--line)"><span><b>Totale</b></span><b style="color:var(--accent)"><span data-sv="d_tot">—</span> €</b></div>
+      <div class="row"><span>Km miei (dall'attivazione)</span><b><span data-sv="km">—</span> km</b></div>
       <div class="row"><span>Prezzo carburante</span><b><span data-sv="prezzo">—</span> €/l</b></div></div>
   </div>
 
@@ -2856,12 +2879,13 @@ const PAGES = {
     <div style="color:var(--muted);font-size:11.5px;margin-bottom:10px">
       <span data-sv="i_km">—</span> km dal <span data-sv="i_date">—</span> ·
       termica <span data-sv="i_term">—</span> € vs elettrica <span data-sv="i_ele">—</span> €</div>
-    <div class="row" style="border-top:1px solid var(--line);padding-top:10px"><span><b>Da sempre</b> — include i valori dichiarati</span><b style="color:var(--accent);font-size:17px"><span data-sv="d_tot">—</span> €</b></div>
-    <div style="color:var(--muted);font-size:11.5px"><span data-sv="km">—</span> km totali (odometro)</div>
+    <div class="row" style="border-top:1px solid var(--line);padding-top:10px"><span><b>Totale</b> — include i valori dichiarati</span><b style="color:var(--accent);font-size:17px"><span data-sv="d_tot">—</span> €</b></div>
+    <div style="color:var(--muted);font-size:11.5px"><span data-sv="km">—</span> km dall'attivazione (odometro − km iniziali)</div>
     <div data-sv="warn_sempre" style="color:var(--warn);font-size:11.5px;margin-top:6px"></div>
     <div class="note">Il confronto <b>da installazione</b> è il più attendibile: entrambi i lati nascono da dati reali
-      (km percorsi con l'integrazione attiva contro ricariche registrate). Quello <b>da sempre</b> dipende dai
-      kWh/€ che hai inserito in Configura → Prezzi.</div>
+      (km percorsi con l'integrazione attiva contro ricariche registrate). Quello <b>totale</b> dipende dai
+      kWh/€ che hai inserito in Configura → Prezzi. Entrambi usano i km <b>dall'attivazione</b>, non
+      l'odometro intero: i chilometri già percorsi da altri (auto usata) non entrano nel confronto.</div>
   </div>`,
 
 
@@ -2899,7 +2923,7 @@ const PAGES = {
         <select data-trend="trend" style="width:auto">
           <option value="week">Settimana</option>
           <option value="month" selected>Mese</option>
-          <option value="season">Stagione (90 gg)</option>
+          <option value="season">Stagione</option>
           <option value="all">Tutto</option>
         </select>
       </div>

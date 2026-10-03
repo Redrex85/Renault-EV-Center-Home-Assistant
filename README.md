@@ -20,6 +20,7 @@ Renault EV Center è un progetto gratuito e open source, portato avanti nel temp
 <p align="left">
   <a href="https://www.paypal.me/lamortella"><img src="https://img.shields.io/badge/Dona-PayPal-00457C?logo=paypal" alt="PayPal"></a>
   <a href="https://www.buymeacoffee.com/redrex72v"><img src="https://img.shields.io/badge/Offrimi%20un%20caffè-BuyMeACoffee-FFDD00?logo=buy-me-a-coffee" alt="BuyMeACoffee"></a>
+  <a href="https://t.me/redrex_domotica"><img src="https://img.shields.io/badge/Telegram-Renault%20EV%20Center-26A5E4?logo=telegram" alt="Telegram"></a>
 </p>
 
 > 🇬🇧 [English below](#-english) · 🇫🇷 [Français](#-français)
@@ -291,6 +292,7 @@ Renault EV Center is a free, open-source project kept alive in my spare time. If
 <p align="left">
   <a href="https://www.paypal.me/lamortella"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal" alt="PayPal"></a>
   <a href="https://www.buymeacoffee.com/redrex72v"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-BuyMeACoffee-FFDD00?logo=buy-me-a-coffee" alt="BuyMeACoffee"></a>
+  <a href="https://t.me/redrex_domotica"><img src="https://img.shields.io/badge/Telegram-Renault%20EV%20Center-26A5E4?logo=telegram" alt="Telegram"></a>
 </p>
 
 > 🇮🇹 [Italian above](#-cosè) · 🇫🇷 [Français](#-français)
@@ -561,6 +563,7 @@ Renault EV Center est un projet gratuit et open source, développé sur mon temp
 <p align="left">
   <a href="https://www.paypal.me/lamortella"><img src="https://img.shields.io/badge/Faire%20un%20don-PayPal-00457C?logo=paypal" alt="PayPal"></a>
   <a href="https://www.buymeacoffee.com/redrex72v"><img src="https://img.shields.io/badge/Offrez%20moi%20un%20caf%C3%A9-BuyMeACoffee-FFDD00?logo=buy-me-a-coffee" alt="BuyMeACoffee"></a>
+  <a href="https://t.me/redrex_domotica"><img src="https://img.shields.io/badge/Telegram-Renault%20EV%20Center-26A5E4?logo=telegram" alt="Telegram"></a>
 </p>
 
 > 🇮🇹 [Versione italiana in alto](#-cosè) · 🇬🇧 [English above](#-english)

@@ -706,6 +706,13 @@ try:
         "il mese precedente dell'albero viaggi non resta chiuso di default"
     assert "_vs_diesel" not in js, \
         "il pannello punta a '_vs_diesel' fisso: con un carburante diverso i risparmi restano '-'"
+    # risparmio: km dall'attivazione + contatori wallbox normalizzati a kWh
+    assert "km_tot = odometer - _base0" in src, \
+        "il costo termico usa l'odometro intero, non i km dall'attivazione"
+    assert "def _num_kwh" in src \
+        and "return _num_kwh(self.hass, self.opts.get(CONF_WB_TOTAL_ENERGY))" in src, \
+        "i contatori wallbox non vengono normalizzati a kWh (Wh -> valori 1000x)"
+    assert "S._kwhE(" in js, "il pannello wallbox non converte Wh -> kWh"
     assert 'S._rispNum("totale")' in js and 'S._sensorByPrefix("risparmio_totale_vs")' in js, \
         "i risparmi non cercano il sensore per prefisso (nome carburante configurabile)"
     ok("fix 1.0.24.1: orari automazione, stato toggle, filtro mese, switch solare, mappa")

@@ -230,6 +230,21 @@ def _num(hass: HomeAssistant, entity_id: str | None, default: float = 0.0) -> fl
     return _f(st.state, default)
 
 
+def _num_kwh(hass: HomeAssistant, entity_id: str | None) -> float | None:
+    """Contatore di energia normalizzato in kWh.
+    Alcune wallbox espongono i contatori in Wh: si guarda l'unita' del sensore
+    invece di fidarsi del numero (altrimenti i kWh risultano 1000x)."""
+    if not entity_id:
+        return None
+    st = hass.states.get(str(entity_id))
+    if st is None or st.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+        return None
+    val = _f(st.state)
+    if _unit(hass, entity_id).strip().lower() == "wh":
+        val /= 1000.0
+    return val
+
+
 def _txt(hass: HomeAssistant, entity_id: str | None) -> str:
     if not entity_id:
         return ""
@@ -688,27 +703,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         return v in PLUG_CONNECTED_VALUES
 
     def _wb_counter(self) -> float | None:
-        sess = self.opts.get(CONF_WB_SESSION_ENERGY)
-        tot = self.opts.get(CONF_WB_TOTAL_ENERGY)
-        if sess:
-            st = self.hass.states.get(sess)
-            if st is not None and st.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
-                return _f(st.state)
-        if tot:
-            st = self.hass.states.get(tot)
-            if st is not None and st.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
-                return _f(st.state)
+        """Contatore energia wallbox in kWh: prima la sessione, poi il totale."""
+        for key in (CONF_WB_SESSION_ENERGY, CONF_WB_TOTAL_ENERGY):
+            v = _num_kwh(self.hass, self.opts.get(key))
+            if v is not None:
+                return v
         return None
 
     def _wb_total_counter(self) -> float | None:
         """Contatore energia TOTALE wallbox (indipendente dalla sessione)."""
-        tot = self.opts.get(CONF_WB_TOTAL_ENERGY)
-        if not tot:
-            return None
-        st = self.hass.states.get(str(tot))
-        if st is None or st.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
-            return None
-        return _f(st.state)
+        return _num_kwh(self.hass, self.opts.get(CONF_WB_TOTAL_ENERGY))
 
     def _wb_power_kw(self) -> float:
         entity = self.opts.get(CONF_WB_POWER)
@@ -1199,7 +1203,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if self.fuel_enabled:
             litri_100 = self.fuel_consumption
             prezzo_l = self._prezzo_termico()
-            km_tot = odometer
+            # Km MIEI: si parte dall'odometro all'attivazione (auto comprata usata
+            # con 10000 km: quei km non sono tuoi, il costo termico va sui tuoi).
+            _base0 = _f(self.store.data.get("install", {}).get("odometer"))
+            km_tot = odometer - _base0 if 0 < _base0 < odometer else odometer
 
             def _chg_cost(pred) -> float:
                 """Costo ricariche del periodo, dai RECORD (i meter live non sono affidabili)."""
