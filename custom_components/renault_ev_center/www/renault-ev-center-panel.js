@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.51.9";
+const REC_VER = "1.0.51.10";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -265,8 +265,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     ];
     const st = this._hass ? this._hass.states : null;
     if (!st) return cands[0];
-    for (const c of cands) if (st[c]) return c;
-    // device Renault ufficiale: prima entita di quel dominio che finisce con
+    // vince la prima VIVA: un'omonima morta (orfana di una entry cancellata) non
+    // deve rubare il posto (era il caso del device_tracker senza lat/lon -> mappa
+    // vuota ed errore "Expected value to be of type string")
+    const vivo = (id) => { const s = st[id]; return !!s && s.state !== "unavailable" && s.state !== "unknown"; };
+    for (const c of cands) if (vivo(c)) return c;
+    // device Renault ufficiale: prima entita VIVA di quel dominio che finisce con
     // _<rest> e NON appartiene a questa integrazione (prefisso gia' scartato)
     if (rest) {
       const mine = (this._pfx() || "").split(".")[1];
@@ -274,10 +278,10 @@ class RenaultEvCenterPanel extends HTMLElement {
         if (!id.startsWith(dom + ".") || !id.endsWith(sfx)) continue;
         const base = id.slice(dom.length + 1, -sfx.length);
         if (mine && base === mine) continue;
-        return id;
+        if (vivo(id)) return id;
       }
     }
-    return cands[0];
+    return cands.find((c) => st[c]) || cands[0];
   }
 
   /** chiamata servizio con toast di conferma */
@@ -839,12 +843,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     localStorage.setItem("rec_panel_page", p);
     this.shadowRoot.querySelectorAll(".nav button, .mobilenav button").forEach((b) => b.classList.toggle("active", b.dataset.p === p));
     this.shadowRoot.querySelectorAll(".page").forEach((s) => s.classList.toggle("active", s.id === p));
-    // la mappa è WebGL: la creo quando la pagina è visibile e la distruggo quando
-    // esco, così il contesto viene liberato (il browser ne tiene pochi e li scarta)
+    // la mappa è WebGL: la creo quando la pagina diventa visibile. NON la distruggo
+    // uscendo (la 1.0.51.9 lo faceva): al rientro la mappa ripartiva da zero, con tile
+    // e contesto da ricaricare, e sembrava lenta / "non caricava". Il riciclo dei
+    // contesti WebGL inutilizzati lo fa il browser.
     const box = this.shadowRoot.querySelector("#evmap");
-    if (!box) return;
-    if (box.clientHeight) { if (!this._mapCard) this._drawMap(); }
-    else if (this._mapCard) { box.innerHTML = ""; this._mapCard = null; }
+    if (box && box.clientHeight && !this._mapCard) this._drawMap();
   }
   _theme_(t) {
     this._theme = t;
@@ -1477,9 +1481,16 @@ class RenaultEvCenterPanel extends HTMLElement {
     const la = st && st.attributes ? st.attributes.latitude : null;
     const lo = st && st.attributes ? st.attributes.longitude : null;
     const pos = (la === undefined || la === null || lo === undefined || lo === null) ? "" : `${la},${lo}`;
-    // la card mappa è WebGL: nessun contesto se la pagina è nascosta (prima era un
-    // retry ogni 200 ms all'infinito). `_goto` la ridisegna quando torna visibile.
-    if (!box.clientHeight) return;
+    // la card mappa è WebGL: nessun contesto se la pagina è nascosta. Se il box non ha
+    // ancora altezza (primo layout) riprovo poche volte, NON all'infinito come prima.
+    if (!box.clientHeight) {
+      if ((this._mapTry = (this._mapTry || 0) + 1) <= 4) {
+        clearTimeout(this._mapT);
+        this._mapT = setTimeout(() => this._drawMap(), 500);
+      }
+      return;
+    }
+    this._mapTry = 0;
     // GPS assente: la card di HA riceverebbe un'entità senza lat/lon e va in errore
     // ("Expected value to be of type string, but found null instead")
     if (!pos) {

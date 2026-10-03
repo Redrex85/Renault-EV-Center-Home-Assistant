@@ -5,6 +5,26 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.51.10 — Entità omonime morte: vince quella viva
+
+Due rifiniture sulla scia di 1.0.51.8/1.0.51.9:
+
+- **`_car()` preferisce l'entità viva.** Anche `_car()` (device_tracker, binary_sensor,
+  button, climate...) si fermava alla prima omonima **esistente**: con un orfano di una
+  entry cancellata restituiva quello — un `device_tracker` senza `latitude`/`longitude`
+  — e la mappa restava vuota. Ora scarta `unavailable`/`unknown`, sia tra i candidati
+  sia nel ripiego sull'entità del device Renault ufficiale.
+- **La mappa non riparte più da zero a ogni rientro.** La 1.0.51.9 distruggeva la card
+  mappa uscendo dalla pagina: al rientro la mappa ricreava contesto WebGL e tile, e
+  sembrava lenta o "non caricare". Ora la card resta montata: viene creata solo la prima
+  volta che la pagina è visibile. Il riciclo dei contesti WebGL inutilizzati lo fa il
+  browser.
+- **La mappa riprova se il box non è ancora disegnato.** Il primo layout può arrivare
+  con altezza 0: prima si usciva e la mappa non compariva più finché non si cambiava
+  pagina. Ora al massimo 4 tentativi (2 secondi) e poi si ferma — nessun loop infinito.
+
+Nessuna entità rinominata. Pannello allineato a **1.0.51.10**.
+
 ## 1.0.51.9 — Mappa: il contesto WebGL viene liberato
 
 Due ritocchi alla card mappa nativa (WebGL):

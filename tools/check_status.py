@@ -1345,9 +1345,11 @@ try:
               "CONF_SCAD_REVISIONE", "CONF_SCAD_ASSICURAZIONE"):
         assert f"{k}, **_sugg_date" in flow, f"{k} non usa DateSelector"
         assert f"{k}, description" not in flow, f"{k} ancora TextSelector"
-    # C: _car() prova piu' prefissi (config, name, device Renault ufficiale)
+    # C: _car() prova piu' prefissi (config, name, device Renault ufficiale) e tra
+    #    gli omonimi vuole quello VIVO (gli orfani unavailable rubavano il posto)
     pan = open(os.path.join(CC, "www", "renault-ev-center-panel.js"), encoding="utf-8").read()
-    assert "for (const c of cands) if (st[c]) return c;" in pan, \
+    assert "for (const c of cands) if (vivo(c)) return c;" in pan \
+        and "cands.find((c) => st[c]) || cands[0]" in pan, \
         "_car() prova un solo prefisso"
     # D: _txt() forma i decimali con la virgola
     assert 'String(n).replace(".", ",")' in pan, "_txt() lascia il punto decimale"
