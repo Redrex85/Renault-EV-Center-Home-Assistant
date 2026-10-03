@@ -5,7 +5,11 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.51.10 — Entità omonime morte: vince quella viva
+## 1.0.52 — Entità omonime morte: vince quella viva
+
+Numerazione: quella che era annunciata come `1.0.51.10` esce come **1.0.52** — con
+quattro numeri il confronto fra `1.0.51.9` e `1.0.51.10` ordina male (`10` prima di
+`9`), quindi i tag vanno a tre cifre.
 
 Due rifiniture sulla scia di 1.0.51.8/1.0.51.9:
 
@@ -23,7 +27,7 @@ Due rifiniture sulla scia di 1.0.51.8/1.0.51.9:
   con altezza 0: prima si usciva e la mappa non compariva più finché non si cambiava
   pagina. Ora al massimo 4 tentativi (2 secondi) e poi si ferma — nessun loop infinito.
 
-Nessuna entità rinominata. Pannello allineato a **1.0.51.10**.
+Nessuna entità rinominata. Pannello allineato a **1.0.52**.
 
 ## 1.0.51.9 — Mappa: il contesto WebGL viene liberato
 

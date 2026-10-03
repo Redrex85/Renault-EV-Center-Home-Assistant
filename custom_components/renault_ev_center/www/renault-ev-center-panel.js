@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.51.10";
+const REC_VER = "1.0.52";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
