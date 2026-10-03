@@ -5,6 +5,22 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.51.9 — Mappa: il contesto WebGL viene liberato
+
+Due ritocchi alla card mappa nativa (WebGL):
+
+- **La card mappa vive solo mentre la pagina è visibile.** Prima, una volta creata,
+  restava montata anche uscendo dalla pagina: il contesto WebGL rimaneva allocato e il
+  browser — che ne tiene pochi e li scarta — finiva per ucciderlo, con
+  `WebGL context was lost` in console e mappa grigia. Ora `_goto()` la distrugge quando
+  si cambia pagina e la ricrea al ritorno.
+- **Niente mappa senza coordinate.** Se il `device_tracker` non ha ancora
+  `latitude`/`longitude`, la card non viene creata (mostra "Posizione non disponibile"):
+  era la causa di `Expected value to be of type string, but found null instead`.
+
+Le due righe su `.../static/fonts/roboto/*.woff2` ("precaricata, non utilizzata") sono
+del frontend di Home Assistant, non di questa integrazione.
+
 ## 1.0.51.8 — Risparmi col prefisso sbagliato, stagione vera, mappa WebGL
 
 Cinque correzioni, tutte di pannello (nessuna entità rinominata, nessuna migrazione):

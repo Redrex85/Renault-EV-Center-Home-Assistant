@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.51.8";
+const REC_VER = "1.0.51.9";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -839,9 +839,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     localStorage.setItem("rec_panel_page", p);
     this.shadowRoot.querySelectorAll(".nav button, .mobilenav button").forEach((b) => b.classList.toggle("active", b.dataset.p === p));
     this.shadowRoot.querySelectorAll(".page").forEach((s) => s.classList.toggle("active", s.id === p));
-    // la mappa (WebGL) si crea solo ora che la pagina è visibile
+    // la mappa è WebGL: la creo quando la pagina è visibile e la distruggo quando
+    // esco, così il contesto viene liberato (il browser ne tiene pochi e li scarta)
     const box = this.shadowRoot.querySelector("#evmap");
-    if (box && !this._mapCard && box.clientHeight) this._drawMap();
+    if (!box) return;
+    if (box.clientHeight) { if (!this._mapCard) this._drawMap(); }
+    else if (this._mapCard) { box.innerHTML = ""; this._mapCard = null; }
   }
   _theme_(t) {
     this._theme = t;
@@ -1477,12 +1480,18 @@ class RenaultEvCenterPanel extends HTMLElement {
     // la card mappa è WebGL: nessun contesto se la pagina è nascosta (prima era un
     // retry ogni 200 ms all'infinito). `_goto` la ridisegna quando torna visibile.
     if (!box.clientHeight) return;
+    // GPS assente: la card di HA riceverebbe un'entità senza lat/lon e va in errore
+    // ("Expected value to be of type string, but found null instead")
+    if (!pos) {
+      if (!this._mapCard) box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Posizione non disponibile</div>`;
+      return;
+    }
     if (this._mapCard) {
       this._mapCard.hass = this._hass;
       // ricentrare = ricreare la card = contesto WebGL nuovo, e il browser scarta i
       // vecchi ("WebGL context was lost" + subscription perse): solo se la posizione
       // è cambiata, e mai più spesso di 5 minuti.
-      if (!pos || this._mapPos === pos) return;
+      if (this._mapPos === pos) return;
       if (this._mapPosT && Date.now() - this._mapPosT < 300000) return;
     }
     if (typeof window.loadCardHelpers !== "function") return;
