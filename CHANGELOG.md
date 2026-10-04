@@ -5,6 +5,33 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.53 — Risparmi (regressione 1.0.52), record "Peggiore", media giornaliera
+
+Tre correzioni:
+
+- **Risparmi spariti con la 1.0.52.** La 1.0.52 accettava l'id col nome della card solo
+  se l'entità era viva, ma poi pretendeva che l'id alternativo esistesse **come id
+  completo**: le ricerche per **prefisso** (`risparmio_totale_vs` →
+  `..._risparmio_totale_vs_diesel`) ricadevano sul nome della card e non trovavano più
+  nulla — pagina Risparmi vuota e card *Risparmio netto* col calcolo di ripiego. Ora il
+  prefisso reale viene sempre usato quando l'entità col nome della card non è viva.
+- **Record "Peggiore" assurdo (37,7 kWh/100km).** Il confronto Top/Stop del mese
+  accettava anche viaggi da 1-2 km con delta batteria rumoroso. Ora vale lo stesso
+  filtro del record *Migliore*: almeno 3 km e consumo fra 0 e 60 kWh/100km.
+- **"Km percorsi (7 giorni)" con la media a 0.** La linea *Media Consumi* era la media
+  giornaliera di `sensor.<nome>_kwh_per_100km`, che vale **0** finché il dato non è
+  pronto (subito dopo un reload dell'integrazione i sensori sorgente sono
+  `unavailable`): bastava un campione a 0 per far crollare la media del giorno. Ora il
+  sensore pubblica `unknown` invece di 0 quando il dato non è pronto, e il grafico
+  esclude comunque gli 0 dalla media (`transform`).
+
+Per cancellare un singolo viaggio dallo storico: servizio
+`renault_ev_center.delete_trip` con `trip_id` = `id` del viaggio (visibile fra gli
+attributi di `sensor.<nome>_viaggi_recenti` / `archivio_viaggi`, o nell'export CSV).
+Serve poi ricaricare l'integrazione perché i record vengano ricalcolati.
+
+Pannello allineato a **1.0.53**.
+
 ## 1.0.52 — Entità omonime morte: vince quella viva
 
 Numerazione: quella che era annunciata come `1.0.51.10` esce come **1.0.52** — con

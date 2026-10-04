@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.52";
+const REC_VER = "1.0.53";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -241,15 +241,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     const cur = st[d];
     // entita col nome della card VIVA: è quella giusta (niente sorprese)
     if (cur && cur.state !== "unavailable" && cur.state !== "unknown") return d;
-    // altrimenti vince la famiglia REALE (le entita orfane di una entry
-    // cancellata restano in `states` come unavailable e rubavano il posto:
-    // il resto del pannello le mostrava stantie e i risparmi sparivano)
+    // altrimenti vince la famiglia REALE di _pfx(). NB: `rest` qui può essere un
+    // PREFISSO (es. "risparmio_totale_vs"), non un id completo: si restituisce il
+    // prefisso senza pretendere che l'id esista già, altrimenti la ricerca per
+    // prefisso (_sensorByPrefix) cade sul nome della card e i risparmi spariscono.
     const p = this._pfx();
-    if (p) {
-      const alt = `${dom}.${p.split(".")[1]}_${rest}`;
-      if (st[alt]) return alt;
-    }
-    return d;
+    return p ? `${dom}.${p.split(".")[1]}_${rest}` : d;
   }
   _sid(rest) { return this._eid("sensor", rest); }
   _nid(rest) { return this._eid("number", rest); }
@@ -1588,6 +1585,9 @@ class RenaultEvCenterPanel extends HTMLElement {
             extend_to: "end",
             float_precision: 2,
             min: 0,
+            // gli 0 dello stato (nessun viaggio, dati non ancora pronti) non devono
+            // abbassare la media giornaliera: la linea scendeva a 0 nel grafico
+            transform: "return x > 0 ? x : null",
             group_by: { func: "avg", fill: "last", duration: "1day" },
             show: { legend_value: false },
           },

@@ -196,7 +196,11 @@ class EffKwh100(MateSensor):
 
     @property
     def native_value(self):
-        return self.coordinator.data.get("eff_kwh_100km")
+        v = self.coordinator.data.get("eff_kwh_100km")
+        # 0 = dati non ancora pronti (subito dopo un reload i sensori sorgente sono
+        # unavailable): pubblicare 0 sporcava lo storico e faceva crollare a 0 la
+        # media giornaliera del grafico "Km percorsi (7 giorni)". Meglio "unknown".
+        return v if v else None
 
 
 class BatteryKwh(MateSensor):

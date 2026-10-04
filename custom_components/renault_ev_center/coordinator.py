@@ -766,10 +766,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         valutabili = [z for z in zone_routes if z["eff"] > 0]
         zone_best = min(valutabili, key=lambda z: z["eff"], default=None)
         zone_worst = max(valutabili, key=lambda z: z["eff"], default=None)
+        # stesso filtro di best_eff: senza, il record "Peggiore" veniva battuto da
+        # tratti da 1-2 km con delta batteria rumoroso (37.7 kWh/100km, impossibile)
         mese_trips = [
             t for t in trips
             if str(t.get("data", ""))[:7] == mese_key
-            and _f(t.get("km")) >= 1 and _f(t.get("kwh_per_100km")) > 0
+            and _f(t.get("km")) >= 3
+            and 0 < _f(t.get("kwh_per_100km")) <= 60
         ]
         best_trip = min(mese_trips, key=lambda t: _f(t.get("kwh_per_100km")), default=None)
         worst_trip = max(mese_trips, key=lambda t: _f(t.get("kwh_per_100km")), default=None)
