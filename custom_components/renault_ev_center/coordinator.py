@@ -2592,6 +2592,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "giorni": list(giorni or []),
         }
         self.persist(force=True)
+        # lo switch gate e' la fonte del fermo nel coordinatore: senza questo il
+        # checkbox "Attivo" del pannello faceva partire la carica ma non la fermava.
+        if tipo == "ricarica":
+            gate = self.setting_ids.get("switch.charge_sched")
+            if gate and self.hass.states.get(gate) is not None:
+                await self.hass.services.async_call(
+                    "switch", "turn_on" if attivo else "turn_off",
+                    {"entity_id": gate}, blocking=False)
+                self._sched_sync_done = True
         if not attivo:
             return await self._automations_apply({}, [aid])
 
@@ -3113,6 +3122,18 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # gate SOLO sullo switch: l'opzione charge_sched_enabled non compare in
         # nessuno schema del config flow (resta sempre False), quindi il fermo a
         # SoC obiettivo / a fine finestra non partiva MAI e la carica arrivava a 100%.
+        # sincronizzazione una tantum: se il programma salvato e' "attivo" (cosi'
+        # nasce l'automazione di avvio) ma lo switch gate e' ancora spento, il fermo
+        # non partirebbe mai. Lo accendo da qui, cosi' basta aggiornare l'integrazione.
+        if not getattr(self, "_sched_sync_done", False):
+            self._sched_sync_done = True
+            gate = self.setting_ids.get("switch.charge_sched")
+            sc = (self.store.data.get("schedule", {}) or {}).get("ricarica") or {}
+            if gate and "attivo" in sc and self.hass.states.get(gate) is not None:
+                if bool(sc.get("attivo")) and not self._switch_on("charge_sched"):
+                    await self.hass.services.async_call(
+                        "switch", "turn_on", {"entity_id": gate}, blocking=False)
+                    _LOGGER.info("Carica programmata: gate acceso dal programma salvato")
         if not self._switch_on("charge_sched"):
             return
         if not (self.wb_stop_switch or self.charge_start_button):

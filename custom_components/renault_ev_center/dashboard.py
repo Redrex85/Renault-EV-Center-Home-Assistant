@@ -111,6 +111,12 @@ def setup_car_image(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
     model = str(entry.data.get("model", "Custom"))
     slug = slugify(model)
     src = _pkg_dir("images", f"{slug}.png")
+    if not os.path.isfile(src):
+        # i file immagine usano "etech", lo slug di HA produce "e_tech"
+        # ("Megane E-Tech" -> "megane_e_tech.png" ma il file e' "megane_etech.png")
+        alt = re.sub(r"_e_tech$", "_etech", slug)
+        if alt != slug:
+            src = _pkg_dir("images", f"{alt}.png")
     dest_dir = hass.config.path("www", WWW_DIR)
     dest = os.path.join(dest_dir, "auto.png")
     try:

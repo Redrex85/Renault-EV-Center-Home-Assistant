@@ -5,6 +5,17 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.0.54 - Carica programmata (fermo mai attivo) + foto auto mancante
+
+- **La carica non si fermava a SoC obiettivo / fine finestra.** Il fermo nel
+  coordinatore e' governato da `switch.<nome>_carica_programmata`, che nasce OFF:
+  il checkbox "Attivo" del pannello salvava solo il programma e non accendeva lo
+  switch, quindi l'automazione avviava ma nessuno fermava (carica fino al 100%).
+  Ora il salvataggio del programma rispecchia lo switch e, all'avvio, l'integrazione
+  accende il gate se il programma salvato e' attivo: basta aggiornare.
+- **Foto auto mancante** per Megane/New Megane/Scenic/Twingo: i file usano il
+  suffisso `_etech`, lo slug di HA produce `_e_tech`. Aggiunto il fallback del nome.
+
 ## 1.0.53 — Risparmi (regressione 1.0.52), record "Peggiore", media giornaliera
 
 Tre correzioni:
