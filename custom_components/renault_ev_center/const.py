@@ -140,6 +140,7 @@ DEFAULT_GSE_KW_MAX = 6.0
 DEFAULT_GSE_KW_RIDOTTA = 3.0
 DEFAULT_GSE_START = "23:00"
 DEFAULT_GSE_END = "07:00"
+GSE_TOLERANCE = 1.10                     # tolleranza +10% sulla soglia (3/4.5 kW ok sforare)
 
 # bilanciamento solare
 CONF_BALANCE_GRID_SENSOR = "balance_grid_sensor"

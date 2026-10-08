@@ -5,7 +5,7 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.0.54 - Carica programmata (fermo mai attivo) + foto auto mancante
+## 1.0.55 - Carica programmata, foto auto, GSE sulla casa, potenza wallbox in sessione
 
 - **La carica non si fermava a SoC obiettivo / fine finestra.** Il fermo nel
   coordinatore e' governato da `switch.<nome>_carica_programmata`, che nasce OFF:
@@ -15,6 +15,22 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
   accende il gate se il programma salvato e' attivo: basta aggiornare.
 - **Foto auto mancante** per Megane/New Megane/Scenic/Twingo: i file usano il
   suffisso `_etech`, lo slug di HA produce `_e_tech`. Aggiunto il fallback del nome.
+- **I campi del programma ricarica si azzeravano.** `_update()` riscriveva gli input
+  dal salvataggio a ogni refresh: bastava cambiare pagina e l'ora/SoC digitati
+  sparivano. Ora restano finche' non premi "Salva programma ricarica".
+- **GSE: la soglia era applicata solo alla wallbox.** `_apply_gse` metteva la wallbox
+  al budget pieno (es. 3 kW) senza sottrarre il resto della casa, quindi il totale
+  casa sfondava la soglia. Ora la corrente e' calcolata dal margine reale, con una
+  **tolleranza +10%** sul budget (`const.GSE_TOLERANCE`, 3/4.5 kW possono sforare):
+  `budget*1.1 - (casa_totale - wallbox)` via `home_power_sensor` (fallback invariato
+  se il sensore manca). Es.: casa 3.94 kW, wallbox 2.91 kW, budget 3 kW -> 10 A (non 13).
+- **GSE: se non basta nemmeno il minimo (6 A)** la ricarica viene **fermata** (non piu'
+  solo ridotta) e riprende solo se i consumi restano sotto soglia per **30 minuti**, in
+  fascia impostata e sotto il SoC obiettivo (`_gse_resume_ok`). Notifiche su stop/ripresa,
+  avvio con l'entita' "Avvio carica wallbox" / stop con "Stop carica wallbox".
+- **Bilanciamento casa vs GSE:** con la GSE attiva `_home_balance` non tocca piu' gli
+  ampere (prima li riportava a 25 A ignorando il tetto GSE di 3 kW, stesso entity).
+- **Sessione corrente:** aggiunta la potenza istantanea della wallbox in **W**.
 
 ## 1.0.53 — Risparmi (regressione 1.0.52), record "Peggiore", media giornaliera
 

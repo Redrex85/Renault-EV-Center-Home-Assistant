@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.54";
+const REC_VER = "1.0.55";
 let _recVerChecked = false;
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -824,6 +824,17 @@ class RenaultEvCenterPanel extends HTMLElement {
         if (el.dataset.lowday) this._lowTouched = true;
       });
     });
+    // campi schedulazione (data-sch / data-schon): segna "toccato" per non
+    // sovrascrivere i valori digitati finche' l'utente non preme Salva
+    this.shadowRoot.querySelectorAll("[data-sch], [data-schon]").forEach((el) => {
+      const mark = () => {
+        const t = el.dataset.sch || el.dataset.schon;
+        this._schTouched = this._schTouched || {};
+        this._schTouched[t] = true;
+      };
+      el.addEventListener("input", mark);
+      el.addEventListener("change", mark);
+    });
     // input locali (localStorage): prezzo diesel, consumo equivalente, notify, preavviso
     this.shadowRoot.querySelectorAll("input[data-ls]").forEach((inp) => {
       const saved = localStorage.getItem(inp.dataset.ls);
@@ -912,6 +923,8 @@ class RenaultEvCenterPanel extends HTMLElement {
     const autoColl = S._chargeOn() || S._plugOn();
     set("session_kwh", !autoColl ? "—" : (skwh === null ? "—" : S._fmt(skwh, 2) + " kWh"));
     set("session_time", !autoColl ? "—" : (stime === null ? "—" : S._dur(stime, stEnt ? stEnt.attributes.unit_of_measurement : "s")));
+    const _wkw = S._field("wb_potenza");
+    set("session_w", (!autoColl || _wkw === null || _wkw === undefined) ? "—" : Math.round(_wkw * 1000) + " W");
     const tot = S._kwhE(S._ov("wallbox_total_energy"), "sensor.wallbox_total_charged_energy");
     set("total_kwh", tot === null ? "—" : S._fmt(tot, 1) + " kWh");
 
@@ -1231,17 +1244,19 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (_sch) {
       for (const tipo of ["ricarica", "clima", "promemoria"]) {
         const v = _sch[tipo];
+        // l'utente ha modificato i campi: non ri-sovrascrivere finche' non salva
+        const touched = !!(this._schTouched || {})[tipo];
         // SEMPRE imposto lo switch: se lo scheduler non esiste resta spento (non il checked del markup)
         const onEl = root.querySelector(`input[data-schon="${tipo}"]`);
-        if (onEl && document.activeElement !== onEl) onEl.checked = !!(v && v.attivo);
+        if (onEl && !touched && document.activeElement !== onEl) onEl.checked = !!(v && v.attivo);
         if (!v) continue;
         for (const k of ["inizio", "fine", "soc", "modo", "temperatura"]) {
           const el = root.querySelector(`[data-sch="${tipo}"][data-k="${k}"]`);
-          if (el && document.activeElement !== el && v[k] !== undefined && v[k] !== null && v[k] !== "") {
+          if (el && !touched && document.activeElement !== el && v[k] !== undefined && v[k] !== null && v[k] !== "") {
             el.value = v[k];
           }
         }
-        if (!(this._schTouched || {})[tipo]) {
+        if (!touched) {
           const gg = Array.isArray(v.giorni) ? v.giorni : [];
           root.querySelectorAll(`[data-schday^="${tipo}|"]`).forEach((chip) => {
             chip.classList.toggle("on", gg.includes(chip.dataset.schday.split("|")[1]));
@@ -3099,6 +3114,7 @@ const PAGES = {
     <div class="card"><h3>⏱️ Sessione corrente</h3>
       <div class="big" style="font-size:32px;color:var(--good)"><span data-wb="session_kwh">—</span></div>
       <div class="row"><span>Tempo di ricarica</span><b><span data-wb="session_time">—</span></b></div>
+      <div class="row"><span>Potenza wallbox</span><b><span data-wb="session_w">—</span></b></div>
       <div class="row"><span>Energia totale</span><b><span data-wb="total_kwh">—</span></b></div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🎚️ Corrente di carica (A)</div>

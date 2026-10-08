@@ -59,6 +59,7 @@ from .const import (
     CONF_GSE_END,
     CONF_GSE_DOMENICA,
     CONF_GSE_HOLIDAY,
+    GSE_TOLERANCE,
     DEFAULT_GSE_WPA,
     CONF_HOME_POWER_SENSOR,
     CONF_HOME_METER_KW,
@@ -1795,7 +1796,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         await self._handle_charge_events(data["events"], data, now)
         await self._balance_solar(data, wb_state)
         await self._home_balance(wb_state)
-        await self._apply_gse(wb_state, bool(data.get("charging")))
+        await self._apply_gse(wb_state, bool(data.get("charging")), data.get("battery", 100.0))
         data["balance"] = dict(self.store.data.get("counters", {}).get("balance_last", {}))
         data["home_balance"] = dict(self._home_last)
         # cronologia posizione (timeline nel pannello): registra i cambi di zona
@@ -2911,22 +2912,63 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         dentro = (s <= hhmm or hhmm < e) if s > e else (s <= hhmm < e)
         return self.gse_kw_max if dentro else self.gse_kw_ridotta
 
-    async def _apply_gse(self, wb_state: str, charging: bool) -> None:
-        """Sperimentazione GSE: fuori fascia abbassa la corrente della wallbox.
+    async def _apply_gse(self, wb_state: str, charging: bool, battery: float = 100.0) -> None:
+        """Sperimentazione GSE: limita la CASA al budget, fermando/riprendendo l'auto.
 
         Fascia a potenza piena: da `gse_start` a `gse_end` nei feriali, tutta la domenica
-        (e i festivi se mappati). Fuori fascia: potenza ridotta (es. 3 kW).
+        (e i festivi se mappati). Fuori fascia: potenza ridotta. Se nemmeno il minimo
+        della wallbox (6 A) sta sotto il budget, la ricarica viene FERMATA e riprende solo
+        se i consumi restano bassi per 30 minuti, in fascia e sotto il SoC obiettivo.
         """
         if not self._switch_on("gse"):
             return
         ent = self.opts.get(CONF_WB_MAX_CURRENT)
         if not ent:
             return
+        kw = self._gse_limite_kw(dt_util.now())
+        # la soglia GSE e' sulla CASA: dal budget (con tolleranza) tolgo il resto dei
+        # consumi (casa totale - wallbox), altrimenti wallbox + casa sfonda il tetto.
+        budget_w = kw * 1000.0 * GSE_TOLERANCE
+        avail_w = budget_w
+        house_w: float | None = None
+        if self.home_power_sensor:
+            st_home = self.hass.states.get(self.home_power_sensor)
+            if st_home is not None and st_home.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+                house_w = _f(st_home.state)
+                if str(st_home.attributes.get("unit_of_measurement") or "").lower().startswith("kw"):
+                    house_w *= 1000.0
+                other_w = max(house_w - self._wb_power_kw() * 1000.0, 0.0)
+                avail_w = max(budget_w - other_w, 0.0)
+        min_w = 6.0 * self.gse_wpa                          # minimo fisico wallbox (6 A)
+        if avail_w < min_w:
+            # nemmeno il minimo sta sotto il budget: FERMA la ricarica (una volta sola)
+            if not getattr(self, "_gse_paused", False):
+                self._gse_paused = True
+                self._gse_ok_since = None
+                await self._wb_charge(False, battery)
+                await self._send_notify(
+                    "⛔ GSE: ricarica sospesa",
+                    f"Casa {round(house_w or 0)} W + wallbox 6 A > {round(budget_w)} W.\n"
+                    "Riprende se i consumi restano bassi 30 min (in fascia).")
+            return
+        # margine sufficiente: gestisci la ripresa dopo 30 min sotto soglia
+        if getattr(self, "_gse_paused", False):
+            now_t = time.time()
+            if not self._gse_resume_ok(battery):
+                self._gse_ok_since = None
+            elif getattr(self, "_gse_ok_since", None) is None:
+                self._gse_ok_since = now_t
+            elif now_t - self._gse_ok_since >= 1800:
+                self._gse_ok_since = None
+                self._gse_paused = False
+                if wb_state not in WALLBOX_CHARGING_STATES:
+                    await self._press_start()
+                    await self._send_notify(
+                        "▶️ GSE: ricarica ripresa",
+                        "Consumi sotto soglia da 30 minuti.")
         if wb_state not in WALLBOX_CHARGING_STATES and not charging:
             return
-        kw = self._gse_limite_kw(dt_util.now())
-        amps = int(round(kw * 1000.0 / self.gse_wpa))
-        amps = max(amps, 6)                               # minimo di una wallbox
+        amps = max(int(round(avail_w / self.gse_wpa)), 6)
         cur = _num(self.hass, str(ent), None)
         if cur is not None and abs(cur - amps) < 0.5:
             return                                        # già corretto: nessuna chiamata
@@ -2936,6 +2978,18 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             _LOGGER.info("Sperimentazione GSE: %.1f kW → %s A", kw, amps)
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("GSE: impostazione corrente fallita: %s", err)
+
+    def _gse_resume_ok(self, battery: float) -> bool:
+        """La ricarica puo' riprendere: in fascia impostata e sotto il SoC obiettivo."""
+        sc = (self.store.data.get("schedule", {}) or {}).get("ricarica") or {}
+        avvio = str(sc.get("inizio") or "") or self._setting_time(
+            "charge_start_time", self.charge_start_time)
+        fine = str(sc.get("fine") or "") or self._setting_time(
+            "charge_stop_time", self.charge_stop_time)
+        target = _f(sc.get("soc"), 0.0) or self._setting_num("charge_stop_soc", self.charge_stop_soc)
+        if battery is None or battery >= target:
+            return False
+        return _in_window(dt_util.now().strftime("%H:%M"), avvio, fine)
 
     async def _balance_solar(self, data: dict[str, Any], wb_state: str) -> None:
         """Bilanciamento solare dinamico (adattato dall'automazione utente).
@@ -3022,6 +3076,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         15 min sotto → ampere ripristinati. Adattato dalle automazioni utente.
         """
         if not self._switch_on("home_balance") or not self.home_power_sensor:
+            return
+        # con la GSE attiva il tetto lo calcola _apply_gse (casa+wallbox, budget e
+        # tolleranza): il bilanciamento casa non deve rialzare gli ampere oltre quel
+        # limite (prima riportava a "max_amps" 25 A mentre la GSE era a 3 kW).
+        if self._switch_on("gse"):
             return
         if wb_state not in WALLBOX_CHARGING_STATES:
             self._home_hi_since = self._home_lo_since = None
