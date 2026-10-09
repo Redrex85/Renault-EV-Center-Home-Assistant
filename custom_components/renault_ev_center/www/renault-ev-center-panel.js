@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.1";
+const REC_VER = "1.1.2";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -134,7 +134,7 @@ const I18N = {
     lbl_scadenza_a_data_opz: "Due by date (opt.)",
     lbl_scadenza: "Due",
     lbl_costo_annuo: "Annual cost",
-    lbl_termica_teorica_450_×_tagliandi: "Theoretical ICE (450 € × services)",
+    "lbl_termica_teorica_450_×_tagliandi": "Theoretical ICE (450 € × services)",
     lbl_spesa_reale_ev: "Actual EV cost",
     lbl_risparmio_tagliandi: "Service savings",
     lbl_risparmio_bollo: "Road-tax savings",
@@ -360,7 +360,7 @@ const I18N = {
     lbl_scadenza_a_data_opz: "Échéance par date (opt.)",
     lbl_scadenza: "Échéance",
     lbl_costo_annuo: "Coût annuel",
-    lbl_termica_teorica_450_×_tagliandi: "Thermique théorique (450 € × révisions)",
+    "lbl_termica_teorica_450_×_tagliandi": "Thermique théorique (450 € × révisions)",
     lbl_spesa_reale_ev: "Coût réel VE",
     lbl_risparmio_tagliandi: "Économies révisions",
     lbl_risparmio_bollo: "Économies taxe auto",
@@ -594,7 +594,7 @@ const I18N = {
     lbl_scadenza_a_data_opz: "Vence por fecha (opc.)",
     lbl_scadenza: "Vence",
     lbl_costo_annuo: "Coste anual",
-    lbl_termica_teorica_450_×_tagliandi: "Térmico teórico (450 € × revisiones)",
+    "lbl_termica_teorica_450_×_tagliandi": "Térmico teórico (450 € × revisiones)",
     lbl_spesa_reale_ev: "Coste real EV",
     lbl_risparmio_tagliandi: "Ahorro en revisiones",
     lbl_risparmio_bollo: "Ahorro en impuesto",
@@ -828,7 +828,7 @@ const I18N = {
     lbl_scadenza_a_data_opz: "Fällig am Datum (opt.)",
     lbl_scadenza: "Fällig",
     lbl_costo_annuo: "Jahreskosten",
-    lbl_termica_teorica_450_×_tagliandi: "Theoretisch Verbrenner (450 € × Inspektionen)",
+    "lbl_termica_teorica_450_×_tagliandi": "Theoretisch Verbrenner (450 € × Inspektionen)",
     lbl_spesa_reale_ev: "Tatsächliche EV-Kosten",
     lbl_risparmio_tagliandi: "Ersparnis Inspektionen",
     lbl_risparmio_bollo: "Ersparnis Kfz-Steuer",

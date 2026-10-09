@@ -5,6 +5,16 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.2 - Fix: il pannello non si apriva (chiave I18N con "×")
+
+- **`SyntaxError: illegal character U+00D7` che impediva l'apertura della dashboard.**
+  La chiave `lbl_termica_teorica_450_×_tagliandi` era scritta **senza virgolette** negli
+  oggetti `I18N`: `×` non è un carattere valido per un identificatore JS, quindi l'intero
+  `panel.js` non veniva parsato (nessuna pagina si apriva). Ora la chiave è quotata in
+  tutte le lingue.
+- **Guardia** in `tools/check_status.py`: verifica che ogni chiave `I18N` non quotata sia
+  un identificatore JS valido (previene la regressione).
+
 ## 1.1.1 - Fix foto auto (modello da Opzioni + cache)
 
 - **La foto dell'auto restava quella generica ("macchinina" 🚗).** `setup_car_image`

@@ -1032,6 +1032,17 @@ try:
         "costo e prezzo devono restare due card separate"
     assert tpl.count('data-c="cost_mese"') == 1 and tpl.count('data-c="prezzo_mese"') == 1, \
         "cost_mese/prezzo_mese duplicati"
+    # chiavi I18N: un nome-chiave NON quotato deve essere un identificatore JS valido.
+    # Una chiave con "×"/spazi senza virgolette = SyntaxError che rompe tutto il pannello.
+    _i = js.find("const I18N = {")
+    _j = js.find("\n};", _i)
+    assert _i >= 0 and _j > _i, "blocco I18N non trovato"
+    for _m in re.finditer(r"^    ([^\s:]+): ", js[_i:_j], re.M):
+        _k = _m.group(1)
+        if _k.startswith('"') and _k.endswith('"'):
+            continue
+        assert all(c.isalnum() or c == "_" for c in _k), \
+            "chiave I18N non quotata non valida in JS: %s" % _k
     # README: zona casa fortemente consigliata + valori che servono km
     md = open(os.path.join(BASE, "README.md"), encoding="utf-8").read()
     assert "Fortemente consigliato" in md and "zona Casa" in md, \
