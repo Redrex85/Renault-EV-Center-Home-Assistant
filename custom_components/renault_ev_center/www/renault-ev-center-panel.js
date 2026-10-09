@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.4";
+const REC_VER = "1.1.5";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -2329,6 +2329,48 @@ const UI2 = {
     "fr": "Aucun trajet sur la période choisie (trajets ≥3 km avec température extérieure requis).",
     "es": "Ningún viaje en el periodo elegido (se requieren viajes ≥3 km con la temperatura exterior).",
     "de": "Keine Fahrt im gewählten Zeitraum (Fahrten ≥3 km mit Außentemperatur erforderlich)."
+  },
+  "Tutte": {
+    "en": "All",
+    "fr": "Toutes",
+    "es": "Todas",
+    "de": "Alle"
+  },
+  "Tutto": {
+    "en": "All",
+    "fr": "Tout",
+    "es": "Todo",
+    "de": "Alles"
+  },
+  "Tutti": {
+    "en": "All",
+    "fr": "Tous",
+    "es": "Todos",
+    "de": "Alle"
+  },
+  "Auto in movimento": {
+    "en": "Car driving",
+    "fr": "Voiture en mouvement",
+    "es": "Coche en movimiento",
+    "de": "Auto in Bewegung"
+  },
+  "Auto parcheggiata": {
+    "en": "Car parked",
+    "fr": "Voiture garée",
+    "es": "Coche aparcada",
+    "de": "Auto geparkt"
+  },
+  "Inattiva": {
+    "en": "Inactive",
+    "fr": "Inactive",
+    "es": "Inactiva",
+    "de": "Inaktiv"
+  },
+  "Km oggi": {
+    "en": "Km today",
+    "fr": "Km aujourd'hui",
+    "es": "Km hoy",
+    "de": "Km heute"
   }
 };
 
@@ -2412,6 +2454,26 @@ const PHRASES = [
       "fr": "historique des recharges",
       "es": "historial de recargas",
       "de": "Ladeverlauf"
+    }
+  ],
+  [
+    "(ridotta)",
+    {
+      "it": "(ridotta)",
+      "en": "(reduced)",
+      "fr": "(réduite)",
+      "es": "(reducida)",
+      "de": "(reduziert)"
+    }
+  ],
+  [
+    "(piena)",
+    {
+      "it": "(piena)",
+      "en": "(full)",
+      "fr": "(pleine)",
+      "es": "(completa)",
+      "de": "(voll)"
     }
   ]
 ];
@@ -3818,7 +3880,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const sig = opts.join("|");
       if (sel.dataset.sig !== sig) {
         sel.dataset.sig = sig;
-        sel.innerHTML = opts.map((o) => `<option>${o}</option>`).join("") || `<option>—</option>`;
+        sel.innerHTML = opts.map((o) => `<option value="${o}">${o}</option>`).join("") || `<option>—</option>`;
       }
       if (s && s.state !== "unavailable") sel.value = s.state;
     });

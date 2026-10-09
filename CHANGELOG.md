@@ -5,6 +5,16 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.5 - Pannello: filtri Ricariche e ultimi residui in italiano
+
+- Le `<option>` dei filtri "Storico ricariche" (Tutte/Tutto/Tutti) restavano in italiano:
+  ora hanno un `value` esplicito, così il testo è traducibile **senza rompere il valore**
+  inviato a Home Assistant.
+- Aggiunte le ultime etichette hardcoded: "Auto in movimento" / "Auto parcheggiata",
+  "Inattiva", "(ridotta)" / "(piena)".
+- Confermata la traduzione della **configurazione iniziale** (config flow, opzioni e servizi)
+  in IT/EN/FR/ES/DE.
+
 ## 1.1.4 - Pannello: traduzione di etichette hardcoded e grafici apex
 
 - Il traduttore DOM ora è **bidirezionale**: riconosce come sorgente anche le stringhe

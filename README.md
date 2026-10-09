@@ -59,19 +59,19 @@ Tutto è calcolato **localmente nel tuo Home Assistant** e salvato in `.storage`
 
 <table>
   <tr>
-    <td width="33%"><a href="docs/screenshots/panoramica.png"><img src="docs/screenshots/panoramica.png" width="100%" alt="Panoramica"></a></td>
-    <td width="33%"><a href="docs/screenshots/viaggi.png"><img src="docs/screenshots/viaggi.png" width="100%" alt="Viaggi"></a></td>
-    <td width="33%"><a href="docs/screenshots/statistiche.png"><img src="docs/screenshots/statistiche.png" width="100%" alt="Statistiche"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/panoramica.png"><img src="docs/screenshots/it/panoramica.png" width="100%" alt="Panoramica"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/viaggi.png"><img src="docs/screenshots/it/viaggi.png" width="100%" alt="Viaggi"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/statistiche.png"><img src="docs/screenshots/it/statistiche.png" width="100%" alt="Statistiche"></a></td>
   </tr>
   <tr>
-    <td width="33%"><a href="docs/screenshots/ricariche.png"><img src="docs/screenshots/ricariche.png" width="100%" alt="Ricariche"></a></td>
-    <td width="33%"><a href="docs/screenshots/risparmi.png"><img src="docs/screenshots/risparmi.png" width="100%" alt="Risparmi"></a></td>
-    <td width="33%"><a href="docs/screenshots/salute%20batteria.png"><img src="docs/screenshots/salute%20batteria.png" width="100%" alt="Salute batteria"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/ricariche.png"><img src="docs/screenshots/it/ricariche.png" width="100%" alt="Ricariche"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/risparmi.png"><img src="docs/screenshots/it/risparmi.png" width="100%" alt="Risparmi"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/salute%20batteria.png"><img src="docs/screenshots/it/salute%20batteria.png" width="100%" alt="Salute batteria"></a></td>
   </tr>
   <tr>
-    <td width="33%"><a href="docs/screenshots/manutenzione.png"><img src="docs/screenshots/manutenzione.png" width="100%" alt="Manutenzione"></a></td>
-    <td width="33%"></td>
-    <td width="33%"></td>
+    <td width="33%"><a href="docs/screenshots/it/manutenzione.png"><img src="docs/screenshots/it/manutenzione.png" width="100%" alt="Manutenzione"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/extra.png"><img src="docs/screenshots/it/extra.png" width="100%" alt="Extra"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/wallbox.png"><img src="docs/screenshots/it/wallbox.png" width="100%" alt="Wallbox"></a></td>
   </tr>
 </table>
 
@@ -329,19 +329,19 @@ Everything is computed **locally in your Home Assistant** and saved to `.storage
 
 <table>
   <tr>
-    <td width="33%"><a href="docs/screenshots/panoramica.png"><img src="docs/screenshots/panoramica.png" width="100%" alt="Overview"></a></td>
-    <td width="33%"><a href="docs/screenshots/viaggi.png"><img src="docs/screenshots/viaggi.png" width="100%" alt="Trips"></a></td>
-    <td width="33%"><a href="docs/screenshots/statistiche.png"><img src="docs/screenshots/statistiche.png" width="100%" alt="Statistics"></a></td>
+    <td width="33%"><a href="docs/screenshots/en/overview.png"><img src="docs/screenshots/en/overview.png" width="100%" alt="Overview"></a></td>
+    <td width="33%"><a href="docs/screenshots/en/trips.png"><img src="docs/screenshots/en/trips.png" width="100%" alt="Trips"></a></td>
+    <td width="33%"><a href="docs/screenshots/en/statistics.png"><img src="docs/screenshots/en/statistics.png" width="100%" alt="Statistics"></a></td>
   </tr>
   <tr>
-    <td width="33%"><a href="docs/screenshots/ricariche.png"><img src="docs/screenshots/ricariche.png" width="100%" alt="Charges"></a></td>
-    <td width="33%"><a href="docs/screenshots/risparmi.png"><img src="docs/screenshots/risparmi.png" width="100%" alt="Savings"></a></td>
-    <td width="33%"><a href="docs/screenshots/salute%20batteria.png"><img src="docs/screenshots/salute%20batteria.png" width="100%" alt="Battery health"></a></td>
+    <td width="33%"><a href="docs/screenshots/en/charges.png"><img src="docs/screenshots/en/charges.png" width="100%" alt="Charges"></a></td>
+    <td width="33%"><a href="docs/screenshots/en/savings.png"><img src="docs/screenshots/en/savings.png" width="100%" alt="Savings"></a></td>
+    <td width="33%"><a href="docs/screenshots/en/battery%20health.png"><img src="docs/screenshots/en/battery%20health.png" width="100%" alt="Battery health"></a></td>
   </tr>
   <tr>
-    <td width="33%"><a href="docs/screenshots/manutenzione.png"><img src="docs/screenshots/manutenzione.png" width="100%" alt="Maintenance"></a></td>
-    <td width="33%"></td>
-    <td width="33%"></td>
+    <td width="33%"><a href="docs/screenshots/en/maintenance.png"><img src="docs/screenshots/en/maintenance.png" width="100%" alt="Maintenance"></a></td>
+    <td width="33%"><a href="docs/screenshots/en/extra.png"><img src="docs/screenshots/en/extra.png" width="100%" alt="Extra"></a></td>
+    <td width="33%"><a href="docs/screenshots/en/wallbox.png"><img src="docs/screenshots/en/wallbox.png" width="100%" alt="Wallbox"></a></td>
   </tr>
 </table>
 
@@ -599,19 +599,19 @@ utility_meter à configurer à la main. Aucun envoi externe.
 
 <table>
   <tr>
-    <td width="33%"><a href="docs/screenshots/panoramica.png"><img src="docs/screenshots/panoramica.png" width="100%" alt="Panoramica"></a></td>
-    <td width="33%"><a href="docs/screenshots/viaggi.png"><img src="docs/screenshots/viaggi.png" width="100%" alt="Viaggi"></a></td>
-    <td width="33%"><a href="docs/screenshots/statistiche.png"><img src="docs/screenshots/statistiche.png" width="100%" alt="Statistiche"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/panoramica.png"><img src="docs/screenshots/it/panoramica.png" width="100%" alt="Panoramica"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/viaggi.png"><img src="docs/screenshots/it/viaggi.png" width="100%" alt="Viaggi"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/statistiche.png"><img src="docs/screenshots/it/statistiche.png" width="100%" alt="Statistiche"></a></td>
   </tr>
   <tr>
-    <td width="33%"><a href="docs/screenshots/ricariche.png"><img src="docs/screenshots/ricariche.png" width="100%" alt="Ricariche"></a></td>
-    <td width="33%"><a href="docs/screenshots/risparmi.png"><img src="docs/screenshots/risparmi.png" width="100%" alt="Risparmi"></a></td>
-    <td width="33%"><a href="docs/screenshots/salute%20batteria.png"><img src="docs/screenshots/salute%20batteria.png" width="100%" alt="Salute batteria"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/ricariche.png"><img src="docs/screenshots/it/ricariche.png" width="100%" alt="Ricariche"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/risparmi.png"><img src="docs/screenshots/it/risparmi.png" width="100%" alt="Risparmi"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/salute%20batteria.png"><img src="docs/screenshots/it/salute%20batteria.png" width="100%" alt="Salute batteria"></a></td>
   </tr>
   <tr>
-    <td width="33%"><a href="docs/screenshots/manutenzione.png"><img src="docs/screenshots/manutenzione.png" width="100%" alt="Manutenzione"></a></td>
-    <td width="33%"></td>
-    <td width="33%"></td>
+    <td width="33%"><a href="docs/screenshots/it/manutenzione.png"><img src="docs/screenshots/it/manutenzione.png" width="100%" alt="Manutenzione"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/extra.png"><img src="docs/screenshots/it/extra.png" width="100%" alt="Extra"></a></td>
+    <td width="33%"><a href="docs/screenshots/it/wallbox.png"><img src="docs/screenshots/it/wallbox.png" width="100%" alt="Wallbox"></a></td>
   </tr>
 </table>
 
