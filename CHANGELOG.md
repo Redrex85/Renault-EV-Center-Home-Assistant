@@ -5,6 +5,18 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.4 - Pannello: traduzione di etichette hardcoded e grafici apex
+
+- Il traduttore DOM ora è **bidirezionale**: riconosce come sorgente anche le stringhe
+  inglesi (Period/Used/Charged…) e le converte nella lingua attiva (incluse → italiano).
+- Gestite le etichette **maiuscole** (OGGI/SETTIMANA/MESE/ANNO/TOTALE), con prefisso
+  **emoji** (🌸 Primavera) o **numerico** (3 viaggi, 148 gg) e le **frasi** dentro testi
+  più lunghi (km mancanti, in archivio, i filtri, attesa…).
+- Corretti i **grafici apexcharts**: i nomi delle serie "Km Percorsi"/"Media Consumi" non
+  erano tradotti (apex renderizza fuori dallo shadow DOM del pannello). Corretti anche i
+  **giorni della settimana** del grafico (usa la lingua attiva).
+- Aggiunte etichette mancanti (Casa/Fuori/Pubblica/AC (lenta)/DC (fast)/(consegna)…).
+
 ## 1.1.3 - Pannello: traduzione completa (etichette statiche e dinamiche)
 
 - **Molte etichette restavano in italiano** (titoli pagina, intestazioni tabelle, note,

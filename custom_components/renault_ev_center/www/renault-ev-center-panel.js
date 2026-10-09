@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.3";
+const REC_VER = "1.1.4";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -2220,12 +2220,236 @@ const UI = {
     "de": "Stoppen"
   }
 };
+
+const UI2 = {
+  "Oggi": {
+    "en": "Today",
+    "fr": "Aujourd'hui",
+    "es": "Hoy",
+    "de": "Heute"
+  },
+  "Ieri": {
+    "en": "Yesterday",
+    "fr": "Hier",
+    "es": "Ayer",
+    "de": "Gestern"
+  },
+  "Settimana": {
+    "en": "Week",
+    "fr": "Semaine",
+    "es": "Semana",
+    "de": "Woche"
+  },
+  "Mese": {
+    "en": "Month",
+    "fr": "Mois",
+    "es": "Mes",
+    "de": "Monat"
+  },
+  "Anno": {
+    "en": "Year",
+    "fr": "Année",
+    "es": "Año",
+    "de": "Jahr"
+  },
+  "Fuori": {
+    "en": "Outside",
+    "fr": "Dehors",
+    "es": "Fuera",
+    "de": "Außerhalb"
+  },
+  "Casa": {
+    "en": "Home",
+    "fr": "Maison",
+    "es": "Casa",
+    "de": "Zuhause"
+  },
+  "Pubblica": {
+    "en": "Public",
+    "fr": "Publique",
+    "es": "Pública",
+    "de": "Öffentlich"
+  },
+  "attesa": {
+    "en": "waiting",
+    "fr": "en attente",
+    "es": "esperando",
+    "de": "wartet"
+  },
+  "viaggi": {
+    "en": "trips",
+    "fr": "trajets",
+    "es": "viajes",
+    "de": "Fahrten"
+  },
+  "AC (lenta)": {
+    "en": "AC (slow)",
+    "fr": "AC (lente)",
+    "es": "AC (lenta)",
+    "de": "AC (langsam)"
+  },
+  "DC (fast)": {
+    "en": "DC (fast)",
+    "fr": "DC (rapide)",
+    "es": "DC (rápida)",
+    "de": "DC (schnell)"
+  },
+  "i filtri": {
+    "en": "the filters",
+    "fr": "les filtres",
+    "es": "los filtros",
+    "de": "die Filter"
+  },
+  "in archivio": {
+    "en": "in the archive",
+    "fr": "dans l'archive",
+    "es": "en el archivo",
+    "de": "im Archiv"
+  },
+  "Tagliando annuale": {
+    "en": "Annual service",
+    "fr": "Entretien annuel",
+    "es": "Mantenimiento anual",
+    "de": "Jährliche Wartung"
+  },
+  "(consegna)": {
+    "en": "(delivery)",
+    "fr": "(livraison)",
+    "es": "(entrega)",
+    "de": "(Übergabe)"
+  },
+  "Nessun dato stagionale": {
+    "en": "No seasonal data",
+    "fr": "Aucune donnée saisonnière",
+    "es": "Sin datos estacionales",
+    "de": "Keine saisonalen Daten"
+  },
+  "Nessun viaggio nel periodo scelto (servono viaggi ≥3 km con la temperatura esterna).": {
+    "en": "No trip in the selected period (trips ≥3 km with outdoor temperature required).",
+    "fr": "Aucun trajet sur la période choisie (trajets ≥3 km avec température extérieure requis).",
+    "es": "Ningún viaje en el periodo elegido (se requieren viajes ≥3 km con la temperatura exterior).",
+    "de": "Keine Fahrt im gewählten Zeitraum (Fahrten ≥3 km mit Außentemperatur erforderlich)."
+  }
+};
+
+// Frasi da tradurre anche dentro testi piu lunghi (tooltip, celle con numeri, ecc.).
+const PHRASES = [
+  [
+    "km mancanti",
+    {
+      "it": "km mancanti",
+      "en": "km remaining",
+      "fr": "km restants",
+      "es": "km restantes",
+      "de": "km übrig"
+    }
+  ],
+  [
+    "in archivio",
+    {
+      "it": "in archivio",
+      "en": "in the archive",
+      "fr": "dans l'archive",
+      "es": "en el archivo",
+      "de": "im Archiv"
+    }
+  ],
+  [
+    "i filtri",
+    {
+      "it": "i filtri",
+      "en": "the filters",
+      "fr": "les filtres",
+      "es": "los filtros",
+      "de": "die Filter"
+    }
+  ],
+  [
+    "Tagliando annuale",
+    {
+      "it": "Tagliando annuale",
+      "en": "Annual service",
+      "fr": "Entretien annuel",
+      "es": "Mantenimiento anual",
+      "de": "Jährliche Wartung"
+    }
+  ],
+  [
+    "attesa",
+    {
+      "it": "attesa",
+      "en": "waiting",
+      "fr": "en attente",
+      "es": "esperando",
+      "de": "wartet"
+    }
+  ],
+  [
+    "viaggi",
+    {
+      "it": "viaggi",
+      "en": "trips",
+      "fr": "trajets",
+      "es": "viajes",
+      "de": "Fahrten"
+    }
+  ],
+  [
+    "giorni",
+    {
+      "it": "giorni",
+      "en": "days",
+      "fr": "jours",
+      "es": "días",
+      "de": "Tage"
+    }
+  ],
+  [
+    "charge history",
+    {
+      "it": "storico ricariche",
+      "en": "charge history",
+      "fr": "historique des recharges",
+      "es": "historial de recargas",
+      "de": "Ladeverlauf"
+    }
+  ]
+];
+
+let _UI_IDX = null;
+function _uiIndex() {
+  if (_UI_IDX) return _UI_IDX;
+  const R = {};
+  const add = (key, e) => {
+    const L = { it: e.it || key, en: e.en, fr: e.fr, es: e.es, de: e.de };
+    for (const k in L) {
+      const v = L[k];
+      if (v) { R[v] = L; R[v.toLowerCase()] = L; }
+    }
+  };
+  for (const k in UI) add(k, UI[k]);
+  for (const k in UI2) add(k, UI2[k]);
+  const P = PHRASES.map(([src, map]) => {
+    const esc = src.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pre = /^[\p{L}\p{N}]/u.test(src) ? "\\b" : "";
+    const post = /[\p{L}\p{N}]$/u.test(src) ? "\\b" : "";
+    return [new RegExp(pre + esc + post, "g"), map];
+  });
+  _UI_IDX = { R, P };
+  return _UI_IDX;
+}
 let _LANG = "it";
 /** Traduzione: chiave -> lingua corrente, fallback italiano, poi la stringa data. */
 function _t(key, fallback) {
   const v = (I18N[_LANG] && I18N[_LANG][key]) || I18N.it[key];
   return v !== undefined ? v : (fallback !== undefined ? fallback : key);
 }
+function _ui(src) {
+  const e = UI[src];
+  return (e && (e[_LANG] || e.it)) || src;
+}
+const _LOCALES = { it: "it-IT", en: "en-GB", fr: "fr-FR", es: "es-ES", de: "de-DE" };
+function _loc() { return _LOCALES[_LANG] || "it-IT"; }
 function _detectLang(hass) {
   const l = String((hass && hass.language) || "it").slice(0, 2).toLowerCase();
   return I18N[l] ? l : "it";
@@ -2315,25 +2539,47 @@ class RenaultEvCenterPanel extends HTMLElement {
 
   _translateDom() {
     const lang = _LANG;
-    if (lang === "it" || !this.shadowRoot) return;
+    if (!this.shadowRoot) return;
     try {
+      const { R, P } = _uiIndex();
+      const tr = (raw) => {
+        if (!raw) return raw;
+        const lead = (raw.match(/^\s*/) || [""])[0];
+        const trail = (raw.match(/\s*$/) || [""])[0];
+        const core = raw.replace(/\s+/g, " ").trim();
+        if (!core) return raw;
+        let out = null, pre = "", suf = "";
+        const ex = R[core] || R[core.toLowerCase()];
+        if (ex) out = ex[lang] || ex.it || core;
+        if (out === null) {
+          let body = core.replace(/^[^\p{L}\p{N}]+/u, "").replace(/^[\d.,\s]+/u, "");
+          pre = core.slice(0, core.length - body.length);
+          let e = R[body] || R[body.toLowerCase()];
+          if (!e) {
+            const tail = body.replace(/[^\p{L}\p{N}]+$/u, "");
+            if (tail) { e = R[tail] || R[tail.toLowerCase()]; if (e) suf = body.slice(tail.length); }
+          }
+          if (e) out = e[lang] || e.it || body;
+        }
+        if (out === null) return raw;
+        if (/[A-ZÀ-ÖØ-Þ]/.test(core) && core === core.toUpperCase()) out = out.toUpperCase();
+        return lead + pre + out + suf + trail;
+      };
       const w = document.createTreeWalker(this.shadowRoot, NodeFilter.SHOW_TEXT);
       let n;
       while ((n = w.nextNode())) {
-        const raw = n.nodeValue;
-        if (!raw) continue;
-        const key = raw.replace(/\s+/g, " ").trim();
-        const e = key && UI[key];
-        if (e && e[lang]) {
-          const lead = (raw.match(/^\s*/) || [""])[0];
-          const trail = (raw.match(/\s*$/) || [""])[0];
-          n.nodeValue = lead + e[lang] + trail;
+        let v = tr(n.nodeValue);
+        for (const [re, map] of P) {
+          const t = map[lang] || map.it;
+          if (t) v = v.replace(re, t);
         }
+        if (v !== n.nodeValue) n.nodeValue = v;
       }
       this.shadowRoot.querySelectorAll("[title],[placeholder],[aria-label]").forEach((el) => {
         ["title", "placeholder", "aria-label"].forEach((a) => {
           const v = el.getAttribute(a);
-          if (v && UI[v] && UI[v][lang]) el.setAttribute(a, UI[v][lang]);
+          const t = tr(v);
+          if (t !== v) el.setAttribute(a, t);
         });
       });
     } catch (e) { /* noop */ }
@@ -3826,7 +4072,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         series: [
           {
             entity: this._sid("km_giornalieri"),
-            name: "Km Percorsi",
+            name: _ui("Km Percorsi"),
             type: "column",
             yaxis_id: "first",
             curve: "smooth",
@@ -3841,7 +4087,7 @@ class RenaultEvCenterPanel extends HTMLElement {
           },
           {
             entity: this._sid("kwh_per_100km"),
-            name: "Media Consumi",
+            name: _ui("Media Consumi"),
             yaxis_id: "second",
             curve: "smooth",
             stroke_width: 3,
@@ -4408,7 +4654,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const kwh = row ? parseFloat(row.kwh ?? row.kwh_consumati ?? 0) || 0 : 0;
       const eff = row ? parseFloat(row.kwh_per_100km ?? row.efficienza ?? row.eff ?? 0) || 0 : 0;
       const pct = row ? parseFloat(row.pct ?? row.batteria_pct ?? 0) || 0 : 0;
-      out.push({ label: d.toLocaleDateString("it-IT", { weekday: "narrow" }), km, kwh, eff, pct });
+      out.push({ label: d.toLocaleDateString(_loc(), { weekday: "narrow" }), km, kwh, eff, pct });
     }
     return out;
   }
@@ -5345,12 +5591,12 @@ const PAGES = () => ({
     <div class="card"><h3>${_t("h3_lingua", "🌐 Lingua")}</h3>
       <div class="inp"><span>${_t("lbl_lingua_pannello", "Lingua pannello")}</span>
         <select data-lang style="width:150px">
-          <option value="">${_t("opt_automatica_home_assistant", "Automatica (Home Assistant)")}</option>
-          <option value="it">Italiano</option>
-          <option value="en">English</option>
-          <option value="fr">Français</option>
-              <option value="es">Español</option>
-              <option value="de">Deutsch</option>
+          <option value="">🌐 ${_t("opt_automatica_home_assistant", "Automatica (Home Assistant)")}</option>
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="de">🇩🇪 Deutsch</option>
         </select></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:4px">"Automatica" segue la lingua di HA.</div></div>
     <div class="card"><h3>${_t("h3_automazioni", "🤖 Automazioni")}</h3>
