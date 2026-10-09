@@ -108,7 +108,14 @@ async def register_card_resource(hass: HomeAssistant) -> None:
 
 def setup_car_image(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
     """Copia la foto del modello in /config/www e ritorna il path /local."""
-    model = str(entry.data.get("model", "Custom"))
+    # il modello può stare in entry.data (setup iniziale) O in entry.options
+    # (flusso «Configura»): leggere solo data faceva cadere sul default "Custom"
+    # → copiava la macchinina generica anche per chi aveva scelto il modello.
+    model = str(
+        (entry.options or {}).get("model")
+        or entry.data.get("model")
+        or "Custom"
+    )
     slug = slugify(model)
     src = _pkg_dir("images", f"{slug}.png")
     if not os.path.isfile(src):

@@ -1018,9 +1018,9 @@ try:
         "la card autonoma del range non è stata rimossa"
     assert tpl.count('data-c="range_cmp"') == 1, "range_cmp duplicato"
     # drain + costo ricarica + prezzo medio: tre card, stessa riga g3
-    h_drain = tpl.find("<h3>🔋 Vampire drain (7 gg)</h3>")
-    h_cost = tpl.find("<h3>💶 Costo ricarica · mese</h3>")
-    h_prez = tpl.find("<h3>⚡ Prezzo medio €/kWh</h3>")
+    h_drain = tpl.find('_t("h3_vampire_drain_7_gg"')
+    h_cost = tpl.find('_t("h3_costo_ricarica_mese"')
+    h_prez = tpl.find('_t("h3_prezzo_medio_kwh"')
     assert h_drain >= 0 and h_cost >= 0 and h_prez >= 0, \
         "manca una delle tre card (drain / costo / prezzo)"
     gi = tpl.rfind('class="grid g3"', 0, h_drain)

@@ -1,0 +1,605 @@
+{
+  "title": "Renault EV Center",
+  "config": {
+    "step": {
+      "user": {
+        "title": "🧩 Installationsprofil",
+        "description": "Wähle das Profil:\n- **Basis** — nur Auto\n- **Pro** — Auto + Wallbox\n- **Enterprise** — Auto + Wallbox + Solar\n\nDas Profil bestimmt, welche Abschnitte du bei der Einrichtung siehst und welche Seiten im Dashboard erscheinen (z. B. Basis hat keine Wallbox-Seite).",
+        "data": {
+          "profile": "Installationsprofil"
+        }
+      },
+      "wallbox": {
+        "title": "Renault EV Center — Wallbox",
+        "description": "Ordne deine Wallbox-Sensoren zu (Wallbox, go-e, Easee, OCPP…). Lasse leer, was du nicht hast.",
+        "data": {
+          "geocode_enabled": "Straße und Land in Fahrten (OpenStreetMap-Geocoding)",
+          "avg_speed_kmh": "Geschätzte Durchschnittsgeschwindigkeit für die Abfahrtszeit der Fahrt"
+        },
+        "sections": {
+          "wallbox": {
+            "name": "🔌 Wallbox",
+            "data": {
+              "wallbox_enabled": "Ich habe eine Wallbox in Home Assistant",
+              "wallbox_power_entity": "Momentane Ladeleistung (W oder kW)",
+              "wallbox_state_entity": "Wallbox-Status (z. B. charging)",
+              "wallbox_session_energy_entity": "Sitzungsenergiezähler (kWh)",
+              "wallbox_total_energy_entity": "Gesamtenergiezähler (kWh) — verwendet, wenn kein Sitzungszähler",
+              "wallbox_max_current_entity": "Nummer für max. Ladestrom (optional)",
+              "wallbox_session_time_entity": "Wallbox-Sitzungszeit (s/min/h) — optional, sonst interner Timer",
+              "wb_charge_switch": "Wallbox-Ladestart (switch oder button) — verwendet von Ladestart und der Automatisierung",
+              "wb_stop_switch": "Wallbox-Ladestopp (switch oder button) — verwendet von Ladestopp",
+              "wallbox_temp_entity": "Wallbox-Temperatursensor (optional)"
+            }
+          },
+          "gse": {
+            "name": "⚡ GSE-Pilotprojekt",
+            "data": {
+              "gse_kw_max": "Erlaubte Leistung im Zeitfenster (kW)",
+              "gse_kw_ridotta": "Leistung außerhalb des Zeitfensters (kW)",
+              "gse_start": "Beginn des erlaubten Zeitfensters",
+              "gse_end": "Ende des erlaubten Zeitfensters",
+              "gse_domenica": "Sonntag: ganztägig volle Leistung",
+              "gse_holiday_entity": "Feiertagssensor (binary_sensor, optional)",
+              "gse_wpa": "Wallbox-Watt pro Ampere (230 einphasig, 690 dreiphasig)"
+            }
+          },
+          "home": {
+            "name": "🏠 Hauslastausgleich",
+            "data": {
+              "home_power_sensor": "Hausverbrauchssensor (W oder kW)",
+              "home_meter_kw": "Hauszähler: 3 · 4,5 · 6 · 10 (höher) kW",
+              "home_max_amps": "Wallbox-Ampere bei niedriger Last (wiederherstellen)",
+              "home_reduce_amps": "Wallbox-Ampere bei hoher Last (reduzieren)"
+            }
+          },
+          "solar": {
+            "name": "☀️ Solar & Ausgleich",
+            "data": {
+              "has_pv": "Ich habe Solar-PV (Enterprise-Profil)",
+              "balance_grid_sensor": "Sensor Netzbezug/-einspeisung (W)",
+              "balance_battery_sensor": "Hausbatterie-Leistungssensor (W, optional)",
+              "balance_invert_grid": "Vorzeichen des Netz-Sensors umkehren",
+              "balance_include_battery": "Batterieentladung im Überschuss berücksichtigen",
+              "balance_watts_per_amp": "Watt pro Ampere (230 V einphasig ≈ 690)",
+              "balance_battery_soc_sensor": "Hausbatterie-SoC-Sensor (%) — für Priorität",
+              "battery_priority_min": "Min. Hausbatterie-SoC, bevor Überschuss ans Auto geht (%)"
+            }
+          }
+        }
+      },
+      "settings": {
+        "title": "🧩 Konfiguration",
+        "description": "Wähle deine Entitäten und Einstellungen. Die Abschnitte sind **eingeklappt**: öffne die, die du brauchst. Das gewählte Profil bestimmt, welche erscheinen.",
+        "data": {
+          "charge_start_button": "Start-Button Laden (Renault)",
+          "model": "Automodell — 1. Wahl: legt das Bild fest",
+          "create_dashboard": "Dashboard automatisch in der Seitenleiste erstellen"
+        },
+        "sections": {
+          "car": {
+            "name": "🚗 Auto",
+            "data": {
+              "name": "Autoname",
+              "odometer_entity": "Tacho-Sensor",
+              "battery_level_entity": "Batteriestand-Sensor (%)",
+              "range_entity": "Sensor Restreichweite",
+              "charging_entity": "Lade-Binärsensor/Sensor",
+              "plug_entity": "Steckerstatus (optional)",
+              "location_entity": "Auto-GPS-Tracker (optional)",
+              "install_odo": "Kilometer bei Aktivierung (km, 0 = beim ersten Start auslesen)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Renault-Befehle",
+            "data": {
+              "charge_start_button": "Start-Button Laden (Renault)",
+              "ac_button_entity": "Start-Button A/C (Renault)",
+              "climate_entity": "Renault-Klimaentität",
+              "light_entity": "Außenbeleuchtung (light/switch/button)",
+              "horn_entity": "Hupe (button/switch)",
+              "charge_target_number": "Ladeziel-Nummer (für Stopp)"
+            }
+          },
+          "wallbox": {
+            "name": "🔌 Wallbox",
+            "data": {
+              "wallbox_enabled": "Ich habe eine Wallbox in Home Assistant",
+              "wallbox_power_entity": "Momentane Ladeleistung (W oder kW)",
+              "wallbox_state_entity": "Wallbox-Status (z. B. charging)",
+              "wallbox_session_energy_entity": "Sitzungsenergiezähler (kWh)",
+              "wallbox_total_energy_entity": "Gesamtenergiezähler (kWh) — verwendet, wenn kein Sitzungszähler",
+              "wallbox_max_current_entity": "Nummer für max. Ladestrom (optional)",
+              "wallbox_session_time_entity": "Wallbox-Sitzungszeit (s/min/h) — optional, sonst interner Timer",
+              "wb_charge_switch": "Wallbox-Ladestart (switch oder button) — verwendet von Ladestart und der Automatisierung",
+              "wb_stop_switch": "Wallbox-Ladestopp (switch oder button) — verwendet von Ladestopp",
+              "wallbox_temp_entity": "Wallbox-Temperatursensor (optional)"
+            }
+          },
+          "gse": {
+            "name": "⚡ GSE-Pilotprojekt",
+            "data": {
+              "gse_kw_max": "Erlaubte Leistung im Zeitfenster (kW)",
+              "gse_kw_ridotta": "Leistung außerhalb des Zeitfensters (kW)",
+              "gse_start": "Beginn des erlaubten Zeitfensters",
+              "gse_end": "Ende des erlaubten Zeitfensters",
+              "gse_domenica": "Sonntag: ganztägig volle Leistung",
+              "gse_holiday_entity": "Feiertagssensor (binary_sensor, optional)",
+              "gse_wpa": "Wallbox-Watt pro Ampere (230 einphasig, 690 dreiphasig)"
+            }
+          },
+          "home": {
+            "name": "🏠 Hauslastausgleich",
+            "data": {
+              "home_power_sensor": "Hausverbrauchssensor (W oder kW)",
+              "home_meter_kw": "Hauszähler: 3 · 4,5 · 6 · 10 (höher) kW",
+              "home_max_amps": "Wallbox-Ampere bei niedriger Last (wiederherstellen)",
+              "home_reduce_amps": "Wallbox-Ampere bei hoher Last (reduzieren)"
+            }
+          },
+          "solar": {
+            "name": "☀️ Solar & Ausgleich",
+            "data": {
+              "has_pv": "Ich habe Solar-PV (Enterprise-Profil)",
+              "balance_grid_sensor": "Sensor Netzbezug/-einspeisung (W)",
+              "balance_battery_sensor": "Hausbatterie-Leistungssensor (W, optional)",
+              "balance_invert_grid": "Vorzeichen des Netz-Sensors umkehren",
+              "balance_include_battery": "Batterieentladung im Überschuss berücksichtigen",
+              "balance_watts_per_amp": "Watt pro Ampere (230 V einphasig ≈ 690)",
+              "balance_battery_soc_sensor": "Hausbatterie-SoC-Sensor (%) — für Priorität",
+              "battery_priority_min": "Min. Hausbatterie-SoC, bevor Überschuss ans Auto geht (%)"
+            }
+          },
+          "battery": {
+            "name": "🔋 Batterie",
+            "data": {
+              "battery_capacity": "Nutzbare Batteriekapazität",
+              "target_soc": "Ladeziel (% für Schätzungen am Ladeende)",
+              "charging_efficiency": "AC→Batterie-Ladeeffizienz"
+            }
+          },
+          "prices": {
+            "name": "💶 Energiepreise",
+            "data": {
+              "price_home": "Hausenergiepreis",
+              "price_public": "Preis öffentliche Ladesäule",
+              "price_solar": "Solarkosten (0 = kostenlos)",
+              "solar_zone": "Name der Solar/BEB-Zone (leer = keine)",
+              "pre_kwh": "kWh geladen VOR Nutzung der Integration (für Ersparnis)",
+              "pre_eur": "€ bereits vor der Integration fürs Laden ausgegeben (hat Vorrang vor kWh)"
+            }
+          },
+          "fuel": {
+            "name": "⛽ Kraftstoffvergleich",
+            "data": {
+              "fuel_comparison": "Ersparnis mit einem Verbrenner vergleichen",
+              "fuel_label": "Kraftstoffname (Diesel, Benzin…)",
+              "fuel_consumption": "Äquivalenter Verbrauch Verbrenner",
+              "fuel_price": "Kraftstoffpreis",
+              "diesel_price_entity": "Dieselpreis-Sensor €/l (optional)"
+            }
+          },
+          "maint": {
+            "name": "🔧 Wartung & Kfz-Steuer",
+            "data": {
+              "maint_comparison": "Wartungskosten Verbrenner vs. EV vergleichen",
+              "service_cost_thermal": "Verbrenner-Wartungskosten (€/Jahr)",
+              "service_cost_ev": "EV-Wartungskosten (€)",
+              "service_interval_km": "Wartungsintervall (km)",
+              "tyre_interval_km": "Reifenwechselintervall (km)",
+              "purchase_date": "Liefer-/Kaufdatum des Autos (für die jährliche Wartung)",
+              "road_tax_thermal": "Verbrenner-Kfz-Steuer (€/Jahr)",
+              "road_tax_ev": "EV-Kfz-Steuer (€/Jahr)",
+              "assicurazione_costo": "Jährliche Versicherungskosten",
+              "assicurazione_data": "Fälligkeitsdatum Versicherung (JJJJ-MM-TT)"
+            }
+          },
+          "notify": {
+            "name": "🔔 Benachrichtigungen",
+            "data": {
+              "notify_service": "Benachrichtigungsdienst (z. B. notify.michele)",
+              "notify_days": "Tage für Fristenwarnung",
+              "notify_charge_start": "Benachrichtigung Ladestart",
+              "notify_charge_end": "Benachrichtigung Ladeende",
+              "low_soc_enabled": "Erinnerung bei niedriger Batterie (zuhause)",
+              "low_soc_threshold": "Erinnerung min. %",
+              "low_soc_start": "Beginn des Zeitfensters",
+              "low_soc_end": "Ende des Zeitfensters",
+              "low_soc_days": "Wochentage"
+            }
+          },
+          "advanced": {
+            "name": "⚙️ Erweitert",
+            "data": {
+              "poll_interval": "Aktualisierungsintervall",
+              "trip_timeout": "Minuten mit unverändertem Tacho, bevor eine Fahrt geschlossen wird",
+              "temp_entity": "Außentemperatursensor (für CO2/Wetter)",
+              "co2_comparison": "CO2-Vergleich Verbrenner vs. EV berechnen",
+              "co2_thermal_gkm": "Verbrenner-CO2 (g/km)",
+              "co2_grid_gkwh": "Netz-CO2 (g/kWh)",
+              "geocode_enabled": "Straße und Land in Fahrten (OpenStreetMap-Geocoding)",
+              "avg_speed_kmh": "Geschätzte Durchschnittsgeschwindigkeit für die Abfahrtszeit der Fahrt",
+              "scadenze_enabled": "Fristenerinnerungen aktivieren",
+              "scadenza_bollo": "Fälligkeitsdatum Kfz-Steuer (JJJJ-MM-TT)",
+              "scadenza_revisione": "Fälligkeitsdatum Inspektion (JJJJ-MM-TT)",
+              "scadenza_assicurazione": "Fälligkeitsdatum Versicherung (JJJJ-MM-TT)",
+              "tagliando_mode": "Wartung: fällig nach km oder Datum",
+              "tagliando_data": "Wartungsdatum (bei Datumsmodus)"
+            }
+          }
+        }
+      },
+      "car": {
+        "title": "🚗 Renault EV Center — Dein Auto",
+        "description": "**Willkommen!** Wähle die Entitäten deines Renault EV (offizielle Renault-Integration).\n\n- Gib dem Auto einen **kurzen Namen** (z. B. `Megane`): Er wird zum Präfix aller neuen Entitäten.\n- Das **Modell** legt das Autobild fest.\n- Du kannst das **Dashboard** automatisch in der Seitenleiste erstellen.",
+        "data": {
+          "model": "Automodell — 1. Wahl: legt das Bild fest",
+          "create_dashboard": "Dashboard automatisch in der Seitenleiste erstellen"
+        },
+        "sections": {
+          "car": {
+            "name": "🚗 Auto",
+            "data": {
+              "name": "Autoname",
+              "odometer_entity": "Tacho-Sensor",
+              "battery_level_entity": "Batteriestand-Sensor (%)",
+              "range_entity": "Sensor Restreichweite",
+              "charging_entity": "Lade-Binärsensor/Sensor",
+              "plug_entity": "Steckerstatus (optional)",
+              "location_entity": "GPS-Tracker (optional)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Renault-Befehle",
+            "data": {
+              "charge_start_button": "Start-Button Laden (Renault)",
+              "ac_button_entity": "Start-Button A/C (Renault)",
+              "climate_entity": "Renault-Klimaentität",
+              "light_entity": "Außenbeleuchtung (light/switch/button)",
+              "horn_entity": "Hupe (button/switch)"
+            }
+          }
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Renault EV Center — Optionen",
+        "description": "Zugeordnete Entitäten und Einstellungen ändern.",
+        "data": {
+          "model": "Automodell — 1. Wahl: legt das Bild fest",
+          "create_dashboard": "Dashboard in der Seitenleiste automatisch erstellen"
+        },
+        "sections": {
+          "car": {
+            "name": "🚗 Auto",
+            "data": {
+              "name": "Autoname",
+              "odometer_entity": "Tacho-Sensor",
+              "battery_level_entity": "Batteriestand-Sensor (%)",
+              "range_entity": "Sensor Restreichweite",
+              "charging_entity": "Lade-Binärsensor/Sensor",
+              "plug_entity": "Steckerstatus (optional)",
+              "location_entity": "Auto-GPS-Tracker (optional)",
+              "install_odo": "Kilometer bei Aktivierung (km, 0 = beim ersten Start auslesen)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Renault-Befehle",
+            "data": {
+              "charge_start_button": "Start-Button Laden (Renault)",
+              "ac_button_entity": "Start-Button A/C (Renault)",
+              "climate_entity": "Renault-Klimaentität",
+              "light_entity": "Außenbeleuchtung (light/switch/button)",
+              "horn_entity": "Hupe (button/switch)",
+              "charge_target_number": "Ladeziel-Nummer (für Stopp)"
+            }
+          },
+          "wallbox": {
+            "name": "🔌 Wallbox",
+            "data": {
+              "wallbox_enabled": "Ich habe eine Wallbox in Home Assistant",
+              "wallbox_power_entity": "Momentane Ladeleistung (W oder kW)",
+              "wallbox_state_entity": "Wallbox-Status (z. B. charging)",
+              "wallbox_session_energy_entity": "Sitzungsenergiezähler (kWh)",
+              "wallbox_total_energy_entity": "Gesamtenergiezähler (kWh) — verwendet, wenn kein Sitzungszähler",
+              "wallbox_max_current_entity": "Nummer für max. Ladestrom (optional)",
+              "wallbox_session_time_entity": "Wallbox-Sitzungszeit (s/min/h) — optional, sonst interner Timer",
+              "wb_charge_switch": "Wallbox-Ladestart (switch oder button) — verwendet von Ladestart und der Automatisierung",
+              "wb_stop_switch": "Wallbox-Ladestopp (switch oder button) — verwendet von Ladestopp",
+              "wallbox_temp_entity": "Wallbox-Temperatursensor (optional)"
+            }
+          },
+          "gse": {
+            "name": "⚡ GSE-Pilotprojekt",
+            "data": {
+              "gse_kw_max": "Erlaubte Leistung im Zeitfenster (kW)",
+              "gse_kw_ridotta": "Leistung außerhalb des Zeitfensters (kW)",
+              "gse_start": "Beginn des erlaubten Zeitfensters",
+              "gse_end": "Ende des erlaubten Zeitfensters",
+              "gse_domenica": "Sonntag: ganztägig volle Leistung",
+              "gse_holiday_entity": "Feiertagssensor (binary_sensor, optional)",
+              "gse_wpa": "Wallbox-Watt pro Ampere (230 einphasig, 690 dreiphasig)"
+            }
+          },
+          "home": {
+            "name": "🏠 Hauslastausgleich",
+            "data": {
+              "home_power_sensor": "Hausverbrauchssensor (W oder kW)",
+              "home_meter_kw": "Hauszähler: 3 · 4,5 · 6 · 10 (höher) kW",
+              "home_max_amps": "Wallbox-Ampere bei niedriger Last (wiederherstellen)",
+              "home_reduce_amps": "Wallbox-Ampere bei hoher Last (reduzieren)"
+            }
+          },
+          "solar": {
+            "name": "☀️ Solar & Ausgleich",
+            "data": {
+              "has_pv": "Ich habe Solar-PV (Enterprise-Profil)",
+              "balance_grid_sensor": "Sensor Netzbezug/-einspeisung (W)",
+              "balance_battery_sensor": "Hausbatterie-Leistungssensor (W, optional)",
+              "balance_invert_grid": "Vorzeichen des Netz-Sensors umkehren",
+              "balance_include_battery": "Batterieentladung im Überschuss berücksichtigen",
+              "balance_watts_per_amp": "Watt pro Ampere (230 V einphasig ≈ 690)",
+              "balance_battery_soc_sensor": "Hausbatterie-SoC-Sensor (%) — für Priorität",
+              "battery_priority_min": "Min. Hausbatterie-SoC, bevor Überschuss ans Auto geht (%)"
+            }
+          },
+          "battery": {
+            "name": "🔋 Batterie",
+            "data": {
+              "battery_capacity": "Nutzbare Batteriekapazität",
+              "target_soc": "Ladeziel (% für Schätzungen am Ladeende)",
+              "charging_efficiency": "AC→Batterie-Ladeeffizienz"
+            }
+          },
+          "prices": {
+            "name": "💶 Energiepreise",
+            "data": {
+              "price_home": "Hausenergiepreis",
+              "price_public": "Preis öffentliche Ladesäule",
+              "price_solar": "Solarkosten (0 = kostenlos)",
+              "solar_zone": "Name der Solar/BEB-Zone (leer = keine)",
+              "pre_kwh": "kWh geladen VOR Nutzung der Integration (für Ersparnis)",
+              "pre_eur": "€ bereits vor der Integration fürs Laden ausgegeben (hat Vorrang vor kWh)"
+            }
+          },
+          "fuel": {
+            "name": "⛽ Kraftstoffvergleich",
+            "data": {
+              "fuel_comparison": "Ersparnis mit einem Verbrenner vergleichen",
+              "fuel_label": "Kraftstoffname (Diesel, Benzin…)",
+              "fuel_consumption": "Äquivalenter Verbrauch Verbrenner",
+              "fuel_price": "Kraftstoffpreis",
+              "diesel_price_entity": "Dieselpreis-Sensor €/l (optional)"
+            }
+          },
+          "maint": {
+            "name": "🔧 Wartung & Kfz-Steuer",
+            "data": {
+              "maint_comparison": "Wartungskosten Verbrenner vs. EV vergleichen",
+              "service_cost_thermal": "Verbrenner-Wartungskosten (€/Jahr)",
+              "service_cost_ev": "EV-Wartungskosten (€)",
+              "service_interval_km": "Wartungsintervall (km)",
+              "tyre_interval_km": "Reifenwechselintervall (km)",
+              "purchase_date": "Liefer-/Kaufdatum des Autos (für die jährliche Wartung)",
+              "road_tax_thermal": "Verbrenner-Kfz-Steuer (€/Jahr)",
+              "road_tax_ev": "EV-Kfz-Steuer (€/Jahr)",
+              "assicurazione_costo": "Jährliche Versicherungskosten",
+              "assicurazione_data": "Fälligkeitsdatum Versicherung (JJJJ-MM-TT)"
+            }
+          },
+          "notify": {
+            "name": "🔔 Benachrichtigungen",
+            "data": {
+              "notify_service": "Benachrichtigungsdienst (z. B. notify.michele)",
+              "notify_days": "Tage für Fristenwarnung",
+              "notify_charge_start": "Benachrichtigung Ladestart",
+              "notify_charge_end": "Benachrichtigung Ladeende",
+              "low_soc_enabled": "Erinnerung bei niedriger Batterie (zuhause)",
+              "low_soc_threshold": "Erinnerung min. %",
+              "low_soc_start": "Beginn des Zeitfensters",
+              "low_soc_end": "Ende des Zeitfensters",
+              "low_soc_days": "Wochentage"
+            }
+          },
+          "advanced": {
+            "name": "⚙️ Erweitert",
+            "data": {
+              "poll_interval": "Aktualisierungsintervall",
+              "trip_timeout": "Minuten mit unverändertem Tacho, bevor eine Fahrt geschlossen wird",
+              "temp_entity": "Außentemperatursensor (für CO2/Wetter)",
+              "co2_comparison": "CO2-Vergleich Verbrenner vs. EV berechnen",
+              "co2_thermal_gkm": "Verbrenner-CO2 (g/km)",
+              "co2_grid_gkwh": "Netz-CO2 (g/kWh)",
+              "geocode_enabled": "Straße und Land in Fahrten (OpenStreetMap-Geocoding)",
+              "avg_speed_kmh": "Geschätzte Durchschnittsgeschwindigkeit für die Abfahrtszeit der Fahrt",
+              "scadenze_enabled": "Fristenerinnerungen aktivieren",
+              "scadenza_bollo": "Fälligkeitsdatum Kfz-Steuer (JJJJ-MM-TT)",
+              "scadenza_revisione": "Fälligkeitsdatum Inspektion (JJJJ-MM-TT)",
+              "scadenza_assicurazione": "Fälligkeitsdatum Versicherung (JJJJ-MM-TT)",
+              "tagliando_mode": "Wartung: fällig nach km oder Datum",
+              "tagliando_data": "Wartungsdatum (bei Datumsmodus)"
+            }
+          }
+        }
+      }
+    }
+  },
+  "services": {
+    "close_trip": {
+      "name": "Fahrt jetzt schließen",
+      "description": "Die laufende Fahrt zwangsweise schließen."
+    },
+    "reset_counters": {
+      "name": "Zähler zurücksetzen",
+      "description": "Setzt die gewählten Zähler zurück.",
+      "fields": {
+        "scope": {
+          "name": "Umfang",
+          "description": "km, energia, costi, viaggi, ricariche oder all"
+        }
+      }
+    },
+    "export_trips_csv": {
+      "name": "Fahrten als CSV exportieren",
+      "description": "Schreibt Fahrt-CSVs nach config/renault_ev_center_export."
+    },
+    "add_manual_charge": {
+      "name": "Manuelle Ladung hinzufügen",
+      "description": "Eine Ladung manuell erfassen (nützlich für DC-Lader).",
+      "fields": {
+        "kwh": {
+          "name": "Geladene kWh"
+        },
+        "costo": {
+          "name": "Kosten €"
+        },
+        "tipo": {
+          "name": "Typ"
+        },
+        "quando": {
+          "name": "Datum/Uhrzeit (ISO, optional)"
+        }
+      }
+    },
+    "delete_trip": {
+      "name": "Fahrt löschen",
+      "description": "Eine Fahrt anhand der ID aus dem Verlauf entfernen.",
+      "fields": {
+        "trip_id": {
+          "name": "Fahrt-ID"
+        }
+      }
+    },
+    "add_maintenance": {
+      "name": "Wartungseintrag hinzufügen",
+      "description": "Eine Service-/Wartungsmaßnahme erfassen.",
+      "fields": {
+        "data": {
+          "name": "Datum"
+        },
+        "km": {
+          "name": "Tacho km"
+        },
+        "costo": {
+          "name": "Kosten €"
+        },
+        "tipo": {
+          "name": "Typ"
+        },
+        "note": {
+          "name": "Notizen"
+        }
+      }
+    },
+    "delete_maintenance": {
+      "name": "Wartungseintrag löschen",
+      "description": "Einen Wartungseintrag anhand der ID entfernen.",
+      "fields": {
+        "maintenance_id": {
+          "name": "Datensatz-ID"
+        }
+      }
+    },
+    "renew_insurance": {
+      "name": "Versicherung erneuern",
+      "description": "Neues Versicherungsende festlegen (6/12 Monate ab heute oder ein genaues Datum).",
+      "fields": {
+        "mesi": {
+          "name": "Monate"
+        },
+        "data": {
+          "name": "Datum"
+        }
+      }
+    },
+    "set_scadenza": {
+      "name": "Frist festlegen",
+      "description": "Eine Frist manuell festlegen (assicurazione, bollo, revisione, tagliando_data).",
+      "fields": {
+        "nome": {
+          "name": "Name"
+        },
+        "data": {
+          "name": "Datum"
+        }
+      }
+    },
+    "set_tagliando": {
+      "name": "Nächste Wartung festlegen",
+      "description": "Wähle, ob die nächste Wartung nach km oder nach Datum fällig ist.",
+      "fields": {
+        "mode": {
+          "name": "Modus"
+        },
+        "valore": {
+          "name": "Wert"
+        }
+      }
+    },
+    "create_dashboard": {
+      "name": "Dashboard erstellen",
+      "description": "Erstellt/aktualisiert das Seitenleisten-Dashboard mit allen enthaltenen Ansichten."
+    },
+    "create_automations": {
+      "name": "Empfohlene Automatisierungen erstellen",
+      "description": "Erstellt die 3 empfohlenen Automatisierungen in Home Assistant."
+    },
+    "set_maintenance": {
+      "name": "Wartungsfrist festlegen",
+      "description": "Nächste Frist (Wartung/Reifen) nach km und/oder Datum festlegen.",
+      "fields": {
+        "tipo": {
+          "name": "Typ"
+        },
+        "km": {
+          "name": "Km"
+        },
+        "data": {
+          "name": "Datum"
+        }
+      }
+    },
+    "set_schedule": {
+      "name": "Zeitplan festlegen",
+      "description": "Erstellt/aktualisiert die geplante Lade- oder Klimaautomatisierung.",
+      "fields": {
+        "tipo": {
+          "name": "Typ"
+        },
+        "attivo": {
+          "name": "Aktiviert"
+        },
+        "inizio": {
+          "name": "Uhrzeit"
+        },
+        "fine": {
+          "name": "Ende (Laden)"
+        },
+        "soc": {
+          "name": "Ziel-SoC %"
+        },
+        "modo": {
+          "name": "Klimamodus"
+        },
+        "temperatura": {
+          "name": "Temperatur °C"
+        },
+        "giorni": {
+          "name": "Tage"
+        }
+      }
+    }
+  },
+  "selector": {
+    "profile": {
+      "options": {
+        "base": "Basis — nur Auto",
+        "pro": "Pro — Auto + Wallbox",
+        "enterprise": "Enterprise — Auto + Wallbox + Solar"
+      }
+    }
+  }
+}

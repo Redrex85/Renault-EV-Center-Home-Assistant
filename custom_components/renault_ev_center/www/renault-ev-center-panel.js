@@ -20,8 +20,947 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.0.55";
+const REC_VER = "1.1.1";
 let _recVerChecked = false;
+
+// --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
+const I18N = {
+  it: {
+    nav_p1: "Panoramica", nav_p2: "Viaggi", nav_p3: "Statistiche", nav_p4: "Ricariche",
+    nav_p11: "Wallbox", nav_p5: "Salute batteria", nav_p6: "Manutenzione", nav_p7: "Risparmi",
+    nav_p8: "Extra", nav_p9: "Automazioni", nav_p10: "Impostazioni",
+  },
+  en: {
+    nav_p1: "Overview", nav_p2: "Trips", nav_p3: "Stats", nav_p4: "Charges",
+    nav_p11: "Wallbox", nav_p5: "Battery health", nav_p6: "Maintenance", nav_p7: "Savings",
+    nav_p8: "Extra", nav_p9: "Automations", nav_p10: "Settings",
+    h3_comandi_renault: "Renault commands",
+    h3_efficienza: "Efficiency",
+    h3_oggi_a_colpo_d_occhio: "Today at a glance",
+    h3_ultima_ricarica: "Last charge",
+    h3_km_percorsi_7_giorni: "\u{1F4C8} Distance driven (7 days)",
+    h3_cronologia_posizione: "\u{1F4CD} Location history",
+    h3_automazioni_attive: "\u{1F916} Active automations",
+    h3_scadenze_e_manutenzione: "\u{1F527} Deadlines & maintenance",
+    h3_archivio: "Archive",
+    h3_dettaglio_viaggi_recenti: "Recent trips detail",
+    h3_energia_caricata_differenziata: "Charged energy by source",
+    h3_percorrenza: "Mileage",
+    h3_rotte_consumo_per_zona: "Routes (consumption by area)",
+    h3_storico_mensile_tutti_gli_anni: "Monthly history (all years)",
+    h3_aggiungi_ricarica_manuale: "\u2795 Add manual charge",
+    h3_distribuzione_ricariche: "\u{1F4CA} Charge distribution",
+    h3_storico_ricariche: "Charge history",
+    h3_soh_ufficiale: "Official SOH \u270F\uFE0F",
+    h3_soh_stimato: "Estimated SOH",
+    h3_kwh_per_1: "kWh per 1%",
+    h3_dove_finisce_l_energia: "Where energy goes",
+    h3_sessioni_analizzate: "Sessions analysed",
+    h3_tagliando: "\u{1F527} Service",
+    h3_cambio_gomme: "\u{1F6DE} Tyre change",
+    h3_assicurazione: "\u{1F6E1}\uFE0F Insurance",
+    h3_registra_intervento: "\u2795 Log maintenance",
+    h3_interventi_registrati: "\u{1F4CB} Logged services",
+    h3_risparmio_manutenzione: "\u{1F3C6} Maintenance savings",
+    h3_termica_vs_elettrica: "\u2696\uFE0F Petrol vs electric",
+    h3_confronto_costi: "\u{1F4CA} Cost comparison",
+    h3_risparmio_per_periodo: "\u{1F4C5} Savings by period",
+    h3_fotovoltaico: "\u2600\uFE0F Solar",
+    h3_come_si_calcola: "\u2139\uFE0F How it is calculated",
+    h3_affidabilità_del_confronto: "\u{1F3AF} Comparison reliability",
+    h3_vampire_drain: "\u{1F50B} Vampire drain",
+    h3_co2_evitata: "\u{1F30D} CO2 avoided",
+    h3_scadenze: "\u{1F4C5} Deadlines",
+    h3_meteo_vs_consumi: "\u{1F326}\uFE0F Weather vs consumption",
+    h3_top_e_stop_mese: "\u{1F3C6} Top & Stop \u00B7 month",
+    h3_consumi_vs_temperatura: "\u{1F321}\uFE0F Consumption vs temperature",
+    h3_consumi_per_fascia: "\u{1F4CA} Consumption by time band",
+    h3_trend_mensile_kwh_100km: "\u{1F4C8} Monthly trend kWh/100km",
+    h3_efficienza_per_zona: "\u{1F4CD} Efficiency by area",
+    h3_vampire_drain_7_gg: "\u{1F50B} Vampire drain (7 days)",
+    h3_costo_ricarica_mese: "\u{1F4B6} Charging cost \u00B7 month",
+    h3_prezzo_medio_kwh: "\u26A1 Average price \u20AC/kWh",
+    h3_risparmio_vs_termica: "\u{1F4B0} Savings vs petrol",
+    h3_orario_di_partenza: "\u{1F550} Departure time",
+    h3_note: "\u2139\uFE0F Notes",
+    h3_notifiche: "Notifications",
+    h3_programma_ricarica: "\u23F0 Charge schedule",
+    h3_programma_clima: "\u2744\uFE0F Climate schedule",
+    h3_avviso_batteria_bassa: "\u{1F514} Low battery alert",
+    h3_come_si_cambiano_i_parametri: "How to change settings",
+    h3_prezzi_energia: "Energy prices",
+    h3_batteria: "Battery",
+    h3_reset_e_export: "Reset & export",
+    h3_palette_colori_renault: "\u{1F3A8} Palette (Renault colours)",
+    h3_automazioni: "\u{1F916} Automations",
+    h3_stato_wallbox: "\u{1F50C} Wallbox status",
+    h3_sessione_corrente: "\u23F1\uFE0F Current session",
+    h3_stima_ricarica: "\u23F1\uFE0F Charge estimate",
+    h3_potenza_wallbox_48_h: "\u26A1 Wallbox power (48 h)",
+    h3_bilanciamento_casa: "\u{1F3E0} Home load balancing",
+    h3_sperimentazione_gse: "\u26A1 GSE trial",
+    h3_bilanciamento_fotovoltaico: "\u2600\uFE0F Solar balancing",
+    h3_lingua: "\u{1F310} Language",
+    lbl_viaggio_in_corso: "Trip in progress",
+    lbl_wallbox_ora: "⚡ Wallbox now",
+    lbl_carburante_evitato: "Fuel avoided",
+    lbl_tagliandi: "+ Services",
+    lbl_bollo: "+ Road tax",
+    lbl_consumata_oggi: "🔴 Consumed today",
+    lbl_kwh_usati_oggi: "🔋 kWh used today",
+    lbl_km_oggi: "🚗 Km today",
+    lbl_ricaricati_oggi: "⚡ Charged today",
+    lbl_ricariche_oggi: "💰 Charges today",
+    lbl_ricariche_mensili: "💰 Monthly charges",
+    lbl_data: "Date",
+    lbl_energia: "Energy",
+    lbl_batteria: "Battery",
+    lbl_media: "Average",
+    lbl_costo_eff: "Cost · Eff.",
+    lbl_casa_wallbox: "🏠 Home (wallbox)",
+    lbl_fotovoltaico: "☀️ Solar",
+    lbl_colonnine: "⚡ Public chargers",
+    lbl_dalla_rete_ac: "From grid (AC)",
+    lbl_in_batteria: "Into battery",
+    lbl_dispersa: "Lost",
+    lbl_efficienza: "Efficiency",
+    lbl_prossimo_km: "Next (km)",
+    lbl_speso_finora: "Spent so far",
+    lbl_scadenza_a_km: "Due by km",
+    lbl_scadenza_a_data: "Due by date",
+    lbl_ultimo_cambio_a: "Last change at",
+    lbl_prossimo_cambio: "Next change",
+    lbl_ultimo_cambio_km: "Last change (km)",
+    lbl_scadenza_a_data_opz: "Due by date (opt.)",
+    lbl_scadenza: "Due",
+    lbl_costo_annuo: "Annual cost",
+    lbl_termica_teorica_450_×_tagliandi: "Theoretical ICE (450 € × services)",
+    lbl_spesa_reale_ev: "Actual EV cost",
+    lbl_risparmio_tagliandi: "Service savings",
+    lbl_risparmio_bollo: "Road-tax savings",
+    lbl_mese: "Month",
+    lbl_anno: "Year",
+    lbl_km_miei_dall_attivazione: "My km (since activation)",
+    lbl_prezzo_carburante: "Fuel price",
+    lbl_risparmiato_col_fv: "Saved with solar",
+    lbl_energia_dal_fv: "Energy from solar",
+    lbl_ricaricato_fv_questo_mese: "Solar charged this month",
+    lbl_energia_fv_totale: "Total solar energy",
+    lbl_temperatura_esterna: "Outdoor temperature",
+    lbl_consumo_attuale: "Current consumption",
+    lbl_migliore: "Best",
+    lbl_peggiore: "Worst",
+    lbl_energia_casa_totale: "Home energy (total)",
+    lbl_servizio_notify: "📨 Notify service",
+    lbl_attivo: "Active",
+    lbl_inizio: "Start",
+    lbl_fine: "End",
+    lbl_soc_obiettivo: "Target SoC %",
+    lbl_giorni: "Days",
+    lbl_orario: "Time",
+    lbl_soglia: "Threshold",
+    lbl_dalle: "From",
+    lbl_alle: "To",
+    lbl_costo_casa: "Home cost",
+    lbl_costo_colonnina: "Public charger cost",
+    lbl_costo_fotovoltaico: "Solar cost",
+    lbl_obiettivo_ricarica: "Charge target",
+    lbl_capacità: "Capacity",
+    lbl_soh_ufficiale: "Official SOH",
+    lbl_costo_assicurazione: "Insurance cost",
+    lbl_servizio_notify_2: "Notify service",
+    lbl_preavviso_scadenze: "Deadline reminder",
+    lbl_lingua_pannello: "Panel language",
+    lbl_potenza_ora: "Power now",
+    lbl_corrente: "Current",
+    lbl_tensione: "Voltage",
+    lbl_temperatura: "Temperature",
+    lbl_motivo_limite: "Limit reason",
+    lbl_tempo_di_ricarica: "Charge time",
+    lbl_potenza_wallbox: "Wallbox power",
+    lbl_energia_totale: "Total energy",
+    lbl_limite: "Limit",
+    lbl_tempo_stimato: "Estimated time",
+    lbl_orario_stimato: "Estimated time",
+    lbl_costo_stimato: "Estimated cost",
+    lbl_consumo_casa: "Home consumption",
+    lbl_soglia_contatore: "Meter threshold",
+    lbl_ampere_wallbox: "Wallbox amps",
+    lbl_attiva: "Active",
+    lbl_limite_adesso: "Limit now",
+    lbl_fascia_piena: "Full band",
+    lbl_batteria_solo_senza_sole: "Battery only without sun",
+    lbl_surplus_rete: "Grid surplus",
+    lbl_prelievo_rete: "Grid draw",
+    lbl_ampere_impostati: "Amps set",
+    opt_tutti_gli_anni: "All years",
+    opt_tutti_i_mesi: "All months",
+    opt_casa: "Home",
+    opt_fotovoltaico: "Solar",
+    opt_pubblica: "Public",
+    opt_manuale: "Manual",
+    opt_tagliando: "Service",
+    opt_cambio_gomme: "Tyre change",
+    opt_riparazione: "Repair",
+    opt_altro: "Other",
+    opt_settimana: "Week",
+    opt_mese: "Month",
+    opt_stagione: "Season",
+    opt_tutto: "All",
+    opt_automatica_home_assistant: "Automatic (Home Assistant)",
+    note_stima_verso_il_obiettivo_configurato_con: "Estimate towards the configured target %. With the car not charging it shows the last state.",
+    note_sopra_la_soglia_10_min_ridotta_a_sotto_l: "Above the threshold for 10 min → Reduced A; below 80% for 15 min → Max A. Sensor/meter in <b>Settings → Home balancing</b>.",
+    note_fuori_fascia_la_wallbox_è_limitata_alla_: "Outside the band the wallbox is limited to the reduced power. Times in <b>Settings → GSE trial</b>.",
+    note_adatta_gli_ampere_per_tenere_il_prelievo: "Adjusts the amps to keep grid draw ~0. With <b>Battery only without sun</b> the car charges on <b>pure solar</b> by day; the battery kicks in only when the grid imports (evening/night). Sensors in <b>Settings → Solar</b>.",
+    ph_es_colonnina_dc_autostrada: "e.g. Highway DC charger",
+    ph_es_60000: "e.g. 60000",
+    ttl_filtra_settimana: "Filter: week",
+    ttl_filtra_mese: "Filter: month",
+    ttl_filtra_anno: "Filter: year",
+    note_confronto: "The <b>since installation</b> comparison is the most reliable: both sides come from real data\n      (km driven with the integration active vs recorded charges). The <b>total</b> one depends on the\n      kWh/€ you entered in Settings → Prices. Both use the km <b>since activation</b>, not the\n      full odometer: kilometres already driven by others (used car) do not enter the comparison.",
+    note_crea: "Creates in HA: <b>charge completed</b> (kWh, SoC, cost),\n        <b>charge started</b> and <b>daily summary</b>. Editable from Settings → Automations.",
+    mesi: "January|February|March|April|May|June|July|August|September|October|November|December",
+    theme_blu: "Blue Megane",
+    theme_giallo: "R5 Yellow",
+    theme_verde: "R4 Green",
+    theme_aviation: "Aviation Grey",
+    chip_in_carica: "🔌 Charging",
+    chip_non_in_carica: "🔓 Not charging",
+    state_in_carica: "Charging",
+    state_non_in_carica: "Not charging",
+    chip_collegata: "🔗 Plugged in",
+    chip_scollegata: "🔗 Unplugged",
+    state_collegata: "Plugged in",
+    state_scollegata: "Unplugged",
+    wb_attiva: "Wallbox active",
+    st_available: "Ready",
+    st_charging: "Charging",
+    st_preparing: "Preparing",
+    st_suspended: "Paused",
+    st_finishing: "Finishing",
+    st_faulted: "Error",
+    st_idle: "Idle",
+    st_connected: "Connected",
+    st_disconnected: "Disconnected",
+    st_completed: "Complete",
+    st_error: "Error",
+    st_need_auth: "Connected, waiting",
+    st_paused: "Paused",
+    st_locked: "Locked",
+    toast_no_ac: "⚠️ No car A/C command found",
+    toast_no_start: "⚠️ No charge-start found (map 'Charge start button' in Settings)",
+    toast_no_wb_start: "⚠️ Wallbox start command not found (configure the wallbox)",
+    toast_no_wb_stop: "⚠️ Wallbox stop not mapped (Settings → Wallbox → Charge stop)",
+    toast_no_horn: "⚠️ Horn not mapped (Settings → Commands)",
+    toast_no_lights: "⚠️ Lights not mapped (Settings → Commands)",
+    toast_kwh: "⚠️ Enter the kWh",
+    toast_no_stop: "⚠️ Charge stop not mapped (Settings → Wallbox)",
+  },
+  fr: {
+    nav_p1: "Aperçu", nav_p2: "Trajets", nav_p3: "Statistiques", nav_p4: "Recharges",
+    nav_p11: "Wallbox", nav_p5: "Santé batterie", nav_p6: "Entretien", nav_p7: "Économies",
+    nav_p8: "Extra", nav_p9: "Automatisations", nav_p10: "Réglages",
+    h3_comandi_renault: "Commandes Renault",
+    h3_efficienza: "Efficacité",
+    h3_oggi_a_colpo_d_occhio: "Aujourd'hui en un coup d'œil",
+    h3_ultima_ricarica: "Dernière recharge",
+    h3_km_percorsi_7_giorni: "\u{1F4C8} Km parcourus (7 jours)",
+    h3_cronologia_posizione: "\u{1F4CD} Historique de position",
+    h3_automazioni_attive: "\u{1F916} Automatisations actives",
+    h3_scadenze_e_manutenzione: "\u{1F527} Échéances et entretien",
+    h3_archivio: "Archives",
+    h3_dettaglio_viaggi_recenti: "Détail des trajets récents",
+    h3_energia_caricata_differenziata: "Énergie rechargée par source",
+    h3_percorrenza: "Kilométrage",
+    h3_rotte_consumo_per_zona: "Itinéraires (consommation par zone)",
+    h3_storico_mensile_tutti_gli_anni: "Historique mensuel (toutes années)",
+    h3_aggiungi_ricarica_manuale: "\u2795 Ajouter une recharge manuelle",
+    h3_distribuzione_ricariche: "\u{1F4CA} Répartition des recharges",
+    h3_storico_ricariche: "Historique des recharges",
+    h3_soh_ufficiale: "SOH officiel \u270F\uFE0F",
+    h3_soh_stimato: "SOH estimé",
+    h3_kwh_per_1: "kWh par 1 %",
+    h3_dove_finisce_l_energia: "Où va l'énergie",
+    h3_sessioni_analizzate: "Sessions analysées",
+    h3_tagliando: "\u{1F527} Révision",
+    h3_cambio_gomme: "\u{1F6DE} Changement de pneus",
+    h3_assicurazione: "\u{1F6E1}\uFE0F Assurance",
+    h3_registra_intervento: "\u2795 Enregistrer une intervention",
+    h3_interventi_registrati: "\u{1F4CB} Interventions enregistrées",
+    h3_risparmio_manutenzione: "\u{1F3C6} Économies d'entretien",
+    h3_termica_vs_elettrica: "\u2696\uFE0F Thermique vs électrique",
+    h3_confronto_costi: "\u{1F4CA} Comparaison des coûts",
+    h3_risparmio_per_periodo: "\u{1F4C5} Économies par période",
+    h3_fotovoltaico: "\u2600\uFE0F Photovoltaïque",
+    h3_come_si_calcola: "\u2139\uFE0F Comment c'est calculé",
+    h3_affidabilità_del_confronto: "\u{1F3AF} Fiabilité de la comparaison",
+    h3_vampire_drain: "\u{1F50B} Décharge à l'arrêt",
+    h3_co2_evitata: "\u{1F30D} CO2 évitée",
+    h3_scadenze: "\u{1F4C5} Échéances",
+    h3_meteo_vs_consumi: "\u{1F326}\uFE0F Météo vs consommation",
+    h3_top_e_stop_mese: "\u{1F3C6} Top & Stop \u00B7 mois",
+    h3_consumi_vs_temperatura: "\u{1F321}\uFE0F Consommation vs température",
+    h3_consumi_per_fascia: "\u{1F4CA} Consommation par plage",
+    h3_trend_mensile_kwh_100km: "\u{1F4C8} Tendance mensuelle kWh/100km",
+    h3_efficienza_per_zona: "\u{1F4CD} Efficacité par zone",
+    h3_vampire_drain_7_gg: "\u{1F50B} Décharge à l'arrêt (7 j)",
+    h3_costo_ricarica_mese: "\u{1F4B6} Coût de recharge \u00B7 mois",
+    h3_prezzo_medio_kwh: "\u26A1 Prix moyen \u20AC/kWh",
+    h3_risparmio_vs_termica: "\u{1F4B0} Économies vs thermique",
+    h3_orario_di_partenza: "\u{1F550} Heure de départ",
+    h3_note: "\u2139\uFE0F Notes",
+    h3_notifiche: "Notifications",
+    h3_programma_ricarica: "\u23F0 Programme de recharge",
+    h3_programma_clima: "\u2744\uFE0F Programme climatisation",
+    h3_avviso_batteria_bassa: "\u{1F514} Alerte batterie faible",
+    h3_come_si_cambiano_i_parametri: "Comment modifier les paramètres",
+    h3_prezzi_energia: "Prix de l'énergie",
+    h3_batteria: "Batterie",
+    h3_reset_e_export: "Réinitialiser & exporter",
+    h3_palette_colori_renault: "\u{1F3A8} Palette (couleurs Renault)",
+    h3_automazioni: "\u{1F916} Automatisations",
+    h3_stato_wallbox: "\u{1F50C} État de la wallbox",
+    h3_sessione_corrente: "\u23F1\uFE0F Session en cours",
+    h3_stima_ricarica: "\u23F1\uFE0F Estimation de recharge",
+    h3_potenza_wallbox_48_h: "\u26A1 Puissance wallbox (48 h)",
+    h3_bilanciamento_casa: "\u{1F3E0} Équilibrage maison",
+    h3_sperimentazione_gse: "\u26A1 Expérimentation GSE",
+    h3_bilanciamento_fotovoltaico: "\u2600\uFE0F Équilibrage solaire",
+    h3_lingua: "\u{1F310} Langue",
+    lbl_viaggio_in_corso: "Trajet en cours",
+    lbl_wallbox_ora: "⚡ Wallbox maintenant",
+    lbl_carburante_evitato: "Carburant évité",
+    lbl_tagliandi: "+ Révisions",
+    lbl_bollo: "+ Taxe auto",
+    lbl_consumata_oggi: "🔴 Consommé aujourd'hui",
+    lbl_kwh_usati_oggi: "🔋 kWh utilisés aujourd'hui",
+    lbl_km_oggi: "🚗 Km aujourd'hui",
+    lbl_ricaricati_oggi: "⚡ Rechargés aujourd'hui",
+    lbl_ricariche_oggi: "💰 Recharges aujourd'hui",
+    lbl_ricariche_mensili: "💰 Recharges mensuelles",
+    lbl_data: "Date",
+    lbl_energia: "Énergie",
+    lbl_batteria: "Batterie",
+    lbl_media: "Moyenne",
+    lbl_costo_eff: "Coût · Eff.",
+    lbl_casa_wallbox: "🏠 Maison (wallbox)",
+    lbl_fotovoltaico: "☀️ Photovoltaïque",
+    lbl_colonnine: "⚡ Bornes publiques",
+    lbl_dalla_rete_ac: "Depuis le réseau (AC)",
+    lbl_in_batteria: "Dans la batterie",
+    lbl_dispersa: "Perdue",
+    lbl_efficienza: "Efficacité",
+    lbl_prossimo_km: "Prochain (km)",
+    lbl_speso_finora: "Dépensé jusqu'ici",
+    lbl_scadenza_a_km: "Échéance en km",
+    lbl_scadenza_a_data: "Échéance par date",
+    lbl_ultimo_cambio_a: "Dernier changement à",
+    lbl_prossimo_cambio: "Prochain changement",
+    lbl_ultimo_cambio_km: "Dernier changement (km)",
+    lbl_scadenza_a_data_opz: "Échéance par date (opt.)",
+    lbl_scadenza: "Échéance",
+    lbl_costo_annuo: "Coût annuel",
+    lbl_termica_teorica_450_×_tagliandi: "Thermique théorique (450 € × révisions)",
+    lbl_spesa_reale_ev: "Coût réel VE",
+    lbl_risparmio_tagliandi: "Économies révisions",
+    lbl_risparmio_bollo: "Économies taxe auto",
+    lbl_mese: "Mois",
+    lbl_anno: "Année",
+    lbl_km_miei_dall_attivazione: "Mes km (depuis l'activation)",
+    lbl_prezzo_carburante: "Prix du carburant",
+    lbl_risparmiato_col_fv: "Économisé avec le PV",
+    lbl_energia_dal_fv: "Énergie du PV",
+    lbl_ricaricato_fv_questo_mese: "Rechargé PV ce mois",
+    lbl_energia_fv_totale: "Énergie PV totale",
+    lbl_temperatura_esterna: "Température extérieure",
+    lbl_consumo_attuale: "Consommation actuelle",
+    lbl_migliore: "Meilleur",
+    lbl_peggiore: "Pire",
+    lbl_energia_casa_totale: "Énergie maison (totale)",
+    lbl_servizio_notify: "📨 Service notify",
+    lbl_attivo: "Actif",
+    lbl_inizio: "Début",
+    lbl_fine: "Fin",
+    lbl_soc_obiettivo: "SoC cible %",
+    lbl_giorni: "Jours",
+    lbl_orario: "Heure",
+    lbl_soglia: "Seuil",
+    lbl_dalle: "De",
+    lbl_alle: "À",
+    lbl_costo_casa: "Coût maison",
+    lbl_costo_colonnina: "Coût borne",
+    lbl_costo_fotovoltaico: "Coût photovoltaïque",
+    lbl_obiettivo_ricarica: "Objectif de recharge",
+    lbl_capacità: "Capacité",
+    lbl_soh_ufficiale: "SOH officiel",
+    lbl_costo_assicurazione: "Coût assurance",
+    lbl_servizio_notify_2: "Service notify",
+    lbl_preavviso_scadenze: "Rappel des échéances",
+    lbl_lingua_pannello: "Langue du panneau",
+    lbl_potenza_ora: "Puissance actuelle",
+    lbl_corrente: "Courant",
+    lbl_tensione: "Tension",
+    lbl_temperatura: "Température",
+    lbl_motivo_limite: "Raison de la limite",
+    lbl_tempo_di_ricarica: "Temps de recharge",
+    lbl_potenza_wallbox: "Puissance wallbox",
+    lbl_energia_totale: "Énergie totale",
+    lbl_limite: "Limite",
+    lbl_tempo_stimato: "Temps estimé",
+    lbl_orario_stimato: "Heure estimée",
+    lbl_costo_stimato: "Coût estimé",
+    lbl_consumo_casa: "Consommation maison",
+    lbl_soglia_contatore: "Seuil du compteur",
+    lbl_ampere_wallbox: "Ampères wallbox",
+    lbl_attiva: "Active",
+    lbl_limite_adesso: "Limite actuelle",
+    lbl_fascia_piena: "Plage pleine",
+    lbl_batteria_solo_senza_sole: "Batterie seule sans soleil",
+    lbl_surplus_rete: "Surplus réseau",
+    lbl_prelievo_rete: "Prélèvement réseau",
+    lbl_ampere_impostati: "Ampères définis",
+    opt_tutti_gli_anni: "Toutes les années",
+    opt_tutti_i_mesi: "Tous les mois",
+    opt_casa: "Maison",
+    opt_fotovoltaico: "Photovoltaïque",
+    opt_pubblica: "Publique",
+    opt_manuale: "Manuelle",
+    opt_tagliando: "Révision",
+    opt_cambio_gomme: "Changement de pneus",
+    opt_riparazione: "Réparation",
+    opt_altro: "Autre",
+    opt_settimana: "Semaine",
+    opt_mese: "Mois",
+    opt_stagione: "Saison",
+    opt_tutto: "Tout",
+    opt_automatica_home_assistant: "Automatique (Home Assistant)",
+    note_stima_verso_il_obiettivo_configurato_con: "Estimation vers le % cible configuré. Si la voiture ne charge pas, affiche le dernier état.",
+    note_sopra_la_soglia_10_min_ridotta_a_sotto_l: "Au-dessus du seuil pendant 10 min → A réduits ; sous 80% pendant 15 min → A max. Capteur/compteur dans <b>Réglages → Équilibrage maison</b>.",
+    note_fuori_fascia_la_wallbox_è_limitata_alla_: "Hors plage, la wallbox est limitée à la puissance réduite. Horaires dans <b>Réglages → Expérimentation GSE</b>.",
+    note_adatta_gli_ampere_per_tenere_il_prelievo: "Ajuste les ampères pour maintenir le prélèvement réseau ~0. Avec <b>Batterie seule sans soleil</b>, la voiture charge en <b>solaire pur</b> le jour ; la batterie n'intervient que lorsque le réseau importe (soir/nuit). Capteurs dans <b>Réglages → Photovoltaïque</b>.",
+    ph_es_colonnina_dc_autostrada: "ex. Borne DC autoroute",
+    ph_es_60000: "ex. 60000",
+    ttl_filtra_settimana: "Filtrer : semaine",
+    ttl_filtra_mese: "Filtrer : mois",
+    ttl_filtra_anno: "Filtrer : année",
+    note_confronto: "La comparaison <b>depuis l'installation</b> est la plus fiable : les deux côtés viennent de données réelles\n      (km parcourus avec l'intégration active contre recharges enregistrées). La <b>totale</b> dépend des\n      kWh/€ saisis dans Réglages → Prix. Les deux utilisent les km <b>depuis l'activation</b>, pas\n      l'odomètre complet : les kilomètres déjà parcourus par d'autres (voiture d'occasion) n'entrent pas dans la comparaison.",
+    note_crea: "Crée dans HA : <b>recharge terminée</b> (kWh, SoC, coût),\n        <b>début de recharge</b> et <b>résumé quotidien</b>. Modifiables depuis Réglages → Automatisations.",
+    mesi: "Janvier|Février|Mars|Avril|Mai|Juin|Juillet|Août|Septembre|Octobre|Novembre|Décembre",
+    theme_blu: "Bleu Mégane",
+    theme_giallo: "Jaune R5",
+    theme_verde: "Vert R4",
+    theme_aviation: "Gris Aviation",
+    chip_in_carica: "🔌 En charge",
+    chip_non_in_carica: "🔓 Pas en charge",
+    state_in_carica: "En charge",
+    state_non_in_carica: "Pas en charge",
+    chip_collegata: "🔗 Branchée",
+    chip_scollegata: "🔗 Débranchée",
+    state_collegata: "Branchée",
+    state_scollegata: "Débranchée",
+    wb_attiva: "Wallbox active",
+    st_available: "Prête",
+    st_charging: "En charge",
+    st_preparing: "Préparation",
+    st_suspended: "En pause",
+    st_finishing: "Finalisation",
+    st_faulted: "Erreur",
+    st_idle: "Inactive",
+    st_connected: "Connectée",
+    st_disconnected: "Déconnectée",
+    st_completed: "Terminée",
+    st_error: "Erreur",
+    st_need_auth: "Connectée, en attente",
+    st_paused: "En pause",
+    st_locked: "Verrouillée",
+    toast_no_ac: "⚠️ Aucune commande A/C de la voiture trouvée",
+    toast_no_start: "⚠️ Aucun démarrage de recharge trouvé (mappe « Bouton démarrer recharge » dans Réglages)",
+    toast_no_wb_start: "⚠️ Commande de démarrage wallbox introuvable (configurez la wallbox)",
+    toast_no_wb_stop: "⚠️ Arrêt wallbox non mappé (Réglages → Wallbox → Arrêt recharge)",
+    toast_no_horn: "⚠️ Klaxon non mappé (Réglages → Commandes)",
+    toast_no_lights: "⚠️ Feux non mappés (Réglages → Commandes)",
+    toast_kwh: "⚠️ Saisissez les kWh",
+    toast_no_stop: "⚠️ Arrêt recharge non mappé (Réglages → Wallbox)",
+  },
+  es: {
+    nav_p1: "Resumen",
+    nav_p2: "Viajes",
+    nav_p3: "Estadísticas",
+    nav_p4: "Recargas",
+    nav_p11: "Wallbox",
+    nav_p5: "Salud batería",
+    nav_p6: "Mantenimiento",
+    nav_p7: "Ahorros",
+    nav_p8: "Extra",
+    nav_p9: "Automatizaciones",
+    nav_p10: "Ajustes",
+    h3_comandi_renault: "Comandos Renault",
+    h3_efficienza: "Eficiencia",
+    h3_oggi_a_colpo_d_occhio: "Hoy de un vistazo",
+    h3_ultima_ricarica: "Última recarga",
+    h3_km_percorsi_7_giorni: "📈 Distancia recorrida (7 días)",
+    h3_cronologia_posizione: "📍 Historial de ubicación",
+    h3_automazioni_attive: "🤖 Automatizaciones activas",
+    h3_scadenze_e_manutenzione: "🔧 Vencimientos y mantenimiento",
+    h3_archivio: "Archivo",
+    h3_dettaglio_viaggi_recenti: "Detalle de viajes recientes",
+    h3_energia_caricata_differenziata: "Energía cargada por origen",
+    h3_percorrenza: "Kilometraje",
+    h3_rotte_consumo_per_zona: "Rutas (consumo por zona)",
+    h3_storico_mensile_tutti_gli_anni: "Historial mensual (todos los años)",
+    h3_aggiungi_ricarica_manuale: "➕ Añadir recarga manual",
+    h3_distribuzione_ricariche: "📊 Distribución de recargas",
+    h3_storico_ricariche: "Historial de recargas",
+    h3_soh_ufficiale: "SOH oficial ✏️",
+    h3_soh_stimato: "SOH estimado",
+    h3_kwh_per_1: "kWh por 1%",
+    h3_dove_finisce_l_energia: "Dónde va la energía",
+    h3_sessioni_analizzate: "Sesiones analizadas",
+    h3_tagliando: "🔧 Revisión",
+    h3_cambio_gomme: "🛞 Cambio de neumáticos",
+    h3_assicurazione: "🛡️ Seguro",
+    h3_registra_intervento: "➕ Registrar mantenimiento",
+    h3_interventi_registrati: "📋 Mantenimientos registrados",
+    h3_risparmio_manutenzione: "🏆 Ahorro en mantenimiento",
+    h3_termica_vs_elettrica: "⚖️ Térmico vs eléctrico",
+    h3_confronto_costi: "📊 Comparación de costes",
+    h3_risparmio_per_periodo: "📅 Ahorro por periodo",
+    h3_fotovoltaico: "☀️ Solar",
+    h3_come_si_calcola: "ℹ️ Cómo se calcula",
+    h3_affidabilità_del_confronto: "🎯 Fiabilidad de la comparación",
+    h3_vampire_drain: "🔋 Descarga parásita",
+    h3_co2_evitata: "🌍 CO2 evitada",
+    h3_scadenze: "📅 Vencimientos",
+    h3_meteo_vs_consumi: "🌦️ Clima vs consumo",
+    h3_top_e_stop_mese: "🏆 Top & Stop · mes",
+    h3_consumi_vs_temperatura: "🌡️ Consumo vs temperatura",
+    h3_consumi_per_fascia: "📊 Consumo por franja",
+    h3_trend_mensile_kwh_100km: "📈 Tendencia mensual kWh/100km",
+    h3_efficienza_per_zona: "📍 Eficiencia por zona",
+    h3_vampire_drain_7_gg: "🔋 Descarga parásita (7 días)",
+    h3_costo_ricarica_mese: "💶 Coste de recarga · mes",
+    h3_prezzo_medio_kwh: "⚡ Precio medio €/kWh",
+    h3_risparmio_vs_termica: "💰 Ahorro vs gasolina",
+    h3_orario_di_partenza: "🕐 Hora de salida",
+    h3_note: "ℹ️ Notas",
+    h3_notifiche: "Notificaciones",
+    h3_programma_ricarica: "⏰ Programa de recarga",
+    h3_programma_clima: "❄️ Programa de clima",
+    h3_avviso_batteria_bassa: "🔔 Aviso batería baja",
+    h3_come_si_cambiano_i_parametri: "Cómo cambiar los parámetros",
+    h3_prezzi_energia: "Precios de energía",
+    h3_batteria: "Batería",
+    h3_reset_e_export: "Reinicio y exportación",
+    h3_palette_colori_renault: "🎨 Paleta (colores Renault)",
+    h3_automazioni: "🤖 Automatizaciones",
+    h3_stato_wallbox: "🔌 Estado wallbox",
+    h3_sessione_corrente: "⏱️ Sesión actual",
+    h3_stima_ricarica: "⏱️ Estimación de recarga",
+    h3_potenza_wallbox_48_h: "⚡ Potencia wallbox (48 h)",
+    h3_bilanciamento_casa: "🏠 Balanceo del hogar",
+    h3_sperimentazione_gse: "⚡ Prueba GSE",
+    h3_bilanciamento_fotovoltaico: "☀️ Balanceo solar",
+    h3_lingua: "🌐 Idioma",
+    lbl_viaggio_in_corso: "Viaje en curso",
+    lbl_wallbox_ora: "⚡ Wallbox ahora",
+    lbl_carburante_evitato: "Combustible evitado",
+    lbl_tagliandi: "+ Revisiones",
+    lbl_bollo: "+ Impuesto",
+    lbl_consumata_oggi: "🔴 Consumido hoy",
+    lbl_kwh_usati_oggi: "🔋 kWh usados hoy",
+    lbl_km_oggi: "🚗 Km hoy",
+    lbl_ricaricati_oggi: "⚡ Cargado hoy",
+    lbl_ricariche_oggi: "💰 Recargas hoy",
+    lbl_ricariche_mensili: "💰 Recargas mensuales",
+    lbl_data: "Fecha",
+    lbl_energia: "Energía",
+    lbl_batteria: "Batería",
+    lbl_media: "Media",
+    lbl_costo_eff: "Coste · Efic.",
+    lbl_casa_wallbox: "🏠 Casa (wallbox)",
+    lbl_fotovoltaico: "☀️ Solar",
+    lbl_colonnine: "⚡ Puntos de carga",
+    lbl_dalla_rete_ac: "De la red (AC)",
+    lbl_in_batteria: "A la batería",
+    lbl_dispersa: "Perdida",
+    lbl_efficienza: "Eficiencia",
+    lbl_prossimo_km: "Próximo (km)",
+    lbl_speso_finora: "Gastado hasta ahora",
+    lbl_scadenza_a_km: "Vence por km",
+    lbl_scadenza_a_data: "Vence por fecha",
+    lbl_ultimo_cambio_a: "Último cambio a",
+    lbl_prossimo_cambio: "Próximo cambio",
+    lbl_ultimo_cambio_km: "Último cambio (km)",
+    lbl_scadenza_a_data_opz: "Vence por fecha (opc.)",
+    lbl_scadenza: "Vence",
+    lbl_costo_annuo: "Coste anual",
+    lbl_termica_teorica_450_×_tagliandi: "Térmico teórico (450 € × revisiones)",
+    lbl_spesa_reale_ev: "Coste real EV",
+    lbl_risparmio_tagliandi: "Ahorro en revisiones",
+    lbl_risparmio_bollo: "Ahorro en impuesto",
+    lbl_mese: "Mes",
+    lbl_anno: "Año",
+    lbl_km_miei_dall_attivazione: "Mis km (desde activación)",
+    lbl_prezzo_carburante: "Precio combustible",
+    lbl_risparmiato_col_fv: "Ahorrado con solar",
+    lbl_energia_dal_fv: "Energía solar",
+    lbl_ricaricato_fv_questo_mese: "Solar cargado este mes",
+    lbl_energia_fv_totale: "Energía solar total",
+    lbl_temperatura_esterna: "Temperatura exterior",
+    lbl_consumo_attuale: "Consumo actual",
+    lbl_migliore: "Mejor",
+    lbl_peggiore: "Peor",
+    lbl_energia_casa_totale: "Energía hogar (total)",
+    lbl_servizio_notify: "📨 Servicio de notificación",
+    lbl_attivo: "Activo",
+    lbl_inizio: "Inicio",
+    lbl_fine: "Fin",
+    lbl_soc_obiettivo: "SoC objetivo %",
+    lbl_giorni: "Días",
+    lbl_orario: "Hora",
+    lbl_soglia: "Umbral",
+    lbl_dalle: "Desde",
+    lbl_alle: "Hasta",
+    lbl_costo_casa: "Coste hogar",
+    lbl_costo_colonnina: "Coste punto de carga",
+    lbl_costo_fotovoltaico: "Coste solar",
+    lbl_obiettivo_ricarica: "Objetivo de recarga",
+    lbl_capacità: "Capacidad",
+    lbl_soh_ufficiale: "SOH oficial",
+    lbl_costo_assicurazione: "Coste del seguro",
+    lbl_servizio_notify_2: "Servicio de notificación",
+    lbl_preavviso_scadenze: "Aviso de vencimientos",
+    lbl_lingua_pannello: "Idioma del panel",
+    lbl_potenza_ora: "Potencia ahora",
+    lbl_corrente: "Corriente",
+    lbl_tensione: "Voltaje",
+    lbl_temperatura: "Temperatura",
+    lbl_motivo_limite: "Motivo del límite",
+    lbl_tempo_di_ricarica: "Tiempo de recarga",
+    lbl_potenza_wallbox: "Potencia wallbox",
+    lbl_energia_totale: "Energía total",
+    lbl_limite: "Límite",
+    lbl_tempo_stimato: "Tiempo estimado",
+    lbl_orario_stimato: "Hora estimada",
+    lbl_costo_stimato: "Coste estimado",
+    lbl_consumo_casa: "Consumo del hogar",
+    lbl_soglia_contatore: "Umbral del contador",
+    lbl_ampere_wallbox: "Amperios wallbox",
+    lbl_attiva: "Activa",
+    lbl_limite_adesso: "Límite ahora",
+    lbl_fascia_piena: "Franja completa",
+    lbl_batteria_solo_senza_sole: "Batería solo sin sol",
+    lbl_surplus_rete: "Excedente a la red",
+    lbl_prelievo_rete: "Consumo de red",
+    lbl_ampere_impostati: "Amperios ajustados",
+    opt_tutti_gli_anni: "Todos los años",
+    opt_tutti_i_mesi: "Todos los meses",
+    opt_casa: "Casa",
+    opt_fotovoltaico: "Solar",
+    opt_pubblica: "Pública",
+    opt_manuale: "Manual",
+    opt_tagliando: "Revisión",
+    opt_cambio_gomme: "Cambio de neumáticos",
+    opt_riparazione: "Reparación",
+    opt_altro: "Otro",
+    opt_settimana: "Semana",
+    opt_mese: "Mes",
+    opt_stagione: "Temporada",
+    opt_tutto: "Todo",
+    opt_automatica_home_assistant: "Automática (Home Assistant)",
+    note_stima_verso_il_obiettivo_configurato_con: "Estimación hacia el objetivo configurado %. Con el coche sin cargar muestra el último estado.",
+    note_sopra_la_soglia_10_min_ridotta_a_sotto_l: "Por encima del umbral durante 10 min → A reducidos; por debajo del 80% durante 15 min → A máximos. Sensor/contador en <b>Ajustes → Balanceo del hogar</b>.",
+    note_fuori_fascia_la_wallbox_è_limitata_alla_: "Fuera de la franja la wallbox se limita a la potencia reducida. Horas en <b>Ajustes → Prueba GSE</b>.",
+    note_adatta_gli_ampere_per_tenere_il_prelievo: "Ajusta los amperios para mantener el consumo de red ~0. Con <b>Batería solo sin sol</b> el coche carga con <b>solar puro</b> de día; la batería entra solo cuando hay importación de red (tarde/noche). Sensores en <b>Ajustes → Solar</b>.",
+    ph_es_colonnina_dc_autostrada: "ej. Cargador DC autopista",
+    ph_es_60000: "ej. 60000",
+    ttl_filtra_settimana: "Filtro: semana",
+    ttl_filtra_mese: "Filtro: mes",
+    ttl_filtra_anno: "Filtro: año",
+    note_confronto: "La comparación <b>desde la instalación</b> es la más fiable: ambos lados vienen de datos reales\n      (km recorridos con la integración activa vs recargas registradas). La <b>total</b> depende de los\n      kWh/€ que introdujiste en Ajustes → Precios. Ambas usan los km <b>desde la activación</b>, no\n      el odómetro completo: los kilómetros ya recorridos por otros (coche usado) no entran en la comparación.",
+    note_crea: "Crea en HA: <b>recarga completada</b> (kWh, SoC, coste),\n        <b>inicio de recarga</b> y <b>resumen diario</b>. Editables desde Ajustes → Automatizaciones.",
+    mesi: "Enero|Febrero|Marzo|Abril|Mayo|Junio|Julio|Agosto|Septiembre|Octubre|Noviembre|Diciembre",
+    theme_blu: "Azul Mégane",
+    theme_giallo: "Amarillo R5",
+    theme_verde: "Verde R4",
+    theme_aviation: "Gris Aviation",
+    chip_in_carica: "🔌 Cargando",
+    chip_non_in_carica: "🔓 Sin cargar",
+    state_in_carica: "Cargando",
+    state_non_in_carica: "Sin cargar",
+    chip_collegata: "🔗 Enchufada",
+    chip_scollegata: "🔗 Desenchufada",
+    state_collegata: "Enchufada",
+    state_scollegata: "Desenchufada",
+    wb_attiva: "Wallbox activa",
+    st_available: "Lista",
+    st_charging: "Cargando",
+    st_preparing: "Preparando",
+    st_suspended: "En pausa",
+    st_finishing: "Finalizando",
+    st_faulted: "Error",
+    st_idle: "Inactiva",
+    st_connected: "Conectada",
+    st_disconnected: "Desconectada",
+    st_completed: "Completa",
+    st_error: "Error",
+    st_need_auth: "Conectada, esperando",
+    st_paused: "En pausa",
+    st_locked: "Bloqueada",
+    toast_no_ac: "⚠️ No se encontró comando A/C del coche",
+    toast_no_start: "⚠️ No se encontró inicio de recarga (mapea 'Botón iniciar recarga' en Ajustes)",
+    toast_no_wb_start: "⚠️ Comando de inicio de wallbox no encontrado (configura la wallbox)",
+    toast_no_wb_stop: "⚠️ Parada de wallbox no mapeada (Ajustes → Wallbox → Parar recarga)",
+    toast_no_horn: "⚠️ Claxon no mapeado (Ajustes → Comandos)",
+    toast_no_lights: "⚠️ Luces no mapeadas (Ajustes → Comandos)",
+    toast_kwh: "⚠️ Introduce los kWh",
+    toast_no_stop: "⚠️ Parada de recarga no mapeada (Ajustes → Wallbox)",
+  },
+  de: {
+    nav_p1: "Übersicht",
+    nav_p2: "Fahrten",
+    nav_p3: "Statistiken",
+    nav_p4: "Ladevorgänge",
+    nav_p11: "Wallbox",
+    nav_p5: "Batteriezustand",
+    nav_p6: "Wartung",
+    nav_p7: "Ersparnisse",
+    nav_p8: "Extra",
+    nav_p9: "Automatisierungen",
+    nav_p10: "Einstellungen",
+    h3_comandi_renault: "Renault-Befehle",
+    h3_efficienza: "Effizienz",
+    h3_oggi_a_colpo_d_occhio: "Heute auf einen Blick",
+    h3_ultima_ricarica: "Letzte Ladung",
+    h3_km_percorsi_7_giorni: "📈 Gefahrene Strecke (7 Tage)",
+    h3_cronologia_posizione: "📍 Standortverlauf",
+    h3_automazioni_attive: "🤖 Aktive Automatisierungen",
+    h3_scadenze_e_manutenzione: "🔧 Fristen & Wartung",
+    h3_archivio: "Archiv",
+    h3_dettaglio_viaggi_recenti: "Details letzte Fahrten",
+    h3_energia_caricata_differenziata: "Geladene Energie nach Quelle",
+    h3_percorrenza: "Kilometerstand",
+    h3_rotte_consumo_per_zona: "Routen (Verbrauch nach Zone)",
+    h3_storico_mensile_tutti_gli_anni: "Monatsverlauf (alle Jahre)",
+    h3_aggiungi_ricarica_manuale: "➕ Manuelle Ladung hinzufügen",
+    h3_distribuzione_ricariche: "📊 Verteilung der Ladevorgänge",
+    h3_storico_ricariche: "Ladeverlauf",
+    h3_soh_ufficiale: "Offizieller SOH ✏️",
+    h3_soh_stimato: "Geschätzter SOH",
+    h3_kwh_per_1: "kWh pro 1 %",
+    h3_dove_finisce_l_energia: "Wohin die Energie geht",
+    h3_sessioni_analizzate: "Analysierte Sitzungen",
+    h3_tagliando: "🔧 Inspektion",
+    h3_cambio_gomme: "🛞 Reifenwechsel",
+    h3_assicurazione: "🛡️ Versicherung",
+    h3_registra_intervento: "➕ Wartung erfassen",
+    h3_interventi_registrati: "📋 Erfasste Wartungen",
+    h3_risparmio_manutenzione: "🏆 Wartungsersparnis",
+    h3_termica_vs_elettrica: "⚖️ Verbrenner vs. Elektro",
+    h3_confronto_costi: "📊 Kostenvergleich",
+    h3_risparmio_per_periodo: "📅 Ersparnis nach Zeitraum",
+    h3_fotovoltaico: "☀️ Solar",
+    h3_come_si_calcola: "ℹ️ Berechnung",
+    h3_affidabilità_del_confronto: "🎯 Zuverlässigkeit des Vergleichs",
+    h3_vampire_drain: "🔋 Ruhestromverlust",
+    h3_co2_evitata: "🌍 Vermiedenes CO2",
+    h3_scadenze: "📅 Fristen",
+    h3_meteo_vs_consumi: "🌦️ Wetter vs. Verbrauch",
+    h3_top_e_stop_mese: "🏆 Top & Stop · Monat",
+    h3_consumi_vs_temperatura: "🌡️ Verbrauch vs. Temperatur",
+    h3_consumi_per_fascia: "📊 Verbrauch nach Zeitfenster",
+    h3_trend_mensile_kwh_100km: "📈 Monatstrend kWh/100km",
+    h3_efficienza_per_zona: "📍 Effizienz nach Zone",
+    h3_vampire_drain_7_gg: "🔋 Ruhestromverlust (7 Tage)",
+    h3_costo_ricarica_mese: "💶 Ladekosten · Monat",
+    h3_prezzo_medio_kwh: "⚡ Durchschnittspreis €/kWh",
+    h3_risparmio_vs_termica: "💰 Ersparnis vs. Benzin",
+    h3_orario_di_partenza: "🕐 Abfahrtszeit",
+    h3_note: "ℹ️ Notizen",
+    h3_notifiche: "Benachrichtigungen",
+    h3_programma_ricarica: "⏰ Ladeplan",
+    h3_programma_clima: "❄️ Klimaplan",
+    h3_avviso_batteria_bassa: "🔔 Warnung bei niedriger Batterie",
+    h3_come_si_cambiano_i_parametri: "Parameter ändern",
+    h3_prezzi_energia: "Energiepreise",
+    h3_batteria: "Batterie",
+    h3_reset_e_export: "Zurücksetzen & Export",
+    h3_palette_colori_renault: "🎨 Palette (Renault-Farben)",
+    h3_automazioni: "🤖 Automatisierungen",
+    h3_stato_wallbox: "🔌 Wallbox-Status",
+    h3_sessione_corrente: "⏱️ Aktuelle Sitzung",
+    h3_stima_ricarica: "⏱️ Ladeschätzung",
+    h3_potenza_wallbox_48_h: "⚡ Wallbox-Leistung (48 h)",
+    h3_bilanciamento_casa: "🏠 Hauslastausgleich",
+    h3_sperimentazione_gse: "⚡ GSE-Test",
+    h3_bilanciamento_fotovoltaico: "☀️ Solarausgleich",
+    h3_lingua: "🌐 Sprache",
+    lbl_viaggio_in_corso: "Fahrt läuft",
+    lbl_wallbox_ora: "⚡ Wallbox jetzt",
+    lbl_carburante_evitato: "Vermiedener Kraftstoff",
+    lbl_tagliandi: "+ Inspektionen",
+    lbl_bollo: "+ Kfz-Steuer",
+    lbl_consumata_oggi: "🔴 Heute verbraucht",
+    lbl_kwh_usati_oggi: "🔋 Heute verbrauchte kWh",
+    lbl_km_oggi: "🚗 Km heute",
+    lbl_ricaricati_oggi: "⚡ Heute geladen",
+    lbl_ricariche_oggi: "💰 Ladungen heute",
+    lbl_ricariche_mensili: "💰 Monatliche Ladungen",
+    lbl_data: "Datum",
+    lbl_energia: "Energie",
+    lbl_batteria: "Batterie",
+    lbl_media: "Durchschnitt",
+    lbl_costo_eff: "Kosten · Eff.",
+    lbl_casa_wallbox: "🏠 Zuhause (Wallbox)",
+    lbl_fotovoltaico: "☀️ Solar",
+    lbl_colonnine: "⚡ Öffentliche Ladesäulen",
+    lbl_dalla_rete_ac: "Aus dem Netz (AC)",
+    lbl_in_batteria: "In die Batterie",
+    lbl_dispersa: "Verloren",
+    lbl_efficienza: "Effizienz",
+    lbl_prossimo_km: "Nächste (km)",
+    lbl_speso_finora: "Bisher ausgegeben",
+    lbl_scadenza_a_km: "Fällig nach km",
+    lbl_scadenza_a_data: "Fällig am Datum",
+    lbl_ultimo_cambio_a: "Letzter Wechsel bei",
+    lbl_prossimo_cambio: "Nächster Wechsel",
+    lbl_ultimo_cambio_km: "Letzter Wechsel (km)",
+    lbl_scadenza_a_data_opz: "Fällig am Datum (opt.)",
+    lbl_scadenza: "Fällig",
+    lbl_costo_annuo: "Jahreskosten",
+    lbl_termica_teorica_450_×_tagliandi: "Theoretisch Verbrenner (450 € × Inspektionen)",
+    lbl_spesa_reale_ev: "Tatsächliche EV-Kosten",
+    lbl_risparmio_tagliandi: "Ersparnis Inspektionen",
+    lbl_risparmio_bollo: "Ersparnis Kfz-Steuer",
+    lbl_mese: "Monat",
+    lbl_anno: "Jahr",
+    lbl_km_miei_dall_attivazione: "Meine km (seit Aktivierung)",
+    lbl_prezzo_carburante: "Kraftstoffpreis",
+    lbl_risparmiato_col_fv: "Mit Solar gespart",
+    lbl_energia_dal_fv: "Energie aus Solar",
+    lbl_ricaricato_fv_questo_mese: "Solar geladen diesen Monat",
+    lbl_energia_fv_totale: "Gesamtenergie Solar",
+    lbl_temperatura_esterna: "Außentemperatur",
+    lbl_consumo_attuale: "Aktueller Verbrauch",
+    lbl_migliore: "Beste",
+    lbl_peggiore: "Schlechteste",
+    lbl_energia_casa_totale: "Hausenergie (gesamt)",
+    lbl_servizio_notify: "📨 Benachrichtigungsdienst",
+    lbl_attivo: "Aktiv",
+    lbl_inizio: "Beginn",
+    lbl_fine: "Ende",
+    lbl_soc_obiettivo: "Ziel-SoC %",
+    lbl_giorni: "Tage",
+    lbl_orario: "Uhrzeit",
+    lbl_soglia: "Schwelle",
+    lbl_dalle: "Von",
+    lbl_alle: "Bis",
+    lbl_costo_casa: "Hauskosten",
+    lbl_costo_colonnina: "Kosten Ladesäule",
+    lbl_costo_fotovoltaico: "Solarkosten",
+    lbl_obiettivo_ricarica: "Ladeziel",
+    lbl_capacità: "Kapazität",
+    lbl_soh_ufficiale: "Offizieller SOH",
+    lbl_costo_assicurazione: "Versicherungskosten",
+    lbl_servizio_notify_2: "Benachrichtigungsdienst",
+    lbl_preavviso_scadenze: "Fristen-Erinnerung",
+    lbl_lingua_pannello: "Sprache des Panels",
+    lbl_potenza_ora: "Leistung jetzt",
+    lbl_corrente: "Strom",
+    lbl_tensione: "Spannung",
+    lbl_temperatura: "Temperatur",
+    lbl_motivo_limite: "Grund der Begrenzung",
+    lbl_tempo_di_ricarica: "Ladezeit",
+    lbl_potenza_wallbox: "Wallbox-Leistung",
+    lbl_energia_totale: "Gesamtenergie",
+    lbl_limite: "Grenze",
+    lbl_tempo_stimato: "Geschätzte Zeit",
+    lbl_orario_stimato: "Geschätzte Uhrzeit",
+    lbl_costo_stimato: "Geschätzte Kosten",
+    lbl_consumo_casa: "Hausverbrauch",
+    lbl_soglia_contatore: "Zählerschwelle",
+    lbl_ampere_wallbox: "Wallbox-Ampere",
+    lbl_attiva: "Aktiv",
+    lbl_limite_adesso: "Grenze jetzt",
+    lbl_fascia_piena: "Volles Zeitfenster",
+    lbl_batteria_solo_senza_sole: "Nur Batterie ohne Sonne",
+    lbl_surplus_rete: "Netzüberschuss",
+    lbl_prelievo_rete: "Netzbezug",
+    lbl_ampere_impostati: "Eingestellte Ampere",
+    opt_tutti_gli_anni: "Alle Jahre",
+    opt_tutti_i_mesi: "Alle Monate",
+    opt_casa: "Zuhause",
+    opt_fotovoltaico: "Solar",
+    opt_pubblica: "Öffentlich",
+    opt_manuale: "Manuell",
+    opt_tagliando: "Inspektion",
+    opt_cambio_gomme: "Reifenwechsel",
+    opt_riparazione: "Reparatur",
+    opt_altro: "Andere",
+    opt_settimana: "Woche",
+    opt_mese: "Monat",
+    opt_stagione: "Saison",
+    opt_tutto: "Alle",
+    opt_automatica_home_assistant: "Automatisch (Home Assistant)",
+    note_stima_verso_il_obiettivo_configurato_con: "Schätzung zum konfigurierten Ziel %. Bei nicht ladendem Auto wird der letzte Zustand angezeigt.",
+    note_sopra_la_soglia_10_min_ridotta_a_sotto_l: "Über der Schwelle für 10 min → reduzierte A; unter 80 % für 15 min → max. A. Sensor/Zähler in <b>Einstellungen → Hauslastausgleich</b>.",
+    note_fuori_fascia_la_wallbox_è_limitata_alla_: "Außerhalb des Zeitfensters wird die Wallbox auf die reduzierte Leistung begrenzt. Zeiten in <b>Einstellungen → GSE-Test</b>.",
+    note_adatta_gli_ampere_per_tenere_il_prelievo: "Passt die Ampere an, um den Netzbezug bei ~0 zu halten. Mit <b>Nur Batterie ohne Sonne</b> lädt das Auto tagsüber mit <b>reinem Solar</b>; die Batterie greift nur bei Netzbezug ein (Abend/Nacht). Sensoren in <b>Einstellungen → Solar</b>.",
+    ph_es_colonnina_dc_autostrada: "z. B. DC-Schnelllader Autobahn",
+    ph_es_60000: "z. B. 60000",
+    ttl_filtra_settimana: "Filter: Woche",
+    ttl_filtra_mese: "Filter: Monat",
+    ttl_filtra_anno: "Filter: Jahr",
+    note_confronto: "Der Vergleich <b>seit Installation</b> ist der zuverlässigste: beide Seiten stammen aus realen Daten\n      (km mit aktiver Integration vs. erfasste Ladungen). Der <b>Gesamt</b>-Vergleich hängt von den\n      kWh/€ ab, die du unter Einstellungen → Preise eingegeben hast. Beide nutzen die km <b>seit Aktivierung</b>, nicht\n      den gesamten Kilometerstand: bereits von anderen gefahrene Kilometer (Gebrauchtwagen) fließen nicht ein.",
+    note_crea: "Erstellt in HA: <b>Ladung abgeschlossen</b> (kWh, SoC, Kosten),\n        <b>Ladestart</b> und <b>Tageszusammenfassung</b>. Bearbeitbar unter Einstellungen → Automatisierungen.",
+    mesi: "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember",
+    theme_blu: "Blaues Mégane",
+    theme_giallo: "R5 Gelb",
+    theme_verde: "R4 Grün",
+    theme_aviation: "Aviation Grau",
+    chip_in_carica: "🔌 Lädt",
+    chip_non_in_carica: "🔓 Lädt nicht",
+    state_in_carica: "Lädt",
+    state_non_in_carica: "Lädt nicht",
+    chip_collegata: "🔗 Angesteckt",
+    chip_scollegata: "🔗 Abgesteckt",
+    state_collegata: "Angesteckt",
+    state_scollegata: "Abgesteckt",
+    wb_attiva: "Wallbox aktiv",
+    st_available: "Bereit",
+    st_charging: "Lädt",
+    st_preparing: "Vorbereitung",
+    st_suspended: "Pausiert",
+    st_finishing: "Abschluss",
+    st_faulted: "Fehler",
+    st_idle: "Inaktiv",
+    st_connected: "Verbunden",
+    st_disconnected: "Getrennt",
+    st_completed: "Abgeschlossen",
+    st_error: "Fehler",
+    st_need_auth: "Verbunden, wartet",
+    st_paused: "Pausiert",
+    st_locked: "Verriegelt",
+    toast_no_ac: "⚠️ Kein A/C-Befehl des Autos gefunden",
+    toast_no_start: "⚠️ Kein Ladestart gefunden ('Ladestart-Button' in Einstellungen zuordnen)",
+    toast_no_wb_start: "⚠️ Wallbox-Startbefehl nicht gefunden (Wallbox konfigurieren)",
+    toast_no_wb_stop: "⚠️ Wallbox-Stopp nicht zugeordnet (Einstellungen → Wallbox → Ladestopp)",
+    toast_no_horn: "⚠️ Hupe nicht zugeordnet (Einstellungen → Befehle)",
+    toast_no_lights: "⚠️ Lichter nicht zugeordnet (Einstellungen → Befehle)",
+    toast_kwh: "⚠️ kWh eingeben",
+    toast_no_stop: "⚠️ Ladestopp nicht zugeordnet (Einstellungen → Wallbox)",
+  },
+};
+let _LANG = "it";
+/** Traduzione: chiave -> lingua corrente, fallback italiano, poi la stringa data. */
+function _t(key, fallback) {
+  const v = (I18N[_LANG] && I18N[_LANG][key]) || I18N.it[key];
+  return v !== undefined ? v : (fallback !== undefined ? fallback : key);
+}
+function _detectLang(hass) {
+  const l = String((hass && hass.language) || "it").slice(0, 2).toLowerCase();
+  return I18N[l] ? l : "it";
+}
 
 class RenaultEvCenterPanel extends HTMLElement {
   /** Se la versione servita (config della card) differisce dalla mia, ricarica la pagina una volta. */
@@ -108,10 +1047,12 @@ class RenaultEvCenterPanel extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     try {
+      const _lang = localStorage.getItem("rec_lang") || _detectLang(hass);
+      if (_lang !== _LANG) { _LANG = I18N[_lang] ? _lang : "it"; this._built = false; }
       if (!this._built) this._build();
       else if (!this._raf) this._raf = requestAnimationFrame(() => {
         this._raf = null;
-        try { if (!PAGES[this._page] || !this._pages().some(([id]) => id === this._page)) this._page = "p1"; this._update(); }
+        try { if (!PAGES()[this._page] || !this._pages().some(([id]) => id === this._page)) this._page = "p1"; this._update(); }
         catch (e) { this._showError(e); }
       });
     } catch (e) { this._showError(e); }
@@ -133,7 +1074,7 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
   _pages() {
     const noWb = this._cfg.wallbox === false;
-    return Object.entries(PAGES).filter(([id]) => !(noWb && id === "p11"));
+    return Object.entries(PAGES()).filter(([id]) => !(noWb && id === "p11"));
   }
   getCardSize() { return 12; }
 
@@ -724,11 +1665,11 @@ class RenaultEvCenterPanel extends HTMLElement {
           <div><b>Renault EV<br>Center</b><span class="ver">v${REC_VER}</span><small>${c.name} · live</small></div>
         </div>
         <div class="nav" id="nav">
-          ${this._navItems().map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
+          ${this._navItems().map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${_t("nav_" + id, label)}</button>`).join("")}
         </div>
       </div>
       <div class="mobilenav" id="mnav">
-        ${this._navItems().map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${label}</button>`).join("")}
+        ${this._navItems().map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${_t("nav_" + id, label)}</button>`).join("")}
       </div>
       <div class="main">${this._pages().map(([id, html]) => `<section id="${id}" class="page ${id === this._page ? "active" : ""}">${html}</section>`).join("")}
       </div>
@@ -841,6 +1782,18 @@ class RenaultEvCenterPanel extends HTMLElement {
       if (saved !== null && saved !== "") inp.value = saved;
       inp.addEventListener("change", () => { localStorage.setItem(inp.dataset.ls, inp.value); this._update(); });
     });
+    // selettore lingua (p10): override in localStorage, vuoto = segui HA
+    const langSel = this.shadowRoot.querySelector("select[data-lang]");
+    if (langSel) {
+      langSel.value = localStorage.getItem("rec_lang") || "";
+      langSel.addEventListener("change", () => {
+        if (langSel.value) localStorage.setItem("rec_lang", langSel.value);
+        else localStorage.removeItem("rec_lang");
+        _LANG = langSel.value || _detectLang(this._hass);
+        this._built = false;
+        this._build();
+      });
+    }
     // notify salvato localmente → config runtime se non impostato in YAML
     if (!this._cfg.notify) { const nn = localStorage.getItem("rec_notify"); if (nn) this._cfg.notify = nn; }
     this._update();
@@ -879,10 +1832,10 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (!root.getElementById("p11")) return;
     const S = this;
     const set = (k, v) => root.querySelectorAll(`[data-wb="${k}"]`).forEach((el) => { el.textContent = v; });
-    const stMap = { available: "Pronta", charging: "In carica", preparing: "Preparazione",
-      suspended: "Pausa", finishing: "Completamento", faulted: "Errore", idle: "Inattiva",
-      connected: "Connesso", disconnected: "Disconnesso", completed: "Completa",
-      error: "Errore", need_auth: "Connesso, attesa", paused: "Pausa", locked: "Bloccata" };
+    const stMap = { available: _t("st_available", "Pronta"), charging: _t("st_charging", "In carica"), preparing: _t("st_preparing", "Preparazione"),
+      suspended: _t("st_suspended", "Pausa"), finishing: _t("st_finishing", "Completamento"), faulted: _t("st_faulted", "Errore"), idle: _t("st_idle", "Inattiva"),
+      connected: _t("st_connected", "Connesso"), disconnected: _t("st_disconnected", "Disconnesso"), completed: _t("st_completed", "Completa"),
+      error: _t("st_error", "Errore"), need_auth: _t("st_need_auth", "Connesso, attesa"), paused: _t("st_paused", "Pausa"), locked: _t("st_locked", "Bloccata") };
 
     // sperimentazione GSE: fascia e limite di potenza attuale
     const _pg = S._sensorByPrefix("programmazione");
@@ -1071,7 +2024,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         );
         if (cl && cl.entity_id.startsWith("climate.")) this._call("climate", "set_temperature", { entity_id: cl.entity_id, temperature: 21 }, "❄️ A/C: 21 °C");
         else if (cl && cl.entity_id.startsWith("button.")) this._call("button", "press", { entity_id: cl.entity_id }, "❄️ A/C avviata");
-        else this._toast("⚠️ Nessun comando A/C dell'auto trovato");
+        else this._toast(_t("toast_no_ac", "⚠️ Nessun comando A/C dell'auto trovato"));
         break;
       }
       case "charge": {
@@ -1083,7 +2036,7 @@ class RenaultEvCenterPanel extends HTMLElement {
           this._ov("wb_charge_switch"),
           "button.wallbox_charger_start",
         );
-        if (!b) { this._toast("⚠️ Nessun avvio carica trovato (mappa 'Pulsante Avvia carica' in Configura)"); break; }
+        if (!b) { this._toast(_t("toast_no_start", "⚠️ Nessun avvio carica trovato (mappa 'Pulsante Avvia carica' in Configura)")); break; }
         const dom = String(b.entity_id).split(".")[0];
         if (dom === "switch") this._call("switch", "turn_on", { entity_id: b.entity_id }, "⚡ Avvia carica");
         else if (dom === "button") this._call("button", "press", { entity_id: b.entity_id }, "⚡ Avvia carica (auto)");
@@ -1115,7 +2068,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       case "wb_start": {
         const b = this._cmdEnt(this._ov("wb_charge_switch")) || this._st("button.wallbox_charger_start");
-        if (!b) { this._toast("⚠️ Comando avvio wallbox non trovato (configura la wallbox)"); break; }
+        if (!b) { this._toast(_t("toast_no_wb_start", "⚠️ Comando avvio wallbox non trovato (configura la wallbox)")); break; }
         if (b.entity_id.startsWith("switch.")) this._call("switch", "turn_on", { entity_id: b.entity_id }, "🔌 Ricarica avviata");
         else this._call("button", "press", { entity_id: b.entity_id }, "🔌 Ricarica avviata");
         break;
@@ -1123,7 +2076,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "wb_stop": {
         const b = this._cmdEnt(this._ov("wb_stop_switch"))
           || this._st(this._car("button", "stop_charge"), "button.wallbox_charger_stop", "button.wallbox_charge_stop");
-        if (!b) { this._toast("⚠️ Stop wallbox non mappato (Configura → Wallbox → Stop carica)"); break; }
+        if (!b) { this._toast(_t("toast_no_wb_stop", "⚠️ Stop wallbox non mappato (Configura → Wallbox → Stop carica)")); break; }
         if (b.entity_id.startsWith("switch.")) this._call("switch", "turn_off", { entity_id: b.entity_id }, "⏹️ Ricarica fermata");
         else this._call("button", "press", { entity_id: b.entity_id }, "⏹️ Ricarica fermata");
         break;
@@ -1138,12 +2091,12 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "horn": {
         const b = this._st(this._ov("horn"), this._ov("horn_button"), this._car("button", "sound_horn"), "button.megane_sound_horn");
         if (b) this._call("button", "press", { entity_id: b.entity_id }, "📣 Clacson");
-        else this._toast("⚠️ Clacson non mappato (Configura → Comandi)");
+        else this._toast(_t("toast_no_horn", "⚠️ Clacson non mappato (Configura → Comandi)"));
         break;
       }
       case "flash": {
         const b = this._st(this._ov("light"), this._ov("flash_button"), this._car("button", "flash_lights"), "button.megane_flash_lights");
-        if (!b) { this._toast("⚠️ Luci non mappate (Configura → Comandi)"); break; }
+        if (!b) { this._toast(_t("toast_no_lights", "⚠️ Luci non mappate (Configura → Comandi)")); break; }
         const d = String(b.entity_id).split(".")[0];
         if (d === "light") this._call("light", "toggle", { entity_id: b.entity_id }, "💡 Luci");
         else if (d === "switch") this._call("switch", "toggle", { entity_id: b.entity_id }, "💡 Luci");
@@ -1168,7 +2121,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "add_charge_manual": {
         const g = (k) => this.shadowRoot.querySelector(`[data-mc="${k}"]`);
         const kwh = parseFloat((g("kwh") || {}).value);
-        if (isNaN(kwh) || kwh <= 0) { this._toast("⚠️ Inserisci i kWh"); break; }
+        if (isNaN(kwh) || kwh <= 0) { this._toast(_t("toast_kwh", "⚠️ Inserisci i kWh")); break; }
         const costo = parseFloat((g("costo") || {}).value);
         const data = (g("data") || {}).value || "";
         const tipo = (g("tipo") || {}).value || "Pubblica";
@@ -1191,7 +2144,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "charge_stop": {
         const b = this._cmdEnt(this._ov("wb_stop_switch"))
           || this._st(this._car("button", "stop_charge"), "button.wallbox_charger_stop");
-        if (!b) { this._toast("⚠️ Stop carica non mappato (Configura → Wallbox)"); break; }
+        if (!b) { this._toast(_t("toast_no_stop", "⚠️ Stop carica non mappato (Configura → Wallbox)")); break; }
         const d = String(b.entity_id).split(".")[0];
         if (d === "switch") this._call("switch", "turn_off", { entity_id: b.entity_id }, "⏹ Stop carica");
         else this._call("button", "press", { entity_id: b.entity_id }, "⏹ Stop carica");
@@ -1270,24 +2223,24 @@ class RenaultEvCenterPanel extends HTMLElement {
     const chipCh = root.querySelector('[data-c="charging"]');
     if (chipCh) {
       const on = this._chargeOn();
-      chipCh.textContent = on ? "🔌 In carica" : "🔓 Non in carica";
+      chipCh.textContent = on ? _t("chip_in_carica", "🔌 In carica") : _t("chip_non_in_carica", "🔓 Non in carica");
       chipCh.className = `chip ${on ? "ok" : ""}`;
     }
     const chipPlug = root.querySelector('[data-c="plug"]');
-    if (chipPlug) chipPlug.textContent = this._plugOn() ? "🔗 Collegata" : "🔗 Scollegata";
+    if (chipPlug) chipPlug.textContent = this._plugOn() ? _t("chip_collegata", "🔗 Collegata") : _t("chip_scollegata", "🔗 Scollegata");
     const chargeStatus = root.querySelector('[data-c="chargestatus"]');
-    if (chargeStatus) chargeStatus.textContent = this._chargeOn() ? "In carica" : "Non in carica";
+    if (chargeStatus) chargeStatus.textContent = this._chargeOn() ? _t("state_in_carica", "In carica") : _t("state_non_in_carica", "Non in carica");
     // foto auto
     const img = root.querySelector('[data-c="carimg"]');
     if (img) {
       img.innerHTML = this._cfg.image
-        ? `<img src="${this._cfg.image}" alt="${this._cfg.name}" onerror="this.parentNode.innerHTML='<div class=\\'ph\\'>🚗</div>'">`
+        ? `<img src="${this._cfg.image + (this._cfg.image.indexOf("?") < 0 ? "?v=" : "&v=") + REC_VER}" alt="${this._cfg.name}" onerror="this.parentNode.innerHTML='<div class=\\'ph\\'>🚗</div>'">`
         : `<div class="ph">🚗</div>`;
     }
     // comandi: valori
     const setV = (attr, val) => root.querySelectorAll(`[data-v="${attr}"]`).forEach((el) => { el.textContent = val; });
-    setV("cmd_charge", this._chargeOn() ? "In carica" : "Non in carica");
-    setV("cmd_plug", this._plugOn() ? "Collegata" : "Scollegata");
+    setV("cmd_charge", this._chargeOn() ? _t("state_in_carica", "In carica") : _t("state_non_in_carica", "Non in carica"));
+    setV("cmd_plug", this._plugOn() ? _t("state_collegata", "Collegata") : _t("state_scollegata", "Scollegata"));
     setV("cmd_zona", this._zoneName() || "—");
     setV("cmd_addr", this._addrName() || "—");
     setV("cmd_tipo", this._f("tipo_ric"));
@@ -2137,7 +3090,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     const b = this._st(this._sid("wallbox"), `binary_sensor.wallbox_${this._cfg.car}`, this._car("binary_sensor", "wallbox"), this._car("binary_sensor", "charging"));
     if (!b) return "—";
     const v = this._slug(b.state);
-    return v === "on" || v === "charging" || v === "in_carica" ? "Wallbox attiva" : "Scollegata";
+    return v === "on" || v === "charging" || v === "in_carica" ? _t("wb_attiva", "Wallbox attiva") : _t("state_scollegata", "Scollegata");
   }
   _last7() {
     const cands = [this._sid("storico_giornaliero"), this._sid("trip_history"), "sensor.megane_trip_history"];
@@ -2198,12 +3151,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (selY && (selY.dataset.sig || "") !== years.join("|")) {
       selY.dataset.sig = years.join("|");
       const cur = selY.value;
-      selY.innerHTML = `<option value="">Tutti gli anni</option>` + years.map((y) => `<option value="${y}">${y}</option>`).join("");
+      selY.innerHTML = `<option value="">${_t("opt_tutti_gli_anni", "Tutti gli anni")}</option>` + years.map((y) => `<option value="${y}">${y}</option>`).join("");
       selY.value = cur;
     }
     if (selM && !selM.dataset.done) {
       selM.dataset.done = "1";
-      selM.innerHTML = `<option value="">Tutti i mesi</option>` + NOMI_MESI.map((n, i) => `<option value="${String(i + 1).padStart(2, "0")}">${n}</option>`).join("");
+      selM.innerHTML = `<option value="">${_t("opt_tutti_i_mesi", "Tutti i mesi")}</option>` + NOMI_MESI().map((n, i) => `<option value="${String(i + 1).padStart(2, "0")}">${n}</option>`).join("");
     }
     const fy = selY ? selY.value : "";
     const fm = selM ? selM.value : "";
@@ -2244,7 +3197,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (selY && (selY.dataset.sig || "") !== anni.join("|")) {
       selY.dataset.sig = anni.join("|");
       const cur = selY.value;
-      selY.innerHTML = `<option value="">Tutti gli anni</option>` +
+      selY.innerHTML = `<option value="">${_t("opt_tutti_gli_anni", "Tutti gli anni")}</option>` +
         anni.map((y) => `<option value="${y}">${y}</option>`).join("");
       selY.value = anni.includes(cur) ? cur : "";
     }
@@ -2255,7 +3208,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     box.innerHTML = anni.filter((y) => !fY || y === fY).map((y) => {
       const mm = mesi[y] || {};
       let tC = 0, tK = 0, tKm = 0;
-      const rows = NOMI_MESI.map((nome, i) => {
+      const rows = NOMI_MESI().map((nome, i) => {
         const m = String(i + 1).padStart(2, "0");
         const r = mm[m];
         const futuro = y > curY || (y === curY && m > curM);
@@ -2293,14 +3246,14 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (selY && (selY.dataset.sig || "") !== years.join("|")) {
       selY.dataset.sig = years.join("|");
       const cur = selY.value;
-      selY.innerHTML = `<option value="">Tutti gli anni</option>` + years.map((y) => `<option value="${y}">${y}</option>`).join("");
+      selY.innerHTML = `<option value="">${_t("opt_tutti_gli_anni", "Tutti gli anni")}</option>` + years.map((y) => `<option value="${y}">${y}</option>`).join("");
       // default: anno corrente (se presente nei dati)
       const thisY = String(new Date().getFullYear());
       selY.value = cur || (years.includes(thisY) ? thisY : "");
     }
     if (selM && !selM.dataset.done) {
       selM.dataset.done = "1";
-      selM.innerHTML = `<option value="">Tutti i mesi</option>` + NOMI_MESI.map((n, i) => `<option value="${String(i + 1).padStart(2, "0")}">${n}</option>`).join("");
+      selM.innerHTML = `<option value="">${_t("opt_tutti_i_mesi", "Tutti i mesi")}</option>` + NOMI_MESI().map((n, i) => `<option value="${String(i + 1).padStart(2, "0")}">${n}</option>`).join("");
       // default: mese corrente
       selM.value = String(new Date().getMonth() + 1).padStart(2, "0");
     }
@@ -2420,7 +3373,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         <summary>▼ ${y} <span class="tr">${tot.length} giorni · <b>${this._i(km)} km</b></span></summary>
         ${Object.entries(mesi).sort((a, b) => b[0].localeCompare(a[0])).map(([m, rs]) => {
           const kmM = rs.reduce((a, r) => a + r.km, 0);
-          const nm = NOMI_MESI[parseInt(m, 10) - 1] || m;
+          const nm = NOMI_MESI()[parseInt(m, 10) - 1] || m;
           return `<details class="mese" data-tk="${y}-${m}" ${op(`${y}-${m}`)}>
             <summary>▼ ${nm} <span class="tr">${rs.length} giorni · <b>${this._i(kmM)} km</b></span></summary>
             ${rs.map((r) => `<div class="giorno">• <b>${this._d(r.data)}</b> — ${this._fmt(r.km, 1)} km <span class="badge">${this._fmt(effOf(r), 1)}</span> · ${this._fmt(r.costo, 2)} €</div>`).join("")}
@@ -2496,7 +3449,7 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
 }
 
-const NOMI_MESI = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+const NOMI_MESI = () => _t("mesi", "Gennaio|Febbraio|Marzo|Aprile|Maggio|Giugno|Luglio|Agosto|Settembre|Ottobre|Novembre|Dicembre").split("|");
 const NAV = [
   ["p1", "📊", "Panoramica"], ["p2", "🛣️", "Viaggi"], ["p3", "📈", "Statistiche"],
   ["p4", "🔌", "Ricariche"], ["p11", "🎛️", "Wallbox"], ["p5", "💚", "Salute batteria"],
@@ -2627,13 +3580,13 @@ select,input{background:var(--panel2);color:var(--txt);border:1px solid var(--li
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 `;
 
-const PAGES = {
+const PAGES = () => ({
   p1: `<h1>Panoramica</h1>
   <div class="grid g3">
     <div class="card" style="padding:0;overflow:hidden">
       <div class="carbox" style="min-height:170px;border:none;border-radius:0;background:var(--panel);position:relative;padding:18px 16px">
         <div data-c="carimg" style="width:100%;display:flex;align-items:center;justify-content:center;min-height:120px"><div class="ph">🚗</div></div>
-        <div style="position:absolute;top:10px;left:12px"><span class="chip" data-c="charging">🔓 Non in carica</span></div>
+        <div style="position:absolute;top:10px;left:12px"><span class="chip" data-c="charging">>${_t("chip_non_in_carica", "🔓 Non in carica")}</span></div>
         <div style="position:absolute;top:10px;right:12px"><span class="chip acc">⚡ <span data-f="range">—</span> km</span></div>
       </div>
       <div style="padding:14px 16px">
@@ -2655,7 +3608,7 @@ const PAGES = {
         </div>
       </div>
     </div>
-    <div class="card"><h3>Comandi Renault</h3>
+    <div class="card"><h3>${_t("h3_comandi_renault", "Comandi Renault")}</h3>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
         <div class="cmd" data-more="charging"><span class="em">🔌</span>Carica<b data-v="cmd_charge">—</b></div>
         <div class="cmd" data-more="loc"><span class="em">📍</span>Zona ricarica<b data-v="cmd_zona">—</b></div>
@@ -2668,47 +3621,47 @@ const PAGES = {
         <div class="cmd" data-cmd="flash"><span class="em">💡</span>Lampeggia<b>Premi ▸</b></div>
       </div>
     </div>
-    <div class="card"><h3>Efficienza</h3>
+    <div class="card"><h3>${_t("h3_efficienza", "Efficienza")}</h3>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
         <div style="text-align:center"><div class="big" style="font-size:24px;color:var(--accent)" data-f="perc_100km" data-dec="1">—</div><div style="color:var(--muted);font-size:10.5px">% batt./100km</div></div>
         <div style="text-align:center"><div class="big" style="font-size:24px" data-f="costo_km" data-dec="3">—</div><div style="color:var(--muted);font-size:10.5px">costo/km</div></div>
         <div style="text-align:center"><div class="big" style="font-size:24px" data-f="costo_100" data-dec="2">—</div><div style="color:var(--muted);font-size:10.5px">costo/100km</div></div>
       </div>
       <div style="margin-top:10px">
-        <div class="row"><span>Viaggio in corso</span><b data-f="trip_attivo">—</b></div>
-        <div class="row"><span>⚡ Wallbox ora</span><b data-v="cmd_wb">—</b></div>
+        <div class="row"><span>${_t("lbl_viaggio_in_corso", "Viaggio in corso")}</span><b data-f="trip_attivo">—</b></div>
+        <div class="row"><span>${_t("lbl_wallbox_ora", "⚡ Wallbox ora")}</span><b data-v="cmd_wb">—</b></div>
       </div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">💰 Risparmio netto</div>
-        <div class="row"><span>Carburante evitato</span><b style="color:var(--accent)"><span data-f="risp_tot" data-dec="2">—</span> €</b></div>
-        <div class="row"><span>+ Tagliandi</span><b><span data-f="risp_tagliandi" data-dec="2">—</span> €</b></div>
-        <div class="row"><span>+ Bollo</span><b><span data-f="risp_bollo" data-dec="2">—</span> €</b></div>
+        <div class="row"><span>${_t("lbl_carburante_evitato", "Carburante evitato")}</span><b style="color:var(--accent)"><span data-f="risp_tot" data-dec="2">—</span> €</b></div>
+        <div class="row"><span>${_t("lbl_tagliandi", "+ Tagliandi")}</span><b><span data-f="risp_tagliandi" data-dec="2">—</span> €</b></div>
+        <div class="row"><span>${_t("lbl_bollo", "+ Bollo")}</span><b><span data-f="risp_bollo" data-dec="2">—</span> €</b></div>
         <div class="row" style="border-top:2px solid var(--accent)"><span><b>★ NETTO</b></span><b style="color:var(--accent);font-size:17px"><span data-f="risp_netto_tot" data-dec="2">—</span> €</b></div>
       </div>
     </div>
   </div>
 
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>Oggi a colpo d'occhio</h3>
+    <div class="card"><h3>${_t("h3_oggi_a_colpo_d_occhio", "Oggi a colpo d'occhio")}</h3>
       <div class="grid g2">
         <div>
-          <div class="row"><span>🔴 Consumata oggi</span><b><span data-f="drain" data-dec="1">—</span>%</b></div>
-          <div class="row"><span>🔋 kWh usati oggi</span><b><span data-f="kwh_oggi_k" data-dec="2">—</span> kWh</b></div>
-          <div class="row"><span>🚗 Km oggi</span><b><span data-f="km_oggi">—</span> km</b></div>
+          <div class="row"><span>${_t("lbl_consumata_oggi", "🔴 Consumata oggi")}</span><b><span data-f="drain" data-dec="1">—</span>%</b></div>
+          <div class="row"><span>${_t("lbl_kwh_usati_oggi", "🔋 kWh usati oggi")}</span><b><span data-f="kwh_oggi_k" data-dec="2">—</span> kWh</b></div>
+          <div class="row"><span>${_t("lbl_km_oggi", "🚗 Km oggi")}</span><b><span data-f="km_oggi">—</span> km</b></div>
         </div>
         <div>
-          <div class="row"><span>⚡ Ricaricati oggi</span><b><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh · <span data-f="ricarica_oggi_pct" data-dec="0">—</span>%</b></div>
-          <div class="row"><span>💰 Ricariche oggi</span><b><span data-f="costo_oggi" data-dec="2">—</span> €</b></div>
-          <div class="row"><span>💰 Ricariche mensili</span><b><span data-f="costo_mese" data-dec="2">—</span> €</b></div>
+          <div class="row"><span>${_t("lbl_ricaricati_oggi", "⚡ Ricaricati oggi")}</span><b><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh · <span data-f="ricarica_oggi_pct" data-dec="0">—</span>%</b></div>
+          <div class="row"><span>${_t("lbl_ricariche_oggi", "💰 Ricariche oggi")}</span><b><span data-f="costo_oggi" data-dec="2">—</span> €</b></div>
+          <div class="row"><span>${_t("lbl_ricariche_mensili", "💰 Ricariche mensili")}</span><b><span data-f="costo_mese" data-dec="2">—</span> €</b></div>
         </div>
       </div>
     </div>
-    <div class="card"><h3>Ultima ricarica</h3>
-      <div class="row"><span>Data</span><b data-f="ultima_data">—</b></div>
-      <div class="row"><span>Energia</span><b><span data-f="batt_ult">—</span> kWh</b></div>
-      <div class="row"><span>Batteria</span><b data-f="batt_ult_pct">—</b></div>
-      <div class="row"><span>Media</span><b><span data-f="media_ult">—</span> kW</b></div>
-      <div class="row"><span>Costo · Eff.</span><b><span data-f="costo_ult" data-dec="2">—</span> € · <span data-f="eff_ric">—</span>%</b></div>
+    <div class="card"><h3>${_t("h3_ultima_ricarica", "Ultima ricarica")}</h3>
+      <div class="row"><span>${_t("lbl_data", "Data")}</span><b data-f="ultima_data">—</b></div>
+      <div class="row"><span>${_t("lbl_energia", "Energia")}</span><b><span data-f="batt_ult">—</span> kWh</b></div>
+      <div class="row"><span>${_t("lbl_batteria", "Batteria")}</span><b data-f="batt_ult_pct">—</b></div>
+      <div class="row"><span>${_t("lbl_media", "Media")}</span><b><span data-f="media_ult">—</span> kW</b></div>
+      <div class="row"><span>${_t("lbl_costo_eff", "Costo · Eff.")}</span><b><span data-f="costo_ult" data-dec="2">—</span> € · <span data-f="eff_ric">—</span>%</b></div>
     </div>
   </div>
 
@@ -2717,20 +3670,20 @@ const PAGES = {
       <div class="btn" data-cmd="refresh_car" style="flex:0 0 auto;margin-bottom:8px;padding:8px 14px;font-size:13px">🔄 Aggiorna posizione auto</div>
       <div class="mapbox" id="evmap" style="flex:1;min-height:0"></div>
     </div>
-    <div class="card"><h3>📈 Km percorsi (7 giorni)</h3>
+    <div class="card"><h3>${_t("h3_km_percorsi_7_giorni", "📈 Km percorsi (7 giorni)")}</h3>
       <div id="kmchart" style="min-height:150px"></div>
     </div>
   </div>
 
-  <div class="card" style="margin-top:16px"><h3>📍 Cronologia posizione</h3>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_cronologia_posizione", "📍 Cronologia posizione")}</h3>
     <div data-c="pos-history"><div style="color:var(--muted);font-size:12px">Nessun cambio di posizione registrato.</div></div>
   </div>
 
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>🤖 Automazioni attive</h3>
+    <div class="card"><h3>${_t("h3_automazioni_attive", "🤖 Automazioni attive")}</h3>
       <div data-c="autos-on"></div>
     </div>
-    <div class="card"><h3>🔧 Scadenze e manutenzione</h3>
+    <div class="card"><h3>${_t("h3_scadenze_e_manutenzione", "🔧 Scadenze e manutenzione")}</h3>
       <div data-c="tab-scadenze-p1"><div style="color:var(--muted);font-size:12px">Nessuna scadenza</div></div>
     </div>
   </div>`,
@@ -2741,11 +3694,11 @@ const PAGES = {
     <div class="tile"><div class="em">📖</div><div><div class="v" data-f="stat_n_trip">—</div><div class="l">Viaggi totali</div></div></div>
     <div class="tile"><div class="em">⚡</div><div><div class="v" data-f="stat_eff">—</div><div class="l">Consumo medio kWh/100km</div></div></div>
   </div>
-  <div class="card tree"><h3>Archivio</h3><div data-c="tree">—</div></div>
-  <div class="card" style="margin-top:16px"><h3>Dettaglio viaggi recenti</h3>
+  <div class="card tree"><h3>${_t("h3_archivio", "Archivio")}</h3><div data-c="tree">—</div></div>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_dettaglio_viaggi_recenti", "Dettaglio viaggi recenti")}</h3>
     <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-      <select data-tf="year" style="width:auto"><option value="">Tutti gli anni</option></select>
-      <select data-tfm="month" style="width:auto"><option value="">Tutti i mesi</option></select>
+      <select data-tf="year" style="width:auto"><option value="">${_t("opt_tutti_gli_anni", "Tutti gli anni")}</option></select>
+      <select data-tfm="month" style="width:auto"><option value="">${_t("opt_tutti_i_mesi", "Tutti i mesi")}</option></select>
       <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">da
         <input type="date" data-tfd="from" style="width:auto"></span>
       <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">a
@@ -2765,35 +3718,35 @@ const PAGES = {
     <div class="tile"><div class="em">🔌</div><div><div class="v" data-t="n_ricariche">—</div><div class="l">Ricariche</div></div></div>
     <div class="tile"><div class="em">⚡</div><div><div class="v" data-t="energia_caricata">—</div><div class="l">Energia caricata kWh</div></div></div></div>
   <div class="grid g2">
-    <div class="card"><h3>Energia caricata differenziata</h3>
-      <div class="row"><span>🏠 Casa (wallbox)</span><b><span data-f="energia_casa">—</span> kWh</b></div>
-      <div class="row"><span>☀️ Fotovoltaico</span><b><span data-f="fv_tot">—</span> kWh</b></div>
-      <div class="row"><span>⚡ Colonnine</span><b data-attr="statistiche_viaggi|caricata_pubblica">—</b></div></div>
-    <div class="card"><h3>Percorrenza</h3>
+    <div class="card"><h3>${_t("h3_energia_caricata_differenziata", "Energia caricata differenziata")}</h3>
+      <div class="row"><span>${_t("lbl_casa_wallbox", "🏠 Casa (wallbox)")}</span><b><span data-f="energia_casa">—</span> kWh</b></div>
+      <div class="row"><span>${_t("lbl_fotovoltaico", "☀️ Fotovoltaico")}</span><b><span data-f="fv_tot">—</span> kWh</b></div>
+      <div class="row"><span>${_t("lbl_colonnine", "⚡ Colonnine")}</span><b data-attr="statistiche_viaggi|caricata_pubblica">—</b></div></div>
+    <div class="card"><h3>${_t("h3_percorrenza", "Percorrenza")}</h3>
       <table><tr><th>Periodo</th><th>Usati</th><th>Caricati</th><th>KM</th></tr>
         <tr><td><b>OGGI</b></td><td data-per="oggi|usati">—</td><td data-per="oggi|caricati">—</td><td data-per="oggi|km">—</td></tr>
         <tr><td><b>IERI</b></td><td data-per="ieri|usati">—</td><td data-per="ieri|caricati">—</td><td data-per="ieri|km">—</td></tr>
         <tr><td><b>SETTIMANA</b></td><td data-per="settimana|usati">—</td><td data-per="settimana|caricati">—</td><td data-per="settimana|km">—</td></tr>
         <tr><td><b>MESE</b></td><td data-per="mese|usati">—</td><td data-per="mese|caricati">—</td><td data-per="mese|km">—</td></tr>
         <tr><td><b>ANNO</b></td><td data-per="anno|usati">—</td><td data-per="anno|caricati">—</td><td data-per="anno|km">—</td></tr></table></div></div>
-  <div class="card" style="margin-top:16px"><h3>Rotte (consumo per zona)</h3>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_rotte_consumo_per_zona", "Rotte (consumo per zona)")}</h3>
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <select data-rf="year" style="width:auto"><option value="">Tutti gli anni</option></select>
-      <select data-rfm="month" style="width:auto"><option value="">Tutti i mesi</option></select>
+      <select data-rf="year" style="width:auto"><option value="">${_t("opt_tutti_gli_anni", "Tutti gli anni")}</option></select>
+      <select data-rfm="month" style="width:auto"><option value="">${_t("opt_tutti_i_mesi", "Tutti i mesi")}</option></select>
     </div>
     <table><tr><th>Rotta</th><th>Viaggi</th><th>Km</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th></tr>
     <tbody data-c="tab-rotte"></tbody></table></div>
-  <div class="card" style="margin-top:16px"><h3>Storico mensile (tutti gli anni)</h3>
-    <div style="margin-bottom:10px"><select data-myear="year" style="width:auto"><option value="">Tutti gli anni</option></select></div>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_storico_mensile_tutti_gli_anni", "Storico mensile (tutti gli anni)")}</h3>
+    <div style="margin-bottom:10px"><select data-myear="year" style="width:auto"><option value="">${_t("opt_tutti_gli_anni", "Tutti gli anni")}</option></select></div>
     <div data-c="tab-mesi"></div></div>`,
 
   p4: `<h1>Ricariche</h1>
   <div class="tiles">
-    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: settimana"><div class="l">OGGI</div><div class="v"><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_oggi" data-dec="2">—</span> €</div></div>
-    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: settimana"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett" data-dec="2">—</span> €</div></div>
-    <div class="tile" data-cmd="ric_period" data-per="Mese" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: mese"><div class="l">MESE</div><div class="v"><span data-f="kwh_mese_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_mese" data-dec="2">—</span> €</div></div>
-    <div class="tile" data-cmd="ric_period" data-per="Anno" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="Filtra: anno"><div class="l">ANNO</div><div class="v"><span data-f="kwh_anno_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_anno" data-dec="2">—</span> €</div></div></div>
-  <div class="card" style="margin-top:16px"><h3>➕ Aggiungi ricarica manuale</h3>
+    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="${_t("ttl_filtra_settimana", "Filtra: settimana")}"><div class="l">OGGI</div><div class="v"><span data-f="kwh_oggi_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_oggi" data-dec="2">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Settimana" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="${_t("ttl_filtra_settimana", "Filtra: settimana")}"><div class="l">SETTIMANA</div><div class="v"><span data-f="kwh_sett_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_sett" data-dec="2">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Mese" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="${_t("ttl_filtra_mese", "Filtra: mese")}"><div class="l">MESE</div><div class="v"><span data-f="kwh_mese_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_mese" data-dec="2">—</span> €</div></div>
+    <div class="tile" data-cmd="ric_period" data-per="Anno" style="flex-direction:column;align-items:flex-start;cursor:pointer" title="${_t("ttl_filtra_anno", "Filtra: anno")}"><div class="l">ANNO</div><div class="v"><span data-f="kwh_anno_wb" data-dec="2">—</span> kWh</div><div style="color:var(--muted);font-size:12px;margin-top:6px"><span data-f="costo_anno" data-dec="2">—</span> €</div></div></div>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_aggiungi_ricarica_manuale", "➕ Aggiungi ricarica manuale")}</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Data
         <input type="date" data-mc="data" style="width:auto"></label>
@@ -2802,13 +3755,13 @@ const PAGES = {
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Costo €
         <input type="number" data-mc="costo" step="0.01" min="0" style="width:90px"></label>
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Tipo
-        <select data-mc="tipo" style="width:auto"><option>Casa</option><option>Fotovoltaico</option><option selected>Pubblica</option><option>Manuale</option></select></label>
+        <select data-mc="tipo" style="width:auto"><option>${_t("opt_casa", "Casa")}</option><option>${_t("opt_fotovoltaico", "Fotovoltaico")}</option><option selected>${_t("opt_pubblica", "Pubblica")}</option><option>${_t("opt_manuale", "Manuale")}</option></select></label>
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted);flex:1;min-width:180px">Descrizione
-        <input data-mc="descrizione" placeholder="es. Colonnina DC autostrada" style="width:100%"></label>
+        <input data-mc="descrizione" placeholder="${_t("ph_es_colonnina_dc_autostrada", "es. Colonnina DC autostrada")}" style="width:100%"></label>
       <div class="btn" data-cmd="add_charge_manual" style="flex:0 0 auto;padding:8px 14px;font-size:13px;align-self:flex-end">💾 Registra ricarica</div>
     </div>
     <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Utile per le colonnine DC. Se lasci vuoto il costo, resta 0 €.</div></div>
-  <div class="card" style="margin-top:16px"><h3>📊 Distribuzione ricariche</h3>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_distribuzione_ricariche", "📊 Distribuzione ricariche")}</h3>
     <div class="grid g2">
       <div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">AC vs DC</div>
         <div data-c="donut-acdc"></div></div>
@@ -2823,7 +3776,7 @@ const PAGES = {
       <div class="tile"><div><div class="v" data-cs="costo">—</div><div class="l">Costo totale €</div></div></div>
       <div class="tile"><div><div class="v" data-cs="prezzo">—</div><div class="l">Prezzo medio €/kWh</div></div></div>
     </div></div>
-  <div class="card"><h3>Storico ricariche</h3>
+  <div class="card"><h3>${_t("h3_storico_ricariche", "Storico ricariche")}</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
       <select data-sel="sel_tipo"></select>
       <select data-sel="sel_periodo"></select>
@@ -2840,65 +3793,65 @@ const PAGES = {
     <div class="tile"><div class="em">✅</div><div><div class="v" data-f="soh_off">—</div><div class="l">SOH UFFICIALE %</div></div></div>
   </div>
   <div class="grid g3">
-    <div class="card"><h3>SOH Ufficiale ✏️</h3>
+    <div class="card"><h3>${_t("h3_soh_ufficiale", "SOH Ufficiale ✏️")}</h3>
       <div class="inp" style="border:none"><input data-n="n_soh" style="width:120px;font-size:26px;font-weight:800"><span class="u" style="font-size:16px">%</span></div>
       <div style="color:var(--muted);font-size:12px">modificabile, si salva nel number</div></div>
-    <div class="card"><h3>SOH Stimato</h3><div class="big" style="font-size:34px;color:var(--accent)"><span data-f="soh_est">—</span><small>%</small></div>
+    <div class="card"><h3>${_t("h3_soh_stimato", "SOH Stimato")}</h3><div class="big" style="font-size:34px;color:var(--accent)"><span data-f="soh_est">—</span><small>%</small></div>
       <div style="color:var(--muted);font-size:12px;margin-top:8px">dalle ricariche a casa</div></div>
-    <div class="card"><h3>kWh per 1%</h3><div class="big" style="font-size:34px;color:var(--accent)"><span data-f="kwh_1pct">—</span> <small>kWh</small></div>
+    <div class="card"><h3>${_t("h3_kwh_per_1", "kWh per 1%")}</h3><div class="big" style="font-size:34px;color:var(--accent)"><span data-f="kwh_1pct">—</span> <small>kWh</small></div>
       <div style="color:var(--muted);font-size:12px;margin-top:8px">= capacità × SOH ÷ 100</div></div></div>
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>Dove finisce l'energia</h3>
-      <div class="row"><span>Dalla rete (AC)</span><b><span data-f="rete_ult">—</span> kWh</b></div>
-      <div class="row"><span>In batteria</span><b><span data-f="batt_ult">—</span> kWh</b></div>
-      <div class="row"><span>Dispersa</span><b><span data-f="dispersa_ult">—</span> kWh</b></div>
-      <div class="row"><span>Efficienza</span><b><span data-f="eff_ric">—</span>%</b></div></div>
-    <div class="card"><h3>Sessioni analizzate</h3>
+    <div class="card"><h3>${_t("h3_dove_finisce_l_energia", "Dove finisce l'energia")}</h3>
+      <div class="row"><span>${_t("lbl_dalla_rete_ac", "Dalla rete (AC)")}</span><b><span data-f="rete_ult">—</span> kWh</b></div>
+      <div class="row"><span>${_t("lbl_in_batteria", "In batteria")}</span><b><span data-f="batt_ult">—</span> kWh</b></div>
+      <div class="row"><span>${_t("lbl_dispersa", "Dispersa")}</span><b><span data-f="dispersa_ult">—</span> kWh</b></div>
+      <div class="row"><span>${_t("lbl_efficienza", "Efficienza")}</span><b><span data-f="eff_ric">—</span>%</b></div></div>
+    <div class="card"><h3>${_t("h3_sessioni_analizzate", "Sessioni analizzate")}</h3>
       <table><tr><th>Data</th><th>Δ SoC</th><th>Rete</th><th>Batteria</th><th>Eff.</th></tr>
       <tbody data-c="tab-salute"></tbody></table></div></div>`,
 
   p6: `<h1>Manutenzione</h1>
   <div class="grid g3">
-    <div class="card"><h3>🔧 Tagliando</h3>
-      <div class="row"><span>Prossimo (km)</span><b><span data-attr="tagliandi|prossimo_km">—</span> km</b></div>
-      <div class="row"><span>Speso finora</span><b><span data-f="tagliandi">—</span> € (<span data-attr="tagliandi|n">—</span> interventi)</b></div>
-      <div class="inp"><span>Scadenza a km</span><input type="number" data-mk="tagliando"><span class="u">km</span></div>
-      <div class="inp"><span>Scadenza a data</span><input type="date" data-mk="tagliando" data-mdate="1"><span class="u"></span></div>
+    <div class="card"><h3>${_t("h3_tagliando", "🔧 Tagliando")}</h3>
+      <div class="row"><span>${_t("lbl_prossimo_km", "Prossimo (km)")}</span><b><span data-attr="tagliandi|prossimo_km">—</span> km</b></div>
+      <div class="row"><span>${_t("lbl_speso_finora", "Speso finora")}</span><b><span data-f="tagliandi">—</span> € (<span data-attr="tagliandi|n">—</span> interventi)</b></div>
+      <div class="inp"><span>${_t("lbl_scadenza_a_km", "Scadenza a km")}</span><input type="number" data-mk="tagliando"><span class="u">km</span></div>
+      <div class="inp"><span>${_t("lbl_scadenza_a_data", "Scadenza a data")}</span><input type="date" data-mk="tagliando" data-mdate="1"><span class="u"></span></div>
       <div class="btn" data-cmd="maint_tagliando" style="margin-top:8px">💾 Salva scadenza tagliando</div></div>
-    <div class="card"><h3>🛞 Cambio gomme</h3>
-      <div class="row"><span>Ultimo cambio a</span><b><span data-attr="prossima_scadenza|gomme_km">—</span> km</b></div>
-      <div class="row"><span>Prossimo cambio</span><b><span data-gomme="prossimo">—</span></b></div>
-      <div class="inp"><span>Ultimo cambio (km)</span><input type="number" data-mk="gomme" placeholder="es. 60000"><span class="u">km</span></div>
-      <div class="inp"><span>Scadenza a data (opz.)</span><input type="date" data-mk="gomme" data-mdate="1"><span class="u"></span></div>
+    <div class="card"><h3>${_t("h3_cambio_gomme", "🛞 Cambio gomme")}</h3>
+      <div class="row"><span>${_t("lbl_ultimo_cambio_a", "Ultimo cambio a")}</span><b><span data-attr="prossima_scadenza|gomme_km">—</span> km</b></div>
+      <div class="row"><span>${_t("lbl_prossimo_cambio", "Prossimo cambio")}</span><b><span data-gomme="prossimo">—</span></b></div>
+      <div class="inp"><span>${_t("lbl_ultimo_cambio_km", "Ultimo cambio (km)")}</span><input type="number" data-mk="gomme" placeholder="${_t("ph_es_60000", "es. 60000")}"><span class="u">km</span></div>
+      <div class="inp"><span>${_t("lbl_scadenza_a_data_opz", "Scadenza a data (opz.)")}</span><input type="date" data-mk="gomme" data-mdate="1"><span class="u"></span></div>
       <div class="btn" data-cmd="maint_gomme" style="margin-top:8px">💾 Salva</div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Inserisci i <b>km dell'ultimo cambio</b>:
         l'integrazione aggiunge l'<b>intervallo gomme</b> configurato e ti dice a quanti km cambiarle.</div></div>
-    <div class="card"><h3>🛡️ Assicurazione</h3>
-      <div class="row"><span>Scadenza</span><b><span data-attr="assicurazione|data">—</span> · <span data-f="assic">—</span> gg</b></div>
-      <div class="inp"><span>Costo annuo</span><input data-n="n_assic"><span class="u">€/anno</span></div>
+    <div class="card"><h3>${_t("h3_assicurazione", "🛡️ Assicurazione")}</h3>
+      <div class="row"><span>${_t("lbl_scadenza", "Scadenza")}</span><b><span data-attr="assicurazione|data">—</span> · <span data-f="assic">—</span> gg</b></div>
+      <div class="inp"><span>${_t("lbl_costo_annuo", "Costo annuo")}</span><input data-n="n_assic"><span class="u">€/anno</span></div>
       <div style="display:flex;gap:8px;margin-top:14px">
         <div class="btn" data-cmd="ass_plus6">Rinnova +6 mesi</div>
         <div class="btn" data-cmd="ass_plus12">Rinnova +1 anno</div></div></div></div>
-  <div class="card" style="margin-top:16px"><h3>➕ Registra intervento</h3>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_registra_intervento", "➕ Registra intervento")}</h3>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:center">
-      <select data-ma="tipo" style="width:100%"><option>Tagliando</option><option>Cambio gomme</option><option>Riparazione</option><option>Altro</option></select>
+      <select data-ma="tipo" style="width:100%"><option>${_t("opt_tagliando", "Tagliando")}</option><option>${_t("opt_cambio_gomme", "Cambio gomme")}</option><option>${_t("opt_riparazione", "Riparazione")}</option><option>${_t("opt_altro", "Altro")}</option></select>
       <input type="date" data-ma="data" style="width:100%">
       <input type="number" data-ma="km" placeholder="km" style="width:100%">
       <input type="number" data-ma="costo" step="0.01" placeholder="€" style="width:100%">
     </div>
     <div class="btn" data-cmd="maint_add" style="margin-top:10px">➕ Aggiungi intervento</div>
   </div>
-  <div class="card" style="margin-top:16px"><h3>📋 Interventi registrati</h3>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_interventi_registrati", "📋 Interventi registrati")}</h3>
     <table><tr><th>Data</th><th>Km</th><th>Tipo</th><th>€</th><th></th></tr>
     <tbody data-c="tab-tagliandi"></tbody></table></div>
-  <div class="card netto" style="margin-top:16px"><h3>🏆 Risparmio manutenzione</h3>
-    <div class="row"><span>Termica teorica (450 € × tagliandi)</span><b><span data-f="teo_tagliandi">—</span> €</b></div>
-    <div class="row"><span>Spesa reale EV</span><b><span data-f="tagliandi">—</span> €</b></div>
-    <div class="row"><span>Risparmio tagliandi</span><b style="color:var(--good)"><span data-f="risp_tagliandi" data-dec="2">—</span> €</b></div>
-    <div class="row"><span>Risparmio bollo</span><b><span data-f="risp_bollo" data-dec="2">—</span> €</b></div></div>`,
+  <div class="card netto" style="margin-top:16px"><h3>${_t("h3_risparmio_manutenzione", "🏆 Risparmio manutenzione")}</h3>
+    <div class="row"><span>${_t("lbl_termica_teorica_450_×_tagliandi", "Termica teorica (450 € × tagliandi)")}</span><b><span data-f="teo_tagliandi">—</span> €</b></div>
+    <div class="row"><span>${_t("lbl_spesa_reale_ev", "Spesa reale EV")}</span><b><span data-f="tagliandi">—</span> €</b></div>
+    <div class="row"><span>${_t("lbl_risparmio_tagliandi", "Risparmio tagliandi")}</span><b style="color:var(--good)"><span data-f="risp_tagliandi" data-dec="2">—</span> €</b></div>
+    <div class="row"><span>${_t("lbl_risparmio_bollo", "Risparmio bollo")}</span><b><span data-f="risp_bollo" data-dec="2">—</span> €</b></div></div>`,
 
   p7: `<h1>Risparmi</h1>
-  <div class="card"><h3>⚖️ Termica vs Elettrica</h3>
+  <div class="card"><h3>${_t("h3_termica_vs_elettrica", "⚖️ Termica vs Elettrica")}</h3>
     <table style="width:100%">
       <tr><th>Voce</th><th style="text-align:right">🔴 Auto termica</th><th style="text-align:right">🟢 Auto elettrica</th><th style="text-align:right">💚 Differenza</th></tr>
       <tr><td>⛽ Carburante</td><td style="text-align:right"><span data-sv="t_carb">—</span> €</td><td style="text-align:right"><span data-sv="e_ric">—</span> €</td><td style="text-align:right"><b data-sv="d_carb">—</b> €</td></tr>
@@ -2914,31 +3867,31 @@ const PAGES = {
   </div>
 
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>📊 Confronto costi</h3>
+    <div class="card"><h3>${_t("h3_confronto_costi", "📊 Confronto costi")}</h3>
       <div data-c="bar-risp"></div></div>
-    <div class="card"><h3>📅 Risparmio per periodo</h3>
-      <div class="row"><span>Mese</span><b style="color:var(--accent)"><span data-f="risp_mese" data-dec="2">—</span> €</b></div>
-      <div class="row"><span>Anno</span><b style="color:var(--accent)"><span data-f="risp_anno" data-dec="2">—</span> €</b></div>
+    <div class="card"><h3>${_t("h3_risparmio_per_periodo", "📅 Risparmio per periodo")}</h3>
+      <div class="row"><span>${_t("lbl_mese", "Mese")}</span><b style="color:var(--accent)"><span data-f="risp_mese" data-dec="2">—</span> €</b></div>
+      <div class="row"><span>${_t("lbl_anno", "Anno")}</span><b style="color:var(--accent)"><span data-f="risp_anno" data-dec="2">—</span> €</b></div>
       <div class="row" style="border-top:1px solid var(--line)"><span><b>Totale</b></span><b style="color:var(--accent)"><span data-sv="d_tot">—</span> €</b></div>
-      <div class="row"><span>Km miei (dall'attivazione)</span><b><span data-sv="km">—</span> km</b></div>
-      <div class="row"><span>Prezzo carburante</span><b><span data-sv="prezzo">—</span> €/l</b></div></div>
+      <div class="row"><span>${_t("lbl_km_miei_dall_attivazione", "Km miei (dall'attivazione)")}</span><b><span data-sv="km">—</span> km</b></div>
+      <div class="row"><span>${_t("lbl_prezzo_carburante", "Prezzo carburante")}</span><b><span data-sv="prezzo">—</span> €/l</b></div></div>
   </div>
 
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>☀️ Fotovoltaico</h3>
-      <div class="row"><span>Risparmiato col FV</span><b style="color:var(--good);font-size:17px"><span data-sv="fv_eur" data-dec="2">—</span> €</b></div>
-      <div class="row"><span>Energia dal FV</span><b><span data-sv="fv_kwh">—</span> kWh</b></div>
-      <div class="row"><span>Ricaricato FV questo mese</span><b><span data-f="fv_mese">—</span> kWh</b></div>
-      <div class="row"><span>Energia FV totale</span><b><span data-f="fv_tot">—</span> kWh</b></div>
+    <div class="card"><h3>${_t("h3_fotovoltaico", "☀️ Fotovoltaico")}</h3>
+      <div class="row"><span>${_t("lbl_risparmiato_col_fv", "Risparmiato col FV")}</span><b style="color:var(--good);font-size:17px"><span data-sv="fv_eur" data-dec="2">—</span> €</b></div>
+      <div class="row"><span>${_t("lbl_energia_dal_fv", "Energia dal FV")}</span><b><span data-sv="fv_kwh">—</span> kWh</b></div>
+      <div class="row"><span>${_t("lbl_ricaricato_fv_questo_mese", "Ricaricato FV questo mese")}</span><b><span data-f="fv_mese">—</span> kWh</b></div>
+      <div class="row"><span>${_t("lbl_energia_fv_totale", "Energia FV totale")}</span><b><span data-f="fv_tot">—</span> kWh</b></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Risparmio = kWh dal FV × (costo rete casa − costo FV).</div></div>
-    <div class="card"><h3>ℹ️ Come si calcola</h3>
+    <div class="card"><h3>${_t("h3_come_si_calcola", "ℹ️ Come si calcola")}</h3>
       <div style="color:var(--muted);font-size:12.5px;line-height:1.8">
         <b>Termica</b>: km × consumo × prezzo carburante + tagliandi + bollo.<br>
         <b>Elettrica</b>: ricariche registrate + quelle dichiarate + tagliandi reali + bollo EV.<br>
         <b>Risparmio</b>: termica − elettrica. Periodi (mese/anno) usano i dati di quel periodo.</div></div>
   </div>
 
-  <div class="card" style="margin-top:16px"><h3>🎯 Affidabilità del confronto</h3>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_affidabilità_del_confronto", "🎯 Affidabilità del confronto")}</h3>
     <div class="row"><span><b>Da installazione</b> — solo dati reali ✅</span><b style="color:var(--good);font-size:17px"><span data-sv="i_diff">—</span> €</b></div>
     <div style="color:var(--muted);font-size:11.5px;margin-bottom:10px">
       <span data-sv="i_km">—</span> km dal <span data-sv="i_date">—</span> ·
@@ -2946,35 +3899,32 @@ const PAGES = {
     <div class="row" style="border-top:1px solid var(--line);padding-top:10px"><span><b>Totale</b> — include i valori dichiarati</span><b style="color:var(--accent);font-size:17px"><span data-sv="d_tot">—</span> €</b></div>
     <div style="color:var(--muted);font-size:11.5px"><span data-sv="km">—</span> km dall'attivazione (odometro − km iniziali)</div>
     <div data-sv="warn_sempre" style="color:var(--warn);font-size:11.5px;margin-top:6px"></div>
-    <div class="note">Il confronto <b>da installazione</b> è il più attendibile: entrambi i lati nascono da dati reali
-      (km percorsi con l'integrazione attiva contro ricariche registrate). Quello <b>totale</b> dipende dai
-      kWh/€ che hai inserito in Configura → Prezzi. Entrambi usano i km <b>dall'attivazione</b>, non
-      l'odometro intero: i chilometri già percorsi da altri (auto usata) non entrano nel confronto.</div>
+    <div class="note">${_t("note_confronto", "Il confronto <b>da installazione</b> è il più attendibile: entrambi i lati nascono da dati reali\n      (km percorsi con l'integrazione attiva contro ricariche registrate). Quello <b>totale</b> dipende dai\n      kWh/€ che hai inserito in Configura → Prezzi. Entrambi usano i km <b>dall'attivazione</b>, non\n      l'odometro intero: i chilometri già percorsi da altri (auto usata) non entrano nel confronto.")}</div>
   </div>`,
 
 
   p8: `<h1>Extra</h1>
   <div class="grid g3">
-    <div class="card"><h3>🔋 Vampire drain</h3><div class="big" style="font-size:32px;color:var(--accent)"><span data-f="vampire" data-dec="1">—</span><small>% oggi</small></div>
+    <div class="card"><h3>${_t("h3_vampire_drain", "🔋 Vampire drain")}</h3><div class="big" style="font-size:32px;color:var(--accent)"><span data-f="vampire" data-dec="1">—</span><small>% oggi</small></div>
       <div style="color:var(--muted);font-size:12px;margin-top:6px">≈ <span data-attr="batteria_persa_da_fermo_oggi|equivalente_kwh">—</span> kWh oggi · ieri <b><span data-attr="batteria_persa_da_fermo_oggi|ieri_pct">—</span>%</b> (<span data-attr="batteria_persa_da_fermo_oggi|ieri_kwh">—</span> kWh)</div>
       <div style="color:var(--muted);font-size:12px;margin-top:4px">Settimana: <b><span data-attr="batteria_persa_da_fermo_oggi|settimana_pct">—</span>%</b> (<span data-attr="batteria_persa_da_fermo_oggi|settimana_kwh">—</span> kWh) · Mese: <b><span data-f="drain_mese_pct" data-dec="1">—</span>%</b> (<span data-attr="batteria_persa_da_fermo_mese|equivalente_kwh">—</span> kWh)</div></div>
-    <div class="card"><h3>🌍 CO2 evitata</h3><div class="big" style="font-size:32px;color:var(--good)"><span data-f="co2">—</span> <small>kg</small></div>
+    <div class="card"><h3>${_t("h3_co2_evitata", "🌍 CO2 evitata")}</h3><div class="big" style="font-size:32px;color:var(--good)"><span data-f="co2">—</span> <small>kg</small></div>
       <div style="color:var(--muted);font-size:12px;margin-top:6px">Anno: <span data-attr="co2_risparmiata|quest_anno">—</span> kg</div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:4px">evitata = termica − rete</div></div>
-    <div class="card"><h3>📅 Scadenze</h3>
+    <div class="card"><h3>${_t("h3_scadenze", "📅 Scadenze")}</h3>
       <table><tr><th>Tipo</th><th>Km / Giorni</th></tr><tbody data-c="tab-scadenze"></tbody></table></div></div>
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>🌦️ Meteo vs consumi</h3>
-      <div class="row"><span>Temperatura esterna</span><b><span data-f="temp_est">—</span> °C</b></div>
-      <div class="row"><span>Consumo attuale</span><b><span data-f="kwh_100">—</span> kWh/100km</b></div>
+    <div class="card"><h3>${_t("h3_meteo_vs_consumi", "🌦️ Meteo vs consumi")}</h3>
+      <div class="row"><span>${_t("lbl_temperatura_esterna", "Temperatura esterna")}</span><b><span data-f="temp_est">—</span> °C</b></div>
+      <div class="row"><span>${_t("lbl_consumo_attuale", "Consumo attuale")}</span><b><span data-f="kwh_100">—</span> kWh/100km</b></div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Media per stagione</div>
         <div data-c="stagioni"></div>
       </div></div>
-    <div class="card"><h3>🏆 Top &amp; Stop · mese</h3>
-      <div class="row"><span>Migliore</span><b><span data-topstop="migliore|kwh_per_100km">—</span> kWh/100km</b></div>
-      <div class="row"><span>Peggiore</span><b><span data-topstop="peggiore|kwh_per_100km">—</span> kWh/100km</b></div>
-      <div class="row"><span>Energia casa (totale)</span><b><span data-f="energia_casa">—</span> kWh</b></div>
+    <div class="card"><h3>${_t("h3_top_e_stop_mese", "🏆 Top &amp; Stop · mese")}</h3>
+      <div class="row"><span>${_t("lbl_migliore", "Migliore")}</span><b><span data-topstop="migliore|kwh_per_100km">—</span> kWh/100km</b></div>
+      <div class="row"><span>${_t("lbl_peggiore", "Peggiore")}</span><b><span data-topstop="peggiore|kwh_per_100km">—</span> kWh/100km</b></div>
+      <div class="row"><span>${_t("lbl_energia_casa_totale", "Energia casa (totale)")}</span><b><span data-f="energia_casa">—</span> kWh</b></div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🧭 Range reale vs dichiarato</div>
         <div data-c="range_cmp" style="min-height:96px"></div>
@@ -2982,78 +3932,78 @@ const PAGES = {
       </div></div>
   </div>
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>🌡️ Consumi vs temperatura</h3>
+    <div class="card"><h3>${_t("h3_consumi_vs_temperatura", "🌡️ Consumi vs temperatura")}</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
         <select data-trend="trend" style="width:auto">
-          <option value="week">Settimana</option>
-          <option value="month" selected>Mese</option>
-          <option value="season">Stagione</option>
-          <option value="all">Tutto</option>
+          <option value="week">${_t("opt_settimana", "Settimana")}</option>
+          <option value="month" selected>${_t("opt_mese", "Mese")}</option>
+          <option value="season">${_t("opt_stagione", "Stagione")}</option>
+          <option value="all">${_t("opt_tutto", "Tutto")}</option>
         </select>
       </div>
       <div id="tempchart" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Un punto per viaggio (≥3 km): kWh/100km vs temperatura. <b>Freddo = blu, caldo = rosso</b>. La linea tratteggiata è la tendenza. Passa il mouse sui punti per i dettagli.</div></div>
-    <div class="card"><h3>📊 Consumi per fascia</h3>
+    <div class="card"><h3>${_t("h3_consumi_per_fascia", "📊 Consumi per fascia")}</h3>
       <div id="tempbars" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Media kWh/100km in ogni fascia di temperatura. Passa il mouse sulle barre per i dettagli.</div></div>
   </div>
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>📈 Trend mensile kWh/100km</h3><div data-c="trend_mese" style="min-height:160px"></div>
+    <div class="card"><h3>${_t("h3_trend_mensile_kwh_100km", "📈 Trend mensile kWh/100km")}</h3><div data-c="trend_mese" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Media mensile del consumo: vedi se migliora o peggiora.</div></div>
-    <div class="card"><h3>📍 Efficienza per zona</h3><div data-c="eff_zona" style="min-height:160px"></div>
+    <div class="card"><h3>${_t("h3_efficienza_per_zona", "📍 Efficienza per zona")}</h3><div data-c="eff_zona" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">kWh/100km medi per zona d'arrivo: dove consumi di più.</div></div>
   </div>
   <div class="grid g3" style="margin-top:16px">
-    <div class="card"><h3>🔋 Vampire drain (7 gg)</h3><div data-c="drain_week" style="min-height:160px"></div>
+    <div class="card"><h3>${_t("h3_vampire_drain_7_gg", "🔋 Vampire drain (7 gg)")}</h3><div data-c="drain_week" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">% batteria persa da fermo ogni giorno.</div></div>
-    <div class="card"><h3>💶 Costo ricarica · mese</h3><div data-c="cost_mese" style="min-height:160px"></div>
+    <div class="card"><h3>${_t("h3_costo_ricarica_mese", "💶 Costo ricarica · mese")}</h3><div data-c="cost_mese" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Quanto spendi ogni mese in ricariche.</div></div>
-    <div class="card"><h3>⚡ Prezzo medio €/kWh</h3><div data-c="prezzo_mese" style="min-height:160px"></div>
+    <div class="card"><h3>${_t("h3_prezzo_medio_kwh", "⚡ Prezzo medio €/kWh")}</h3><div data-c="prezzo_mese" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Prezzo medio di ogni kWh ricaricato.</div></div>
   </div>
   <div class="grid g2" style="margin-top:16px">
-    <div class="card"><h3>💰 Risparmio vs termica</h3><div data-c="risp_cmp" style="min-height:160px"></div>
+    <div class="card"><h3>${_t("h3_risparmio_vs_termica", "💰 Risparmio vs termica")}</h3><div data-c="risp_cmp" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Quanto avresti speso a termica vs quanto hai speso con l'EV.</div></div>
-    <div class="card"><h3>🕐 Orario di partenza</h3><div data-c="orari" style="min-height:160px"></div>
+    <div class="card"><h3>${_t("h3_orario_di_partenza", "🕐 Orario di partenza")}</h3><div data-c="orari" style="min-height:160px"></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">A che ora parti di più: histogram per ora.</div></div>
   </div>
-  <div class="card" style="margin-top:16px"><h3>ℹ️ Note</h3>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_note", "ℹ️ Note")}</h3>
     <div style="color:var(--muted);font-size:12.5px;line-height:1.7">Vampire drain: % persa a fermo (batteria spenta).<br>CO2 evitata vs termica (termica − rete).<br>Scadenze: da <i>Prossima scadenza</i> (revisione/bollo/assicurazione).</div></div>`,
 
   p9: `<h1>Automazioni</h1>
   <div class="grid g2">
-    <div class="card"><h3>Notifiche</h3>
-      <div class="row"><span>📨 Servizio notify</span><b data-f="notify">—</b></div>
+    <div class="card"><h3>${_t("h3_notifiche", "Notifiche")}</h3>
+      <div class="row"><span>${_t("lbl_servizio_notify", "📨 Servizio notify")}</span><b data-f="notify">—</b></div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🤖 Automazioni create — attiva/disattiva</div>
         <div data-c="autos-created" style="display:flex;flex-direction:column;gap:2px"></div>
         <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Sono le automazioni create in Home Assistant (Impostazioni → Automazioni). Accendile/spegni da qui, senza YAML.</div>
       </div></div>
-    <div class="card"><h3>⏰ Programma ricarica</h3>
-      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="ricarica"><span></span></label></div>
-      <div class="row"><span>Inizio</span><input type="time" data-sch="ricarica" data-k="inizio" value="23:30"></div>
-      <div class="row"><span>Fine</span><input type="time" data-sch="ricarica" data-k="fine" value="07:00"></div>
-      <div class="row"><span>SoC obiettivo %</span><input type="number" data-sch="ricarica" data-k="soc" value="80" min="50" max="100" style="width:80px"></div>
-      <div class="row" style="flex-wrap:wrap;gap:6px"><span>Giorni</span>
+    <div class="card"><h3>${_t("h3_programma_ricarica", "⏰ Programma ricarica")}</h3>
+      <div class="row"><span>${_t("lbl_attivo", "Attivo")}</span><label class="switch"><input type="checkbox" data-schon="ricarica"><span></span></label></div>
+      <div class="row"><span>${_t("lbl_inizio", "Inizio")}</span><input type="time" data-sch="ricarica" data-k="inizio" value="23:30"></div>
+      <div class="row"><span>${_t("lbl_fine", "Fine")}</span><input type="time" data-sch="ricarica" data-k="fine" value="07:00"></div>
+      <div class="row"><span>${_t("lbl_soc_obiettivo", "SoC obiettivo %")}</span><input type="number" data-sch="ricarica" data-k="soc" value="80" min="50" max="100" style="width:80px"></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span>${_t("lbl_giorni", "Giorni")}</span>
         <span><span class="chip dchip" data-schday="ricarica|mon">Lun</span><span class="chip dchip" data-schday="ricarica|tue">Mar</span><span class="chip dchip" data-schday="ricarica|wed">Mer</span><span class="chip dchip" data-schday="ricarica|thu">Gio</span><span class="chip dchip" data-schday="ricarica|fri">Ven</span><span class="chip dchip" data-schday="ricarica|sat">Sab</span><span class="chip dchip" data-schday="ricarica|sun">Dom</span></span>
       </div>
       <div class="btn" data-cmd="schsave_ricarica" style="margin-top:10px">💾 Salva programma ricarica</div>
     </div>
-    <div class="card"><h3>❄️ Programma clima</h3>
-      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-schon="clima"><span></span></label></div>
-      <div class="row"><span>Orario</span><input type="time" data-sch="clima" data-k="inizio" value="07:00"></div>
-      <div class="row" style="flex-wrap:wrap;gap:6px"><span>Giorni</span>
+    <div class="card"><h3>${_t("h3_programma_clima", "❄️ Programma clima")}</h3>
+      <div class="row"><span>${_t("lbl_attivo", "Attivo")}</span><label class="switch"><input type="checkbox" data-schon="clima"><span></span></label></div>
+      <div class="row"><span>${_t("lbl_orario", "Orario")}</span><input type="time" data-sch="clima" data-k="inizio" value="07:00"></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span>${_t("lbl_giorni", "Giorni")}</span>
         <span><span class="chip dchip" data-schday="clima|mon">Lun</span><span class="chip dchip" data-schday="clima|tue">Mar</span><span class="chip dchip" data-schday="clima|wed">Mer</span><span class="chip dchip" data-schday="clima|thu">Gio</span><span class="chip dchip" data-schday="clima|fri">Ven</span><span class="chip dchip" data-schday="clima|sat">Sab</span><span class="chip dchip" data-schday="clima|sun">Dom</span></span>
       </div>
       <div class="btn" data-cmd="schsave_clima" style="margin-top:10px">💾 Salva programma clima</div>
       <div style="color:var(--muted);font-size:11px;margin-top:6px">Premе il tasto Avvia A/C all'orario scelto (modo/temperatura non sono inviabili coi button Renault).</div>
     </div>
-    <div class="card"><h3>🔔 Avviso batteria bassa</h3>
-      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-sw="sw_low"><span></span></label></div>
-      <div class="row"><span>Soglia</span><input type="number" data-n="n_low_soc" min="5" max="80" step="1" style="width:80px"><span class="u">%</span></div>
-      <div class="row"><span>Dalle</span><input type="time" data-time="t_low_start"></div>
-      <div class="row"><span>Alle</span><input type="time" data-time="t_low_end"></div>
-      <div class="row" style="flex-wrap:wrap;gap:6px"><span>Giorni</span>
+    <div class="card"><h3>${_t("h3_avviso_batteria_bassa", "🔔 Avviso batteria bassa")}</h3>
+      <div class="row"><span>${_t("lbl_attivo", "Attivo")}</span><label class="switch"><input type="checkbox" data-sw="sw_low"><span></span></label></div>
+      <div class="row"><span>${_t("lbl_soglia", "Soglia")}</span><input type="number" data-n="n_low_soc" min="5" max="80" step="1" style="width:80px"><span class="u">%</span></div>
+      <div class="row"><span>${_t("lbl_dalle", "Dalle")}</span><input type="time" data-time="t_low_start"></div>
+      <div class="row"><span>${_t("lbl_alle", "Alle")}</span><input type="time" data-time="t_low_end"></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span>${_t("lbl_giorni", "Giorni")}</span>
         <span><span class="chip dchip" data-lowday="mon">Lun</span><span class="chip dchip" data-lowday="tue">Mar</span><span class="chip dchip" data-lowday="wed">Mer</span><span class="chip dchip" data-lowday="thu">Gio</span><span class="chip dchip" data-lowday="fri">Ven</span><span class="chip dchip" data-lowday="sat">Sab</span><span class="chip dchip" data-lowday="sun">Dom</span></span>
       </div>
       <div class="btn" data-cmd="lowsave" style="margin-top:10px">💾 Salva giorni</div>
@@ -3061,7 +4011,7 @@ const PAGES = {
     </div>
   </div>
   <div style="color:var(--muted);font-size:11.5px;margin-top:8px">La schedulazione crea/aggiorna un'<b>automazione</b> in Home Assistant (orario + giorni) che preme il tasto di avvio.</div>
-  <div class="card" style="margin-top:16px"><h3>Come si cambiano i parametri</h3>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_come_si_cambiano_i_parametri", "Come si cambiano i parametri")}</h3>
     <div style="color:var(--muted);font-size:13px;line-height:1.8">
       Tutto in <b>Impostazioni → Integrazioni → Renault EV Center → Configura</b>:
       servizio notify, % minima e fascia oraria del promemoria, modalità programmazione
@@ -3071,17 +4021,17 @@ const PAGES = {
 
   p10: `<h1>Impostazioni</h1>
   <div class="grid g3">
-    <div class="card"><h3>Prezzi energia</h3>
-      <div class="inp"><span>Costo casa</span><input data-n="n_price_home"><span class="u">€/kWh</span></div>
-      <div class="inp"><span>Costo colonnina</span><input data-n="n_price_public"><span class="u">€/kWh</span></div>
-      <div class="inp"><span>Costo fotovoltaico</span><input data-n="n_price_solar"><span class="u">€/kWh</span></div>
-      <div class="inp"><span>Prezzo carburante</span><input data-n="n_fuel_price"><span class="u">€/l</span></div></div>
-    <div class="card"><h3>Batteria</h3>
-      <div class="inp"><span>Obiettivo ricarica</span><input data-n="n_target"><span class="u">%</span></div>
-      <div class="inp"><span>Capacità</span><input data-n="n_capacity"><span class="u">kWh</span></div>
-      <div class="inp"><span>SOH ufficiale</span><input data-n="n_soh"><span class="u">%</span></div>
-      <div class="inp"><span>Costo assicurazione</span><input data-n="n_assic"><span class="u">€/anno</span></div></div>
-    <div class="card"><h3>Reset &amp; export</h3>
+    <div class="card"><h3>${_t("h3_prezzi_energia", "Prezzi energia")}</h3>
+      <div class="inp"><span>${_t("lbl_costo_casa", "Costo casa")}</span><input data-n="n_price_home"><span class="u">€/kWh</span></div>
+      <div class="inp"><span>${_t("lbl_costo_colonnina", "Costo colonnina")}</span><input data-n="n_price_public"><span class="u">€/kWh</span></div>
+      <div class="inp"><span>${_t("lbl_costo_fotovoltaico", "Costo fotovoltaico")}</span><input data-n="n_price_solar"><span class="u">€/kWh</span></div>
+      <div class="inp"><span>${_t("lbl_prezzo_carburante", "Prezzo carburante")}</span><input data-n="n_fuel_price"><span class="u">€/l</span></div></div>
+    <div class="card"><h3>${_t("h3_batteria", "Batteria")}</h3>
+      <div class="inp"><span>${_t("lbl_obiettivo_ricarica", "Obiettivo ricarica")}</span><input data-n="n_target"><span class="u">%</span></div>
+      <div class="inp"><span>${_t("lbl_capacità", "Capacità")}</span><input data-n="n_capacity"><span class="u">kWh</span></div>
+      <div class="inp"><span>${_t("lbl_soh_ufficiale", "SOH ufficiale")}</span><input data-n="n_soh"><span class="u">%</span></div>
+      <div class="inp"><span>${_t("lbl_costo_assicurazione", "Costo assicurazione")}</span><input data-n="n_assic"><span class="u">€/anno</span></div></div>
+    <div class="card"><h3>${_t("h3_reset_e_export", "Reset &amp; export")}</h3>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div class="btn" data-cmd="close_trip">🏁 Chiudi viaggio ora</div>
         <div class="btn" data-cmd="reset_km">🔄 Reset contatori Km</div>
@@ -3089,70 +4039,80 @@ const PAGES = {
         <div class="btn" data-cmd="reset_costi">🔄 Reset contatori Costi</div>
         <div class="btn" data-cmd="csv">📥 Esporta viaggi CSV</div></div></div></div>
   <div class="grid g3" style="margin-top:16px">
-    <div class="card palette"><h3>🎨 Palette (colori Renault)</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">${THEMES.map(([id, dot, label]) => `<button class="btn" data-palette="${id}"><span class="sw" style="background:${dot}"></span> ${label}</button>`).join("")}</div>
+    <div class="card palette"><h3>${_t("h3_palette_colori_renault", "🎨 Palette (colori Renault)")}</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${THEMES.map(([id, dot, label]) => `<button class="btn" data-palette="${id}"><span class="sw" style="background:${dot}"></span> ${_t("theme_" + id, label)}</button>`).join("")}</div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:10px">Temi HA in /themes: renault-blu, giallo, verde, aviation</div></div>
-    <div class="card"><h3>🔔 Notifiche</h3>
-      <div class="inp"><span>Servizio notify</span><input data-ls="rec_notify" data-f="notify" style="width:140px"><span class="u"></span></div>
-      <div class="inp"><span>Preavviso scadenze</span><input data-ls="rec_preavviso" value="30"><span class="u">gg</span></div></div>
-    <div class="card"><h3>🤖 Automazioni</h3>
+    <div class="card"><h3>${_t("h3_notifiche", "🔔 Notifiche")}</h3>
+      <div class="inp"><span>${_t("lbl_servizio_notify_2", "Servizio notify")}</span><input data-ls="rec_notify" data-f="notify" style="width:140px"><span class="u"></span></div>
+      <div class="inp"><span>${_t("lbl_preavviso_scadenze", "Preavviso scadenze")}</span><input data-ls="rec_preavviso" value="30"><span class="u">gg</span></div></div>
+    <div class="card"><h3>${_t("h3_lingua", "🌐 Lingua")}</h3>
+      <div class="inp"><span>${_t("lbl_lingua_pannello", "Lingua pannello")}</span>
+        <select data-lang style="width:150px">
+          <option value="">${_t("opt_automatica_home_assistant", "Automatica (Home Assistant)")}</option>
+          <option value="it">Italiano</option>
+          <option value="en">English</option>
+          <option value="fr">Français</option>
+              <option value="es">Español</option>
+              <option value="de">Deutsch</option>
+        </select></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:4px">"Automatica" segue la lingua di HA. Le altre lingue (ES/DE) in arrivo.</div></div>
+    <div class="card"><h3>${_t("h3_automazioni", "🤖 Automazioni")}</h3>
       <div class="btn" data-cmd="create_automations">✨ Crea automazioni consigliate</div>
-      <div class="note" style="margin-top:8px">Crea in HA: <b>ricarica completata</b> (kWh, SoC, costo),
-        <b>avvio ricarica</b> e <b>riassunto giornaliero</b>. Modificabili da Impostazioni → Automazioni.</div></div>
+      <div class="note" style="margin-top:8px">${_t("note_crea", "Crea in HA: <b>ricarica completata</b> (kWh, SoC, costo),\n        <b>avvio ricarica</b> e <b>riassunto giornaliero</b>. Modificabili da Impostazioni → Automazioni.")}</div></div>
   </div>`,
 
   p11: `<h1>Wallbox</h1>
   <div class="grid g3">
-    <div class="card"><h3>🔌 Stato wallbox</h3>
+    <div class="card"><h3>${_t("h3_stato_wallbox", "🔌 Stato wallbox")}</h3>
       <img src="/local/renault-ev-center/wallbox.png" alt="Wallbox" style="display:block;width:100%;max-width:230px;height:150px;object-fit:contain;margin:0 auto 10px;filter:drop-shadow(0 8px 20px rgba(0,0,0,.45))">
       <div class="big" style="font-size:26px;color:var(--accent);text-align:center;margin-bottom:8px"><span data-wb="state">—</span></div>
-      <div class="row"><span>Potenza ora</span><b><span data-wb="power">—</span></b></div>
-      <div class="row"><span>Corrente</span><b><span data-wb="current">—</span></b></div>
-      <div class="row"><span>Tensione</span><b><span data-wb="voltage">—</span></b></div>
-      <div class="row"><span>Temperatura</span><b><span data-wb="temp">—</span></b></div>
-      <div class="row"><span>Motivo limite</span><b><span data-wb="limit">—</span></b></div></div>
-    <div class="card"><h3>⏱️ Sessione corrente</h3>
+      <div class="row"><span>${_t("lbl_potenza_ora", "Potenza ora")}</span><b><span data-wb="power">—</span></b></div>
+      <div class="row"><span>${_t("lbl_corrente", "Corrente")}</span><b><span data-wb="current">—</span></b></div>
+      <div class="row"><span>${_t("lbl_tensione", "Tensione")}</span><b><span data-wb="voltage">—</span></b></div>
+      <div class="row"><span>${_t("lbl_temperatura", "Temperatura")}</span><b><span data-wb="temp">—</span></b></div>
+      <div class="row"><span>${_t("lbl_motivo_limite", "Motivo limite")}</span><b><span data-wb="limit">—</span></b></div></div>
+    <div class="card"><h3>${_t("h3_sessione_corrente", "⏱️ Sessione corrente")}</h3>
       <div class="big" style="font-size:32px;color:var(--good)"><span data-wb="session_kwh">—</span></div>
-      <div class="row"><span>Tempo di ricarica</span><b><span data-wb="session_time">—</span></b></div>
-      <div class="row"><span>Potenza wallbox</span><b><span data-wb="session_w">—</span></b></div>
-      <div class="row"><span>Energia totale</span><b><span data-wb="total_kwh">—</span></b></div>
+      <div class="row"><span>${_t("lbl_tempo_di_ricarica", "Tempo di ricarica")}</span><b><span data-wb="session_time">—</span></b></div>
+      <div class="row"><span>${_t("lbl_potenza_wallbox", "Potenza wallbox")}</span><b><span data-wb="session_w">—</span></b></div>
+      <div class="row"><span>${_t("lbl_energia_totale", "Energia totale")}</span><b><span data-wb="total_kwh">—</span></b></div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">🎚️ Corrente di carica (A)</div>
-        <div class="inp"><span>Limite</span><input id="wb_amp" type="range" min="6" max="32" step="1" style="flex:1" oninput="this.closest('.inp').querySelector('#wb_amp_live').textContent=this.value+' A'"><b id="wb_amp_live" style="min-width:54px;text-align:right">—</b></div>
+        <div class="inp"><span>${_t("lbl_limite", "Limite")}</span><input id="wb_amp" type="range" min="6" max="32" step="1" style="flex:1" oninput="this.closest('.inp').querySelector('#wb_amp_live').textContent=this.value+' A'"><b id="wb_amp_live" style="min-width:54px;text-align:right">—</b></div>
         <div style="color:var(--muted);font-size:11.5px;margin-top:4px" id="wb_amp_val">—</div>
         <div class="btn" data-cmd="wb_set_current" style="margin-top:10px;flex:0 0 auto;padding:8px 14px;font-size:13px">💾 Applica corrente</div>
       </div>
       <div style="display:flex;gap:10px;margin-top:14px">
         <div class="btn" data-cmd="wb_start" style="flex:1;background:linear-gradient(180deg,#22c55e,#16a34a);border-color:#16a34a;color:#fff;font-size:15px;font-weight:800;padding:12px 6px">▶️ AVVIA</div>
         <div class="btn" data-cmd="wb_stop" style="flex:1;background:linear-gradient(180deg,#ef4444,#b91c1c);border-color:#b91c1c;color:#fff;font-size:15px;font-weight:800;padding:12px 6px">⏹️ FERMA</div></div></div>
-    <div class="card"><h3>⏱️ Stima ricarica</h3>
-      <div class="row"><span>Tempo stimato</span><b data-f="tempo_ric">—</b></div>
-      <div class="row"><span>Orario stimato</span><b data-f="ora_compl">—</b></div>
-      <div class="row"><span>Costo stimato</span><b><span data-f="costo_corr" data-dec="2">—</span> €</b></div>
-      <div class="note">Stima verso il % obiettivo configurato. Con auto non in carica mostra l'ultimo stato.</div></div></div>
-  <div class="card" style="margin-top:16px"><h3>⚡ Potenza wallbox (48 h)</h3>
+    <div class="card"><h3>${_t("h3_stima_ricarica", "⏱️ Stima ricarica")}</h3>
+      <div class="row"><span>${_t("lbl_tempo_stimato", "Tempo stimato")}</span><b data-f="tempo_ric">—</b></div>
+      <div class="row"><span>${_t("lbl_orario_stimato", "Orario stimato")}</span><b data-f="ora_compl">—</b></div>
+      <div class="row"><span>${_t("lbl_costo_stimato", "Costo stimato")}</span><b><span data-f="costo_corr" data-dec="2">—</span> €</b></div>
+      <div class="note">${_t("note_stima_verso_il_obiettivo_configurato_con", "Stima verso il % obiettivo configurato. Con auto non in carica mostra l'ultimo stato.")}</div></div></div>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_potenza_wallbox_48_h", "⚡ Potenza wallbox (48 h)")}</h3>
     <div id="wbchart" style="min-height:150px"></div>
     <div style="color:var(--muted);font-size:11.5px;margin-top:6px">Sensore preso da <b>Configura → Wallbox → Potenza istantanea</b>.</div></div>
   <div class="grid g3" style="margin-top:16px">
-    <div class="card"><h3>🏠 Bilanciamento casa</h3>
-      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-sw="sw_home"><span></span></label></div>
-      <div class="row"><span>Consumo casa</span><b><span data-wb="home_w">—</span> W</b></div>
-      <div class="row"><span>Soglia contatore</span><b><span data-wb="home_hi">—</span> W</b></div>
-      <div class="row"><span>Ampere wallbox</span><b><span data-wb="home_amps">—</span> A</b></div>
-      <div class="note">Sopra la soglia 10 min → Ridotta A; sotto l'80% per 15 min → Max A. Sensore/contatore in <b>Configura → Bilanciamento casa</b>.</div></div>
-    <div class="card"><h3>⚡ Sperimentazione GSE</h3>
-      <div class="row"><span>Attiva</span><label class="switch"><input type="checkbox" data-sw="sw_gse"><span></span></label></div>
-      <div class="row"><span>Limite adesso</span><b data-wb="gse_now">—</b></div>
-      <div class="row"><span>Fascia piena</span><b><span data-wb="gse_fascia">—</span></b></div>
-      <div class="note">Fuori fascia la wallbox è limitata alla potenza ridotta. Orari in <b>Configura → Sperimentazione GSE</b>.</div></div>
-    <div class="card"><h3>☀️ Bilanciamento fotovoltaico</h3>
-      <div class="row"><span>Attivo</span><label class="switch"><input type="checkbox" data-sw="sw_bal"><span></span></label></div>
-      <div class="row"><span>Batteria solo senza sole</span><label class="switch"><input type="checkbox" data-sw="sw_night"><span></span></label></div>
-      <div class="row"><span>Surplus rete</span><b><span data-wb="bal_surplus">—</span> W</b></div>
-      <div class="row"><span>Prelievo rete</span><b><span data-wb="bal_grid">—</span> W</b></div>
-      <div class="row"><span>Ampere impostati</span><b><span data-wb="bal_amps">—</span> A</b></div>
-      <div class="note">Adatta gli ampere per tenere il prelievo da rete ~0. Con <b>Batteria solo senza sole</b> di giorno l'auto va a <b>solare puro</b>; la batteria entra solo quando la rete importa (sera/notte). Sensori in <b>Configura → Fotovoltaico</b>.</div></div></div>`,
-};
+    <div class="card"><h3>${_t("h3_bilanciamento_casa", "🏠 Bilanciamento casa")}</h3>
+      <div class="row"><span>${_t("lbl_attivo", "Attivo")}</span><label class="switch"><input type="checkbox" data-sw="sw_home"><span></span></label></div>
+      <div class="row"><span>${_t("lbl_consumo_casa", "Consumo casa")}</span><b><span data-wb="home_w">—</span> W</b></div>
+      <div class="row"><span>${_t("lbl_soglia_contatore", "Soglia contatore")}</span><b><span data-wb="home_hi">—</span> W</b></div>
+      <div class="row"><span>${_t("lbl_ampere_wallbox", "Ampere wallbox")}</span><b><span data-wb="home_amps">—</span> A</b></div>
+      <div class="note">${_t("note_sopra_la_soglia_10_min_ridotta_a_sotto_l", "Sopra la soglia 10 min → Ridotta A; sotto l'80% per 15 min → Max A. Sensore/contatore in <b>Configura → Bilanciamento casa</b>.")}</div></div>
+    <div class="card"><h3>${_t("h3_sperimentazione_gse", "⚡ Sperimentazione GSE")}</h3>
+      <div class="row"><span>${_t("lbl_attiva", "Attiva")}</span><label class="switch"><input type="checkbox" data-sw="sw_gse"><span></span></label></div>
+      <div class="row"><span>${_t("lbl_limite_adesso", "Limite adesso")}</span><b data-wb="gse_now">—</b></div>
+      <div class="row"><span>${_t("lbl_fascia_piena", "Fascia piena")}</span><b><span data-wb="gse_fascia">—</span></b></div>
+      <div class="note">${_t("note_fuori_fascia_la_wallbox_è_limitata_alla_", "Fuori fascia la wallbox è limitata alla potenza ridotta. Orari in <b>Configura → Sperimentazione GSE</b>.")}</div></div>
+    <div class="card"><h3>${_t("h3_bilanciamento_fotovoltaico", "☀️ Bilanciamento fotovoltaico")}</h3>
+      <div class="row"><span>${_t("lbl_attivo", "Attivo")}</span><label class="switch"><input type="checkbox" data-sw="sw_bal"><span></span></label></div>
+      <div class="row"><span>${_t("lbl_batteria_solo_senza_sole", "Batteria solo senza sole")}</span><label class="switch"><input type="checkbox" data-sw="sw_night"><span></span></label></div>
+      <div class="row"><span>${_t("lbl_surplus_rete", "Surplus rete")}</span><b><span data-wb="bal_surplus">—</span> W</b></div>
+      <div class="row"><span>${_t("lbl_prelievo_rete", "Prelievo rete")}</span><b><span data-wb="bal_grid">—</span> W</b></div>
+      <div class="row"><span>${_t("lbl_ampere_impostati", "Ampere impostati")}</span><b><span data-wb="bal_amps">—</span> A</b></div>
+      <div class="note">${_t("note_adatta_gli_ampere_per_tenere_il_prelievo", "Adatta gli ampere per tenere il prelievo da rete ~0. Con <b>Batteria solo senza sole</b> di giorno l'auto va a <b>solare puro</b>; la batteria entra solo quando la rete importa (sera/notte). Sensori in <b>Configura → Fotovoltaico</b>.")}</div></div></div>`,
+});
 
 if (!customElements.get("renault-ev-center-panel")) {
   customElements.define("renault-ev-center-panel", RenaultEvCenterPanel);

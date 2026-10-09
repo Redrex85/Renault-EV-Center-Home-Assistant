@@ -5,6 +5,28 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.1 - Fix foto auto (modello da Opzioni + cache)
+
+- **La foto dell'auto restava quella generica ("macchinina" 🚗).** `setup_car_image`
+  leggeva il modello solo da `entry.data`; chi l'aveva scelto/cambiato dal flusso
+  **«Configura»** (che scrive in `entry.options`) cadeva sul default `Custom` → foto
+  generica. Ora il modello è letto da `{**entry.data, **entry.options}`.
+- **Cache dell'immagine:** pannello e card ora aggiungono `?v=<versione>` alla foto,
+  così dopo l'aggiornamento il browser non serve più la vecchia `auto.png`.
+
+## 1.1.0 - Pannello multi-lingua (IT/EN/FR/ES/DE)
+
+- **Internazionalizzazione del pannello.** Tutte le stringhe hardcoded (~230) ora
+  passano da `I18N` + `_t(chiave, fallback)`: titoli (`h3_`), etichette (`lbl_`),
+  opzioni, note, placeholder, tooltip, temi colore, nomi dei mesi, stati wallbox e
+  messaggi toast. Lingue supportate: **IT (fallback), EN, FR, ES, DE**.
+- **Selettore lingua** in *Impostazioni → card "🌐 Lingua"*; la scelta è salvata in
+  `localStorage["rec_lang"]` e al cambio il pannello si ricostruisce. Lingua iniziale
+  da `hass.language` (fallback IT).
+- **Traduzioni lato HA:** aggiunti `translations/es.json` e `de.json` (333 foglie
+  ciascuno, allineati a `en.json`/`fr.json`) → anche il config/options flow è tradotto.
+- Il rendering **italiano resta identico** (fallback = testo originale).
+
 ## 1.0.55 - Carica programmata, foto auto, GSE sulla casa, potenza wallbox in sessione
 
 - **La carica non si fermava a SoC obiettivo / fine finestra.** Il fermo nel

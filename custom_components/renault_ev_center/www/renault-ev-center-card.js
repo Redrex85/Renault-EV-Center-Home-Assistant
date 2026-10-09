@@ -18,7 +18,7 @@
  *   range_entity: sensor.battery_autonomy
  *   odometer_entity: sensor.mileage
  */
-const CARD_VER = "1.0.55";
+const CARD_VER = "1.1.1";
 let _cardVerChecked = false;
 
 class RenaultEvCenterCard extends HTMLElement {
@@ -108,7 +108,7 @@ class RenaultEvCenterCard extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <ha-card style="border-radius:16px;padding:18px;background:var(--card-background-color,var(--ha-card-background));border:1px solid var(--divider-color)">
         <div style="position:relative;text-align:center">
-          <img src="${c.image}" alt="auto"
+          <img src="${c.image + (c.image.indexOf("?") < 0 ? "?v=" : "&v=") + CARD_VER}" alt="auto"
                style="max-width:100%;max-height:190px;border-radius:12px"
                onerror="this.style.display='none'"/>
           <div style="position:absolute;top:6px;left:10px">${chip(inCarica ? "⚡ In carica" : "🔌 Non in carica", inCarica ? "#4caf50" : "#9e9e9e")}</div>
@@ -182,4 +182,4 @@ try {
   /* ambiente non-HA (demo): ignora */
 }
 
-  console.info("%c RENAULT EV CENTER CARD %c v1.0.55 " , "background:#4d8dff;color:#fff", "background:#333;color:#fff");
+  console.info("%c RENAULT EV CENTER CARD %c v1.1.1 " , "background:#4d8dff;color:#fff", "background:#333;color:#fff");
