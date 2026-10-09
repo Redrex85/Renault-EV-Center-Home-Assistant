@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.2";
+const REC_VER = "1.1.3";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -951,6 +951,1275 @@ const I18N = {
     toast_no_stop: "⚠️ Ladestopp nicht zugeordnet (Einstellungen → Wallbox)",
   },
 };
+
+const UI = {
+  "\"Automatica\" segue la lingua di HA.": {
+    "en": "\"Automatic\" follows the HA language.",
+    "fr": "« Automatique » suit la langue de HA.",
+    "es": "\"Automática\" sigue el idioma de HA.",
+    "de": "„Automatisch\" folgt der Sprache von HA."
+  },
+  "% batt./100km": {
+    "en": "% batt./100km",
+    "fr": "% batt./100km",
+    "es": "% bat./100km",
+    "de": "% Batt./100km"
+  },
+  "% batteria persa da fermo ogni giorno.": {
+    "en": "% battery lost while parked per day.",
+    "fr": "% de batterie perdus à l'arrêt par jour.",
+    "es": "% de batería perdida en reposo al día.",
+    "de": "% Batterieverlust im Stand pro Tag."
+  },
+  "% consumata oggi": {
+    "en": "% consumed today",
+    "fr": "% consommé aujourd'hui",
+    "es": "% consumido hoy",
+    "de": "% heute verbraucht"
+  },
+  "% oggi": {
+    "en": "% today",
+    "fr": "% aujourd'hui",
+    "es": "% hoy",
+    "de": "% heute"
+  },
+  "(dichiarate,": {
+    "en": "(declared,",
+    "fr": "(déclarées,",
+    "es": "(declaradas,",
+    "de": "(deklariert,"
+  },
+  "(revisione/bollo/assicurazione).": {
+    "en": "(inspection/road tax/insurance).",
+    "fr": "(contrôle/taxe/assurance).",
+    "es": "(revisión/impuesto/seguro).",
+    "de": "(HU/Kfz-Steuer/Versicherung)."
+  },
+  ", sotto la soglia, nella fascia oraria e nei giorni scelti.": {
+    "en": ", below the threshold, in the chosen time window and days.",
+    "fr": ", sous le seuil, dans la plage horaire et les jours choisis.",
+    "es": ", por debajo del umbral, en la franja horaria y los días elegidos.",
+    "de": ", unter dem Schwellenwert, im gewählten Zeitfenster und an den Tagen."
+  },
+  ". La linea tratteggiata è la tendenza. Passa il mouse sui punti per i dettagli.": {
+    "en": ". The dashed line is the trend. Hover the points for details.",
+    "fr": ". La ligne pointillée est la tendance. Survolez les points pour les détails.",
+    "es": ". La línea discontinua es la tendencia. Pasa el ratón por los puntos para ver detalles.",
+    "de": ". Die gestrichelte Linie ist der Trend. Fahre mit der Maus über die Punkte für Details."
+  },
+  ": km × consumo × prezzo carburante + tagliandi + bollo.": {
+    "en": ": km × consumption × fuel price + services + road tax.",
+    "fr": ": km × consommation × prix carburant + entretiens + taxe.",
+    "es": ": km × consumo × precio combustible + revisiones + impuesto.",
+    "de": ": km × Verbrauch × Kraftstoffpreis + Wartungen + Kfz-Steuer."
+  },
+  ": l'integrazione aggiunge l'": {
+    "en": ": the integration adds the",
+    "fr": ": l'intégration ajoute l'",
+    "es": ": la integración añade el",
+    "de": ": die Integration fügt den"
+  },
+  ": ricariche registrate + quelle dichiarate + tagliandi reali + bollo EV.": {
+    "en": ": recorded charges + declared ones + actual services + EV road tax.",
+    "fr": ": recharges enregistrées + celles déclarées + entretiens réels + taxe EV.",
+    "es": ": recargas registradas + las declaradas + revisiones reales + impuesto EV.",
+    "de": ": erfasste Ladungen + deklarierte + tatsächliche Wartungen + EV-Kfz-Steuer."
+  },
+  ": servizio notify, % minima e fascia oraria del promemoria, modalità programmazione (orario o %), orari e % di avvio/stop, pulsante di avvio carica e number target per lo stop. Gli interruttori si trovano anche tra i dispositivi (\"Renault EV Center\" → switch).": {
+    "en": ": notify service, reminder min % and time window, schedule mode (time or %), start/stop times and %, charge start button and target number for stop. The switches are also under the devices (\"Renault EV Center\" → switch).",
+    "fr": ": service notify, % minimale et plage horaire du rappel, mode de programmation (heure ou %), heures et % de départ/arrêt, bouton de démarrage et number cible pour l'arrêt. Les interrupteurs sont aussi dans les appareils (« Renault EV Center » → switch).",
+    "es": ": servicio notify, % mínima y franja horaria del recordatorio, modo de programación (hora o %), horas y % de inicio/parada, botón de inicio y number objetivo para la parada. Los interruptores también están en los dispositivos (\"Renault EV Center\" → switch).",
+    "de": ": Notify-Dienst, Mindest-% und Zeitfenster der Erinnerung, Planungsmodus (Zeit oder %), Start-/Stoppzeiten und -%, Ladestart-Button und Ziel-Number für den Stopp. Die Schalter finden sich auch bei den Geräten („Renault EV Center\" → switch)."
+  },
+  ": termica − elettrica. Periodi (mese/anno) usano i dati di quel periodo.": {
+    "en": ": thermal − electric. Periods (month/year) use that period's data.",
+    "fr": ": thermique − électrique. Les périodes (mois/année) utilisent les données de cette période.",
+    "es": ": térmico − eléctrico. Los periodos (mes/año) usan los datos de ese periodo.",
+    "de": ": Verbrenner − Elektro. Zeiträume (Monat/Jahr) nutzen die Daten dieses Zeitraums."
+  },
+  "= capacità × SOH ÷ 100": {
+    "en": "= capacity × SOH ÷ 100",
+    "fr": "= capacité × SOH ÷ 100",
+    "es": "= capacidad × SOH ÷ 100",
+    "de": "= Kapazität × SOH ÷ 100"
+  },
+  "A che ora parti di più: histogram per ora.": {
+    "en": "When you leave most: histogram by hour.",
+    "fr": "À quelle heure tu pars le plus : histogramme par heure.",
+    "es": "A qué hora sales más: histograma por hora.",
+    "de": "Wann du am häufigsten losfährst: Histogramm pro Stunde."
+  },
+  "Anno:": {
+    "en": "Year:",
+    "fr": "Année :",
+    "es": "Año:",
+    "de": "Jahr:"
+  },
+  "Arrivo · via · paese": {
+    "en": "Arrival · street · country",
+    "fr": "Arrivée · rue · pays",
+    "es": "Llegada · calle · país",
+    "de": "Ankunft · Straße · Land"
+  },
+  "Automazioni": {
+    "en": "Automations",
+    "fr": "Automatisations",
+    "es": "Automatizaciones",
+    "de": "Automatisierungen"
+  },
+  "Avg efficienza": {
+    "en": "Avg efficiency",
+    "fr": "Efficacité moy.",
+    "es": "Eficiencia media",
+    "de": "Ø Effizienz"
+  },
+  "Avvia A/C": {
+    "en": "Start A/C",
+    "fr": "Démarrer A/C",
+    "es": "Iniciar A/C",
+    "de": "A/C starten"
+  },
+  "Avvia carica": {
+    "en": "Start charge",
+    "fr": "Démarrer recharge",
+    "es": "Iniciar recarga",
+    "de": "Laden starten"
+  },
+  "Batteria": {
+    "en": "Battery",
+    "fr": "Batterie",
+    "es": "Batería",
+    "de": "Batterie"
+  },
+  "CAPACITÀ STIM. (kWh)": {
+    "en": "EST. CAPACITY (kWh)",
+    "fr": "CAPACITÉ EST. (kWh)",
+    "es": "CAPACIDAD EST. (kWh)",
+    "de": "GESCH. KAPAZITÄT (kWh)"
+  },
+  "CO2 evitata vs termica (termica − rete).": {
+    "en": "CO2 avoided vs petrol (petrol − grid).",
+    "fr": "CO2 évitée vs thermique (thermique − réseau).",
+    "es": "CO2 evitada vs térmico (térmico − red).",
+    "de": "Vermiedenes CO2 vs Verbrenner (Verbrenner − Netz)."
+  },
+  "Carica": {
+    "en": "Charge",
+    "fr": "Recharge",
+    "es": "Carga",
+    "de": "Laden"
+  },
+  "Caricati": {
+    "en": "Charged",
+    "fr": "Chargés",
+    "es": "Cargados",
+    "de": "Geladen"
+  },
+  "Casa vs Pubblica": {
+    "en": "Home vs Public",
+    "fr": "Maison vs Publique",
+    "es": "Casa vs Pública",
+    "de": "Zuhause vs Öffentlich"
+  },
+  "Clacson": {
+    "en": "Horn",
+    "fr": "Klaxon",
+    "es": "Claxon",
+    "de": "Hupe"
+  },
+  "Configura → Wallbox → Potenza istantanea": {
+    "en": "Settings → Wallbox → Instant power",
+    "fr": "Réglages → Wallbox → Puissance instantanée",
+    "es": "Ajustes → Wallbox → Potencia instantánea",
+    "de": "Einstellungen → Wallbox → Momentanleistung"
+  },
+  "Consumata": {
+    "en": "Consumed",
+    "fr": "Consommé",
+    "es": "Consumido",
+    "de": "Verbraucht"
+  },
+  "Consumo medio kWh/100km": {
+    "en": "Average consumption kWh/100km",
+    "fr": "Consommation moyenne kWh/100km",
+    "es": "Consumo medio kWh/100km",
+    "de": "Ø Verbrauch kWh/100km"
+  },
+  "Costo": {
+    "en": "Cost",
+    "fr": "Coût",
+    "es": "Coste",
+    "de": "Kosten"
+  },
+  "Costo totale €": {
+    "en": "Total cost €",
+    "fr": "Coût total €",
+    "es": "Coste total €",
+    "de": "Gesamtkosten €"
+  },
+  "Costo €": {
+    "en": "Cost €",
+    "fr": "Coût €",
+    "es": "Coste €",
+    "de": "Kosten €"
+  },
+  "Da installazione": {
+    "en": "Since installation",
+    "fr": "Depuis l'installation",
+    "es": "Desde la instalación",
+    "de": "Seit Installation"
+  },
+  "Data": {
+    "en": "Date",
+    "fr": "Date",
+    "es": "Fecha",
+    "de": "Datum"
+  },
+  "Descrizione": {
+    "en": "Description",
+    "fr": "Description",
+    "es": "Descripción",
+    "de": "Beschreibung"
+  },
+  "Distanza km": {
+    "en": "Distance km",
+    "fr": "Distance km",
+    "es": "Distancia km",
+    "de": "Strecke km"
+  },
+  "Distanza viaggi (km)": {
+    "en": "Trip distance (km)",
+    "fr": "Distance trajets (km)",
+    "es": "Distancia viajes (km)",
+    "de": "Fahrtstrecke (km)"
+  },
+  "Dom": {
+    "en": "Sun",
+    "fr": "Dim",
+    "es": "Dom",
+    "de": "So"
+  },
+  "Durata": {
+    "en": "Duration",
+    "fr": "Durée",
+    "es": "Duración",
+    "de": "Dauer"
+  },
+  "Durata media": {
+    "en": "Average duration",
+    "fr": "Durée moyenne",
+    "es": "Duración media",
+    "de": "Ø Dauer"
+  },
+  "Eff.": {
+    "en": "Eff.",
+    "fr": "Rend.",
+    "es": "Efic.",
+    "de": "Eff."
+  },
+  "Elettrica": {
+    "en": "Electric",
+    "fr": "Électrique",
+    "es": "Eléctrico",
+    "de": "Elektro"
+  },
+  "Energia caricata kWh": {
+    "en": "Energy charged kWh",
+    "fr": "Énergie chargée kWh",
+    "es": "Energía cargada kWh",
+    "de": "Geladene Energie kWh"
+  },
+  "Energia totale kWh": {
+    "en": "Total energy kWh",
+    "fr": "Énergie totale kWh",
+    "es": "Energía total kWh",
+    "de": "Gesamtenergie kWh"
+  },
+  "Energia usata kWh": {
+    "en": "Energy used kWh",
+    "fr": "Énergie utilisée kWh",
+    "es": "Energía usada kWh",
+    "de": "Verbrauchte Energie kWh"
+  },
+  "Extra": {
+    "en": "Extra",
+    "fr": "Extra",
+    "es": "Extra",
+    "de": "Extra"
+  },
+  "Fine ricarica": {
+    "en": "Charge end",
+    "fr": "Fin recharge",
+    "es": "Fin de recarga",
+    "de": "Ladeende"
+  },
+  "Freddo = blu, caldo = rosso": {
+    "en": "Cold = blue, warm = red",
+    "fr": "Froid = bleu, chaud = rouge",
+    "es": "Frío = azul, calor = rojo",
+    "de": "Kalt = blau, warm = rot"
+  },
+  "Gio": {
+    "en": "Thu",
+    "fr": "Jeu",
+    "es": "Jue",
+    "de": "Do"
+  },
+  "Il risparmio è la differenza fra quello che avresti speso con l'auto termica e quello che hai speso davvero.": {
+    "en": "The saving is the difference between what you would have spent with a petrol car and what you actually spent.",
+    "fr": "L'économie est la différence entre ce que vous auriez dépensé avec une voiture thermique et ce que vous avez réellement dépensé.",
+    "es": "El ahorro es la diferencia entre lo que habrías gastado con un coche térmico y lo que gastaste realmente.",
+    "de": "Die Ersparnis ist die Differenz zwischen dem, was du mit einem Verbrenner ausgegeben hättest, und dem, was du tatsächlich ausgegeben hast."
+  },
+  "Impostazioni": {
+    "en": "Settings",
+    "fr": "Réglages",
+    "es": "Ajustes",
+    "de": "Einstellungen"
+  },
+  "Impostazioni → Integrazioni → Renault EV Center → Configura": {
+    "en": "Settings → Integrations → Renault EV Center → Configure",
+    "fr": "Réglages → Intégrations → Renault EV Center → Configurer",
+    "es": "Ajustes → Integraciones → Renault EV Center → Configurar",
+    "de": "Einstellungen → Integrationen → Renault EV Center → Konfigurieren"
+  },
+  "Indirizzo": {
+    "en": "Address",
+    "fr": "Adresse",
+    "es": "Dirección",
+    "de": "Adresse"
+  },
+  "Inserisci i": {
+    "en": "Enter the",
+    "fr": "Saisissez les",
+    "es": "Introduce los",
+    "de": "Gib die"
+  },
+  "Km": {
+    "en": "Km",
+    "fr": "Km",
+    "es": "Km",
+    "de": "Km"
+  },
+  "Km / Giorni": {
+    "en": "Km / Days",
+    "fr": "Km / Jours",
+    "es": "Km / Días",
+    "de": "Km / Tage"
+  },
+  "La schedulazione crea/aggiorna un'": {
+    "en": "The schedule creates/updates an",
+    "fr": "La planification crée/met à jour une",
+    "es": "La programación crea/actualiza una",
+    "de": "Der Zeitplan erstellt/aktualisiert eine"
+  },
+  "Lampeggia": {
+    "en": "Flash",
+    "fr": "Clignoter",
+    "es": "Destello",
+    "de": "Blinken"
+  },
+  "Lun": {
+    "en": "Mon",
+    "fr": "Lun",
+    "es": "Lun",
+    "de": "Mo"
+  },
+  "Manutenzione": {
+    "en": "Maintenance",
+    "fr": "Entretien",
+    "es": "Mantenimiento",
+    "de": "Wartung"
+  },
+  "Mar": {
+    "en": "Tue",
+    "fr": "Mar",
+    "es": "Mar",
+    "de": "Di"
+  },
+  "Media kWh/100km in ogni fascia di temperatura. Passa il mouse sulle barre per i dettagli.": {
+    "en": "Average kWh/100km in each temperature band. Hover the bars for details.",
+    "fr": "Moyenne kWh/100km dans chaque plage de température. Survolez les barres pour les détails.",
+    "es": "Media kWh/100km en cada franja de temperatura. Pasa el ratón por las barras para ver detalles.",
+    "de": "Ø kWh/100km in jeder Temperaturspanne. Fahre mit der Maus über die Balken für Details."
+  },
+  "Media mensile del consumo: vedi se migliora o peggiora.": {
+    "en": "Monthly average consumption: see if it improves or worsens.",
+    "fr": "Consommation mensuelle moyenne : voyez si elle s'améliore ou se dégrade.",
+    "es": "Consumo medio mensual: mira si mejora o empeora.",
+    "de": "Monatlicher Durchschnittsverbrauch: sieh, ob er sich verbessert oder verschlechtert."
+  },
+  "Media per stagione": {
+    "en": "Average by season",
+    "fr": "Moyenne par saison",
+    "es": "Media por estación",
+    "de": "Durchschnitt pro Jahreszeit"
+  },
+  "Mer": {
+    "en": "Wed",
+    "fr": "Mer",
+    "es": "Mié",
+    "de": "Mi"
+  },
+  "NOMINALE (kWh)": {
+    "en": "NOMINAL (kWh)",
+    "fr": "NOMINAL (kWh)",
+    "es": "NOMINAL (kWh)",
+    "de": "NOMINAL (kWh)"
+  },
+  "Nessun cambio di posizione registrato.": {
+    "en": "No location change recorded.",
+    "fr": "Aucun changement de position enregistré.",
+    "es": "Ningún cambio de ubicación registrado.",
+    "de": "Keine Standortänderung erfasst."
+  },
+  "Nessuna scadenza": {
+    "en": "No deadline",
+    "fr": "Aucune échéance",
+    "es": "Sin vencimiento",
+    "de": "Keine Frist"
+  },
+  "Non in carica": {
+    "en": "Not charging",
+    "fr": "Pas en charge",
+    "es": "Sin cargar",
+    "de": "Lädt nicht"
+  },
+  "Ora": {
+    "en": "Time",
+    "fr": "Heure",
+    "es": "Hora",
+    "de": "Uhrzeit"
+  },
+  "Panoramica": {
+    "en": "Overview",
+    "fr": "Aperçu",
+    "es": "Resumen",
+    "de": "Übersicht"
+  },
+  "Partenza · via · paese": {
+    "en": "Departure · street · country",
+    "fr": "Départ · rue · pays",
+    "es": "Salida · calle · país",
+    "de": "Abfahrt · Straße · Land"
+  },
+  "Periodo": {
+    "en": "Period",
+    "fr": "Période",
+    "es": "Periodo",
+    "de": "Zeitraum"
+  },
+  "Potenza picco kW": {
+    "en": "Peak power kW",
+    "fr": "Puissance crête kW",
+    "es": "Potencia pico kW",
+    "de": "Spitzenleistung kW"
+  },
+  "Premi ▸": {
+    "en": "Press ▸",
+    "fr": "Appuyez ▸",
+    "es": "Pulsa ▸",
+    "de": "Drücken ▸"
+  },
+  "Premе il tasto Avvia A/C all'orario scelto (modo/temperatura non sono inviabili coi button Renault).": {
+    "en": "Presses the Start A/C button at the chosen time (mode/temperature can't be sent with Renault buttons).",
+    "fr": "Appuie sur le bouton Démarrer A/C à l'heure choisie (mode/température non envoyables avec les boutons Renault).",
+    "es": "Pulsa el botón Iniciar A/C a la hora elegida (modo/temperatura no se pueden enviar con los botones Renault).",
+    "de": "Drückt den A/C-Start-Button zur gewählten Zeit (Modus/Temperatur können mit Renault-Buttons nicht gesendet werden)."
+  },
+  "Presa": {
+    "en": "Plug",
+    "fr": "Prise",
+    "es": "Enchufe",
+    "de": "Stecker"
+  },
+  "Prezzo medio di ogni kWh ricaricato.": {
+    "en": "Average price of each charged kWh.",
+    "fr": "Prix moyen de chaque kWh rechargé.",
+    "es": "Precio medio de cada kWh cargado.",
+    "de": "Durchschnittspreis jeder geladenen kWh."
+  },
+  "Prezzo medio €/kWh": {
+    "en": "Average price €/kWh",
+    "fr": "Prix moyen €/kWh",
+    "es": "Precio medio €/kWh",
+    "de": "Ø Preis €/kWh"
+  },
+  "Prossima scadenza": {
+    "en": "Next deadline",
+    "fr": "Prochaine échéance",
+    "es": "Próximo vencimiento",
+    "de": "Nächste Frist"
+  },
+  "Quanto avresti speso a termica vs quanto hai speso con l'EV.": {
+    "en": "What you would have spent on petrol vs what you spent on the EV.",
+    "fr": "Ce que vous auriez dépensé en thermique vs ce que vous avez dépensé en EV.",
+    "es": "Lo que habrías gastado en térmico vs lo que gastaste con el EV.",
+    "de": "Was du mit Verbrenner ausgegeben hättest vs was du mit dem EV ausgegeben hast."
+  },
+  "Quanto spendi ogni mese in ricariche.": {
+    "en": "How much you spend each month on charges.",
+    "fr": "Combien vous dépensez chaque mois en recharges.",
+    "es": "Cuánto gastas cada mes en recargas.",
+    "de": "Wie viel du monatlich für Ladungen ausgibst."
+  },
+  "Rete": {
+    "en": "Grid",
+    "fr": "Réseau",
+    "es": "Red",
+    "de": "Netz"
+  },
+  "Ricariche": {
+    "en": "Charges",
+    "fr": "Recharges",
+    "es": "Recargas",
+    "de": "Ladungen"
+  },
+  "Rinnova +1 anno": {
+    "en": "Renew +1 year",
+    "fr": "Renouveler +1 an",
+    "es": "Renovar +1 año",
+    "de": "+1 Jahr verlängern"
+  },
+  "Rinnova +6 mesi": {
+    "en": "Renew +6 months",
+    "fr": "Renouveler +6 mois",
+    "es": "Renovar +6 meses",
+    "de": "+6 Monate verlängern"
+  },
+  "Risparmi": {
+    "en": "Savings",
+    "fr": "Économies",
+    "es": "Ahorros",
+    "de": "Ersparnisse"
+  },
+  "Risparmio": {
+    "en": "Saving",
+    "fr": "Économie",
+    "es": "Ahorro",
+    "de": "Ersparnis"
+  },
+  "Risparmio = kWh dal FV × (costo rete casa − costo FV).": {
+    "en": "Saving = kWh from PV × (home grid cost − PV cost).",
+    "fr": "Économie = kWh du PV × (coût réseau maison − coût PV).",
+    "es": "Ahorro = kWh del FV × (coste red casa − coste FV).",
+    "de": "Ersparnis = kWh aus PV × (Netzkosten Haus − PV-Kosten)."
+  },
+  "Rotta": {
+    "en": "Route",
+    "fr": "Itinéraire",
+    "es": "Ruta",
+    "de": "Route"
+  },
+  "Sab": {
+    "en": "Sat",
+    "fr": "Sam",
+    "es": "Sáb",
+    "de": "Sa"
+  },
+  "Salute batteria": {
+    "en": "Battery health",
+    "fr": "Santé batterie",
+    "es": "Salud batería",
+    "de": "Batteriezustand"
+  },
+  "Scadenze: da": {
+    "en": "Deadlines: from",
+    "fr": "Échéances : de",
+    "es": "Vencimientos: de",
+    "de": "Fristen: ab"
+  },
+  "Sensore preso da": {
+    "en": "Sensor from",
+    "fr": "Capteur depuis",
+    "es": "Sensor de",
+    "de": "Sensor aus"
+  },
+  "Sessioni": {
+    "en": "Sessions",
+    "fr": "Sessions",
+    "es": "Sesiones",
+    "de": "Sitzungen"
+  },
+  "Settimana:": {
+    "en": "Week:",
+    "fr": "Semaine :",
+    "es": "Semana:",
+    "de": "Woche:"
+  },
+  "Sono le automazioni create in Home Assistant (Impostazioni → Automazioni). Accendile/spegni da qui, senza YAML.": {
+    "en": "These are the automations created in Home Assistant (Settings → Automations). Turn them on/off here, without YAML.",
+    "fr": "Ce sont les automatisations créées dans Home Assistant (Réglages → Automatisations). Activez/désactivez-les ici, sans YAML.",
+    "es": "Son las automatizaciones creadas en Home Assistant (Ajustes → Automatizaciones). Actívalas/desactívalas aquí, sin YAML.",
+    "de": "Das sind die in Home Assistant erstellten Automatisierungen (Einstellungen → Automatisierungen). Hier ein-/ausschalten, ohne YAML."
+  },
+  "Spesa": {
+    "en": "Spend",
+    "fr": "Dépense",
+    "es": "Gasto",
+    "de": "Ausgabe"
+  },
+  "Statistiche": {
+    "en": "Stats",
+    "fr": "Statistiques",
+    "es": "Estadísticas",
+    "de": "Statistiken"
+  },
+  "Temi HA in /themes: renault-blu, giallo, verde, aviation": {
+    "en": "HA themes in /themes: renault-blu, giallo, verde, aviation",
+    "fr": "Thèmes HA dans /themes : renault-blu, giallo, verde, aviation",
+    "es": "Temas HA en /themes: renault-blu, giallo, verde, aviation",
+    "de": "HA-Themes in /themes: renault-blu, giallo, verde, aviation"
+  },
+  "Tempo di guida": {
+    "en": "Driving time",
+    "fr": "Temps de conduite",
+    "es": "Tiempo de conducción",
+    "de": "Fahrzeit"
+  },
+  "Termica": {
+    "en": "Petrol",
+    "fr": "Thermique",
+    "es": "Térmico",
+    "de": "Verbrenner"
+  },
+  "Tipo": {
+    "en": "Type",
+    "fr": "Type",
+    "es": "Tipo",
+    "de": "Typ"
+  },
+  "Totale": {
+    "en": "Total",
+    "fr": "Total",
+    "es": "Total",
+    "de": "Gesamt"
+  },
+  "Totale viaggi": {
+    "en": "Total trips",
+    "fr": "Trajets totaux",
+    "es": "Viajes totales",
+    "de": "Fahrten gesamt"
+  },
+  "Tutto in": {
+    "en": "All in",
+    "fr": "Tout dans",
+    "es": "Todo en",
+    "de": "Alles unter"
+  },
+  "Un punto per viaggio (≥3 km): kWh/100km vs temperatura.": {
+    "en": "One point per trip (≥3 km): kWh/100km vs temperature.",
+    "fr": "Un point par trajet (≥3 km) : kWh/100km vs température.",
+    "es": "Un punto por viaje (≥3 km): kWh/100km vs temperatura.",
+    "de": "Ein Punkt pro Fahrt (≥3 km): kWh/100km vs Temperatur."
+  },
+  "Una notifica al giorno quando l'auto è": {
+    "en": "One notification a day when the car is",
+    "fr": "Une notification par jour quand la voiture est",
+    "es": "Una notificación al día cuando el coche está",
+    "de": "Eine Benachrichtigung pro Tag, wenn das Auto"
+  },
+  "Usati": {
+    "en": "Used",
+    "fr": "Utilisés",
+    "es": "Usados",
+    "de": "Verbraucht"
+  },
+  "Utile per le colonnine DC. Se lasci vuoto il costo, resta 0 €.": {
+    "en": "Useful for DC chargers. If you leave the cost empty, it stays 0 €.",
+    "fr": "Utile pour les bornes DC. Si vous laissez le coût vide, il reste 0 €.",
+    "es": "Útil para cargadores DC. Si dejas el coste vacío, queda 0 €.",
+    "de": "Nützlich für DC-Lader. Leer lässt die Kosten bei 0 €."
+  },
+  "Vampire drain: % persa a fermo (batteria spenta).": {
+    "en": "Vampire drain: % lost while parked (car off).",
+    "fr": "Vampire drain : % perdu à l'arrêt (voiture éteinte).",
+    "es": "Vampire drain: % perdido en reposo (coche apagado).",
+    "de": "Ruhestromverlust: % im Stand verloren (Auto aus)."
+  },
+  "Ven": {
+    "en": "Fri",
+    "fr": "Ven",
+    "es": "Vie",
+    "de": "Fr"
+  },
+  "Viaggi": {
+    "en": "Trips",
+    "fr": "Trajets",
+    "es": "Viajes",
+    "de": "Fahrten"
+  },
+  "Viaggi totali": {
+    "en": "Total trips",
+    "fr": "Trajets totaux",
+    "es": "Viajes totales",
+    "de": "Fahrten gesamt"
+  },
+  "Voce": {
+    "en": "Item",
+    "fr": "Poste",
+    "es": "Concepto",
+    "de": "Posten"
+  },
+  "WLTP casa madre a 100% vs reale (capacità ÷ media di tutti i viaggi).": {
+    "en": "Manufacturer WLTP at 100% vs real (capacity ÷ average of all trips).",
+    "fr": "WLTP constructeur à 100% vs réel (capacité ÷ moyenne de tous les trajets).",
+    "es": "WLTP del fabricante al 100% vs real (capacidad ÷ media de todos los viajes).",
+    "de": "Hersteller-WLTP bei 100% vs real (Kapazität ÷ Durchschnitt aller Fahrten)."
+  },
+  "Zona ricarica": {
+    "en": "Charging area",
+    "fr": "Zone de recharge",
+    "es": "Zona de recarga",
+    "de": "Ladezone"
+  },
+  "a": {
+    "en": "to",
+    "fr": "à",
+    "es": "a",
+    "de": "bis"
+  },
+  "a casa": {
+    "en": "at home",
+    "fr": "à la maison",
+    "es": "en casa",
+    "de": "zuhause"
+  },
+  "automazione": {
+    "en": "automation",
+    "fr": "automatisation",
+    "es": "automatización",
+    "de": "Automatisierung"
+  },
+  "configurato e ti dice a quanti km cambiarle.": {
+    "en": "configured and tells you at how many km to change them.",
+    "fr": "configuré et vous dit à combien de km les changer.",
+    "es": "configurado y te dice a cuántos km cambiarlos.",
+    "de": "konfiguriert und sagt dir, bei wie vielen km sie zu wechseln sind."
+  },
+  "costo/100km": {
+    "en": "cost/100km",
+    "fr": "coût/100km",
+    "es": "coste/100km",
+    "de": "Kosten/100km"
+  },
+  "costo/km": {
+    "en": "cost/km",
+    "fr": "coût/km",
+    "es": "coste/km",
+    "de": "Kosten/km"
+  },
+  "da": {
+    "en": "from",
+    "fr": "de",
+    "es": "desde",
+    "de": "ab"
+  },
+  "dalle ricariche a casa": {
+    "en": "from home charges",
+    "fr": "des recharges à la maison",
+    "es": "de las recargas en casa",
+    "de": "aus Heimladungen"
+  },
+  "evitata = termica − rete": {
+    "en": "avoided = petrol − grid",
+    "fr": "évitée = thermique − réseau",
+    "es": "evitada = térmico − red",
+    "de": "vermieden = Verbrenner − Netz"
+  },
+  "gg": {
+    "en": "d",
+    "fr": "j",
+    "es": "d",
+    "de": "T"
+  },
+  "in Home Assistant (orario + giorni) che preme il tasto di avvio.": {
+    "en": "in Home Assistant (time + days) that presses the start button.",
+    "fr": "dans Home Assistant (heure + jours) qui appuie sur le bouton de démarrage.",
+    "es": "en Home Assistant (hora + días) que pulsa el botón de inicio.",
+    "de": "in Home Assistant (Zeit + Tage), die den Start-Button drückt."
+  },
+  "intervallo gomme": {
+    "en": "tyre interval",
+    "fr": "intervalle pneus",
+    "es": "intervalo neumáticos",
+    "de": "Reifenintervall"
+  },
+  "interventi)": {
+    "en": "services)",
+    "fr": "entretiens)",
+    "es": "revisiones)",
+    "de": "Wartungen)"
+  },
+  "kWh a bordo": {
+    "en": "kWh on board",
+    "fr": "kWh à bord",
+    "es": "kWh a bordo",
+    "de": "kWh an Bord"
+  },
+  "kWh oggi": {
+    "en": "kWh today",
+    "fr": "kWh aujourd'hui",
+    "es": "kWh hoy",
+    "de": "kWh heute"
+  },
+  "kWh oggi · ieri": {
+    "en": "kWh today · yesterday",
+    "fr": "kWh aujourd'hui · hier",
+    "es": "kWh hoy · ayer",
+    "de": "kWh heute · gestern"
+  },
+  "kWh) · Mese:": {
+    "en": "kWh) · Month:",
+    "fr": "kWh) · Mois :",
+    "es": "kWh) · Mes:",
+    "de": "kWh) · Monat:"
+  },
+  "kWh/100km medi per zona d'arrivo: dove consumi di più.": {
+    "en": "Average kWh/100km by arrival area: where you consume most.",
+    "fr": "kWh/100km moyens par zone d'arrivée : où vous consommez le plus.",
+    "es": "kWh/100km medios por zona de llegada: dónde consumes más.",
+    "de": "Ø kWh/100km nach Ankunftszone: wo du am meisten verbrauchst."
+  },
+  "km dal": {
+    "en": "km since",
+    "fr": "km depuis",
+    "es": "km desde",
+    "de": "km seit"
+  },
+  "km dall'attivazione (odometro − km iniziali)": {
+    "en": "km since activation (odometer − initial km)",
+    "fr": "km depuis l'activation (odomètre − km initiaux)",
+    "es": "km desde la activación (odómetro − km iniciales)",
+    "de": "km seit Aktivierung (Tacho − Anfangskm)"
+  },
+  "km dell'ultimo cambio": {
+    "en": "km of the last change",
+    "fr": "km du dernier changement",
+    "es": "km del último cambio",
+    "de": "km des letzten Wechsels"
+  },
+  "modificabile, si salva nel number": {
+    "en": "editable, saved in the number",
+    "fr": "modifiable, enregistré dans le number",
+    "es": "modificable, se guarda en el number",
+    "de": "änderbar, wird im Number gespeichert"
+  },
+  "· termica": {
+    "en": "· petrol",
+    "fr": "· thermique",
+    "es": "· térmico",
+    "de": "· Verbrenner"
+  },
+  "— include i valori dichiarati": {
+    "en": "— includes declared values",
+    "fr": "— inclut les valeurs déclarées",
+    "es": "— incluye los valores declarados",
+    "de": "— enthält deklarierte Werte"
+  },
+  "— solo dati reali ✅": {
+    "en": "— real data only ✅",
+    "fr": "— données réelles uniquement ✅",
+    "es": "— solo datos reales ✅",
+    "de": "— nur echte Daten ✅"
+  },
+  "€ vs elettrica": {
+    "en": "€ vs electric",
+    "fr": "€ vs électrique",
+    "es": "€ vs eléctrico",
+    "de": "€ vs Elektro"
+  },
+  "€/anno": {
+    "en": "€/year",
+    "fr": "€/an",
+    "es": "€/año",
+    "de": "€/Jahr"
+  },
+  "⏹️ FERMA": {
+    "en": "⏹️ STOP",
+    "fr": "⏹️ ARRÊTER",
+    "es": "⏹️ PARAR",
+    "de": "⏹️ STOPP"
+  },
+  "▶️ AVVIA": {
+    "en": "▶️ START",
+    "fr": "▶️ DÉMARRER",
+    "es": "▶️ INICIAR",
+    "de": "▶️ START"
+  },
+  "★ NETTO": {
+    "en": "★ NET",
+    "fr": "★ NET",
+    "es": "★ NETO",
+    "de": "★ NETTO"
+  },
+  "⛽ Carburante": {
+    "en": "⛽ Fuel",
+    "fr": "⛽ Carburant",
+    "es": "⛽ Combustible",
+    "de": "⛽ Kraftstoff"
+  },
+  "✖ azzera date": {
+    "en": "✖ clear dates",
+    "fr": "✖ effacer les dates",
+    "es": "✖ borrar fechas",
+    "de": "✖ Daten löschen"
+  },
+  "✨ Crea automazioni consigliate": {
+    "en": "✨ Create recommended automations",
+    "fr": "✨ Créer les automatisations recommandées",
+    "es": "✨ Crear automatizaciones recomendadas",
+    "de": "✨ Empfohlene Automatisierungen erstellen"
+  },
+  "➕ Aggiungi intervento": {
+    "en": "➕ Add service",
+    "fr": "➕ Ajouter une intervention",
+    "es": "➕ Añadir intervención",
+    "de": "➕ Wartung hinzufügen"
+  },
+  "🎚️ Corrente di carica (A)": {
+    "en": "🎚️ Charging current (A)",
+    "fr": "🎚️ Courant de charge (A)",
+    "es": "🎚️ Corriente de carga (A)",
+    "de": "🎚️ Ladestrom (A)"
+  },
+  "🏁 Chiudi viaggio ora": {
+    "en": "🏁 Close trip now",
+    "fr": "🏁 Fermer le trajet",
+    "es": "🏁 Cerrar viaje ahora",
+    "de": "🏁 Fahrt jetzt schließen"
+  },
+  "💚 Differenza": {
+    "en": "💚 Difference",
+    "fr": "💚 Différence",
+    "es": "💚 Diferencia",
+    "de": "💚 Differenz"
+  },
+  "💰 Risparmio netto": {
+    "en": "💰 Net saving",
+    "fr": "💰 Économie nette",
+    "es": "💰 Ahorro neto",
+    "de": "💰 Nettoersparnis"
+  },
+  "💾 Applica corrente": {
+    "en": "💾 Apply current",
+    "fr": "💾 Appliquer le courant",
+    "es": "💾 Aplicar corriente",
+    "de": "💾 Strom übernehmen"
+  },
+  "💾 Registra ricarica": {
+    "en": "💾 Log charge",
+    "fr": "💾 Enregistrer la recharge",
+    "es": "💾 Registrar recarga",
+    "de": "💾 Ladung erfassen"
+  },
+  "💾 Salva": {
+    "en": "💾 Save",
+    "fr": "💾 Enregistrer",
+    "es": "💾 Guardar",
+    "de": "💾 Speichern"
+  },
+  "💾 Salva giorni": {
+    "en": "💾 Save days",
+    "fr": "💾 Enregistrer les jours",
+    "es": "💾 Guardar días",
+    "de": "💾 Tage speichern"
+  },
+  "💾 Salva programma clima": {
+    "en": "💾 Save climate schedule",
+    "fr": "💾 Enregistrer le programme climat",
+    "es": "💾 Guardar programa clima",
+    "de": "💾 Klimaplan speichern"
+  },
+  "💾 Salva programma ricarica": {
+    "en": "💾 Save charge schedule",
+    "fr": "💾 Enregistrer le programme de recharge",
+    "es": "💾 Guardar programa de recarga",
+    "de": "💾 Ladeplan speichern"
+  },
+  "💾 Salva scadenza tagliando": {
+    "en": "💾 Save service deadline",
+    "fr": "💾 Enregistrer l'échéance d'entretien",
+    "es": "💾 Guardar vencimiento de mantenimiento",
+    "de": "💾 Wartungsfrist speichern"
+  },
+  "📄 Bollo": {
+    "en": "📄 Road tax",
+    "fr": "📄 Taxe",
+    "es": "📄 Impuesto",
+    "de": "📄 Kfz-Steuer"
+  },
+  "📥 Esporta viaggi CSV": {
+    "en": "📥 Export trips CSV",
+    "fr": "📥 Exporter les trajets CSV",
+    "es": "📥 Exportar viajes CSV",
+    "de": "📥 Fahrten als CSV exportieren"
+  },
+  "🔄 Aggiorna posizione auto": {
+    "en": "🔄 Update car position",
+    "fr": "🔄 Actualiser la position",
+    "es": "🔄 Actualizar posición",
+    "de": "🔄 Position aktualisieren"
+  },
+  "🔄 Reset contatori Costi": {
+    "en": "🔄 Reset cost counters",
+    "fr": "🔄 Réinitialiser les coûts",
+    "es": "🔄 Reiniciar contadores de costes",
+    "de": "🔄 Kosten zurücksetzen"
+  },
+  "🔄 Reset contatori Energia": {
+    "en": "🔄 Reset energy counters",
+    "fr": "🔄 Réinitialiser l'énergie",
+    "es": "🔄 Reiniciar contadores de energía",
+    "de": "🔄 Energie zurücksetzen"
+  },
+  "🔄 Reset contatori Km": {
+    "en": "🔄 Reset km counters",
+    "fr": "🔄 Réinitialiser les km",
+    "es": "🔄 Reiniciar contadores de km",
+    "de": "🔄 Km zurücksetzen"
+  },
+  "🔧 Tagliandi": {
+    "en": "🔧 Services",
+    "fr": "🔧 Entretiens",
+    "es": "🔧 Revisiones",
+    "de": "🔧 Wartungen"
+  },
+  "🔴 Auto termica": {
+    "en": "🔴 Petrol car",
+    "fr": "🔴 Voiture thermique",
+    "es": "🔴 Coche térmico",
+    "de": "🔴 Verbrenner"
+  },
+  "🕘 Ricariche prima": {
+    "en": "🕘 Prior charges",
+    "fr": "🕘 Recharges antérieures",
+    "es": "🕘 Recargas anteriores",
+    "de": "🕘 Frühere Ladungen"
+  },
+  "🟢 Auto elettrica": {
+    "en": "🟢 Electric car",
+    "fr": "🟢 Voiture électrique",
+    "es": "🟢 Coche eléctrico",
+    "de": "🟢 Elektroauto"
+  },
+  "🤖 Automazioni create — attiva/disattiva": {
+    "en": "🤖 Created automations — on/off",
+    "fr": "🤖 Automatisations créées — activer/désactiver",
+    "es": "🤖 Automatizaciones creadas — activar/desactivar",
+    "de": "🤖 Erstellte Automatisierungen — ein/aus"
+  },
+  "🧭 Range reale vs dichiarato": {
+    "en": "🧭 Real vs declared range",
+    "fr": "🧭 Autonomie réelle vs déclarée",
+    "es": "🧭 Autonomía real vs declarada",
+    "de": "🧭 Reichweite real vs angegeben"
+  },
+  "Sconosciuto": {
+    "en": "Unknown",
+    "fr": "Inconnu",
+    "es": "Desconocido",
+    "de": "Unbekannt"
+  },
+  "attivo": {
+    "en": "active",
+    "fr": "actif",
+    "es": "activo",
+    "de": "aktiv"
+  },
+  "spento": {
+    "en": "off",
+    "fr": "éteint",
+    "es": "apagado",
+    "de": "aus"
+  },
+  "Netto": {
+    "en": "Net",
+    "fr": "Net",
+    "es": "Neto",
+    "de": "Netto"
+  },
+  "Reale · media viaggi": {
+    "en": "Real · trips average",
+    "fr": "Réel · moyenne trajets",
+    "es": "Real · media viajes",
+    "de": "Real · Ø Fahrten"
+  },
+  "Dichiarato · WLTP": {
+    "en": "Declared · WLTP",
+    "fr": "Déclaré · WLTP",
+    "es": "Declarado · WLTP",
+    "de": "Angegeben · WLTP"
+  },
+  "casa madre al 100%": {
+    "en": "manufacturer at 100%",
+    "fr": "constructeur à 100%",
+    "es": "fabricante al 100%",
+    "de": "Hersteller bei 100%"
+  },
+  "Nessun number corrente wallbox in configurazione": {
+    "en": "No wallbox current number configured",
+    "fr": "Aucun number de courant wallbox configuré",
+    "es": "Ningún number de corriente wallbox configurado",
+    "de": "Keine Wallbox-Stromstärke-Nummer konfiguriert"
+  },
+  "Nessun viaggio per il filtro scelto": {
+    "en": "No trips for the selected filter",
+    "fr": "Aucun trajet pour le filtre choisi",
+    "es": "Ningún viaje para el filtro elegido",
+    "de": "Keine Fahrten für den gewählten Filter"
+  },
+  "n. viaggi": {
+    "en": "no. trips",
+    "fr": "n. trajets",
+    "es": "n.º viajes",
+    "de": "Anz. Fahrten"
+  },
+  "ora di partenza": {
+    "en": "departure time",
+    "fr": "heure de départ",
+    "es": "hora de salida",
+    "de": "Abfahrtszeit"
+  },
+  "zona d'arrivo": {
+    "en": "arrival area",
+    "fr": "zone d'arrivée",
+    "es": "zona de llegada",
+    "de": "Ankunftszone"
+  },
+  "giorno": {
+    "en": "day",
+    "fr": "jour",
+    "es": "día",
+    "de": "Tag"
+  },
+  "mese": {
+    "en": "month",
+    "fr": "mois",
+    "es": "mes",
+    "de": "Monat"
+  },
+  "Km Percorsi": {
+    "en": "Km driven",
+    "fr": "Km parcourus",
+    "es": "Km recorridos",
+    "de": "Gefahrene km"
+  },
+  "Media Consumi": {
+    "en": "Avg consumption",
+    "fr": "Conso moyenne",
+    "es": "Consumo medio",
+    "de": "Ø Verbrauch"
+  },
+  "Primavera": {
+    "en": "Spring",
+    "fr": "Printemps",
+    "es": "Primavera",
+    "de": "Frühling"
+  },
+  "Estate": {
+    "en": "Summer",
+    "fr": "Été",
+    "es": "Verano",
+    "de": "Sommer"
+  },
+  "Autunno": {
+    "en": "Autumn",
+    "fr": "Automne",
+    "es": "Otoño",
+    "de": "Herbst"
+  },
+  "Inverno": {
+    "en": "Winter",
+    "fr": "Hiver",
+    "es": "Invierno",
+    "de": "Winter"
+  },
+  "Cambio gomme": {
+    "en": "Tyre change",
+    "fr": "Changement de pneus",
+    "es": "Cambio de neumáticos",
+    "de": "Reifenwechsel"
+  },
+  "Assicurazione": {
+    "en": "Insurance",
+    "fr": "Assurance",
+    "es": "Seguro",
+    "de": "Versicherung"
+  },
+  "Tagliando": {
+    "en": "Service",
+    "fr": "Entretien",
+    "es": "Mantenimiento",
+    "de": "Wartung"
+  },
+  "Bollo": {
+    "en": "Road tax",
+    "fr": "Taxe",
+    "es": "Impuesto",
+    "de": "Kfz-Steuer"
+  },
+  "Revisione": {
+    "en": "Inspection",
+    "fr": "Contrôle technique",
+    "es": "Revisión",
+    "de": "HU"
+  },
+  "Gomme": {
+    "en": "Tyres",
+    "fr": "Pneus",
+    "es": "Neumáticos",
+    "de": "Reifen"
+  },
+  "Scadenza": {
+    "en": "Deadline",
+    "fr": "Échéance",
+    "es": "Vencimiento",
+    "de": "Frist"
+  },
+  "giorni": {
+    "en": "days",
+    "fr": "jours",
+    "es": "días",
+    "de": "Tage"
+  },
+  "Km mancanti": {
+    "en": "km remaining",
+    "fr": "km restants",
+    "es": "km restantes",
+    "de": "verbleibende km"
+  },
+  "Nessun dato": {
+    "en": "No data",
+    "fr": "Aucune donnée",
+    "es": "Sin datos",
+    "de": "Keine Daten"
+  },
+  "Nessun intervento": {
+    "en": "No service",
+    "fr": "Aucune intervention",
+    "es": "Sin intervenciones",
+    "de": "Keine Wartung"
+  },
+  "Ricarica": {
+    "en": "Charge",
+    "fr": "Recharge",
+    "es": "Recarga",
+    "de": "Laden"
+  },
+  "Avvia": {
+    "en": "Start",
+    "fr": "Démarrer",
+    "es": "Iniciar",
+    "de": "Starten"
+  },
+  "Ferma": {
+    "en": "Stop",
+    "fr": "Arrêter",
+    "es": "Parar",
+    "de": "Stoppen"
+  }
+};
 let _LANG = "it";
 /** Traduzione: chiave -> lingua corrente, fallback italiano, poi la stringa data. */
 function _t(key, fallback) {
@@ -1044,15 +2313,41 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._startVersionWatch();
   }
 
+  _translateDom() {
+    const lang = _LANG;
+    if (lang === "it" || !this.shadowRoot) return;
+    try {
+      const w = document.createTreeWalker(this.shadowRoot, NodeFilter.SHOW_TEXT);
+      let n;
+      while ((n = w.nextNode())) {
+        const raw = n.nodeValue;
+        if (!raw) continue;
+        const key = raw.replace(/\s+/g, " ").trim();
+        const e = key && UI[key];
+        if (e && e[lang]) {
+          const lead = (raw.match(/^\s*/) || [""])[0];
+          const trail = (raw.match(/\s*$/) || [""])[0];
+          n.nodeValue = lead + e[lang] + trail;
+        }
+      }
+      this.shadowRoot.querySelectorAll("[title],[placeholder],[aria-label]").forEach((el) => {
+        ["title", "placeholder", "aria-label"].forEach((a) => {
+          const v = el.getAttribute(a);
+          if (v && UI[v] && UI[v][lang]) el.setAttribute(a, UI[v][lang]);
+        });
+      });
+    } catch (e) { /* noop */ }
+  }
+
   set hass(hass) {
     this._hass = hass;
     try {
       const _lang = localStorage.getItem("rec_lang") || _detectLang(hass);
       if (_lang !== _LANG) { _LANG = I18N[_lang] ? _lang : "it"; this._built = false; }
-      if (!this._built) this._build();
+      if (!this._built) { this._build(); this._translateDom(); }
       else if (!this._raf) this._raf = requestAnimationFrame(() => {
         this._raf = null;
-        try { if (!PAGES()[this._page] || !this._pages().some(([id]) => id === this._page)) this._page = "p1"; this._update(); }
+        try { if (!PAGES()[this._page] || !this._pages().some(([id]) => id === this._page)) this._page = "p1"; this._update(); this._translateDom(); }
         catch (e) { this._showError(e); }
       });
     } catch (e) { this._showError(e); }
@@ -1792,6 +3087,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         _LANG = langSel.value || _detectLang(this._hass);
         this._built = false;
         this._build();
+        this._translateDom();
       });
     }
     // notify salvato localmente → config runtime se non impostato in YAML
@@ -2395,6 +3691,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._tileStats(root);
     this._drawSeasons(root);
     this._rowsAttr(root);
+    this._translateDom();
   }
   _addMaint() {
     const root = this.shadowRoot;
@@ -3586,7 +4883,7 @@ const PAGES = () => ({
     <div class="card" style="padding:0;overflow:hidden">
       <div class="carbox" style="min-height:170px;border:none;border-radius:0;background:var(--panel);position:relative;padding:18px 16px">
         <div data-c="carimg" style="width:100%;display:flex;align-items:center;justify-content:center;min-height:120px"><div class="ph">🚗</div></div>
-        <div style="position:absolute;top:10px;left:12px"><span class="chip" data-c="charging">>${_t("chip_non_in_carica", "🔓 Non in carica")}</span></div>
+        <div style="position:absolute;top:10px;left:12px"><span class="chip" data-c="charging">${_t("chip_non_in_carica", "🔓 Non in carica")}</span></div>
         <div style="position:absolute;top:10px;right:12px"><span class="chip acc">⚡ <span data-f="range">—</span> km</span></div>
       </div>
       <div style="padding:14px 16px">
@@ -4055,7 +5352,7 @@ const PAGES = () => ({
               <option value="es">Español</option>
               <option value="de">Deutsch</option>
         </select></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:4px">"Automatica" segue la lingua di HA. Le altre lingue (ES/DE) in arrivo.</div></div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:4px">"Automatica" segue la lingua di HA.</div></div>
     <div class="card"><h3>${_t("h3_automazioni", "🤖 Automazioni")}</h3>
       <div class="btn" data-cmd="create_automations">✨ Crea automazioni consigliate</div>
       <div class="note" style="margin-top:8px">${_t("note_crea", "Crea in HA: <b>ricarica completata</b> (kWh, SoC, costo),\n        <b>avvio ricarica</b> e <b>riassunto giornaliero</b>. Modificabili da Impostazioni → Automazioni.")}</div></div>

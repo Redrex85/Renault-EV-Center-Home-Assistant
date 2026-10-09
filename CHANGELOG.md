@@ -5,6 +5,18 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.3 - Pannello: traduzione completa (etichette statiche e dinamiche)
+
+- **Molte etichette restavano in italiano** (titoli pagina, intestazioni tabelle, note,
+  bottoni, nomi di mesi/stagioni, stati wallbox, giorni della settimana, grafici…). Le
+  versioni precedenti coprivano solo `h3`/`span`/`option`: restavano ~190 testi statici e
+  diversi dinamici non tradotti.
+- Aggiunto un **traduttore DOM** (`_translateDom`): dopo ogni render applica una mappa
+  `UI` (197 voci IT → EN/FR/ES/DE) ai nodi di testo e agli attributi
+  `title`/`placeholder`/`aria-label`. Copre tutte le pagine (Panoramica → Wallbox), le
+  note, i grafici e i testi generati dinamicamente.
+- Il rendering **italiano resta identico** (il traduttore non tocca `it`).
+
 ## 1.1.2 - Fix: il pannello non si apriva (chiave I18N con "×")
 
 - **`SyntaxError: illegal character U+00D7` che impediva l'apertura della dashboard.**
