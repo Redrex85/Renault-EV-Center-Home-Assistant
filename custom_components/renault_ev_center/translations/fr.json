@@ -35,6 +35,7 @@
           "gse": {
             "name": "⚡ Expérimentation GSE",
             "data": {
+              "gse_enabled": "Utiliser l'expérimentation GSE",
               "gse_kw_max": "Puissance autorisée dans la plage (kW)",
               "gse_kw_ridotta": "Puissance hors plage (kW)",
               "gse_start": "Début de la plage autorisée",
@@ -119,6 +120,7 @@
           "gse": {
             "name": "⚡ Expérimentation GSE",
             "data": {
+              "gse_enabled": "Utiliser l'expérimentation GSE",
               "gse_kw_max": "Puissance autorisée dans la plage (kW)",
               "gse_kw_ridotta": "Puissance hors plage (kW)",
               "gse_start": "Début de la plage autorisée",
@@ -315,6 +317,7 @@
           "gse": {
             "name": "⚡ Expérimentation GSE",
             "data": {
+              "gse_enabled": "Utiliser l'expérimentation GSE",
               "gse_kw_max": "Puissance autorisée dans la plage (kW)",
               "gse_kw_ridotta": "Puissance hors plage (kW)",
               "gse_start": "Début de la plage autorisée",

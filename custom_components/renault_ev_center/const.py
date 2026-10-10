@@ -66,7 +66,7 @@ CONF_TYRE_INTERVAL = "tyre_interval_km"
 CONF_PURCHASE_DATE = "purchase_date"
 DEFAULT_TYRE_INTERVAL = 40000
 DEFAULT_TAG_TERMICO = 450.0
-DEFAULT_TAG_EV = 80.0
+DEFAULT_TAG_EV = 100.0
 DEFAULT_BOLLO_TERMICO = 350.0
 DEFAULT_BOLLO_EV = 150.0
 DEFAULT_TAGLIANDO_INTERVALLO = 15000
@@ -127,6 +127,7 @@ HOME_METER_OPTIONS = ["3", "4.5", "6", "10"]
 CONF_HAS_PV = "has_pv"
 
 # --- sperimentazione GSE (limite di potenza a fasce orarie) -------------------
+CONF_GSE_ENABLED = "gse_enabled"          # abilita la sperimentazione GSE (wizard/opzioni)
 CONF_GSE_WPA = "gse_wpa"                  # watt per ampere della wallbox (230 mono, 690 trifase)
 CONF_GSE_KW_MAX = "gse_kw_max"            # potenza consentita nella fascia (es. 6 kW)
 CONF_GSE_KW_RIDOTTA = "gse_kw_ridotta"    # potenza fuori fascia (es. 3 kW)
@@ -196,7 +197,7 @@ DEFAULT_EFFICIENCY = 0.90
 DEFAULT_POLL_INTERVAL = 30
 DEFAULT_TRIP_TIMEOUT = 20
 DEFAULT_FUEL_CONSUMPTION = 6.5
-DEFAULT_FUEL_PRICE = 1.65
+DEFAULT_FUEL_PRICE = 2.00
 DEFAULT_FUEL_LABEL = "Diesel"
 DEFAULT_SOLAR_ZONE = "beb"
 

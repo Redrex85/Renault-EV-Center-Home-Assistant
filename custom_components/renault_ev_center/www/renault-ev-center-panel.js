@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.8";
+const REC_VER = "1.1.9";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -3072,7 +3072,11 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "topstop": return S._st(S._sid("viaggio_top_stop_del_mese"), S._sid("viaggio_top_stop"));
       // Extra p1/p10
       case "name": return S._cfg.name;
-      case "notify": return S._cfg.notify || "da configurare";
+      case "notify": {
+        const _pg = S._sensorByPrefix("programmazione");
+        const _n = (_pg && _pg.attributes && _pg.attributes.notify_service) || "";
+        return _n || S._cfg.notify || "da configurare";
+      }
       // Impostazioni (entità di configurazione)
       case "n_price_home": return S._nid("costo_energia_casa");
       case "n_price_public": return S._nid("costo_colonnina");
@@ -3387,7 +3391,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     });
     // input locali (localStorage): prezzo diesel, consumo equivalente, notify, preavviso
     this.shadowRoot.querySelectorAll("input[data-ls]").forEach((inp) => {
-      const saved = localStorage.getItem(inp.dataset.ls);
+      let saved = localStorage.getItem(inp.dataset.ls);
+      // notify: se non impostato localmente, prefill dall'integrazione (config wizard/opzioni)
+      if ((saved === null || saved === "") && inp.dataset.ls === "rec_notify") {
+        const _pg = this._sensorByPrefix("programmazione");
+        saved = (_pg && _pg.attributes && _pg.attributes.notify_service) || "";
+      }
       if (saved !== null && saved !== "") inp.value = saved;
       inp.addEventListener("change", () => { localStorage.setItem(inp.dataset.ls, inp.value); this._update(); });
     });
@@ -3456,6 +3465,8 @@ class RenaultEvCenterPanel extends HTMLElement {
         ? `${S._fmt(_gse.kw_adesso === undefined ? 0 : _gse.kw_adesso, 1)} kW ${_gse.in_fascia ? "(piena)" : "(ridotta)"}`
         : "non attiva");
     }
+    const _gseCard = this.shadowRoot.querySelector("#gse-card");
+    if (_gseCard) _gseCard.style.display = (_gse && _gse.abilitato !== false) ? "" : "none";
 
     const stateEnt = S._st(S._ov("wallbox_state"), "sensor.wallbox_charger_state");
     set("state", stateEnt ? (stMap[stateEnt.state] || stateEnt.state) : "—");
@@ -5715,7 +5726,7 @@ const PAGES = () => ({
       <div class="row"><span>${_t("lbl_soglia_contatore", "Soglia contatore")}</span><b><span data-wb="home_hi">—</span> W</b></div>
       <div class="row"><span>${_t("lbl_ampere_wallbox", "Ampere wallbox")}</span><b><span data-wb="home_amps">—</span> A</b></div>
       <div class="note">${_t("note_sopra_la_soglia_10_min_ridotta_a_sotto_l", "Sopra la soglia 10 min → Ridotta A; sotto l'80% per 15 min → Max A. Sensore/contatore in <b>Configura → Bilanciamento casa</b>.")}</div></div>
-    <div class="card"><h3>${_t("h3_sperimentazione_gse", "⚡ Sperimentazione GSE")}</h3>
+    <div class="card" id="gse-card"><h3>${_t("h3_sperimentazione_gse", "⚡ Sperimentazione GSE")}</h3>
       <div class="row"><span>${_t("lbl_attiva", "Attiva")}</span><label class="switch"><input type="checkbox" data-sw="sw_gse"><span></span></label></div>
       <div class="row"><span>${_t("lbl_limite_adesso", "Limite adesso")}</span><b data-wb="gse_now">—</b></div>
       <div class="row"><span>${_t("lbl_fascia_piena", "Fascia piena")}</span><b><span data-wb="gse_fascia">—</span></b></div>

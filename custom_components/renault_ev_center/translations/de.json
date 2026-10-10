@@ -35,6 +35,7 @@
           "gse": {
             "name": "⚡ GSE-Pilotprojekt",
             "data": {
+              "gse_enabled": "GSE-Test verwenden",
               "gse_kw_max": "Erlaubte Leistung im Zeitfenster (kW)",
               "gse_kw_ridotta": "Leistung außerhalb des Zeitfensters (kW)",
               "gse_start": "Beginn des erlaubten Zeitfensters",
@@ -119,6 +120,7 @@
           "gse": {
             "name": "⚡ GSE-Pilotprojekt",
             "data": {
+              "gse_enabled": "GSE-Test verwenden",
               "gse_kw_max": "Erlaubte Leistung im Zeitfenster (kW)",
               "gse_kw_ridotta": "Leistung außerhalb des Zeitfensters (kW)",
               "gse_start": "Beginn des erlaubten Zeitfensters",
@@ -315,6 +317,7 @@
           "gse": {
             "name": "⚡ GSE-Pilotprojekt",
             "data": {
+              "gse_enabled": "GSE-Test verwenden",
               "gse_kw_max": "Erlaubte Leistung im Zeitfenster (kW)",
               "gse_kw_ridotta": "Leistung außerhalb des Zeitfensters (kW)",
               "gse_start": "Beginn des erlaubten Zeitfensters",

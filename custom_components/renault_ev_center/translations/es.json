@@ -35,6 +35,7 @@
           "gse": {
             "name": "⚡ Plan piloto GSE",
             "data": {
+              "gse_enabled": "Usar la prueba GSE",
               "gse_kw_max": "Potencia permitida dentro de la franja (kW)",
               "gse_kw_ridotta": "Potencia fuera de la franja (kW)",
               "gse_start": "Inicio de la franja permitida",
@@ -119,6 +120,7 @@
           "gse": {
             "name": "⚡ Plan piloto GSE",
             "data": {
+              "gse_enabled": "Usar la prueba GSE",
               "gse_kw_max": "Potencia permitida dentro de la franja (kW)",
               "gse_kw_ridotta": "Potencia fuera de la franja (kW)",
               "gse_start": "Inicio de la franja permitida",
@@ -315,6 +317,7 @@
           "gse": {
             "name": "⚡ Plan piloto GSE",
             "data": {
+              "gse_enabled": "Usar la prueba GSE",
               "gse_kw_max": "Potencia permitida dentro de la franja (kW)",
               "gse_kw_ridotta": "Potencia fuera de la franja (kW)",
               "gse_start": "Inicio de la franja permitida",

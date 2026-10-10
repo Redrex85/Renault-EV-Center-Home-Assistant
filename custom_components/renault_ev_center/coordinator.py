@@ -52,6 +52,7 @@ from .const import (
     CONF_LOW_SOC_DAYS,
     DEFAULT_LOW_SOC_DAYS,
     WEEKDAYS,
+    CONF_GSE_ENABLED,
     CONF_GSE_WPA,
     CONF_GSE_KW_MAX,
     CONF_GSE_KW_RIDOTTA,
@@ -443,20 +444,20 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.price_solar = _f(opts.get(CONF_PRICE_SOLAR), 0.0)
         self.charging_eff = (_f(opts.get(CONF_CHARGING_EFFICIENCY), DEFAULT_EFFICIENCY) or 90) / 100.0
         self.solar_zone = str(opts.get(CONF_SOLAR_ZONE) or "").lower()
-        self.fuel_enabled = bool(opts.get(CONF_FUEL_ENABLED))
+        self.fuel_enabled = bool(opts.get(CONF_FUEL_ENABLED, True))
         self.fuel_label = str(opts.get(CONF_FUEL_LABEL) or "Diesel")
         self.fuel_consumption = _f(opts.get(CONF_FUEL_CONSUMPTION), 6.5)
-        self.fuel_price = _f(opts.get(CONF_FUEL_PRICE), 1.65)
+        self.fuel_price = _f(opts.get(CONF_FUEL_PRICE), 2.00)
         self.diesel_price_entity = opts.get(CONF_DIESEL_PRICE_ENTITY) or ""
-        self.maint_enabled = bool(opts.get(CONF_MAINT_ENABLED))
+        self.maint_enabled = bool(opts.get(CONF_MAINT_ENABLED, True))
         self.tag_termico = _f(opts.get(CONF_TAG_TERMICO), 250.0)
-        self.tag_ev = _f(opts.get(CONF_TAG_EV), 80.0)
+        self.tag_ev = _f(opts.get(CONF_TAG_EV), 100.0)
         self.bollo_termico = _f(opts.get(CONF_BOLLO_TERMICO), 350.0)
         self.bollo_ev = _f(opts.get(CONF_BOLLO_EV), 150.0)
         self.tagliando_intervallo = max(_f(opts.get(CONF_TAGLIANDO_INTERVALLO), 15000), 5000)
         self.tyre_interval = max(_f(opts.get(CONF_TYRE_INTERVAL), 40000), 5000)
         self.temp_entity = opts.get(CONF_TEMP_ENTITY) or ""
-        self.co2_enabled = bool(opts.get(CONF_CO2_ENABLED))
+        self.co2_enabled = bool(opts.get(CONF_CO2_ENABLED, True))
         self.co2_thermal_gkm = _f(opts.get(CONF_CO2_THERMAL_GKM), 120.0)
         self.co2_grid_gkwh = _f(opts.get(CONF_CO2_GRID_GKWH), 300.0)
         self.scadenze_enabled = bool(opts.get(CONF_SCADENZE_ENABLED))
@@ -494,6 +495,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.gse_end = str(opts.get(CONF_GSE_END) or DEFAULT_GSE_END)
         self.gse_domenica = bool(opts.get(CONF_GSE_DOMENICA, True))
         self.gse_holiday = str(opts.get(CONF_GSE_HOLIDAY) or "")
+        self.gse_enabled = bool(opts.get(CONF_GSE_ENABLED, False))
         # --- bilanciamento casalingo ---------------------------------------------
         self.home_power_sensor = str(opts.get(CONF_HOME_POWER_SENSOR) or "")
         self.home_meter_kw = _f(opts.get(CONF_HOME_METER_KW), DEFAULT_HOME_METER_KW)
@@ -3149,6 +3151,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         attivo = self._switch_on("gse")
         info: dict[str, Any] = {
             "attivo": attivo,
+            "abilitato": self.gse_enabled,
             "fascia": f"{self.gse_start}–{self.gse_end}",
             "kw_piena": self.gse_kw_max,
             "kw_ridotta": self.gse_kw_ridotta,
@@ -3181,7 +3184,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         della wallbox (6 A) sta sotto il budget, la ricarica viene FERMATA e riprende solo
         se i consumi restano bassi per 30 minuti, in fascia e sotto il SoC obiettivo.
         """
-        if not self._switch_on("gse"):
+        if not self.gse_enabled or not self._switch_on("gse"):
             return
         ent = self.opts.get(CONF_WB_MAX_CURRENT)
         if not ent:
@@ -3339,7 +3342,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # con la GSE attiva il tetto lo calcola _apply_gse (casa+wallbox, budget e
         # tolleranza): il bilanciamento casa non deve rialzare gli ampere oltre quel
         # limite (prima riportava a "max_amps" 25 A mentre la GSE era a 3 kW).
-        if self._switch_on("gse"):
+        if self.gse_enabled and self._switch_on("gse"):
             return
         if wb_state not in WALLBOX_CHARGING_STATES:
             self._home_hi_since = self._home_lo_since = None

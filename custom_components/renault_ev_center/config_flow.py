@@ -116,6 +116,7 @@ from .const import (
     CONF_TRIP_TIMEOUT,
     CONF_WALLBOX_ENABLED,
     CONF_WB_MAX_CURRENT,
+    CONF_GSE_ENABLED,
     CONF_GSE_WPA,
     CONF_GSE_KW_MAX,
     CONF_GSE_KW_RIDOTTA,
@@ -339,6 +340,7 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
                 NumberSelectorConfig(min=6, max=32, step=1, unit_of_measurement="A", mode=NumberSelectorMode.BOX)),
         }), {"collapsed": True})
         schema[vol.Required("gse")] = section(vol.Schema({
+            vol.Optional(CONF_GSE_ENABLED, default=defaults.get(CONF_GSE_ENABLED, False)): BooleanSelector(),
             vol.Optional(CONF_GSE_KW_MAX, default=defaults.get(CONF_GSE_KW_MAX, DEFAULT_GSE_KW_MAX)): NumberSelector(
                 NumberSelectorConfig(min=1, max=50, step=0.1, unit_of_measurement="kW",
                                      mode=NumberSelectorMode.BOX)),
@@ -430,7 +432,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                                      mode=NumberSelectorMode.BOX)),
         }), {"collapsed": True}),
         vol.Required("fuel"): section(vol.Schema({
-            vol.Required(CONF_FUEL_ENABLED, default=defaults.get(CONF_FUEL_ENABLED, False)): BooleanSelector(),
+            vol.Required(CONF_FUEL_ENABLED, default=defaults.get(CONF_FUEL_ENABLED, True)): BooleanSelector(),
             vol.Optional(CONF_FUEL_LABEL, default=defaults.get(CONF_FUEL_LABEL, DEFAULT_FUEL_LABEL)): TextSelector(),
             vol.Optional(CONF_FUEL_CONSUMPTION, default=defaults.get(CONF_FUEL_CONSUMPTION, DEFAULT_FUEL_CONSUMPTION)): NumberSelector(
                 NumberSelectorConfig(min=1, max=20, step=0.1, unit_of_measurement="l/100km", mode=NumberSelectorMode.BOX)),
@@ -442,7 +444,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             ): EntitySelector(EntitySelectorConfig(domain="sensor")),
         }), {"collapsed": True}),
         vol.Required("maint"): section(vol.Schema({
-            vol.Required(CONF_MAINT_ENABLED, default=defaults.get(CONF_MAINT_ENABLED, False)): BooleanSelector(),
+            vol.Required(CONF_MAINT_ENABLED, default=defaults.get(CONF_MAINT_ENABLED, True)): BooleanSelector(),
             vol.Optional(CONF_TAG_TERMICO, default=defaults.get(CONF_TAG_TERMICO, DEFAULT_TAG_TERMICO)): NumberSelector(
                 NumberSelectorConfig(min=0, max=1000, step=5, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_TAG_EV, default=defaults.get(CONF_TAG_EV, DEFAULT_TAG_EV)): NumberSelector(
@@ -486,7 +488,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                 CONF_TEMP_ENTITY,
                 description={"suggested_value": defaults.get(CONF_TEMP_ENTITY)},
             ): EntitySelector(EntitySelectorConfig(domain=["sensor", "weather"])),
-            vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, False)): BooleanSelector(),
+            vol.Required(CONF_CO2_ENABLED, default=defaults.get(CONF_CO2_ENABLED, True)): BooleanSelector(),
             vol.Optional(CONF_CO2_THERMAL_GKM, default=defaults.get(CONF_CO2_THERMAL_GKM, DEFAULT_CO2_THERMAL_GKM)): NumberSelector(
                 NumberSelectorConfig(min=50, max=300, step=5, unit_of_measurement="g/km", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_CO2_GRID_GKWH, default=defaults.get(CONF_CO2_GRID_GKWH, DEFAULT_CO2_GRID_GKWH)): NumberSelector(
@@ -563,6 +565,9 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             CONF_ASSICURAZIONE_COSTO, CONF_ASSICURAZIONE_DATA))
             if not user_input.get(CONF_CO2_ENABLED):
                 _pop_vuoti((CONF_CO2_THERMAL_GKM, CONF_CO2_GRID_GKWH))
+            if not user_input.get(CONF_GSE_ENABLED):
+                _pop_vuoti((CONF_GSE_KW_MAX, CONF_GSE_KW_RIDOTTA, CONF_GSE_START,
+                            CONF_GSE_END, CONF_GSE_DOMENICA, CONF_GSE_HOLIDAY, CONF_GSE_WPA))
             if not user_input.get(CONF_SCADENZE_ENABLED):
                 _pop_vuoti((CONF_SCAD_BOLLO, CONF_SCAD_REVISIONE, CONF_SCAD_ASSICURAZIONE))
             if not user_input.get(CONF_LOW_SOC_ENABLED):

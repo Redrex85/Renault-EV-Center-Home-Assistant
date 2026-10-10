@@ -35,6 +35,7 @@
           "gse": {
             "name": "⚡ GSE pilot scheme",
             "data": {
+              "gse_enabled": "Use the GSE trial",
               "gse_kw_max": "Allowed power inside the window (kW)",
               "gse_kw_ridotta": "Power outside the window (kW)",
               "gse_start": "Allowed window start",
@@ -119,6 +120,7 @@
           "gse": {
             "name": "⚡ GSE pilot scheme",
             "data": {
+              "gse_enabled": "Use the GSE trial",
               "gse_kw_max": "Allowed power inside the window (kW)",
               "gse_kw_ridotta": "Power outside the window (kW)",
               "gse_start": "Allowed window start",
@@ -315,6 +317,7 @@
           "gse": {
             "name": "⚡ GSE pilot scheme",
             "data": {
+              "gse_enabled": "Use the GSE trial",
               "gse_kw_max": "Allowed power inside the window (kW)",
               "gse_kw_ridotta": "Power outside the window (kW)",
               "gse_start": "Allowed window start",

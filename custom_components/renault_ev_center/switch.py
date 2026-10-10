@@ -23,7 +23,7 @@ async def async_setup_entry(
 ) -> None:
     coordinator: RenaultMateCoordinator = hass.data[DOMAIN][entry.entry_id]
     name = str(entry.data.get("name") or entry.title or "Renault")
-    async_add_entities([
+    entities = [
         MateSwitch(coordinator, "notify_start", f"{name} Notifica Avvio Ricarica",
                    True, "mdi:battery-charging"),
         MateSwitch(coordinator, "notify_end", f"{name} Notifica Fine Ricarica",
@@ -34,13 +34,16 @@ async def async_setup_entry(
                    False, "mdi:calendar-clock"),
         MateSwitch(coordinator, "balance", f"{name} Bilanciamento Solare",
                    False, "mdi:solar-power"),
-        MateSwitch(coordinator, "gse", f"{name} Sperimentazione GSE",
-                   False, "mdi:transmission-tower"),
         MateSwitch(coordinator, "home_balance", f"{name} Bilanciamento Casa",
                    False, "mdi:home-lightning-bolt"),
         MateSwitch(coordinator, "battery_night_only", f"{name} Batteria Solo Senza Sole",
                    False, "mdi:weather-night"),
-    ])
+    ]
+    # lo switch GSE esiste solo se la sperimentazione è abilitata in configurazione
+    if getattr(coordinator, "gse_enabled", False):
+        entities.append(MateSwitch(coordinator, "gse",
+                                   f"{name} Sperimentazione GSE", False, "mdi:transmission-tower"))
+    async_add_entities(entities)
 
 
 class MateSwitch(CoordinatorEntity[RenaultMateCoordinator], RestoreEntity, SwitchEntity):

@@ -35,6 +35,7 @@
           "gse": {
             "name": "⚡ Sperimentazione GSE",
             "data": {
+              "gse_enabled": "Uso la sperimentazione GSE",
               "gse_kw_max": "Potenza consentita nella fascia (kW)",
               "gse_kw_ridotta": "Potenza fuori fascia (kW)",
               "gse_start": "Inizio fascia consentita",
@@ -119,6 +120,7 @@
           "gse": {
             "name": "⚡ Sperimentazione GSE",
             "data": {
+              "gse_enabled": "Uso la sperimentazione GSE",
               "gse_kw_max": "Potenza consentita nella fascia (kW)",
               "gse_kw_ridotta": "Potenza fuori fascia (kW)",
               "gse_start": "Inizio fascia consentita",
@@ -315,6 +317,7 @@
           "gse": {
             "name": "⚡ Sperimentazione GSE",
             "data": {
+              "gse_enabled": "Uso la sperimentazione GSE",
               "gse_kw_max": "Potenza consentita nella fascia (kW)",
               "gse_kw_ridotta": "Potenza fuori fascia (kW)",
               "gse_start": "Inizio fascia consentita",
