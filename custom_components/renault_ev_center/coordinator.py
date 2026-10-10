@@ -240,6 +240,138 @@ def _charge_split(c: dict[str, Any]) -> tuple[float, float, float, float]:
     return 0.0, 0.0, kwh, 0.0
 
 
+# --- notifiche e automazioni multilingua (lingua = hass.config.language) -------
+# I template con placeholder nominati si formattano con .format(); quelli che
+# contengono Jinja ({{ }} / {% %}) NON vanno formattati (chiamata senza kwargs).
+_NOTIFY_L10N: dict[str, dict[str, str]] = {
+    "it": {
+        "cs_title": "⚡ Ricarica avviata",
+        "cs_msg": "La {cap:.0f}-kWh si sta caricando.\nTipo: {tipo}\nBatteria: {soc}%",
+        "lb_title": "⚠️ Batteria bassa",
+        "lb_msg": "Batteria al {soc}% ({rng} km).\nCollega la wallbox!",
+        "bal_title": "🏠 Bilanciamento casa",
+        "bal_msg": "Wallbox: {cur} A → {amps} A\n{motivo}",
+        "sol_title": "☀️ Bilanciamento solare",
+        "sol_msg": "Rete: {rete} W · Surplus: {surplus} W\nAmpere: {a0} A → {a1} A",
+        "gse_stop_title": "⛔ GSE: ricarica sospesa",
+        "gse_stop_msg": "Casa {casa} W + wallbox 6 A > {budget} W.\nRiprende se i consumi restano bassi 30 min (in fascia).",
+        "gse_go_title": "▶️ GSE: ricarica ripresa",
+        "gse_go_msg": "Consumi sotto soglia da 30 minuti.",
+        "dead_title": "🚗 Renault EV Center — Scadenze",
+        "dead_msg": "Scadenze in arrivo:\n{righe}",
+        "auto_start_title": "🔋 Ricarica avviata",
+        "auto_start_msg": "La ricarica è iniziata alle {{ now().strftime('%d-%m-%Y %H:%M') }}",
+        "sum_title": "📊 Oggi con la tua Renault",
+        "sum_km": "Km oggi", "sum_energy": "Energia consumata oggi",
+        "sum_cost": "Costo totale energia oggi (stimato, tariffa casa)",
+        "sum_cons": "Consumo", "sum_costkm": "Costo/km", "sum_na": "non disponibile",
+        "cc_title": "🔋 Ricarica Completata", "cc_loc": "📍 Location",
+        "cc_energy": "⚡️ Energia", "cc_time": "🕐 Tempo", "cc_batt": "📊 Batteria",
+        "cc_cost": "💰 Costo stimato", "cc_h": "ore",
+    },
+    "en": {
+        "cs_title": "⚡ Charging started",
+        "cs_msg": "The {cap:.0f}-kWh is charging.\nType: {tipo}\nBattery: {soc}%",
+        "lb_title": "⚠️ Low battery",
+        "lb_msg": "Battery at {soc}% ({rng} km).\nPlug in the wallbox!",
+        "bal_title": "🏠 Home balancing",
+        "bal_msg": "Wallbox: {cur} A → {amps} A\n{motivo}",
+        "sol_title": "☀️ Solar balancing",
+        "sol_msg": "Grid: {rete} W · Surplus: {surplus} W\nCurrent: {a0} A → {a1} A",
+        "gse_stop_title": "⛔ GSE: charging paused",
+        "gse_stop_msg": "Home {casa} W + wallbox 6 A > {budget} W.\nResumes if load stays low for 30 min (in window).",
+        "gse_go_title": "▶️ GSE: charging resumed",
+        "gse_go_msg": "Load below threshold for 30 minutes.",
+        "dead_title": "🚗 Renault EV Center — Deadlines",
+        "dead_msg": "Upcoming deadlines:\n{righe}",
+        "auto_start_title": "🔋 Charging started",
+        "auto_start_msg": "Charging started at {{ now().strftime('%d-%m-%Y %H:%M') }}",
+        "sum_title": "📊 Today with your Renault",
+        "sum_km": "Km today", "sum_energy": "Energy used today",
+        "sum_cost": "Total energy cost today (estimated, home tariff)",
+        "sum_cons": "Consumption", "sum_costkm": "Cost/km", "sum_na": "not available",
+        "cc_title": "🔋 Charging Complete", "cc_loc": "📍 Location",
+        "cc_energy": "⚡️ Energy", "cc_time": "🕐 Time", "cc_batt": "📊 Battery",
+        "cc_cost": "💰 Estimated cost", "cc_h": "h",
+    },
+    "fr": {
+        "cs_title": "⚡ Recharge démarrée",
+        "cs_msg": "La {cap:.0f} kWh se recharge.\nType : {tipo}\nBatterie : {soc} %",
+        "lb_title": "⚠️ Batterie faible",
+        "lb_msg": "Batterie à {soc} % ({rng} km).\nBranchez la wallbox !",
+        "bal_title": "🏠 Équilibrage maison",
+        "bal_msg": "Wallbox : {cur} A → {amps} A\n{motivo}",
+        "sol_title": "☀️ Équilibrage solaire",
+        "sol_msg": "Réseau : {rete} W · Surplus : {surplus} W\nCourant : {a0} A → {a1} A",
+        "gse_stop_title": "⛔ GSE : recharge en pause",
+        "gse_stop_msg": "Maison {casa} W + wallbox 6 A > {budget} W.\nReprend si la conso reste basse 30 min (dans la plage).",
+        "gse_go_title": "▶️ GSE : recharge reprise",
+        "gse_go_msg": "Conso sous le seuil depuis 30 minutes.",
+        "dead_title": "🚗 Renault EV Center — Échéances",
+        "dead_msg": "Échéances à venir :\n{righe}",
+        "auto_start_title": "🔋 Recharge démarrée",
+        "auto_start_msg": "Recharge démarrée à {{ now().strftime('%d-%m-%Y %H:%M') }}",
+        "sum_title": "📊 Aujourd'hui avec votre Renault",
+        "sum_km": "Km aujourd'hui", "sum_energy": "Énergie consommée aujourd'hui",
+        "sum_cost": "Coût total énergie aujourd'hui (estimé, tarif maison)",
+        "sum_cons": "Consommation", "sum_costkm": "Coût/km", "sum_na": "non disponible",
+        "cc_title": "🔋 Recharge terminée", "cc_loc": "📍 Emplacement",
+        "cc_energy": "⚡️ Énergie", "cc_time": "🕐 Durée", "cc_batt": "📊 Batterie",
+        "cc_cost": "💰 Coût estimé", "cc_h": "h",
+    },
+    "es": {
+        "cs_title": "⚡ Recarga iniciada",
+        "cs_msg": "La de {cap:.0f} kWh se está cargando.\nTipo: {tipo}\nBatería: {soc}%",
+        "lb_title": "⚠️ Batería baja",
+        "lb_msg": "Batería al {soc}% ({rng} km).\n¡Conecta la wallbox!",
+        "bal_title": "🏠 Balance casa",
+        "bal_msg": "Wallbox: {cur} A → {amps} A\n{motivo}",
+        "sol_title": "☀️ Balance solar",
+        "sol_msg": "Red: {rete} W · Excedente: {surplus} W\nCorriente: {a0} A → {a1} A",
+        "gse_stop_title": "⛔ GSE: recarga en pausa",
+        "gse_stop_msg": "Casa {casa} W + wallbox 6 A > {budget} W.\nReanuda si el consumo sigue bajo 30 min (en franja).",
+        "gse_go_title": "▶️ GSE: recarga reanudada",
+        "gse_go_msg": "Consumo por debajo del umbral durante 30 minutos.",
+        "dead_title": "🚗 Renault EV Center — Vencimientos",
+        "dead_msg": "Vencimientos próximos:\n{righe}",
+        "auto_start_title": "🔋 Recarga iniciada",
+        "auto_start_msg": "Recarga iniciada a las {{ now().strftime('%d-%m-%Y %H:%M') }}",
+        "sum_title": "📊 Hoy con tu Renault",
+        "sum_km": "Km hoy", "sum_energy": "Energía consumida hoy",
+        "sum_cost": "Coste total energía hoy (estimado, tarifa casa)",
+        "sum_cons": "Consumo", "sum_costkm": "Coste/km", "sum_na": "no disponible",
+        "cc_title": "🔋 Recarga completada", "cc_loc": "📍 Ubicación",
+        "cc_energy": "⚡️ Energía", "cc_time": "🕐 Tiempo", "cc_batt": "📊 Batería",
+        "cc_cost": "💰 Coste estimado", "cc_h": "h",
+    },
+    "de": {
+        "cs_title": "⚡ Laden gestartet",
+        "cs_msg": "Der {cap:.0f}-kWh lädt.\nTyp: {tipo}\nBatterie: {soc} %",
+        "lb_title": "⚠️ Batterie schwach",
+        "lb_msg": "Batterie bei {soc} % ({rng} km).\nWallbox anschließen!",
+        "bal_title": "🏠 Haus-Balancing",
+        "bal_msg": "Wallbox: {cur} A → {amps} A\n{motivo}",
+        "sol_title": "☀️ Solar-Balancing",
+        "sol_msg": "Netz: {rete} W · Überschuss: {surplus} W\nStrom: {a0} A → {a1} A",
+        "gse_stop_title": "⛔ GSE: Laden pausiert",
+        "gse_stop_msg": "Haus {casa} W + Wallbox 6 A > {budget} W.\nSetzt fort, wenn Last 30 min niedrig bleibt (im Fenster).",
+        "gse_go_title": "▶️ GSE: Laden fortgesetzt",
+        "gse_go_msg": "Last seit 30 Minuten unter Schwelle.",
+        "dead_title": "🚗 Renault EV Center — Fristen",
+        "dead_msg": "Anstehende Fristen:\n{righe}",
+        "auto_start_title": "🔋 Laden gestartet",
+        "auto_start_msg": "Laden gestartet um {{ now().strftime('%d-%m-%Y %H:%M') }}",
+        "sum_title": "📊 Heute mit deinem Renault",
+        "sum_km": "Km heute", "sum_energy": "Heute verbrauchte Energie",
+        "sum_cost": "Gesamtenergiekosten heute (geschätzt, Haustarif)",
+        "sum_cons": "Verbrauch", "sum_costkm": "Kosten/km", "sum_na": "nicht verfügbar",
+        "cc_title": "🔋 Ladung abgeschlossen", "cc_loc": "📍 Standort",
+        "cc_energy": "⚡️ Energie", "cc_time": "🕐 Dauer", "cc_batt": "📊 Batterie",
+        "cc_cost": "💰 Geschätzte Kosten", "cc_h": "h",
+    },
+}
+
+
 def _num(hass: HomeAssistant, entity_id: str | None, default: float = 0.0) -> float:
     if not entity_id:
         return default
@@ -2534,28 +2666,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     "data": {"notification_id": notif_id, "title": title, "message": msg}}
 
         # etichette notifica di fine ricarica, nella lingua scelta in Home Assistant
-        _lang = str(getattr(self.hass.config, "language", "en") or "en")[:2].lower()
-        _L10N = {
-            "it": ("🔋 Ricarica Completata", "📍 Location", "⚡️ Energia", "🕐 Tempo",
-                   "📊 Batteria", "💰 Costo stimato", "ore"),
-            "en": ("🔋 Charging Complete", "📍 Location", "⚡️ Energy", "🕐 Time",
-                   "📊 Battery", "💰 Estimated cost", "h"),
-            "fr": ("🔋 Recharge terminée", "📍 Emplacement", "⚡️ Énergie", "🕐 Durée",
-                   "📊 Batterie", "💰 Coût estimé", "h"),
-            "es": ("🔋 Recarga completada", "📍 Ubicación", "⚡️ Energía", "🕐 Tiempo",
-                   "📊 Batería", "💰 Coste estimado", "h"),
-            "de": ("🔋 Ladung abgeschlossen", "📍 Standort", "⚡️ Energie", "🕐 Dauer",
-                   "📊 Batterie", "💰 Geschätzte Kosten", "h"),
-        }
-        _t_title, _t_loc, _t_energy, _t_time, _t_batt, _t_cost, _t_h = _L10N.get(_lang, _L10N["en"])
         _ric_msg = (
-            _t_loc + ": {{ state_attr('sensor." + n + "_ultima_ricarica', 'zona') or '—' }}\n"
-            + _t_energy + ": {{ states('sensor." + n + "_ultima_ricarica') }} kWh\n"
-            + _t_time + ": {{ (state_attr('sensor." + n + "_ultima_ricarica', 'durata_min')"
-            " | float(0) / 60) | round(2) }} " + _t_h + "\n"
-            + _t_batt + ": {{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_start') }}% → "
+            self._tr("cc_loc") + ": {{ state_attr('sensor." + n + "_ultima_ricarica', 'zona') or '—' }}\n"
+            + self._tr("cc_energy") + ": {{ states('sensor." + n + "_ultima_ricarica') }} kWh\n"
+            + self._tr("cc_time") + ": {{ (state_attr('sensor." + n + "_ultima_ricarica', 'durata_min')"
+            " | float(0) / 60) | round(2) }} " + self._tr("cc_h") + "\n"
+            + self._tr("cc_batt") + ": {{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_start') }}% → "
             "{{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_end') }}%\n"
-            + _t_cost + ": €{{ state_attr('sensor." + n + "_ultima_ricarica', 'costo') }}"
+            + self._tr("cc_cost") + ": €{{ state_attr('sensor." + n + "_ultima_ricarica', 'costo') }}"
         )
 
         autos: dict[str, dict] = {
@@ -2565,15 +2683,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                               "from": "on", "to": "off", "for": {"minutes": 3}}],
                 # NIENTE condizione sulla data: una ricarica notturna inizia ieri e finisce oggi,
                 # quindi il confronto con la data di OGGI la scartava (notifica mai inviata).
-                "action": [_pn(f"rec_ric_{n}", _t_title, _ric_msg)],
+                "action": [_pn(f"rec_ric_{n}", self._tr("cc_title"), _ric_msg)],
                 "mode": "single",
             },
             f"renault_ev_center_{n}_avvio_ricarica": {
                 "alias": f"Renault EV Center — Notifica avvio ricarica ({n})",
                 "trigger": [{"trigger": "state", "entity_id": wb_state_e, "to": "charging"}],
                 "condition": [],
-                "action": [_pn(f"rec_start_{n}", "🔋 Ricarica avviata",
-                                "La ricarica è iniziata alle {{ now().strftime('%d-%m-%Y %H:%M') }}")],
+                "action": [_pn(f"rec_start_{n}", self._tr("auto_start_title"),
+                                self._tr("auto_start_msg"))],
                 "mode": "single",
             },
             f"renault_ev_center_{n}_riassunto_giornaliero": {
@@ -2581,17 +2699,17 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 "trigger": [{"trigger": "time", "at": "21:30:00"}],
                 "condition": [{"condition": "numeric_state",
                                 "entity_id": f"sensor.{n}_km_giornalieri", "above": 0.5}],
-                "action": [_pn(f"rec_sum_{n}", "📊 Oggi con la tua Renault",
+                "action": [_pn(f"rec_sum_{n}", self._tr("sum_title"),
                                 "{% set kwh = states('sensor." + n + "_energia_batteria_giornaliero') | float(none) %}"
                                 "{% set prezzo = states('number." + n + "_costo_energia_casa') | float(none) %}"
-                                "Km oggi: {{ states('sensor." + n + "_km_giornalieri') }} km\n"
-                                "Energia consumata oggi: {% if kwh is not none %}{{ kwh | round(2) }} kWh"
-                                "{% else %}non disponibile{% endif %}\n"
-                                "Costo totale energia oggi (stimato, tariffa casa): "
+                                + self._tr("sum_km") + ": {{ states('sensor." + n + "_km_giornalieri') }} km\n"
+                                + self._tr("sum_energy") + ": {% if kwh is not none %}{{ kwh | round(2) }} kWh"
+                                "{% else %}" + self._tr("sum_na") + "{% endif %}\n"
+                                + self._tr("sum_cost") + ": "
                                 "{% if kwh is not none and prezzo is not none %}{{ (kwh * prezzo) | round(2) }} €"
-                                "{% else %}non disponibile{% endif %}\n"
-                                "Consumo: {{ states('sensor." + n + "_kwh_per_100km') }} kWh/100km · "
-                                "Costo/km: {{ states('sensor." + n + "_costo_per_km') }} €/km")],
+                                "{% else %}" + self._tr("sum_na") + "{% endif %}\n"
+                                + self._tr("sum_cons") + ": {{ states('sensor." + n + "_kwh_per_100km') }} kWh/100km · "
+                                + self._tr("sum_costkm") + ": {{ states('sensor." + n + "_costo_per_km') }} €/km")],
                 "mode": "single",
             },
             f"renault_ev_center_{n}_refresh_auto": {
@@ -2945,10 +3063,21 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if not vicine:
             return
         righe = "\n".join(f"• {s['nome']}: {s['data']} (tra {s['giorni']} gg)" for s in vicine)
-        await self._send_notify("🚗 Renault EV Center — Scadenze",
-                                f"Scadenze in arrivo:\n{righe}")
+        await self._send_notify(self._tr("dead_title"),
+                                self._tr("dead_msg", righe=righe))
         counters["last_notify"] = today_key
         self.persist(force=True)
+
+    def _lang(self) -> str:
+        """Codice lingua (2 lettere) da HA, con fallback a 'en'."""
+        code = str(getattr(self.hass.config, "language", "") or "en").lower()
+        return code[:2] if code[:2] in _NOTIFY_L10N else "en"
+
+    def _tr(self, key: str, **kw: Any) -> str:
+        """Stringa localizzata. Con kwargs formatta i placeholder nominati."""
+        d = _NOTIFY_L10N.get(self._lang()) or _NOTIFY_L10N["en"]
+        s = d.get(key) or _NOTIFY_L10N["en"].get(key, key)
+        return s.format(**kw) if kw else s
 
     async def _send_notify(self, title: str, message: str) -> None:
         """Invia una notifica tramite il servizio notify configurato."""
@@ -3079,9 +3208,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 self._gse_ok_since = None
                 await self._wb_charge(False, battery)
                 await self._send_notify(
-                    "⛔ GSE: ricarica sospesa",
-                    f"Casa {round(house_w or 0)} W + wallbox 6 A > {round(budget_w)} W.\n"
-                    "Riprende se i consumi restano bassi 30 min (in fascia).")
+                    self._tr("gse_stop_title"),
+                    self._tr("gse_stop_msg", casa=round(house_w or 0), budget=round(budget_w)))
             return
         # margine sufficiente: gestisci la ripresa dopo 30 min sotto soglia
         if getattr(self, "_gse_paused", False):
@@ -3096,8 +3224,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 if wb_state not in WALLBOX_CHARGING_STATES:
                     await self._press_start()
                     await self._send_notify(
-                        "▶️ GSE: ricarica ripresa",
-                        "Consumi sotto soglia da 30 minuti.")
+                        self._tr("gse_go_title"), self._tr("gse_go_msg"))
         if wb_state not in WALLBOX_CHARGING_STATES and not charging:
             return
         amps = max(int(round(avail_w / self.gse_wpa)), 6)
@@ -3193,9 +3320,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                          amps_att, nuovi, round(surplus))
             if self._switch_on("notify_start"):
                 await self._send_notify(
-                    "☀️ Bilanciamento solare",
-                    f"Rete: {round(grid_w)} W · Surplus: {round(surplus)} W\n"
-                    f"Ampere: {amps_att} A → {nuovi} A",
+                    self._tr("sol_title"),
+                    self._tr("sol_msg", rete=round(grid_w), surplus=round(surplus),
+                             a0=amps_att, a1=nuovi),
                 )
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Bilanciamento: impostazione ampere fallita: %s", err)
@@ -3264,8 +3391,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             )
             _LOGGER.info("Bilanciamento casa: wallbox a %s A (%s)", amps, motivo)
             await self._send_notify(
-                "🏠 Bilanciamento casa",
-                f"Wallbox: {cur} A → {amps} A\n{motivo}",
+                self._tr("bal_title"),
+                self._tr("bal_msg", cur=cur, amps=amps, motivo=motivo),
             )
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Bilanciamento casa: impostazione fallita: %s", err)
@@ -3277,9 +3404,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if events.get("charge_started") and self._switch_on("notify_start"):
             zona = data.get("tipo_ricarica", "")
             await self._send_notify(
-                "⚡ Ricarica avviata",
-                f"La {data.get('capacity', 60):.0f}-kWh si sta caricando.\n"
-                f"Tipo: {zona}\nBatteria: {data.get('battery')}%"
+                self._tr("cs_title"),
+                self._tr("cs_msg", cap=data.get('capacity', 60), tipo=zona,
+                         soc=data.get('battery')),
             )
         # NOTA: la notifica di FINE ricarica la manda l'automazione "Ricarica completata"
         # (visibile e attivabile dalla vista Automazioni, con posizione inclusa).
@@ -3302,9 +3429,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     and data.get("battery", 100) <= soglia
                     and counters.get("last_low_notify") != today_key):
                 await self._send_notify(
-                    "⚠️ Batteria bassa",
-                    f"Batteria al {data.get('battery')}% ({data.get('range')} km).\n"
-                    "Collega la wallbox!"
+                    self._tr("lb_title"),
+                    self._tr("lb_msg", soc=data.get('battery'), rng=data.get('range')),
                 )
                 counters["last_low_notify"] = today_key
                 self.persist(force=True)

@@ -94,7 +94,6 @@ CONF_LOW_SOC_THRESHOLD = "low_soc_threshold"
 CONF_LOW_SOC_START = "low_soc_start"
 CONF_LOW_SOC_END = "low_soc_end"
 CONF_LOW_SOC_DAYS = "low_soc_days"
-CONF_CHARGE_SCHED_ENABLED = "charge_sched_enabled"
 CONF_CHARGE_SCHED_MODE = "charge_sched_mode"  # orario | percentuale
 CONF_CHARGE_START_TIME = "charge_start_time"
 CONF_CHARGE_STOP_TIME = "charge_stop_time"

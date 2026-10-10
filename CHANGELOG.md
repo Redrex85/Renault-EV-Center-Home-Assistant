@@ -5,6 +5,16 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.8 - Notifiche multilingua + colonna "Batteria FV"
+
+- **Notifiche e automazioni multilingua** (IT/EN/FR/ES/DE): avvio ricarica, batteria bassa,
+  bilanciamento casa/solare, GSE (sospeso/ripreso), scadenze e riassunto giornaliero seguono
+  la lingua di Home Assistant.
+- **Colonna "Batteria FV"** in *Percorrenza* e *Storico mensile* (era "Batteria"): indica la
+  quota caricata dalla **batteria di casa/FV**; tradotta in tutte le lingue del pannello.
+- `strings.json` allineato alle traduzioni (4 chiavi mancanti) e rimossa l'opzione morta
+  `charge_sched_enabled`.
+
 ## 1.1.7 - Ricarica: ripartizione sorgente (FV/rete/batteria) + notifica multilingua
 
 - **Ripartizione sorgente** delle ricariche a casa (con sensore rete nella sezione FV):

@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.7";
+const REC_VER = "1.1.8";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -1090,6 +1090,12 @@ const UI = {
     "fr": "Batterie",
     "es": "Batería",
     "de": "Batterie"
+  },
+  "Batteria FV": {
+    "en": "PV battery",
+    "fr": "Batterie PV",
+    "es": "Batería FV",
+    "de": "PV-Batterie"
   },
   "CAPACITÀ STIM. (kWh)": {
     "en": "EST. CAPACITY (kWh)",
@@ -4828,7 +4834,7 @@ class RenaultEvCenterPanel extends HTMLElement {
           <td>${r && km ? this._i(km) + " km" : (futuro ? "attesa" : "0 km")}</td></tr>`;
       }).join("");
       return `<details class="anno" data-mk="${y}" ${op(y)}><summary><span class="tr">${y} · ${this._fmt(tC, 2)} € · ${this._fmt(tK, 1)} kWh · FV ${this._fmt(tFv, 1)} · Bat ${this._fmt(tBat, 1)} · Pub ${this._fmt(tPub, 1)} · ${this._i(tKm)} km</span></summary>
-        <table><tr><th>Mese</th><th>Costo</th><th>Ricaricati</th><th>Ricariche FV</th><th>Batteria</th><th>Ricariche Pubbliche</th><th>KM</th></tr>${rows}
+        <table><tr><th>Mese</th><th>Costo</th><th>Ricaricati</th><th>Ricariche FV</th><th>Batteria FV</th><th>Ricariche Pubbliche</th><th>KM</th></tr>${rows}
         <tr class="totrow"><td>TOTALE</td><td>${this._fmt(tC, 2)} €</td><td>${this._fmt(tK, 1)} kWh</td><td>${this._fmt(tFv, 1)} kWh</td><td>${this._fmt(tBat, 1)} kWh</td><td>${this._fmt(tPub, 1)} kWh</td><td>${this._i(tKm)} km</td></tr></table></details>`;
     }).join("") || `<div style="color:var(--muted)">Nessun dato per l'anno scelto</div>`;
     box.querySelectorAll("details[data-mk]").forEach((d) => {
@@ -5332,7 +5338,7 @@ const PAGES = () => ({
       <div class="row"><span>${_t("lbl_fotovoltaico", "☀️ Fotovoltaico")}</span><b><span data-f="fv_tot">—</span> kWh</b></div>
       <div class="row"><span>${_t("lbl_colonnine", "⚡ Colonnine")}</span><b data-attr="statistiche_viaggi|caricata_pubblica">—</b></div></div>
     <div class="card"><h3>${_t("h3_percorrenza", "Percorrenza")}</h3>
-      <table><tr><th>Periodo</th><th>Usati</th><th>Caricati</th><th>Ricariche FV</th><th>Batteria</th><th>Ricariche Pubbliche</th><th>KM</th></tr>
+      <table><tr><th>Periodo</th><th>Usati</th><th>Caricati</th><th>Ricariche FV</th><th>Batteria FV</th><th>Ricariche Pubbliche</th><th>KM</th></tr>
         <tr><td><b>OGGI</b></td><td data-per="oggi|usati">—</td><td data-per="oggi|caricati">—</td><td data-per="oggi|fv">—</td><td data-per="oggi|batteria">—</td><td data-per="oggi|pubblica">—</td><td data-per="oggi|km">—</td></tr>
         <tr><td><b>IERI</b></td><td data-per="ieri|usati">—</td><td data-per="ieri|caricati">—</td><td data-per="ieri|fv">—</td><td data-per="ieri|batteria">—</td><td data-per="ieri|pubblica">—</td><td data-per="ieri|km">—</td></tr>
         <tr><td><b>SETTIMANA</b></td><td data-per="settimana|usati">—</td><td data-per="settimana|caricati">—</td><td data-per="settimana|fv">—</td><td data-per="settimana|batteria">—</td><td data-per="settimana|pubblica">—</td><td data-per="settimana|km">—</td></tr>

@@ -261,13 +261,26 @@ try:
 
     with open(os.path.join(CC, "coordinator.py"), encoding="utf-8") as fh:
         tree = ast.parse(fh.read())
+    # etichette localizzate: il messaggio ora usa self._tr(...) → shim con le IT
+    l10n = next(ast.literal_eval(node.value) for node in ast.walk(tree)
+                if isinstance(node, (ast.Assign, ast.AnnAssign))
+                and getattr(node, "value", None) is not None
+                and any(isinstance(t, ast.Name) and t.id == "_NOTIFY_L10N"
+                        for t in (node.targets if isinstance(node, ast.Assign) else [node.target])))
+    _it = l10n["it"]
+
+    class _Shim:
+        def _tr(self, key, **kw):
+            s = _it.get(key, key)
+            return s.format(**kw) if kw else s
+
     message = next(node.args[2] for node in ast.walk(tree)
                    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
                    and node.func.id == "_pn" and isinstance(node.args[0], ast.JoinedStr)
                    and node.args[0].values[0].value == "rec_sum_")
     template = Environment().from_string(eval(
         compile(ast.Expression(message), "<daily-summary>", "eval"),
-        {"__builtins__": {}, "n": "renault"}))
+        {"__builtins__": {}, "n": "renault", "self": _Shim()}))
     for energy, price, expected in (
         ("12", "0.25", "3.0 €"), ("0", "0.25", "0.0 €"),
         ("12", "0", "0.0 €"), ("unknown", "0.25", "non disponibile"),

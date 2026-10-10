@@ -12,6 +12,10 @@
       "wallbox": {
         "title": "Renault EV Center — Wallbox",
         "description": "Mappa i sensori della tua wallbox (Wallbox, go-e, Easee, OCPP…). Puoi lasciare vuoti i campi che non hai.",
+        "data": {
+          "geocode_enabled": "Via e paese nei viaggi (geocoding OpenStreetMap)",
+          "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)"
+        },
         "sections": {
           "wallbox": {
             "name": "🔌 Wallbox",
@@ -228,6 +232,10 @@
       "car": {
         "title": "🚗 Renault EV Center — L'auto",
         "description": "**Benvenuto!** Seleziona le entità della tua Renault elettrica (integrazione Renault ufficiale).\n\n- Dai all'auto un **nome breve** (es. `Megane`): sarà il prefisso di tutte le nuove entità.\n- Il **modello** sceglie la foto dell'auto.\n- Puoi far creare la **dashboard** nella barra laterale.",
+        "data": {
+          "model": "Modello dell'auto — 1ª scelta: imposta la foto",
+          "create_dashboard": "Crea automaticamente la dashboard nella barra laterale"
+        },
         "sections": {
           "car": {
             "name": "🚗 L'auto",
