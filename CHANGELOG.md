@@ -5,6 +5,19 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.7 - Ricarica: ripartizione sorgente (FV/rete/batteria) + notifica multilingua
+
+- **Ripartizione sorgente** delle ricariche a casa (con sensore rete nella sezione FV):
+  ogni ciclo la **rete copre per prima**, poi la **batteria di casa**, il resto è
+  **fotovoltaico**. Si **paga solo la quota prelevata dalla rete**; FV e batteria al prezzo FV.
+  Richiede il sensore rete mappato; senza, resta il comportamento precedente (tutto rete).
+- **Statistiche**: nuova colonna **Batteria** in *Percorrenza* e *Storico mensile*; le colonne
+  **FV** ora includono il fotovoltaico caricato a casa; "Casa" = quota **rete pagata**.
+- **Risparmi**: il costo elettrico usa i kWh **effettivamente pagati** (quota rete), non i kWh
+  caricati: FV e batteria non pesano.
+- **Notifica fine ricarica** riformattata (Location / Energia / Tempo / Batteria / Costo stimato)
+  e **tradotta** nella lingua di Home Assistant (IT/EN/FR/ES/DE).
+
 ## 1.1.6 - Statistiche: ricariche FV/Pubbliche + fix campi editabili
 
 - **Statistiche**: nuove colonne **Ricariche FV** e **Ricariche Pubbliche** (kWh) nelle

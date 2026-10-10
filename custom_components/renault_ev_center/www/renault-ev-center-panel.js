@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.6";
+const REC_VER = "1.1.7";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -4812,23 +4812,24 @@ class RenaultEvCenterPanel extends HTMLElement {
     const op = (k) => (opened[k] === false ? "" : "open");
     box.innerHTML = anni.filter((y) => !fY || y === fY).map((y) => {
       const mm = mesi[y] || {};
-      let tC = 0, tK = 0, tKm = 0, tFv = 0, tPub = 0;
+      let tC = 0, tK = 0, tKm = 0, tFv = 0, tBat = 0, tPub = 0;
       const rows = NOMI_MESI().map((nome, i) => {
         const m = String(i + 1).padStart(2, "0");
         const r = mm[m];
         const futuro = y > curY || (y === curY && m > curM);
         const c = r ? r.costo : 0, k = r ? r.kwh : 0, km = r ? r.km : 0;
-        const fv = r ? (r.fv || 0) : 0, pub = r ? (r.pubblica || 0) : 0;
-        tC += c; tK += k; tKm += km; tFv += fv; tPub += pub;
+        const fv = r ? (r.fv || 0) : 0, bat = r ? (r.batteria || 0) : 0, pub = r ? (r.pubblica || 0) : 0;
+        tC += c; tK += k; tKm += km; tFv += fv; tBat += bat; tPub += pub;
         return `<tr><td>${nome}</td><td>${r ? this._fmt(c, 2) + " €" : (futuro ? "" : "0,00 €")}</td>
           <td>${r ? this._fmt(k, 1) + " kWh" : (futuro ? "" : "0,0 kWh")}</td>
           <td>${r ? this._fmt(fv, 1) + " kWh" : (futuro ? "" : "0,0 kWh")}</td>
+          <td>${r ? this._fmt(bat, 1) + " kWh" : (futuro ? "" : "0,0 kWh")}</td>
           <td>${r ? this._fmt(pub, 1) + " kWh" : (futuro ? "" : "0,0 kWh")}</td>
           <td>${r && km ? this._i(km) + " km" : (futuro ? "attesa" : "0 km")}</td></tr>`;
       }).join("");
-      return `<details class="anno" data-mk="${y}" ${op(y)}><summary><span class="tr">${y} · ${this._fmt(tC, 2)} € · ${this._fmt(tK, 1)} kWh · FV ${this._fmt(tFv, 1)} · Pub ${this._fmt(tPub, 1)} · ${this._i(tKm)} km</span></summary>
-        <table><tr><th>Mese</th><th>Costo</th><th>Ricaricati</th><th>Ricariche FV</th><th>Ricariche Pubbliche</th><th>KM</th></tr>${rows}
-        <tr class="totrow"><td>TOTALE</td><td>${this._fmt(tC, 2)} €</td><td>${this._fmt(tK, 1)} kWh</td><td>${this._fmt(tFv, 1)} kWh</td><td>${this._fmt(tPub, 1)} kWh</td><td>${this._i(tKm)} km</td></tr></table></details>`;
+      return `<details class="anno" data-mk="${y}" ${op(y)}><summary><span class="tr">${y} · ${this._fmt(tC, 2)} € · ${this._fmt(tK, 1)} kWh · FV ${this._fmt(tFv, 1)} · Bat ${this._fmt(tBat, 1)} · Pub ${this._fmt(tPub, 1)} · ${this._i(tKm)} km</span></summary>
+        <table><tr><th>Mese</th><th>Costo</th><th>Ricaricati</th><th>Ricariche FV</th><th>Batteria</th><th>Ricariche Pubbliche</th><th>KM</th></tr>${rows}
+        <tr class="totrow"><td>TOTALE</td><td>${this._fmt(tC, 2)} €</td><td>${this._fmt(tK, 1)} kWh</td><td>${this._fmt(tFv, 1)} kWh</td><td>${this._fmt(tBat, 1)} kWh</td><td>${this._fmt(tPub, 1)} kWh</td><td>${this._i(tKm)} km</td></tr></table></details>`;
     }).join("") || `<div style="color:var(--muted)">Nessun dato per l'anno scelto</div>`;
     box.querySelectorAll("details[data-mk]").forEach((d) => {
       d.addEventListener("toggle", () => { this._mesiOpen[d.dataset.mk] = d.open; });
@@ -5327,16 +5328,16 @@ const PAGES = () => ({
     <div class="tile"><div class="em">⚡</div><div><div class="v" data-t="energia_caricata">—</div><div class="l">Energia caricata kWh</div></div></div></div>
   <div class="grid g2">
     <div class="card"><h3>${_t("h3_energia_caricata_differenziata", "Energia caricata differenziata")}</h3>
-      <div class="row"><span>${_t("lbl_casa_wallbox", "🏠 Casa (wallbox)")}</span><b><span data-f="energia_casa">—</span> kWh</b></div>
+      <div class="row"><span>${_t("lbl_casa_wallbox", "🏠 Casa (rete)")}</span><b><span data-f="energia_casa">—</span> kWh</b></div>
       <div class="row"><span>${_t("lbl_fotovoltaico", "☀️ Fotovoltaico")}</span><b><span data-f="fv_tot">—</span> kWh</b></div>
       <div class="row"><span>${_t("lbl_colonnine", "⚡ Colonnine")}</span><b data-attr="statistiche_viaggi|caricata_pubblica">—</b></div></div>
     <div class="card"><h3>${_t("h3_percorrenza", "Percorrenza")}</h3>
-      <table><tr><th>Periodo</th><th>Usati</th><th>Caricati</th><th>Ricariche FV</th><th>Ricariche Pubbliche</th><th>KM</th></tr>
-        <tr><td><b>OGGI</b></td><td data-per="oggi|usati">—</td><td data-per="oggi|caricati">—</td><td data-per="oggi|fv">—</td><td data-per="oggi|pubblica">—</td><td data-per="oggi|km">—</td></tr>
-        <tr><td><b>IERI</b></td><td data-per="ieri|usati">—</td><td data-per="ieri|caricati">—</td><td data-per="ieri|fv">—</td><td data-per="ieri|pubblica">—</td><td data-per="ieri|km">—</td></tr>
-        <tr><td><b>SETTIMANA</b></td><td data-per="settimana|usati">—</td><td data-per="settimana|caricati">—</td><td data-per="settimana|fv">—</td><td data-per="settimana|pubblica">—</td><td data-per="settimana|km">—</td></tr>
-        <tr><td><b>MESE</b></td><td data-per="mese|usati">—</td><td data-per="mese|caricati">—</td><td data-per="mese|fv">—</td><td data-per="mese|pubblica">—</td><td data-per="mese|km">—</td></tr>
-        <tr><td><b>ANNO</b></td><td data-per="anno|usati">—</td><td data-per="anno|caricati">—</td><td data-per="anno|fv">—</td><td data-per="anno|pubblica">—</td><td data-per="anno|km">—</td></tr></table></div></div>
+      <table><tr><th>Periodo</th><th>Usati</th><th>Caricati</th><th>Ricariche FV</th><th>Batteria</th><th>Ricariche Pubbliche</th><th>KM</th></tr>
+        <tr><td><b>OGGI</b></td><td data-per="oggi|usati">—</td><td data-per="oggi|caricati">—</td><td data-per="oggi|fv">—</td><td data-per="oggi|batteria">—</td><td data-per="oggi|pubblica">—</td><td data-per="oggi|km">—</td></tr>
+        <tr><td><b>IERI</b></td><td data-per="ieri|usati">—</td><td data-per="ieri|caricati">—</td><td data-per="ieri|fv">—</td><td data-per="ieri|batteria">—</td><td data-per="ieri|pubblica">—</td><td data-per="ieri|km">—</td></tr>
+        <tr><td><b>SETTIMANA</b></td><td data-per="settimana|usati">—</td><td data-per="settimana|caricati">—</td><td data-per="settimana|fv">—</td><td data-per="settimana|batteria">—</td><td data-per="settimana|pubblica">—</td><td data-per="settimana|km">—</td></tr>
+        <tr><td><b>MESE</b></td><td data-per="mese|usati">—</td><td data-per="mese|caricati">—</td><td data-per="mese|fv">—</td><td data-per="mese|batteria">—</td><td data-per="mese|pubblica">—</td><td data-per="mese|km">—</td></tr>
+        <tr><td><b>ANNO</b></td><td data-per="anno|usati">—</td><td data-per="anno|caricati">—</td><td data-per="anno|fv">—</td><td data-per="anno|batteria">—</td><td data-per="anno|pubblica">—</td><td data-per="anno|km">—</td></tr></table></div></div>
   <div class="card" style="margin-top:16px"><h3>${_t("h3_rotte_consumo_per_zona", "Rotte (consumo per zona)")}</h3>
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <select data-rf="year" style="width:auto"><option value="">${_t("opt_tutti_gli_anni", "Tutti gli anni")}</option></select>

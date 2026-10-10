@@ -222,6 +222,24 @@ def _charge_energy(measured: float, accum: float, tipo: str, soc_start, battery,
     return kwh, "fuori_casa" if tipo != "Casa" else "casa_senza_misura"
 
 
+def _charge_split(c: dict[str, Any]) -> tuple[float, float, float, float]:
+    """kWh di una ricarica per sorgente: (FV, batteria casa, rete, pubblica).
+
+    Fotovoltaico (seconda casa) e Pubblica sono per tipo; Casa usa la
+    ripartizione misurata (src_fv/src_bat/src_rete) quando presente, altrimenti
+    tutto a rete (comportamento storico).
+    """
+    kwh = _f(c.get("kwh"))
+    t = str(c.get("tipo", ""))
+    if t == "Pubblica":
+        return 0.0, 0.0, 0.0, kwh
+    if t == "Fotovoltaico":
+        return kwh, 0.0, 0.0, 0.0
+    if "src_rete" in c or "src_fv" in c:
+        return _f(c.get("src_fv")), _f(c.get("src_bat")), _f(c.get("src_rete")), 0.0
+    return 0.0, 0.0, kwh, 0.0
+
+
 def _num(hass: HomeAssistant, entity_id: str | None, default: float = 0.0) -> float:
     if not entity_id:
         return default
@@ -723,6 +741,27 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             val = val / 1000.0
         return max(val, 0.0)
 
+    def _grid_import_w(self) -> float:
+        """Prelievo rete in W (>0 = stai importando). 0 se il sensore non è mappato."""
+        ent = self.balance_grid_sensor
+        if not ent:
+            return 0.0
+        st = self.hass.states.get(ent)
+        if st is None or st.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return 0.0
+        v = _f(st.state)
+        return -v if self.balance_invert_grid else v
+
+    def _battery_discharge_w(self) -> float:
+        """Scarica batteria di casa in W (>0 = sta erogando). 0 se non mappata."""
+        ent = self.balance_battery_sensor
+        if not ent:
+            return 0.0
+        st = self.hass.states.get(ent)
+        if st is None or st.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return 0.0
+        return max(_f(st.state), 0.0)
+
     def _compute_heavy(self, trips, charges, daily, today_key, keys, now):
         """Calcoli pesanti O(n) eseguiti fuori dall'event loop."""
         cutoff7 = (now - timedelta(days=7)).strftime("%Y-%m-%d")
@@ -1012,6 +1051,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     # delta wallbox passo-passo: supera i contatori che si azzerano
                     # o fanno salti a metà sessione (per questo 13 kWh → 4,67)
                     "wb_accum": 0.0,
+                    # ripartizione per sorgente (solo ricariche a casa, con sensore rete)
+                    "fv_accum": 0.0, "bat_accum": 0.0, "rete_accum": 0.0,
                     # spina collegata al momento di avvio della sessione
                     "plug_ok": self._plug_connected(),
                     "ts_last": time.time(),
@@ -1038,6 +1079,20 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             self.charge_session["kwh_accum"] = round(
                 _f(self.charge_session.get("kwh_accum")) + wb_power * _dt_h, 4)
             self.charge_session["ts_last"] = _now_ts
+            # ripartizione per sorgente: la rete copre per prima (si paga), poi la
+            # batteria di casa, il resto è fotovoltaico. Solo ricariche a casa.
+            if str(self.charge_session.get("zone", "")).lower() == "home" and wb_power > 0:
+                _wb_w = wb_power * 1000.0
+                _rete_w = min(_wb_w, max(self._grid_import_w(), 0.0))
+                _non_rete = max(_wb_w - _rete_w, 0.0)
+                _bat_w = min(_non_rete, self._battery_discharge_w())
+                _fv_w = _non_rete - _bat_w
+                self.charge_session["rete_accum"] = round(
+                    _f(self.charge_session.get("rete_accum")) + _rete_w * _dt_h / 1000.0, 4)
+                self.charge_session["bat_accum"] = round(
+                    _f(self.charge_session.get("bat_accum")) + _bat_w * _dt_h / 1000.0, 4)
+                self.charge_session["fv_accum"] = round(
+                    _f(self.charge_session.get("fv_accum")) + _fv_w * _dt_h / 1000.0, 4)
             if (time.time() - self.charge_session["start_ts"]) > 26 * 3600:
                 finished_charge = self._finalize_charge(location, battery)
         elif self.charge_session is not None:
@@ -1330,14 +1385,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 }
 
             # --- fotovoltaico: quanto hai risparmiato caricando col sole -----------
-            kwh_fv = sum(_f(c.get("kwh")) for c in charges if c.get("tipo") == "Fotovoltaico")
-            kwh_casa = sum(_f(c.get("kwh")) for c in charges if c.get("tipo") == "Casa")
-            kwh_pub = sum(_f(c.get("kwh")) for c in charges if c.get("tipo") == "Pubblica")
+            kwh_fv = sum(_charge_split(c)[0] for c in charges)
+            kwh_bat = sum(_charge_split(c)[1] for c in charges)
+            kwh_casa = sum(_charge_split(c)[2] for c in charges)
+            kwh_pub = sum(_charge_split(c)[3] for c in charges)
             savings["fv_kwh"] = round(kwh_fv, 2)
             # il kWh da FV costa il prezzo FV (spesso 0): risparmio = differenza vs rete casa
             risparmio_kwh = max(self.price_home - self.price_solar, 0.0)
             savings["fv_eur"] = round(kwh_fv * risparmio_kwh, 2)
             savings["casa_kwh"] = round(kwh_casa, 2)
+            savings["batteria_kwh"] = round(kwh_bat, 2)
             savings["pubblica_kwh"] = round(kwh_pub, 2)
 
         stats_all = heavy["stats_all"]
@@ -1480,24 +1537,26 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         best_trip = heavy["best_trip"]
         worst_trip = heavy["worst_trip"]
 
-        # energia caricata a casa (per Energy Dashboard)
-        energia_casa_tot = round(
-            sum(_f(c.get("kwh")) for c in charges if c.get("tipo") == "Casa"), 2
-        )
-        # energia caricata dal fotovoltaico (per Energy Dashboard: fonte solare)
-        energia_fv_tot = round(
-            sum(_f(c.get("kwh")) for c in charges if c.get("tipo") == "Fotovoltaico"), 2
-        )
+        # energia prelevata dalla RETE per caricare a casa (quota pagata)
+        energia_casa_tot = round(sum(_charge_split(c)[2] for c in charges), 2)
+        # energia caricata dal fotovoltaico (casa + seconda casa: fonte solare)
+        energia_fv_tot = round(sum(_charge_split(c)[0] for c in charges), 2)
 
-        # energia caricata differenziata per tipo (totale) + FV del mese
-        by_type: dict[str, float] = {"Casa": 0.0, "Fotovoltaico": 0.0, "Pubblica": 0.0}
+        # energia caricata differenziata per sorgente (totale) + FV del mese
+        by_type: dict[str, float] = {"Casa": 0.0, "Fotovoltaico": 0.0,
+                                     "Batteria": 0.0, "Pubblica": 0.0}
         for c in charges:
+            _sp = _charge_split(c)
             t = str(c.get("tipo", ""))
-            if t in by_type:
-                by_type[t] = round(by_type[t] + _f(c.get("kwh")), 2)
+            by_type["Fotovoltaico"] = round(by_type["Fotovoltaico"] + _sp[0], 2)
+            by_type["Batteria"] = round(by_type["Batteria"] + _sp[1], 2)
+            if t == "Casa":
+                by_type["Casa"] = round(by_type["Casa"] + _f(c.get("kwh")), 2)
+            elif t == "Pubblica":
+                by_type["Pubblica"] = round(by_type["Pubblica"] + _f(c.get("kwh")), 2)
         fv_mese = round(sum(
-            _f(c.get("kwh")) for c in charges
-            if c.get("tipo") == "Fotovoltaico" and str(c.get("data", ""))[:7] == keys["monthly"]
+            _charge_split(c)[0] for c in charges
+            if str(c.get("data", ""))[:7] == keys["monthly"]
         ), 2)
 
         def _week_key(d: str) -> str:
@@ -1583,24 +1642,25 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "prev_year": _chg_sum(lambda d: d[:4] == _prev_year),
         }
 
-        def _chg_type(pred, tipo: str) -> float:
-            return round(sum(_f(c.get("kwh")) for c in charges
-                             if str(c.get("tipo", "")) == tipo and pred(_chg_date(c))), 2)
+        def _chg_src(pred, idx: int) -> float:
+            return round(sum(_charge_split(c)[idx] for c in charges
+                             if pred(_chg_date(c))), 2)
 
-        def _chg_by_type(tipo: str) -> dict[str, float]:
+        def _chg_by_src(idx: int) -> dict[str, float]:
             return {
-                "daily": _chg_type(lambda d: d == today_key, tipo),
-                "yday": _chg_type(lambda d: d == yday, tipo),
-                "weekly": _chg_type(lambda d: _week_key(d) == keys["weekly"], tipo),
-                "prev_week": _chg_type(lambda d: _week_key(d) == _prev_week_key(), tipo),
-                "monthly": _chg_type(lambda d: d[:7] == _pk, tipo),
-                "prev_month": _chg_type(lambda d: d[:7] == _prev_month, tipo),
-                "yearly": _chg_type(lambda d: d[:4] == keys["yearly"], tipo),
-                "prev_year": _chg_type(lambda d: d[:4] == _prev_year, tipo),
+                "daily": _chg_src(lambda d: d == today_key, idx),
+                "yday": _chg_src(lambda d: d == yday, idx),
+                "weekly": _chg_src(lambda d: _week_key(d) == keys["weekly"], idx),
+                "prev_week": _chg_src(lambda d: _week_key(d) == _prev_week_key(), idx),
+                "monthly": _chg_src(lambda d: d[:7] == _pk, idx),
+                "prev_month": _chg_src(lambda d: d[:7] == _prev_month, idx),
+                "yearly": _chg_src(lambda d: d[:4] == keys["yearly"], idx),
+                "prev_year": _chg_src(lambda d: d[:4] == _prev_year, idx),
             }
 
-        _fv = _chg_by_type("Fotovoltaico")
-        _pub = _chg_by_type("Pubblica")
+        _fv = _chg_by_src(0)    # fotovoltaico
+        _bat = _chg_by_src(1)   # batteria di casa
+        _pub = _chg_by_src(3)   # colonnine
         _prev_key = {"daily": "yday", "weekly": "prev_week",
                      "monthly": "prev_month", "yearly": "prev_year"}
 
@@ -1650,25 +1710,34 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
         percorrenza = [
             {"nome": "Oggi", "pct": _pct(o_pct, o_kwh), "usati": o_kwh,
-             "caricati": chg["daily"][0], "km": o_km, "fv": _fv["daily"], "pubblica": _pub["daily"]},
+             "caricati": chg["daily"][0], "km": o_km, "fv": _fv["daily"],
+             "batteria": _bat["daily"], "pubblica": _pub["daily"]},
             {"nome": "Ieri", "pct": _pct(i_pct, i_kwh), "usati": i_kwh,
-             "caricati": chg["yday"][0], "km": i_km, "fv": _fv["yday"], "pubblica": _pub["yday"]},
+             "caricati": chg["yday"][0], "km": i_km, "fv": _fv["yday"],
+             "batteria": _bat["yday"], "pubblica": _pub["yday"]},
             {"nome": "Settimana", "usati": w_kwh,
-             "caricati": chg["weekly"][0], "km": w_km, "fv": _fv["weekly"], "pubblica": _pub["weekly"]},
+             "caricati": chg["weekly"][0], "km": w_km, "fv": _fv["weekly"],
+             "batteria": _bat["weekly"], "pubblica": _pub["weekly"]},
             {"nome": "Settimana prec.", "usati": 0.0,
-             "caricati": chg["prev_week"][0], "km": 0.0, "fv": _fv["prev_week"], "pubblica": _pub["prev_week"]},
+             "caricati": chg["prev_week"][0], "km": 0.0, "fv": _fv["prev_week"],
+             "batteria": _bat["prev_week"], "pubblica": _pub["prev_week"]},
             {"nome": "Mese", "usati": m_kwh,
-             "caricati": chg["monthly"][0], "km": m_km, "fv": _fv["monthly"], "pubblica": _pub["monthly"]},
+             "caricati": chg["monthly"][0], "km": m_km, "fv": _fv["monthly"],
+             "batteria": _bat["monthly"], "pubblica": _pub["monthly"]},
             {"nome": "Mese prec.", "usati": 0.0,
-             "caricati": chg["prev_month"][0], "km": 0.0, "fv": _fv["prev_month"], "pubblica": _pub["prev_month"]},
+             "caricati": chg["prev_month"][0], "km": 0.0, "fv": _fv["prev_month"],
+             "batteria": _bat["prev_month"], "pubblica": _pub["prev_month"]},
             {"nome": "Anno", "usati": y_kwh,
-             "caricati": chg["yearly"][0], "km": y_km, "fv": _fv["yearly"], "pubblica": _pub["yearly"]},
+             "caricati": chg["yearly"][0], "km": y_km, "fv": _fv["yearly"],
+             "batteria": _bat["yearly"], "pubblica": _pub["yearly"]},
             {"nome": "Anno prec.", "usati": 0.0,
-             "caricati": chg["prev_year"][0], "km": 0.0, "fv": _fv["prev_year"], "pubblica": _pub["prev_year"]},
+             "caricati": chg["prev_year"][0], "km": 0.0, "fv": _fv["prev_year"],
+             "batteria": _bat["prev_year"], "pubblica": _pub["prev_year"]},
         ]
 
         # --- storico mensile multi-anno (costo, ricaricati kWh, km) ---------------
-        _ZERO_MESE = {"costo": 0.0, "kwh": 0.0, "km": 0.0, "fv": 0.0, "pubblica": 0.0}
+        _ZERO_MESE = {"costo": 0.0, "kwh": 0.0, "km": 0.0, "fv": 0.0,
+                      "batteria": 0.0, "pubblica": 0.0}
         mesi: dict[str, dict[str, dict[str, float]]] = {}
         for c in charges:
             d = str(c.get("data", ""))
@@ -1676,11 +1745,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 row = mesi.setdefault(d[:4], {}).setdefault(d[5:7], dict(_ZERO_MESE))
                 row["costo"] += _f(c.get("costo"))
                 row["kwh"] += _f(c.get("kwh"))
-                _tipo = str(c.get("tipo", ""))
-                if _tipo == "Fotovoltaico":
-                    row["fv"] += _f(c.get("kwh"))
-                elif _tipo == "Pubblica":
-                    row["pubblica"] += _f(c.get("kwh"))
+                _sp = _charge_split(c)
+                row["fv"] += _sp[0]
+                row["batteria"] += _sp[1]
+                row["pubblica"] += _sp[3]
         for t in trips:
             d = str(t.get("data", ""))
             if len(d) >= 7:
@@ -1880,7 +1948,21 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 "Ricarica a casa senza misura wallbox: energia stimata dal SoC "
                 "(mappa i contatori in Configura → Wallbox)"
             )
-        costo = round(kwh * _f(s.get("prezzo"), self._price_for_zone(z)), 2)
+        prezzo_rete = _f(s.get("prezzo"), self._price_for_zone(z))
+        # ripartizione per sorgente (solo ricariche a casa con sensore rete mappato)
+        src_fv = src_bat = src_rete = 0.0
+        _tot_src = _f(s.get("fv_accum")) + _f(s.get("bat_accum")) + _f(s.get("rete_accum"))
+        split_ok = tipo == "Casa" and self.balance_grid_sensor and _tot_src > 0 and kwh > 0
+        if split_ok:
+            _sc = kwh / _tot_src
+            src_fv = round(_f(s.get("fv_accum")) * _sc, 2)
+            src_bat = round(_f(s.get("bat_accum")) * _sc, 2)
+            src_rete = round(max(kwh - src_fv - src_bat, 0.0), 2)
+            # si paga solo la quota prelevata dalla rete; FV e batteria = prezzo FV
+            costo = round(src_rete * prezzo_rete
+                          + (src_fv + src_bat) * self.price_solar, 2)
+        else:
+            costo = round(kwh * prezzo_rete, 2)
         ts_start = datetime.fromtimestamp(s["start_ts"])
         record = {
             "id": s["id"],
@@ -1900,6 +1982,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             # posizione della ricarica (per la notifica di fine carica)
             "zona": self._zone_label(str(s.get("zone") or zone or "")),
         }
+        if split_ok:
+            record["src_fv"] = src_fv
+            record["src_bat"] = src_bat
+            record["src_rete"] = src_rete
         if origine is not None:
             record["stima"] = origine
 
@@ -2447,6 +2533,31 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             return {"action": "persistent_notification.create",
                     "data": {"notification_id": notif_id, "title": title, "message": msg}}
 
+        # etichette notifica di fine ricarica, nella lingua scelta in Home Assistant
+        _lang = str(getattr(self.hass.config, "language", "en") or "en")[:2].lower()
+        _L10N = {
+            "it": ("🔋 Ricarica Completata", "📍 Location", "⚡️ Energia", "🕐 Tempo",
+                   "📊 Batteria", "💰 Costo stimato", "ore"),
+            "en": ("🔋 Charging Complete", "📍 Location", "⚡️ Energy", "🕐 Time",
+                   "📊 Battery", "💰 Estimated cost", "h"),
+            "fr": ("🔋 Recharge terminée", "📍 Emplacement", "⚡️ Énergie", "🕐 Durée",
+                   "📊 Batterie", "💰 Coût estimé", "h"),
+            "es": ("🔋 Recarga completada", "📍 Ubicación", "⚡️ Energía", "🕐 Tiempo",
+                   "📊 Batería", "💰 Coste estimado", "h"),
+            "de": ("🔋 Ladung abgeschlossen", "📍 Standort", "⚡️ Energie", "🕐 Dauer",
+                   "📊 Batterie", "💰 Geschätzte Kosten", "h"),
+        }
+        _t_title, _t_loc, _t_energy, _t_time, _t_batt, _t_cost, _t_h = _L10N.get(_lang, _L10N["en"])
+        _ric_msg = (
+            _t_loc + ": {{ state_attr('sensor." + n + "_ultima_ricarica', 'zona') or '—' }}\n"
+            + _t_energy + ": {{ states('sensor." + n + "_ultima_ricarica') }} kWh\n"
+            + _t_time + ": {{ (state_attr('sensor." + n + "_ultima_ricarica', 'durata_min')"
+            " | float(0) / 60) | round(2) }} " + _t_h + "\n"
+            + _t_batt + ": {{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_start') }}% → "
+            "{{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_end') }}%\n"
+            + _t_cost + ": €{{ state_attr('sensor." + n + "_ultima_ricarica', 'costo') }}"
+        )
+
         autos: dict[str, dict] = {
             f"renault_ev_center_{n}_ricarica_completata": {
                 "alias": f"Renault EV Center — Ricarica completata ({n})",
@@ -2454,11 +2565,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                               "from": "on", "to": "off", "for": {"minutes": 3}}],
                 # NIENTE condizione sulla data: una ricarica notturna inizia ieri e finisce oggi,
                 # quindi il confronto con la data di OGGI la scartava (notifica mai inviata).
-                "action": [_pn(f"rec_ric_{n}", "🔋 Ricarica completata",
-                                "⚡ {{ states('sensor." + n + "_ultima_ricarica') }} kWh · "
-                                "🔋 {{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_end') }}% · "
-                                "💰 {{ state_attr('sensor." + n + "_ultima_ricarica', 'costo') }} € · "
-                                "📍 {{ state_attr('sensor." + n + "_ultima_ricarica', 'zona') or '—' }}")],
+                "action": [_pn(f"rec_ric_{n}", _t_title, _ric_msg)],
                 "mode": "single",
             },
             f"renault_ev_center_{n}_avvio_ricarica": {

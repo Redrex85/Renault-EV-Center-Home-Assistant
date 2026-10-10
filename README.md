@@ -164,6 +164,14 @@ Capacità batteria (**60 kWh** per Megane EV60, 40 per EV40), % obiettivo ricari
 
 Tutto è modificabile dopo: ⚙️ **Integrazioni → Renault EV Center → Configura**.
 
+### ☀️ Ricariche dal fotovoltaico e risparmi
+
+Con il profilo **Enterprise** mappa il **sensore rete** (e, se hai la batteria di casa, il **sensore batteria**) nella sezione *Fotovoltaico*. Ogni ricarica a casa viene ripartita per **sorgente**: prima la **rete** (la quota che **paghi**), poi la **batteria di casa**, il resto è **fotovoltaico** (gratis). Il costo della ricarica conta quindi **solo la quota prelevata dalla rete**; FV e batteria vanno al prezzo FV (metti `0`). Le colonne *Ricariche FV* / *Batteria* / *Ricariche Pubbliche* in **Percorrenza** e **Storico mensile** mostrano la ripartizione.
+
+**Risparmi**: il confronto con l'auto termica usa i **km** (lato termico) e il **costo effettivamente pagato** (lato elettrico). Se carichi al 100% da FV a costo `0`, il costo elettrico è `0` → il risparmio è l'**intero** carburante evitato. Vale solo con sensore rete mappato e prezzo FV `0`.
+
+⚠️ **Ricariche fatte prima dell'installazione**: dichiara **solo** i kWh **pagati** (colonnine/rete). **Non** inserire i kWh caricati dal tuo fotovoltaico: sono gratis e conteggiarli come spesa **ridurrebbe** il risparmio.
+
 ## 📈 Cosa crea
 
 Oltre **90 entità** sul dispositivo *"Renault EV Center"* (prefisso = nome scelto):
@@ -433,6 +441,14 @@ Flip the switch if you have a wallbox in HA and map the sensors:
 Battery capacity (**60 kWh** for Megane EV60, 40 for EV40), target charge %, **home/public/solar** prices, solar zone name (e.g. `beb`), update interval, trip timeout minutes, and optional comparison with a combustion car (fuel consumption and diesel/petrol price).
 
 Everything is editable later: ⚙️ **Settings → Devices & Services → Renault EV Center → Configure**.
+
+### ☀️ Solar charging & savings
+
+With the **Enterprise** profile, map the **grid sensor** (and, if you have a home battery, the **battery sensor**) in the *Solar* section. Each home charge is split by **source**: first the **grid** (the part you **pay**), then the **home battery**, the rest is **solar** (free). The charge cost therefore counts **only the grid-drawn part**; solar and battery use the solar price (set `0`). The *Solar charges* / *Battery* / *Public charges* columns in **Mileage** and **Monthly history** show the split.
+
+**Savings**: the combustion comparison uses **km** (thermal side) and the **cost actually paid** (electric side). If you charge 100% from solar at `0`, the electric cost is `0` → the saving is the **full** avoided fuel cost. Only valid with a mapped grid sensor and solar price `0`.
+
+⚠️ **Charges made before installing**: declare **only** the kWh you **paid** (public/grid). **Do not** enter kWh charged from your own solar: they are free, and counting them as an expense would **reduce** the saving.
 
 ### What it creates
 
@@ -705,6 +721,14 @@ Activez l'interrupteur si vous avez une wallbox dans HA et mappez les capteurs :
 Capacité batterie (**60 kWh** pour Megane EV60, 40 pour EV40), % cible de recharge, tarifs **maison/born publique/solaire**, nom de la zone FV, intervalle de mise à jour, minutes de timeout des trajets, et comparaison optionnelle avec une voiture thermique (consommation et prix du gasoil/essence).
 
 Tout est modifiable après : ⚙️ **Paramètres → Intégrations → Renault EV Center → Configurer**.
+
+### ☀️ Recharge solaire et économies
+
+Avec le profil **Enterprise**, mappez le **capteur réseau** (et, si vous avez une batterie domestique, le **capteur batterie**) dans la section *Solaire*. Chaque recharge à la maison est répartie par **source** : d'abord le **réseau** (la part que vous **payez**), puis la **batterie domestique**, le reste est **solaire** (gratuit). Le coût de la recharge ne compte donc que **la part prélevée sur le réseau** ; solaire et batterie au prix solaire (mettez `0`). Les colonnes *Recharges PV* / *Batterie* / *Recharges publiques* dans **Kilométrage** et **Historique mensuel** montrent la répartition.
+
+**Économies** : la comparaison avec la voiture thermique utilise les **km** (côté thermique) et le **coût réellement payé** (côté électrique). Si vous chargez à 100 % au solaire à `0`, le coût électrique est `0` → l'économie est l'**intégralité** du carburant évité. Valable uniquement avec capteur réseau mappé et prix solaire `0`.
+
+⚠️ **Recharges faites avant l'installation** : déclarez **uniquement** les kWh **payés** (bornes/réseau). **N'inscrivez pas** les kWh rechargés par votre solaire : ils sont gratuits, et les compter comme dépense **réduirait** l'économie.
 
 ## 📈 Ce que ça crée
 
