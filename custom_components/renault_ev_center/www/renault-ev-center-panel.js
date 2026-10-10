@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.5";
+const REC_VER = "1.1.6";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -3497,7 +3497,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       if (a.step !== undefined) sl.step = a.step;
       const amps = parseFloat(sNum.state);
       if (!isNaN(amps)) {
-        if (document.activeElement !== sl) sl.value = amps;   // non rubare il cursore
+        if (sl.getRootNode().activeElement !== sl) sl.value = amps;   // non rubare il cursore
         if (live) live.textContent = `${S._fmt(amps, 0)} A`;
       }
       root.getElementById("wb_amp_val").textContent = `${S._fmt(parseFloat(sNum.state), 0)} A (min ${a.min ?? "?"} · max ${a.max ?? "?"} A)`;
@@ -3609,7 +3609,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     // stato sempre allineato a HA, senza toccare quello che l'utente sta cliccando
     list.forEach((s) => {
       const el = host.querySelector(`[data-auto="${s.entity_id}"]`);
-      if (el && document.activeElement !== el) el.checked = s.state === "on";
+      if (el && el.getRootNode().activeElement !== el) el.checked = s.state === "on";
     });
   }
   _cmd(cmd, el) {
@@ -3784,7 +3784,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       this._drawMap();
     }
     root.querySelectorAll("[data-sw]").forEach((el) => {
-      if (el.tagName === "INPUT") { const s = this._hass.states[el.dataset.ent]; el.checked = !!s && s.state === "on"; }
+      if (el.tagName === "INPUT") { const s = this._hass.states[el.dataset.ent]; if (el.getRootNode().activeElement !== el) el.checked = !!s && s.state === "on"; }
     });
     // avviso batteria bassa: giorni correnti dall'attributo dello switch
     // (non sovrascrivere se l'utente li sta scegliendo: aspettiamo il salvataggio)
@@ -3805,11 +3805,11 @@ class RenaultEvCenterPanel extends HTMLElement {
         const touched = !!(this._schTouched || {})[tipo];
         // SEMPRE imposto lo switch: se lo scheduler non esiste resta spento (non il checked del markup)
         const onEl = root.querySelector(`input[data-schon="${tipo}"]`);
-        if (onEl && !touched && document.activeElement !== onEl) onEl.checked = !!(v && v.attivo);
+        if (onEl && !touched && onEl.getRootNode().activeElement !== onEl) onEl.checked = !!(v && v.attivo);
         if (!v) continue;
         for (const k of ["inizio", "fine", "soc", "modo", "temperatura"]) {
           const el = root.querySelector(`[data-sch="${tipo}"][data-k="${k}"]`);
-          if (el && !touched && document.activeElement !== el && v[k] !== undefined && v[k] !== null && v[k] !== "") {
+          if (el && !touched && el.getRootNode().activeElement !== el && v[k] !== undefined && v[k] !== null && v[k] !== "") {
             el.value = v[k];
           }
         }
@@ -3861,12 +3861,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     });
     // input number: valore corrente
     root.querySelectorAll("input[data-n]").forEach((inp) => {
-      if (document.activeElement === inp) return;
+      if (inp.getRootNode().activeElement === inp) return;
       const s = this._hass.states[inp.dataset.ent];
       if (s) inp.value = s.state;
     });
     root.querySelectorAll("input[data-time]").forEach((inp) => {
-      if (document.activeElement === inp) return;
+      if (inp.getRootNode().activeElement === inp) return;
       const s = this._hass.states[inp.dataset.ent];
       if (s && typeof s.state === "string") {
         const [hh, mm] = s.state.split(":");
@@ -3953,13 +3953,13 @@ class RenaultEvCenterPanel extends HTMLElement {
         const v = _sa[attr];
         if (v === null || v === undefined) continue;
         const el = root.querySelector(`input[data-mk="${tipo}"]:not([data-mdate])`);
-        if (el && document.activeElement !== el) el.value = v;
+        if (el && el.getRootNode().activeElement !== el) el.value = v;
       }
       for (const [tipo, attr] of [["tagliando", "tagliando_data"], ["gomme", "gomme_data"]]) {
         const v = _sa[attr];
         if (!v) continue;
         const el = root.querySelector(`input[data-mk="${tipo}"][data-mdate]`);
-        if (el && document.activeElement !== el) el.value = v;
+        if (el && el.getRootNode().activeElement !== el) el.value = v;
       }
     }
     // celle percorrenza: [data-per="oggi|usati"] → riga attributo `righe`
@@ -4812,20 +4812,23 @@ class RenaultEvCenterPanel extends HTMLElement {
     const op = (k) => (opened[k] === false ? "" : "open");
     box.innerHTML = anni.filter((y) => !fY || y === fY).map((y) => {
       const mm = mesi[y] || {};
-      let tC = 0, tK = 0, tKm = 0;
+      let tC = 0, tK = 0, tKm = 0, tFv = 0, tPub = 0;
       const rows = NOMI_MESI().map((nome, i) => {
         const m = String(i + 1).padStart(2, "0");
         const r = mm[m];
         const futuro = y > curY || (y === curY && m > curM);
         const c = r ? r.costo : 0, k = r ? r.kwh : 0, km = r ? r.km : 0;
-        tC += c; tK += k; tKm += km;
+        const fv = r ? (r.fv || 0) : 0, pub = r ? (r.pubblica || 0) : 0;
+        tC += c; tK += k; tKm += km; tFv += fv; tPub += pub;
         return `<tr><td>${nome}</td><td>${r ? this._fmt(c, 2) + " €" : (futuro ? "" : "0,00 €")}</td>
           <td>${r ? this._fmt(k, 1) + " kWh" : (futuro ? "" : "0,0 kWh")}</td>
+          <td>${r ? this._fmt(fv, 1) + " kWh" : (futuro ? "" : "0,0 kWh")}</td>
+          <td>${r ? this._fmt(pub, 1) + " kWh" : (futuro ? "" : "0,0 kWh")}</td>
           <td>${r && km ? this._i(km) + " km" : (futuro ? "attesa" : "0 km")}</td></tr>`;
       }).join("");
-      return `<details class="anno" data-mk="${y}" ${op(y)}><summary><span class="tr">${y} · ${this._fmt(tC, 2)} € · ${this._fmt(tK, 1)} kWh · ${this._i(tKm)} km</span></summary>
-        <table><tr><th>Mese</th><th>Costo</th><th>Ricaricati</th><th>KM</th></tr>${rows}
-        <tr class="totrow"><td>TOTALE</td><td>${this._fmt(tC, 2)} €</td><td>${this._fmt(tK, 1)} kWh</td><td>${this._i(tKm)} km</td></tr></table></details>`;
+      return `<details class="anno" data-mk="${y}" ${op(y)}><summary><span class="tr">${y} · ${this._fmt(tC, 2)} € · ${this._fmt(tK, 1)} kWh · FV ${this._fmt(tFv, 1)} · Pub ${this._fmt(tPub, 1)} · ${this._i(tKm)} km</span></summary>
+        <table><tr><th>Mese</th><th>Costo</th><th>Ricaricati</th><th>Ricariche FV</th><th>Ricariche Pubbliche</th><th>KM</th></tr>${rows}
+        <tr class="totrow"><td>TOTALE</td><td>${this._fmt(tC, 2)} €</td><td>${this._fmt(tK, 1)} kWh</td><td>${this._fmt(tFv, 1)} kWh</td><td>${this._fmt(tPub, 1)} kWh</td><td>${this._i(tKm)} km</td></tr></table></details>`;
     }).join("") || `<div style="color:var(--muted)">Nessun dato per l'anno scelto</div>`;
     box.querySelectorAll("details[data-mk]").forEach((d) => {
       d.addEventListener("toggle", () => { this._mesiOpen[d.dataset.mk] = d.open; });
@@ -5328,12 +5331,12 @@ const PAGES = () => ({
       <div class="row"><span>${_t("lbl_fotovoltaico", "☀️ Fotovoltaico")}</span><b><span data-f="fv_tot">—</span> kWh</b></div>
       <div class="row"><span>${_t("lbl_colonnine", "⚡ Colonnine")}</span><b data-attr="statistiche_viaggi|caricata_pubblica">—</b></div></div>
     <div class="card"><h3>${_t("h3_percorrenza", "Percorrenza")}</h3>
-      <table><tr><th>Periodo</th><th>Usati</th><th>Caricati</th><th>KM</th></tr>
-        <tr><td><b>OGGI</b></td><td data-per="oggi|usati">—</td><td data-per="oggi|caricati">—</td><td data-per="oggi|km">—</td></tr>
-        <tr><td><b>IERI</b></td><td data-per="ieri|usati">—</td><td data-per="ieri|caricati">—</td><td data-per="ieri|km">—</td></tr>
-        <tr><td><b>SETTIMANA</b></td><td data-per="settimana|usati">—</td><td data-per="settimana|caricati">—</td><td data-per="settimana|km">—</td></tr>
-        <tr><td><b>MESE</b></td><td data-per="mese|usati">—</td><td data-per="mese|caricati">—</td><td data-per="mese|km">—</td></tr>
-        <tr><td><b>ANNO</b></td><td data-per="anno|usati">—</td><td data-per="anno|caricati">—</td><td data-per="anno|km">—</td></tr></table></div></div>
+      <table><tr><th>Periodo</th><th>Usati</th><th>Caricati</th><th>Ricariche FV</th><th>Ricariche Pubbliche</th><th>KM</th></tr>
+        <tr><td><b>OGGI</b></td><td data-per="oggi|usati">—</td><td data-per="oggi|caricati">—</td><td data-per="oggi|fv">—</td><td data-per="oggi|pubblica">—</td><td data-per="oggi|km">—</td></tr>
+        <tr><td><b>IERI</b></td><td data-per="ieri|usati">—</td><td data-per="ieri|caricati">—</td><td data-per="ieri|fv">—</td><td data-per="ieri|pubblica">—</td><td data-per="ieri|km">—</td></tr>
+        <tr><td><b>SETTIMANA</b></td><td data-per="settimana|usati">—</td><td data-per="settimana|caricati">—</td><td data-per="settimana|fv">—</td><td data-per="settimana|pubblica">—</td><td data-per="settimana|km">—</td></tr>
+        <tr><td><b>MESE</b></td><td data-per="mese|usati">—</td><td data-per="mese|caricati">—</td><td data-per="mese|fv">—</td><td data-per="mese|pubblica">—</td><td data-per="mese|km">—</td></tr>
+        <tr><td><b>ANNO</b></td><td data-per="anno|usati">—</td><td data-per="anno|caricati">—</td><td data-per="anno|fv">—</td><td data-per="anno|pubblica">—</td><td data-per="anno|km">—</td></tr></table></div></div>
   <div class="card" style="margin-top:16px"><h3>${_t("h3_rotte_consumo_per_zona", "Rotte (consumo per zona)")}</h3>
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <select data-rf="year" style="width:auto"><option value="">${_t("opt_tutti_gli_anni", "Tutti gli anni")}</option></select>

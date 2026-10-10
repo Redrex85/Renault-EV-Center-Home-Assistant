@@ -1582,6 +1582,25 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "yearly": _chg_sum(lambda d: d[:4] == keys["yearly"]),
             "prev_year": _chg_sum(lambda d: d[:4] == _prev_year),
         }
+
+        def _chg_type(pred, tipo: str) -> float:
+            return round(sum(_f(c.get("kwh")) for c in charges
+                             if str(c.get("tipo", "")) == tipo and pred(_chg_date(c))), 2)
+
+        def _chg_by_type(tipo: str) -> dict[str, float]:
+            return {
+                "daily": _chg_type(lambda d: d == today_key, tipo),
+                "yday": _chg_type(lambda d: d == yday, tipo),
+                "weekly": _chg_type(lambda d: _week_key(d) == keys["weekly"], tipo),
+                "prev_week": _chg_type(lambda d: _week_key(d) == _prev_week_key(), tipo),
+                "monthly": _chg_type(lambda d: d[:7] == _pk, tipo),
+                "prev_month": _chg_type(lambda d: d[:7] == _prev_month, tipo),
+                "yearly": _chg_type(lambda d: d[:4] == keys["yearly"], tipo),
+                "prev_year": _chg_type(lambda d: d[:4] == _prev_year, tipo),
+            }
+
+        _fv = _chg_by_type("Fotovoltaico")
+        _pub = _chg_by_type("Pubblica")
         _prev_key = {"daily": "yday", "weekly": "prev_week",
                      "monthly": "prev_month", "yearly": "prev_year"}
 
@@ -1631,40 +1650,46 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
         percorrenza = [
             {"nome": "Oggi", "pct": _pct(o_pct, o_kwh), "usati": o_kwh,
-             "caricati": chg["daily"][0], "km": o_km},
+             "caricati": chg["daily"][0], "km": o_km, "fv": _fv["daily"], "pubblica": _pub["daily"]},
             {"nome": "Ieri", "pct": _pct(i_pct, i_kwh), "usati": i_kwh,
-             "caricati": chg["yday"][0], "km": i_km},
+             "caricati": chg["yday"][0], "km": i_km, "fv": _fv["yday"], "pubblica": _pub["yday"]},
             {"nome": "Settimana", "usati": w_kwh,
-             "caricati": chg["weekly"][0], "km": w_km},
+             "caricati": chg["weekly"][0], "km": w_km, "fv": _fv["weekly"], "pubblica": _pub["weekly"]},
             {"nome": "Settimana prec.", "usati": 0.0,
-             "caricati": chg["prev_week"][0], "km": 0.0},
+             "caricati": chg["prev_week"][0], "km": 0.0, "fv": _fv["prev_week"], "pubblica": _pub["prev_week"]},
             {"nome": "Mese", "usati": m_kwh,
-             "caricati": chg["monthly"][0], "km": m_km},
+             "caricati": chg["monthly"][0], "km": m_km, "fv": _fv["monthly"], "pubblica": _pub["monthly"]},
             {"nome": "Mese prec.", "usati": 0.0,
-             "caricati": chg["prev_month"][0], "km": 0.0},
+             "caricati": chg["prev_month"][0], "km": 0.0, "fv": _fv["prev_month"], "pubblica": _pub["prev_month"]},
             {"nome": "Anno", "usati": y_kwh,
-             "caricati": chg["yearly"][0], "km": y_km},
+             "caricati": chg["yearly"][0], "km": y_km, "fv": _fv["yearly"], "pubblica": _pub["yearly"]},
             {"nome": "Anno prec.", "usati": 0.0,
-             "caricati": chg["prev_year"][0], "km": 0.0},
+             "caricati": chg["prev_year"][0], "km": 0.0, "fv": _fv["prev_year"], "pubblica": _pub["prev_year"]},
         ]
 
         # --- storico mensile multi-anno (costo, ricaricati kWh, km) ---------------
+        _ZERO_MESE = {"costo": 0.0, "kwh": 0.0, "km": 0.0, "fv": 0.0, "pubblica": 0.0}
         mesi: dict[str, dict[str, dict[str, float]]] = {}
         for c in charges:
             d = str(c.get("data", ""))
             if len(d) >= 7:
-                row = mesi.setdefault(d[:4], {}).setdefault(d[5:7], {"costo": 0.0, "kwh": 0.0, "km": 0.0})
+                row = mesi.setdefault(d[:4], {}).setdefault(d[5:7], dict(_ZERO_MESE))
                 row["costo"] += _f(c.get("costo"))
                 row["kwh"] += _f(c.get("kwh"))
+                _tipo = str(c.get("tipo", ""))
+                if _tipo == "Fotovoltaico":
+                    row["fv"] += _f(c.get("kwh"))
+                elif _tipo == "Pubblica":
+                    row["pubblica"] += _f(c.get("kwh"))
         for t in trips:
             d = str(t.get("data", ""))
             if len(d) >= 7:
-                row = mesi.setdefault(d[:4], {}).setdefault(d[5:7], {"costo": 0.0, "kwh": 0.0, "km": 0.0})
+                row = mesi.setdefault(d[:4], {}).setdefault(d[5:7], dict(_ZERO_MESE))
                 row["km"] += _f(t.get("km"))
         for ym, km in self.store.data.get("monthly_km", {}).items():
             ym = str(ym)
             if len(ym) >= 7:
-                row = mesi.setdefault(ym[:4], {}).setdefault(ym[5:7], {"costo": 0.0, "kwh": 0.0, "km": 0.0})
+                row = mesi.setdefault(ym[:4], {}).setdefault(ym[5:7], dict(_ZERO_MESE))
                 row["km"] = max(row["km"], _f(km))
         mesi_storico = {
             y: {m: {k: round(v, 2) for k, v in row.items()} for m, row in mm.items()}

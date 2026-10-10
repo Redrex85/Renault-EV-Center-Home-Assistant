@@ -5,6 +5,15 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.6 - Statistiche: ricariche FV/Pubbliche + fix campi editabili
+
+- **Statistiche**: nuove colonne **Ricariche FV** e **Ricariche Pubbliche** (kWh) nelle
+  tabelle *Percorrenza* e *Storico mensile*, ricavate dai record ricarica per `tipo`.
+- **Fix SOH ufficiale** (e ogni controllo editabile: numeri, orari, testi, switch): dentro lo
+  Shadow DOM `document.activeElement` ritorna l'host, non l'input → il campo veniva
+  riscritto a ogni refresh e non si riusciva a digitare. Ora usa
+  `el.getRootNode().activeElement`.
+
 ## 1.1.5 - Pannello: filtri Ricariche e ultimi residui in italiano
 
 - Le `<option>` dei filtri "Storico ricariche" (Tutte/Tutto/Tutti) restavano in italiano:
