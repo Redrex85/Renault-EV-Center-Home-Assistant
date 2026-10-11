@@ -5,6 +5,16 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.10 - Ricariche manuali: aggiornamento immediato, modifica ed eliminazione
+
+- **Aggiornamento immediato**: dopo aver registrato una ricarica manuale il pannello si
+  aggiorna subito (prima attendeva il ciclo di polling).
+- **Modifica ed eliminazione** delle ricariche dallo storico: icone ✏️/🗑 nella tabella
+  *Ricariche*; la modifica riusa il form di inserimento manuale.
+- **Durata opzionale** (minuti) nel form manuale: calcola potenza media (Ø kW) e ora di fine;
+  modificabile anche in seguito.
+- Nuovi servizi `renault_ev_center.delete_charge` e `renault_ev_center.update_charge`.
+
 ## 1.1.9 - GSE opzionale, default confronti, fix notify nel pannello
 
 - **Sperimentazione GSE opzionale**: nuova opzione in configurazione («Uso la sperimentazione

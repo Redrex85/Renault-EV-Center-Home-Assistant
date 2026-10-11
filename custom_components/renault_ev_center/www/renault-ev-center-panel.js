@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.9";
+const REC_VER = "1.1.10";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -254,6 +254,14 @@ const I18N = {
     toast_no_horn: "⚠️ Horn not mapped (Settings → Commands)",
     toast_no_lights: "⚠️ Lights not mapped (Settings → Commands)",
     toast_kwh: "⚠️ Enter the kWh",
+    confirm_del_charge: "Delete this charge?",
+    btn_save_charge: "💾 Save changes",
+    btn_add_charge: "💾 Log charge",
+    ttl_edit_charge: "Edit",
+    ttl_del_charge: "Delete",
+    toast_charge_added: "➕ Charge logged",
+    toast_charge_updated: "✏️ Charge updated",
+    toast_charge_deleted: "🗑 Charge deleted",
     toast_no_stop: "⚠️ Charge stop not mapped (Settings → Wallbox)",
   },
   fr: {
@@ -480,6 +488,14 @@ const I18N = {
     toast_no_horn: "⚠️ Klaxon non mappé (Réglages → Commandes)",
     toast_no_lights: "⚠️ Feux non mappés (Réglages → Commandes)",
     toast_kwh: "⚠️ Saisissez les kWh",
+    confirm_del_charge: "Supprimer cette recharge ?",
+    btn_save_charge: "💾 Enregistrer",
+    btn_add_charge: "💾 Enregistrer la recharge",
+    ttl_edit_charge: "Modifier",
+    ttl_del_charge: "Supprimer",
+    toast_charge_added: "➕ Recharge enregistrée",
+    toast_charge_updated: "✏️ Recharge modifiée",
+    toast_charge_deleted: "🗑 Recharge supprimée",
     toast_no_stop: "⚠️ Arrêt recharge non mappé (Réglages → Wallbox)",
   },
   es: {
@@ -714,6 +730,14 @@ const I18N = {
     toast_no_horn: "⚠️ Claxon no mapeado (Ajustes → Comandos)",
     toast_no_lights: "⚠️ Luces no mapeadas (Ajustes → Comandos)",
     toast_kwh: "⚠️ Introduce los kWh",
+    confirm_del_charge: "¿Eliminar esta recarga?",
+    btn_save_charge: "💾 Guardar cambios",
+    btn_add_charge: "💾 Registrar recarga",
+    ttl_edit_charge: "Editar",
+    ttl_del_charge: "Eliminar",
+    toast_charge_added: "➕ Recarga registrada",
+    toast_charge_updated: "✏️ Recarga modificada",
+    toast_charge_deleted: "🗑 Recarga eliminada",
     toast_no_stop: "⚠️ Parada de recarga no mapeada (Ajustes → Wallbox)",
   },
   de: {
@@ -948,6 +972,14 @@ const I18N = {
     toast_no_horn: "⚠️ Hupe nicht zugeordnet (Einstellungen → Befehle)",
     toast_no_lights: "⚠️ Lichter nicht zugeordnet (Einstellungen → Befehle)",
     toast_kwh: "⚠️ kWh eingeben",
+    confirm_del_charge: "Diese Ladung löschen?",
+    btn_save_charge: "💾 Änderungen speichern",
+    btn_add_charge: "💾 Ladung erfassen",
+    ttl_edit_charge: "Bearbeiten",
+    ttl_del_charge: "Löschen",
+    toast_charge_added: "➕ Ladung erfasst",
+    toast_charge_updated: "✏️ Ladung geändert",
+    toast_charge_deleted: "🗑 Ladung gelöscht",
     toast_no_stop: "⚠️ Ladestopp nicht zugeordnet (Einstellungen → Wallbox)",
   },
 };
@@ -1210,6 +1242,12 @@ const UI = {
     "fr": "Durée",
     "es": "Duración",
     "de": "Dauer"
+  },
+  "Durata min": {
+    "en": "Duration min",
+    "fr": "Durée min",
+    "es": "Duración min",
+    "de": "Dauer min"
   },
   "Durata media": {
     "en": "Average duration",
@@ -3315,6 +3353,16 @@ class RenaultEvCenterPanel extends HTMLElement {
           { maintenance_id: parseInt(del.dataset.mdel, 10) }, "🗑 Intervento eliminato");
         return;
       }
+      const cdel = ev.target && ev.target.closest ? ev.target.closest("[data-cdel]") : null;
+      if (cdel) {
+        if (window.confirm(_t("confirm_del_charge", "Eliminare questa ricarica?"))) {
+          this._call("renault_ev_center", "delete_charge",
+            { charge_id: parseInt(cdel.dataset.cdel, 10) }, _t("toast_charge_deleted", "🗑 Ricarica eliminata"));
+        }
+        return;
+      }
+      const cedit = ev.target && ev.target.closest ? ev.target.closest("[data-cedit]") : null;
+      if (cedit) { this._editCharge(parseInt(cedit.dataset.cedit, 10)); return; }
       const target = ev.target && ev.target.closest ? ev.target.closest("[data-more], [data-f]") : null;
       if (!target) return;
       const key = target.dataset.more || target.dataset.f;
@@ -3420,6 +3468,7 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
   _goto(p) {
     this._page = p;
+    this._editCid = null;
     localStorage.setItem("rec_panel_page", p);
     this.shadowRoot.querySelectorAll(".nav button, .mobilenav button").forEach((b) => b.classList.toggle("active", b.dataset.p === p));
     this.shadowRoot.querySelectorAll(".page").forEach((s) => s.classList.toggle("active", s.id === p));
@@ -3744,14 +3793,26 @@ class RenaultEvCenterPanel extends HTMLElement {
         const kwh = parseFloat((g("kwh") || {}).value);
         if (isNaN(kwh) || kwh <= 0) { this._toast(_t("toast_kwh", "⚠️ Inserisci i kWh")); break; }
         const costo = parseFloat((g("costo") || {}).value);
+        const durata = parseInt((g("durata") || {}).value, 10);
         const data = (g("data") || {}).value || "";
         const tipo = (g("tipo") || {}).value || "Pubblica";
         const descrizione = ((g("descrizione") || {}).value || "").trim();
-        const payload = { kwh, costo: isNaN(costo) ? 0 : costo, tipo };
-        if (descrizione) payload.descrizione = descrizione;
-        if (data) payload.quando = `${data}T12:00:00`;
-        this._call("renault_ev_center", "add_manual_charge", payload, "➕ Ricarica registrata");
-        ["data", "kwh", "costo", "descrizione"].forEach((k) => { const el = g(k); if (el) el.value = ""; });
+        if (this._editCid) {
+          const payload = { charge_id: this._editCid, kwh, costo: isNaN(costo) ? 0 : costo, tipo, descrizione };
+          if (data) payload.quando = `${data}T12:00:00`;
+          if (!isNaN(durata) && durata > 0) payload.durata_min = durata;
+          this._call("renault_ev_center", "update_charge", payload, _t("toast_charge_updated", "✏️ Ricarica modificata"));
+          this._editCid = null;
+          const btn = this.shadowRoot.querySelector('[data-cmd="add_charge_manual"]');
+          if (btn) btn.textContent = _t("btn_add_charge", "💾 Registra ricarica");
+        } else {
+          const payload = { kwh, costo: isNaN(costo) ? 0 : costo, tipo };
+          if (descrizione) payload.descrizione = descrizione;
+          if (data) payload.quando = `${data}T12:00:00`;
+          if (!isNaN(durata) && durata > 0) payload.durata_min = durata;
+          this._call("renault_ev_center", "add_manual_charge", payload, _t("toast_charge_added", "➕ Ricarica registrata"));
+        }
+        ["data", "kwh", "costo", "durata", "descrizione"].forEach((k) => { const el = g(k); if (el) el.value = ""; });
         break;
       }
       case "tfilter-reset": {
@@ -4910,6 +4971,27 @@ class RenaultEvCenterPanel extends HTMLElement {
         <td>${this._zn(r.zona_arrivo)}${r.luogo_arrivo ? `<br><span style="color:var(--muted);font-size:11px">${r.luogo_arrivo}${r.paese_arrivo ? " · " + r.paese_arrivo : ""}</span>` : ""}</td></tr>`;
     }).join("") || `<tr><td colspan="10" style="color:var(--muted)">Nessun viaggio per il filtro scelto</td></tr>`;
   }
+  /** carica una ricarica nel form "Aggiungi ricarica manuale" e passa in modalità modifica */
+  _editCharge(id) {
+    const rows = this._list(this._sid("lista_ricariche"));
+    const r = rows.find((x) => String(x.id) === String(id));
+    if (!r) return;
+    const g = (k) => this.shadowRoot.querySelector(`[data-mc="${k}"]`);
+    const set = (k, v) => { const el = g(k); if (el) el.value = v == null ? "" : v; };
+    set("data", r.data || "");
+    set("kwh", r.kwh ?? r.energia ?? "");
+    set("costo", r.costo ?? "");
+    set("durata", r.durata_min ?? "");
+    set("tipo", r.tipo || "Manuale");
+    set("descrizione", r.note || "");
+    this._editCid = id;
+    const btn = this.shadowRoot.querySelector('[data-cmd="add_charge_manual"]');
+    if (btn) {
+      btn.textContent = _t("btn_save_charge", "💾 Salva modifiche");
+      const card = btn.closest ? btn.closest(".card") : null;
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
   _tableRicariche(root) {
     const rows = this._list(this._sid("lista_ricariche"));
     const tb = root.querySelector('[data-c="tab-ricariche"]');
@@ -4925,14 +5007,15 @@ class RenaultEvCenterPanel extends HTMLElement {
         <td>${this._fmt(parseFloat(r.kwh ?? r.energia ?? 0), 2)}</td>
         <td>${this._fmt(parseFloat(r.potenza_media_kw ?? r.kw_medio ?? 0), 2)}</td>
         <td>${this._fmt(parseFloat(r.kwh > 0 ? r.costo / r.kwh : NaN), 3)}</td>
-        <td><b>${this._fmt(parseFloat(r.costo ?? 0), 2)} €</b></td></tr>`;
+        <td><b>${this._fmt(parseFloat(r.costo ?? 0), 2)} €</b></td>
+        <td style="white-space:nowrap">${r.id != null ? `<span class="dchip" data-cedit="${r.id}" title="${_t("ttl_edit_charge", "Modifica")}">✏️</span> <span class="dchip" data-cdel="${r.id}" title="${_t("ttl_del_charge", "Elimina")}">🗑</span>` : ""}</td></tr>`;
     });
     if (vis.length) {
       const totKwh = vis.reduce((a, r) => a + (parseFloat(r.kwh ?? r.energia ?? 0) || 0), 0);
       const totCost = vis.reduce((a, r) => a + (parseFloat(r.costo ?? 0) || 0), 0);
-      cells.push(`<tr class="totrow"><td colspan="4" style="color:var(--muted);font-weight:700">TOTALE (${vis.length})</td><td><b>${this._fmt(totKwh, 2)}</b></td><td></td><td></td><td><b>${this._fmt(totCost, 2)} €</b></td></tr>`);
+      cells.push(`<tr class="totrow"><td colspan="4" style="color:var(--muted);font-weight:700">TOTALE (${vis.length})</td><td><b>${this._fmt(totKwh, 2)}</b></td><td></td><td></td><td><b>${this._fmt(totCost, 2)} €</b></td><td></td></tr>`);
     }
-    tb.innerHTML = cells.join("") || `<tr><td colspan="8" style="color:var(--muted)">Nessuna ricarica registrata</td></tr>`;
+    tb.innerHTML = cells.join("") || `<tr><td colspan="9" style="color:var(--muted)">Nessuna ricarica registrata</td></tr>`;
   }
   _tableSalute(root) {
     const rows = this._list(this._sid("lista_ricariche"));
@@ -5380,11 +5463,13 @@ const PAGES = () => ({
         <input type="number" data-mc="kwh" step="0.01" min="0" style="width:90px"></label>
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Costo €
         <input type="number" data-mc="costo" step="0.01" min="0" style="width:90px"></label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Durata min
+        <input type="number" data-mc="durata" step="1" min="0" style="width:80px"></label>
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Tipo
         <select data-mc="tipo" style="width:auto"><option>${_t("opt_casa", "Casa")}</option><option>${_t("opt_fotovoltaico", "Fotovoltaico")}</option><option selected>${_t("opt_pubblica", "Pubblica")}</option><option>${_t("opt_manuale", "Manuale")}</option></select></label>
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted);flex:1;min-width:180px">Descrizione
         <input data-mc="descrizione" placeholder="${_t("ph_es_colonnina_dc_autostrada", "es. Colonnina DC autostrada")}" style="width:100%"></label>
-      <div class="btn" data-cmd="add_charge_manual" style="flex:0 0 auto;padding:8px 14px;font-size:13px;align-self:flex-end">💾 Registra ricarica</div>
+      <div class="btn" data-cmd="add_charge_manual" style="flex:0 0 auto;padding:8px 14px;font-size:13px;align-self:flex-end">${_t("btn_add_charge", "💾 Registra ricarica")}</div>
     </div>
     <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Utile per le colonnine DC. Se lasci vuoto il costo, resta 0 €.</div></div>
   <div class="card" style="margin-top:16px"><h3>${_t("h3_distribuzione_ricariche", "📊 Distribuzione ricariche")}</h3>
@@ -5408,7 +5493,7 @@ const PAGES = () => ({
       <select data-sel="sel_periodo"></select>
       <select data-sel="sel_mese"></select>
       <select data-sel="sel_anno"></select></div>
-    <table><tr><th>Data</th><th>Tipo</th><th>Durata</th><th>Δ SoC</th><th>kWh</th><th>Ø kW</th><th>€/kWh</th><th>Costo</th></tr>
+    <table><tr><th>Data</th><th>Tipo</th><th>Durata</th><th>Δ SoC</th><th>kWh</th><th>Ø kW</th><th>€/kWh</th><th>Costo</th><th></th></tr>
     <tbody data-c="tab-ricariche"></tbody></table></div>`,
 
   p5: `<h1>Salute batteria</h1>

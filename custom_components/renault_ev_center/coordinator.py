@@ -2519,18 +2519,20 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.persist(force=True)
 
     def service_add_manual_charge(self, kwh: float, costo: float, tipo: str,
-                                  quando: datetime | None, descrizione: str = "") -> dict[str, Any]:
+                                  quando: datetime | None, descrizione: str = "",
+                                  durata_min: int = 0) -> dict[str, Any]:
         q = quando or dt_util.now()
+        dur = max(0, int(durata_min or 0))
         record = {
             "id": int(q.timestamp()),
             "data": q.strftime("%Y-%m-%d"),
             "ora_inizio": q.strftime("%H:%M"),
-            "ora_fine": q.strftime("%H:%M"),
-            "durata_min": 0,
+            "ora_fine": (q + timedelta(minutes=dur)).strftime("%H:%M"),
+            "durata_min": dur,
             "kwh": round(kwh, 2),
             "soc_start": 0.0,
             "soc_end": 0.0,
-            "potenza_media_kw": 0.0,
+            "potenza_media_kw": round(kwh / (dur / 60), 2) if dur > 0 and kwh > 0 else 0.0,
             "costo": round(costo, 2),
             "tipo": tipo or "Manuale",
             "note": str(descrizione or "").strip(),
@@ -2541,6 +2543,44 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         )
         self.persist(force=True)
         return record
+
+    def service_delete_charge(self, charge_id: int) -> bool:
+        prima = len(self.store.data["charges"])
+        self.store.data["charges"] = [
+            c for c in self.store.data["charges"] if c.get("id") != charge_id]
+        self.cost_total = round(
+            sum(_f(c.get("costo")) for c in self.store.data["charges"]), 2)
+        self.persist(force=True)
+        return len(self.store.data["charges"]) < prima
+
+    def service_update_charge(self, charge_id: int, fields: dict[str, Any]) -> bool:
+        for c in self.store.data["charges"]:
+            if c.get("id") != charge_id:
+                continue
+            if "kwh" in fields:
+                c["kwh"] = round(_f(fields["kwh"]), 2)
+            if "costo" in fields:
+                c["costo"] = round(_f(fields["costo"]), 2)
+            if "tipo" in fields:
+                c["tipo"] = str(fields["tipo"])
+            if "descrizione" in fields:
+                c["note"] = str(fields["descrizione"] or "").strip()
+            if "durata_min" in fields:
+                c["durata_min"] = max(0, int(_f(fields["durata_min"])))
+                _dur = _f(c["durata_min"])
+                if _dur > 0 and _f(c.get("kwh")) > 0:
+                    c["potenza_media_kw"] = round(_f(c["kwh"]) / (_dur / 60), 2)
+            if fields.get("quando"):
+                q = dt_util.parse_datetime(str(fields["quando"]))
+                if q is not None:
+                    c["data"] = q.strftime("%Y-%m-%d")
+                    c["ora_inizio"] = q.strftime("%H:%M")
+                    c["ora_fine"] = q.strftime("%H:%M")
+            self.cost_total = round(
+                sum(_f(x.get("costo")) for x in self.store.data["charges"]), 2)
+            self.persist(force=True)
+            return True
+        return False
 
     def service_delete_trip(self, trip_id: int) -> bool:
         prima = len(self.store.data["trips"])
