@@ -143,7 +143,9 @@ DEFAULT_WB_START_W,
     MANUFACTURER,
     TRIP_MIN_KM,
     TRIP_MIN_MINUTES,
+    VAMP_RATE_MAX,
     WALLBOX_CHARGING_STATES,
+    WALLBOX_FINISHED_TOKENS,
 )
 from .meters import DeltaMeter, PeriodMeter, period_keys
 from .store import MateStore
@@ -578,6 +580,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.cost_total = 0.0
         # --- batteria % e kWh carica/scarica ------------------------------------
         self.pct_daily = {"up": DeltaMeter("up"), "down": DeltaMeter("down")}
+        # --- vampire drain: riferimento per il calo "lento" da fermo --------------
+        self._vamp_prev_batt: float | None = None
+        self._vamp_prev_ts: float | None = None
+        self._vamp_prev_odo: float | None = None
         self.kwh_meters: dict[str, dict[str, DeltaMeter]] = {
             p: {"up": DeltaMeter("up"), "down": DeltaMeter("down")} for p in PERIODS
         }
@@ -889,6 +895,18 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if not v or v in (STATE_UNKNOWN, STATE_UNAVAILABLE):
             return None
         return v in PLUG_CONNECTED_VALUES
+
+    def _wb_finished(self) -> bool:
+        """True se la wallbox segnala ricarica finita/ferma (chiude anche a spina inserita)."""
+        ent = self.opts.get(CONF_WB_STATE)
+        if not ent:
+            return False
+        v = (_txt(self.hass, ent) or "").lower()
+        if not v or v in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return False
+        if v in WALLBOX_CHARGING_STATES:
+            return False
+        return any(tok in v for tok in WALLBOX_FINISHED_TOKENS)
 
     def _wb_counter(self) -> float | None:
         """Contatore energia wallbox in kWh: prima la sessione, poi il totale."""
@@ -1307,9 +1325,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             if (time.time() - self.charge_session["start_ts"]) > 26 * 3600:
                 finished_charge = self._finalize_charge(location, battery)
         elif self.charge_session is not None:
-            self._charge_off_polls += 1
-            if self._charge_off_polls >= 2:
-                finished_charge = self._finalize_charge(location, battery)
+            # Chiusura = spina STACCATA (guard) OPPURE wallbox che segnala "finita".
+            # - spina dentro + wallbox in pausa/load-balancing → NON chiudere (guard);
+            # - wallbox "finita/ferma" → chiudi anche a spina inserita (colonnine pubbliche,
+            #   dove la spina resta dentro o lo stato non è affidabile).
+            if self._wb_finished() or self._plug_connected() is not True:
+                self._charge_off_polls += 1
+                if self._charge_off_polls >= 2:
+                    finished_charge = self._finalize_charge(location, battery)
+            else:
+                self._charge_off_polls = 0  # spina dentro e wallbox attiva → sessione aperta
 
         # --- storico giornaliero ---------------------------------------------------
         history = self.store.data["daily"]
@@ -1338,7 +1363,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 history.sort(key=lambda d: d.get("data", ""))
                 del history[:-365]
             self.today_rec = {"data": today_key, "km": 0.0, "kwh": 0.0, "pct": 0.0, "eff": 0.0,
-                              "soc_start": None, "soc_end": None}
+                              "soc_start": None, "soc_end": None, "vamp": 0.0}
         # riferimento reale (SoC dall'app Renault): massimo della giornata NON in carica.
         # Il massimo evita che un riavvio di HA a metà giornata sposti la baseline per errore.
         if not charging:
@@ -1352,11 +1377,22 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # perche' il cloud Renault riporta l'odometro solo a fine tratta.
         _soc_end = (round(_f(battery), 1) if 0 < _f(battery) <= 100
                     else self.today_rec.get("soc_end"))
-        _viaggi_oggi = any(str(t.get("data", "")) == today_key
-                           for t in self.store.data["trips"])
-        _ss = self.today_rec.get("soc_start")
-        _vamp_oggi = (0.0 if (_viaggi_oggi or _ss is None or _soc_end is None)
-                      else round(max(_f(_ss) - _soc_end, 0.0), 1))
+        # --- vampire drain: calo LENTO di SoC mentre l'auto non e' in carica --------
+        # Guida = calo veloce (e odometro che si muove); stand-by = calo lento.
+        # Non usa i viaggi: il loro delta a volte sbaglia. Solo delta batteria.
+        _now_ts = time.time()
+        if 0 < _f(battery) <= 100:
+            if (self._vamp_prev_batt is not None and self._vamp_prev_ts is not None
+                    and not charging
+                    and (not odometer or odometer == self._vamp_prev_odo)):
+                _dt_h = (_now_ts - self._vamp_prev_ts) / 3600.0
+                _drop = self._vamp_prev_batt - _f(battery)
+                if _drop > 0 and 0 < _dt_h <= 24.0 and _drop / _dt_h < VAMP_RATE_MAX:
+                    self.today_rec["vamp"] = round(_f(self.today_rec.get("vamp")) + _drop, 2)
+            self._vamp_prev_batt = _f(battery)
+            self._vamp_prev_ts = _now_ts
+            self._vamp_prev_odo = odometer
+        _vamp_oggi = round(_f(self.today_rec.get("vamp")), 1)
         self.today_rec.update({
             "km": round(km_oggi, 1),
             "kwh": round(kwh_oggi, 2),
@@ -1369,18 +1405,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "prezzo_carburante": round(self._prezzo_termico(), 3),
         })
         _storico = self.store.data["daily"]
-        _trip_day: dict[str, int] = {}
-        for _t in self.store.data["trips"]:
-            _gd = str(_t.get("data", ""))
-            _trip_day[_gd] = _trip_day.get(_gd, 0) + 1
 
         def _vamp_row(_r: dict) -> float:
-            if _trip_day.get(str(_r.get("data", "")), 0) > 0:
-                return 0.0
-            _s, _e = _r.get("soc_start"), _r.get("soc_end")
-            if _s is None or _e is None:
-                return 0.0
-            return round(max(_f(_s) - _f(_e), 0.0), 1)
+            # valore di vampire accumulato quel giorno (calo lento da fermo)
+            return round(_f(_r.get("drain")), 1)
 
         _ieri = (now - timedelta(days=1)).strftime("%Y-%m-%d")
         _vamp_ieri = _vamp_row(next((r for r in _storico

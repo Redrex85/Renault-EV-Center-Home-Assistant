@@ -212,5 +212,14 @@ WALLBOX_CHARGING_STATES = {"charging"}
 PLUG_CONNECTED_VALUES = {"connected", "completed", "plugged", "plugged_in",
                          "cable_connected", "on", "true", "1"}
 
+# token nello stato della wallbox (CONF_WB_STATE) che significano "ricarica finita/ferma":
+# chiudono la sessione ANCHE con la spina ancora collegata (utile alle colonnine pubbliche)
+WALLBOX_FINISHED_TOKENS = ("finish", "charged", "complete", "full", "ended",
+                           "stopped", "no_vehicle", "not_connected", "error", "fault")
+
+# vampire drain: sotto questa velocita' di calo SoC (%/h) il calo e' "da fermo",
+# sopra e' guida (il cloud Renault riporta l'odometro solo a motore spento)
+VAMP_RATE_MAX = 3.0
+
 TRIP_MIN_KM = 0.5
 TRIP_MIN_MINUTES = 2
