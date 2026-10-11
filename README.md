@@ -162,6 +162,8 @@ Attiva l'interruttore se hai una wallbox in HA e mappa i sensori:
 
 Capacità batteria (**60 kWh** per Megane EV60, 40 per EV40), % obiettivo ricarica, prezzi **casa/colonnina/fotovoltaico**, nome della zona FV (es. `beb`), intervallo aggiornamento, minuti di timeout viaggi, e opzionale confronto con auto termica (consumo e prezzo del gasolio/benzina).
 
+> 🇮🇹 **Prezzo carburante in tempo reale (Italia)**: nel campo *sensore prezzo carburante* puoi usare l'integrazione HACS [`nuggetz/ha-fuel-prices-ita`](https://github.com/nuggetz/ha-fuel-prices-ita), che espone i prezzi dei distributori italiani. Il confronto userà il prezzo salvato **giorno per giorno**, così le oscillazioni non riscrivono i periodi passati.
+
 Tutto è modificabile dopo: ⚙️ **Integrazioni → Renault EV Center → Configura**.
 
 ### ☀️ Ricariche dal fotovoltaico e risparmi

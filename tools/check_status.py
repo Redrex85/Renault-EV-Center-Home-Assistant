@@ -132,6 +132,7 @@ def slugify(text):
 NAME = "Renault"
 friendly = [
     f"{NAME} Km per kWh", f"{NAME} kWh per 100km",
+    f"{NAME} kWh per 100km Giornaliero",
     f"{NAME} Batteria kWh Disponibili",
     f"{NAME} kWh Totali Consumati", f"{NAME} Batteria % per 100km",
     f"{NAME} Costo per km", f"{NAME} Costo per 100 km",

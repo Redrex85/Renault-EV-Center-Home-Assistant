@@ -453,7 +453,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.tag_termico = _f(opts.get(CONF_TAG_TERMICO), 250.0)
         self.tag_ev = _f(opts.get(CONF_TAG_EV), 100.0)
         self.bollo_termico = _f(opts.get(CONF_BOLLO_TERMICO), 350.0)
-        self.bollo_ev = _f(opts.get(CONF_BOLLO_EV), 150.0)
+        self.bollo_ev = _f(opts.get(CONF_BOLLO_EV), 0.0)
         self.tagliando_intervallo = max(_f(opts.get(CONF_TAGLIANDO_INTERVALLO), 15000), 5000)
         self.tyre_interval = max(_f(opts.get(CONF_TYRE_INTERVAL), 40000), 5000)
         self.temp_entity = opts.get(CONF_TEMP_ENTITY) or ""
@@ -1287,6 +1287,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "drain": round(_vamp_oggi, 1),
             "soc_end": _soc_end,
             "temp": round(temp_out, 1) if temp_out is not None else None,
+            # prezzo carburante del giorno (ultimo letto): serve a non riscrivere i
+            # periodi passati quando il sensore del prezzo oscilla.
+            "prezzo_carburante": round(self._prezzo_termico(), 3),
         })
         _storico = self.store.data["daily"]
         _trip_day: dict[str, int] = {}
@@ -1396,6 +1399,22 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if self.fuel_enabled:
             litri_100 = self.fuel_consumption
             prezzo_l = self._prezzo_termico()
+            # Prezzo carburante SALVATO giorno per giorno: le oscillazioni del sensore non
+            # riscrivono i periodi passati. Ogni periodo usa la media pesata sui km dei
+            # prezzi dei suoi giorni (fallback: prezzo attuale se manca lo storico).
+            _daily_price = [
+                (str(r.get("data", "")), _f(r.get("km")), _f(r.get("prezzo_carburante")))
+                for r in self.store.data.get("daily", [])
+            ]
+
+            def _prezzo_of(pred) -> float:
+                num = den = 0.0
+                for _d, _k, _p in _daily_price:
+                    if pred(_d) and _p > 0.2 and _k > 0:
+                        num += _k * _p
+                        den += _k
+                return (num / den) if den > 0 else prezzo_l
+
             # Km MIEI: si parte dall'odometro all'attivazione (auto comprata usata
             # con 10000 km: quei km non sono tuoi, il costo termico va sui tuoi).
             _base0 = _f(self.store.data.get("install", {}).get("odometer"))
@@ -1416,7 +1435,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
             def _periodo(label: str, pred, km_meter: float) -> None:
                 km = km_meter if km_meter > 0 else _km_of(pred)
-                termica = km * litri_100 * prezzo_l / 100.0
+                termica = km * litri_100 * _prezzo_of(pred) / 100.0
                 elettrico = _chg_cost(pred)
                 savings[label] = round(termica - elettrico, 2)
                 if label == "totale":
@@ -1428,7 +1447,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                      self._km_shown("monthly"))
             _periodo("anno", lambda d: d[:4] == keys["yearly"],
                      self._km_shown("yearly"))
-            savings["prezzo_termico"] = prezzo_l
+            savings["prezzo_termico"] = round(_prezzo_of(lambda d: True), 3)
+            savings["prezzo_live"] = round(prezzo_l, 3)
             savings["km_totali"] = round(km_tot, 1)
 
             # --- dettaglio per voce: termica vs elettrica --------------------------
@@ -1509,7 +1529,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             savings["install_date"] = _inst.get("date") or None
             if _odo_base > 0 and odometer > _odo_base:
                 km_i = odometer - _odo_base
-                termica_i = km_i * litri_100 * prezzo_l / 100.0
+                termica_i = km_i * litri_100 * _prezzo_of(lambda d: True) / 100.0
                 elettrica_i = _f(savings.get("elettrico_totale"))  # solo ricariche registrate
                 savings["da_installazione"] = {
                     "km": round(km_i, 1),

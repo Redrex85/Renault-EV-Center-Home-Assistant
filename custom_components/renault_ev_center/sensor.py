@@ -15,7 +15,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_WALLBOX_ENABLED, DOMAIN
-from .coordinator import PERIODS, RenaultMateCoordinator
+from .coordinator import PERIODS, RenaultMateCoordinator, _f
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,6 +64,7 @@ async def async_setup_entry(
     entities: list[SensorEntity] = [
         EffKmPerKwh(coordinator, name),
         EffKwh100(coordinator, name),
+        EffKwh100Daily(coordinator, name),
         BatteryKwh(coordinator, name),
         KwhTotaliConsumati(coordinator, name),
         PercPer100km(coordinator, name),
@@ -201,6 +202,33 @@ class EffKwh100(MateSensor):
         # unavailable): pubblicare 0 sporcava lo storico e faceva crollare a 0 la
         # media giornaliera del grafico "Km percorsi (7 giorni)". Meglio "unknown".
         return v if v else None
+
+
+class EffKwh100Daily(MateSensor):
+    """Consumo giornaliero REALE: kWh scaricati oggi / km oggi × 100 (pesato sui km).
+
+    Diverso da EffKwh100 (stima istantanea da autonomia): quello va a 0/fermo sui
+    giorni senza guida e sballa la media. Questo è None se oggi non si è guidato,
+    così il grafico mostra un buco invece di un punto finto.
+    """
+
+    def __init__(self, coordinator, name):
+        super().__init__(coordinator, name)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_eff_kwh_100km_daily"
+        self._attr_name = f"{name} kWh per 100km Giornaliero"
+        self._attr_native_unit_of_measurement = "kWh/100km"
+        self._attr_icon = "mdi:battery-charging-100"
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+
+    @property
+    def native_value(self):
+        d = self.coordinator.data or {}
+        km = _f((d.get("km", {}).get("daily", {}) or {}).get("value", 0))
+        km = max(km, _f(d.get("km_oggi_trip", 0)))
+        kwh = abs(_f((d.get("kwh_batt", {}).get("daily", {}).get("down", {}) or {}).get("value", 0)))
+        if km <= 0.5 or kwh <= 0:
+            return None
+        return round(100.0 * kwh / km, 2)
 
 
 class BatteryKwh(MateSensor):

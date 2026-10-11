@@ -5,6 +5,24 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.12 - Prezzo carburante salvato per giorno (confronto termica stabile)
+
+- Il prezzo del carburante viene **salvato giorno per giorno** nello storico giornaliero
+  (`prezzo_carburante`). Il confronto "auto termica vs elettrica" usa ora la **media pesata
+  sui km** dei prezzi dei giorni del periodo (totale/mese/anno) invece del prezzo attuale su
+  tutti i km: le oscillazioni del sensore non riscrivono più i periodi passati.
+- `savings.prezzo_termico` = prezzo medio effettivo usato; nuovo `savings.prezzo_live` =
+  prezzo attuale del sensore.
+
+## 1.1.11 - Consumo giornaliero reale (media non sballata dai giorni a 0 km)
+
+- Nuovo sensore **`kWh per 100km Giornaliero`**: consumo reale del giorno
+  (`kWh scaricati / km × 100`), **unknown** se non si è guidato.
+- Grafico **Consumi (7 giorni)** della dashboard: la linea verde «Media Consumi» ora usa questo
+  sensore (pesato sui km) invece della stima istantanea → niente più crolli nei giorni a 0 km.
+- **Bollo EV** di default a **0 €** (le elettriche sono esenti in molte regioni); resta modificabile
+  in configurazione.
+
 ## 1.1.10 - Ricariche manuali: aggiornamento immediato, modifica ed eliminazione
 
 - **Aggiornamento immediato**: dopo aver registrato una ricarica manuale il pannello si
