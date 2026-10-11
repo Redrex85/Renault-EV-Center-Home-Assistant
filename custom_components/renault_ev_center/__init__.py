@@ -53,6 +53,7 @@ SERVICE_EXPORT_CSV = "export_trips_csv"
 SERVICE_ADD_CHARGE = "add_manual_charge"
 SERVICE_DELETE_CHARGE = "delete_charge"
 SERVICE_UPDATE_CHARGE = "update_charge"
+SERVICE_SPLIT_CHARGE = "split_charge"
 SERVICE_DELETE_TRIP = "delete_trip"
 SERVICE_ADD_MAINTENANCE = "add_maintenance"
 SERVICE_DELETE_MAINTENANCE = "delete_maintenance"
@@ -165,6 +166,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for coord in _all_coordinators(hass):
             if coord.service_update_charge(charge_id, fields):
                 _LOGGER.info("Ricarica %s modificata", charge_id)
+            await coord.async_request_refresh()
+
+    async def handle_split_charge(call: ServiceCall) -> None:
+        charge_id = int(call.data["charge_id"])
+        for coord in _all_coordinators(hass):
+            if coord.service_split_charge(charge_id):
+                _LOGGER.info("Ricarica %s separata", charge_id)
             await coord.async_request_refresh()
 
     async def handle_delete_trip(call: ServiceCall) -> None:
@@ -293,6 +301,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                   vol.Optional("quando"): str,
                   vol.Optional("durata_min"): vol.Coerce(float),
               }))
+    _register(SERVICE_SPLIT_CHARGE, handle_split_charge,
+              schema=vol.Schema({vol.Required("charge_id"): cv.positive_int}))
     _register(SERVICE_DELETE_TRIP, handle_delete_trip,
               schema=vol.Schema({vol.Required("trip_id"): cv.positive_int}))
     _register(SERVICE_ADD_MAINTENANCE, handle_add_maintenance,
@@ -375,6 +385,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             for name in (
                 SERVICE_CLOSE_TRIP, SERVICE_RESET_COUNTERS, SERVICE_EXPORT_CSV,
                 SERVICE_ADD_CHARGE, SERVICE_DELETE_CHARGE, SERVICE_UPDATE_CHARGE,
+                SERVICE_SPLIT_CHARGE,
                 SERVICE_DELETE_TRIP, SERVICE_ADD_MAINTENANCE,
                 SERVICE_DELETE_MAINTENANCE, SERVICE_RENEW_INSURANCE,
                 SERVICE_SET_SCADENZA, SERVICE_SET_TAGLIANDO, SERVICE_CREATE_DASHBOARD,

@@ -74,6 +74,8 @@ from .const import (
     DEFAULT_GSE_START,
     DEFAULT_GSE_END,
     CONF_CHARGE_SCHED_MODE,
+    CONF_CHARGE_MERGE,
+    CHARGE_MERGE_WINDOW_S,
     CONF_CHARGE_START_TIME,
     CONF_CHARGE_STOP_TIME,
     CONF_CHARGE_START_SOC,
@@ -157,6 +159,33 @@ def _f(value: Any, default: float = 0.0) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def classify_error(err: BaseException) -> str:
+    """Classifica un errore in una parola fissa (per report/diagnostica).
+
+    Dice PERCHÉ una fonte non risponde senza esporre host, IP o testo di sistema.
+    """
+    import socket as _socket
+
+    name = type(err).__name__.lower()
+    txt = str(err).lower()
+    if isinstance(err, asyncio.TimeoutError) or "timed out" in txt or "timeout" in txt:
+        return "timeout"
+    if isinstance(err, _socket.gaierror) or "getaddrinfo" in txt \
+            or "name or service" in txt or "nodename" in txt:
+        return "dns_failure"
+    if isinstance(err, ConnectionRefusedError) or "refused" in txt:
+        return "connection_refused"
+    if isinstance(err, ConnectionResetError) or "reset" in txt:
+        return "connection_reset"
+    if isinstance(err, ConnectionError) or "unreachable" in txt:
+        return "network_unreachable"
+    if "certificate" in txt or "ssl" in txt or "tls" in txt:
+        return "tls_failure"
+    if "updatefailed" in name:
+        return "update_failed"
+    return "unknown"
 
 
 def _merge_history(history: list[dict], days_grouped: list[dict]) -> list[dict]:
@@ -434,6 +463,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.entry = entry
         self.geocode_enabled = bool(opts.get(CONF_GEOCODE_ENABLED, True))
         self._geocode_backfilled = False
+        # diagnostica (report): ultimo errore classificato, ultimo successo, geocoding
+        self.last_error: dict[str, Any] | None = None
+        self.last_success: str | None = None
+        self.geocode_stats: dict[str, Any] = {"ok": 0, "fail": 0, "last_kind": None}
+        self._geocode_last_ts = 0.0  # throttle richieste Nominatim
         self.purchase_date = str(opts.get(CONF_PURCHASE_DATE) or "")
         self.store = MateStore(hass, entry.entry_id)
 
@@ -507,6 +541,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self._home_lo_since: float | None = None
         self._home_last: dict[str, Any] = {}
         self.charge_sched_mode = str(opts.get(CONF_CHARGE_SCHED_MODE) or "orario")
+        self.charge_merge = bool(opts.get(CONF_CHARGE_MERGE, True))
         self.charge_start_time = str(opts.get(CONF_CHARGE_START_TIME) or "23:30")
         self.charge_stop_time = str(opts.get(CONF_CHARGE_STOP_TIME) or "07:00")
         self.charge_start_soc = _f(opts.get(CONF_CHARGE_START_SOC), 30.0)
@@ -967,11 +1002,18 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         except UpdateFailed:
             raise
         except Exception as err:  # noqa: BLE001
+            self.last_error = {
+                "stage": "update",
+                "kind": classify_error(err),
+                "when": dt_util.utcnow().isoformat(),
+                "message": str(err)[:200],
+            }
             if self.data:
                 _LOGGER.warning("Update fallito, uso dati precedenti: %s", err, exc_info=True)
                 return self.data
             raise UpdateFailed(f"Aggiornamento Renault EV Center fallito: {err}") from err
         # eco polling: intervallo breve se auto attiva (viaggio/ricarica), lungo se ferma
+        self.last_success = dt_util.utcnow().isoformat()
         self.update_interval = timedelta(seconds=self._eco_interval(data))
         return data
 
@@ -980,6 +1022,39 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         base = int(_f(self.opts.get(CONF_POLL_INTERVAL), 30)) or 30
         active = bool((data.get("trip") or {}).get("active")) or self.charge_session is not None
         return max(base, 15) if active else max(base * 4, 120)
+
+    def source_status(self) -> list[dict[str, Any]]:
+        """Stato delle entità sorgente Renault (per diagnostica/report).
+
+        Dice quale fonte manca o è unavailable — cioè quando il cloud Renault non
+        risponde — senza esporre valori sensibili.
+        """
+        o = self.opts
+        pairs = (
+            ("odometer", CONF_ODOMETER),
+            ("battery", CONF_BATTERY_LEVEL),
+            ("range", CONF_RANGE),
+            ("charging", CONF_CHARGING_ENTITY),
+            ("plug", CONF_PLUG_ENTITY),
+            ("location", CONF_LOCATION_ENTITY),
+            ("wallbox_power", CONF_WB_POWER),
+            ("wallbox_state", CONF_WB_STATE),
+        )
+        out: list[dict[str, Any]] = []
+        for label, key in pairs:
+            eid = o.get(key)
+            if not eid:
+                out.append({"name": label, "entity": None, "state": "not_configured"})
+                continue
+            st = self.hass.states.get(eid)
+            if st is None:
+                state = "missing"
+            elif st.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+                state = str(st.state)
+            else:
+                state = "ok"
+            out.append({"name": label, "entity": eid, "state": state})
+        return out
 
     def start_source_listeners(self):
         """Reattività: aggiorna subito al cambio di una entità sorgente."""
@@ -1178,6 +1253,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     "id": int(time.time()),
                     "start_ts": time.time(),
                     "zone": location or "unknown",
+                    # posizione della ricarica (per l'indirizzo, come nei viaggi)
+                    "gps": self._tracker_gps(),
                     "soc_start": battery,
                     "counter_start": self._wb_counter(),
                     "total_start": self._wb_total_counter(),
@@ -2136,12 +2213,27 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             # posizione della ricarica (per la notifica di fine carica)
             "zona": self._zone_label(str(s.get("zone") or zone or "")),
         }
+        if s.get("gps"):
+            record["gps"] = s["gps"]
         if split_ok:
             record["src_fv"] = src_fv
             record["src_bat"] = src_bat
             record["src_rete"] = src_rete
         if origine is not None:
             record["stima"] = origine
+        record["end_ts"] = time.time()
+
+        # --- fusione di una ricarica spezzata ------------------------------------
+        # Il cavo può risultare "scollegato" a corrente ferma (wallbox che modula, surplus
+        # solare, utility che limita): una spina sola finisce registrata come più ricariche.
+        # Se la precedente è finita da pochi minuti, stesso posto e tipo, e la batteria NON
+        # è calata (nessun viaggio nel mezzo), estendi quella invece di aggiungerne una.
+        merged = self._try_merge_charge(record)
+        if merged is not None:
+            self.charge_session = None
+            self._charge_off_polls = 0
+            self.persist(force=True)
+            return merged
 
         # --- salute batteria (solo ricariche a casa misurate dalla wallbox) -------
         delta_pct = battery - _f(s.get("soc_start"))
@@ -2181,9 +2273,84 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.charge_session = None
         self._charge_off_polls = 0
         self.persist(force=True)
+        self._queue_geocode_charge(record)
         return record
 
+    def _try_merge_charge(self, record: dict[str, Any]) -> dict[str, Any] | None:
+        """Fonde una ricarica appena chiusa con la precedente se è lo stesso plug-in.
+
+        Guardie strette: finestra breve, stesso posto e tipo, batteria non calata
+        (nessun viaggio nel mezzo) e non già separata a mano. Ritorna il record
+        esteso, oppure None se non c'è da fondere.
+        """
+        if not self.charge_merge:
+            return None
+        charges = self.store.data["charges"]
+        prev = charges[-1] if charges else None
+        if prev is None or prev.get("_split") or not prev.get("end_ts"):
+            return None
+        gap = _f(record.get("end_ts")) - _f(prev.get("end_ts"))
+        if not 0 < gap <= CHARGE_MERGE_WINDOW_S:
+            return None
+        if prev.get("zona") != record.get("zona") or prev.get("tipo") != record.get("tipo"):
+            return None
+        # nessun viaggio nel mezzo: la batteria non è calata tra le due sessioni
+        if _f(record.get("soc_start")) < _f(prev.get("soc_end")) - 1.0:
+            return None
+        # pezzi originali, per poter "Separare" e ripristinare le sessioni reali
+        parts = prev.get("_split_parts")
+        if parts is None:
+            parts = [{k: v for k, v in prev.items() if k not in ("_split_parts", "_merged")}]
+            prev["_split_parts"] = parts
+        parts.append({k: v for k, v in record.items()})
+        prev["kwh"] = round(_f(prev.get("kwh")) + _f(record.get("kwh")), 2)
+        prev["costo"] = round(_f(prev.get("costo")) + _f(record.get("costo")), 2)
+        prev["ora_fine"] = record.get("ora_fine", prev.get("ora_fine"))
+        prev["durata_min"] = int(_f(prev.get("durata_min")) + _f(record.get("durata_min")))
+        prev["soc_end"] = record.get("soc_end", prev.get("soc_end"))
+        prev["potenza_max_kw"] = max(_f(prev.get("potenza_max_kw")),
+                                     _f(record.get("potenza_max_kw")))
+        _dur = _f(prev.get("durata_min"))
+        prev["potenza_media_kw"] = (round(_f(prev.get("kwh")) / (_dur / 60.0), 2)
+                                    if _dur > 5 else 0.0)
+        for k in ("src_fv", "src_bat", "src_rete"):
+            if k in record:
+                prev[k] = round(_f(prev.get(k)) + _f(record.get(k)), 2)
+        prev["end_ts"] = _f(record.get("end_ts"))
+        prev["_merged"] = int(prev.get("_merged", 0)) + 1
+        self.cost_total = round(sum(_f(c.get("costo")) for c in charges), 2)
+        return prev
+
+    def service_split_charge(self, charge_id: int) -> bool:
+        """Separa una ricarica fusa: ripristina le sessioni come le ha viste il sistema."""
+        charges = self.store.data["charges"]
+        for i, c in enumerate(charges):
+            if c.get("id") != charge_id:
+                continue
+            parts = c.get("_split_parts")
+            if not parts:
+                return False
+            charges[i:i + 1] = [dict(p) for p in parts]
+            self.cost_total = round(sum(_f(x.get("costo")) for x in charges), 2)
+            self.persist(force=True)
+            return True
+        return False
+
     # ------------------------------------------------------------- arricchimenti
+    def _tracker_gps(self) -> dict[str, float]:
+        """lat/lon correnti dal tracker posizione (per geocodifica). {} se assenti."""
+        loc_entity = self.opts.get(CONF_LOCATION_ENTITY)
+        if not loc_entity:
+            return {}
+        st = self.hass.states.get(loc_entity)
+        if st is None:
+            return {}
+        lat = st.attributes.get("latitude")
+        lon = st.attributes.get("longitude")
+        if lat is None or lon is None:
+            return {}
+        return {"lat": round(_f(lat), 5), "lon": round(_f(lon), 5)}
+
     def _zone_label(self, raw: str) -> str:
         """Traduce lo stato del tracker (home/not_home/zona) nel nome leggibile della zona HA."""
         z = str(raw or "").strip()
@@ -2268,16 +2435,26 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
         url = ("https://nominatim.openstreetmap.org/reverse?format=jsonv2"
                f"&lat={lat4}&lon={lon4}&zoom=16&addressdetails=1&accept-language=it")
+        # throttle Nominatim: max ~1 richiesta/1.1 s (viaggi + ricariche)
+        _wait = 1.1 - (time.monotonic() - self._geocode_last_ts)
+        if _wait > 0:
+            await asyncio.sleep(_wait)
+        self._geocode_last_ts = time.monotonic()
         try:
             session = async_get_clientsession(self.hass)
             async with session.get(
                 url, headers={"User-Agent": "renault-ev-center/1.0 (Home Assistant)"}, timeout=6
             ) as resp:
                 if resp.status != 200:
+                    self.geocode_stats["fail"] = int(self.geocode_stats.get("fail", 0)) + 1
+                    self.geocode_stats["last_kind"] = f"http_{resp.status}"
                     return {}
                 js = await resp.json()
         except Exception as err:  # noqa: BLE001
-            _LOGGER.debug("Reverse geocoding non riuscito: %s", err)
+            self.geocode_stats["fail"] = int(self.geocode_stats.get("fail", 0)) + 1
+            self.geocode_stats["last_kind"] = classify_error(err)
+            _LOGGER.debug("Reverse geocoding non riuscito (%s): %s",
+                          self.geocode_stats["last_kind"], err)
             return {}
         ad = js.get("address") or {}
         via = ad.get("road") or ad.get("pedestrian") or ad.get("suburb") or ""
@@ -2286,6 +2463,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         paese = ad.get("country") or ""
         out = {"via": via, "citta": citta, "paese": paese,
                "label": ", ".join(p for p in (via, citta) if p)}
+        self.geocode_stats["ok"] = int(self.geocode_stats.get("ok", 0)) + 1
         cache[key] = out
         if len(cache) > 500:
             for k in list(cache)[: len(cache) - 500]:
@@ -2308,6 +2486,31 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 record[lkey] = info.get("label") or info.get("citta") or ""
                 record[pkey] = info.get("paese") or ""
         self.persist()
+
+    def _queue_geocode_charge(self, record: dict[str, Any]) -> None:
+        """Avvia in background il reverse-geocoding della ricarica (non blocca il ciclo)."""
+        if not self.geocode_enabled:
+            return
+        if record.get("luogo") or not record.get("gps"):
+            return
+        try:
+            self.hass.async_create_task(self._geocode_charge(record))
+        except RuntimeError:  # nessun event loop attivo
+            pass
+
+    async def _geocode_charge(self, record: dict[str, Any]) -> None:
+        """Scrive via/città/paese della ricarica (best-effort)."""
+        if record.get("luogo"):
+            return
+        gps = record.get("gps") or {}
+        lat, lon = gps.get("lat"), gps.get("lon")
+        if lat is None or lon is None:
+            return
+        info = await self._reverse_geocode(lat, lon)
+        if info:
+            record["luogo"] = info.get("label") or info.get("citta") or ""
+            record["paese"] = info.get("paese") or ""
+            self.persist()
 
     def _maybe_backfill_geocode(self) -> None:
         """Una tantum: geocodifica i viaggi registrati prima che il geocoding esistesse."""

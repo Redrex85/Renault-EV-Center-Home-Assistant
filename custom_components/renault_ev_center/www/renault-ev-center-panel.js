@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.12";
+const REC_VER = "1.1.13";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -259,6 +259,10 @@ const I18N = {
     btn_add_charge: "💾 Log charge",
     ttl_edit_charge: "Edit",
     ttl_del_charge: "Delete",
+    ttl_split_charge: "Split",
+    toast_charge_split: "✂️ Charge split",
+    ph_cerca: "🔍 Search…",
+    cal_today: "Today",
     toast_charge_added: "➕ Charge logged",
     toast_charge_updated: "✏️ Charge updated",
     toast_charge_deleted: "🗑 Charge deleted",
@@ -493,6 +497,10 @@ const I18N = {
     btn_add_charge: "💾 Enregistrer la recharge",
     ttl_edit_charge: "Modifier",
     ttl_del_charge: "Supprimer",
+    ttl_split_charge: "Séparer",
+    toast_charge_split: "✂️ Recharge séparée",
+    ph_cerca: "🔍 Rechercher…",
+    cal_today: "Aujourd'hui",
     toast_charge_added: "➕ Recharge enregistrée",
     toast_charge_updated: "✏️ Recharge modifiée",
     toast_charge_deleted: "🗑 Recharge supprimée",
@@ -735,6 +743,10 @@ const I18N = {
     btn_add_charge: "💾 Registrar recarga",
     ttl_edit_charge: "Editar",
     ttl_del_charge: "Eliminar",
+    ttl_split_charge: "Separar",
+    toast_charge_split: "✂️ Recarga separada",
+    ph_cerca: "🔍 Buscar…",
+    cal_today: "Hoy",
     toast_charge_added: "➕ Recarga registrada",
     toast_charge_updated: "✏️ Recarga modificada",
     toast_charge_deleted: "🗑 Recarga eliminada",
@@ -977,6 +989,10 @@ const I18N = {
     btn_add_charge: "💾 Ladung erfassen",
     ttl_edit_charge: "Bearbeiten",
     ttl_del_charge: "Löschen",
+    ttl_split_charge: "Trennen",
+    toast_charge_split: "✂️ Ladung getrennt",
+    ph_cerca: "🔍 Suchen…",
+    cal_today: "Heute",
     toast_charge_added: "➕ Ladung erfasst",
     toast_charge_updated: "✏️ Ladung geändert",
     toast_charge_deleted: "🗑 Ladung gelöscht",
@@ -3345,6 +3361,15 @@ class RenaultEvCenterPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-tfd]").forEach((inp) => {
       inp.addEventListener("change", () => this._update());
     });
+    // ricerca libera (viaggi/ricariche): filtra le tabelle al volo
+    this.shadowRoot.querySelectorAll("[data-tq]").forEach((inp) => {
+      inp.value = this._tq || "";
+      inp.addEventListener("input", () => { this._tq = inp.value; this._tableViaggi(this.shadowRoot); });
+    });
+    this.shadowRoot.querySelectorAll("[data-rs]").forEach((inp) => {
+      inp.value = this._ricQ || "";
+      inp.addEventListener("input", () => { this._ricQ = inp.value; this._tableRicariche(this.shadowRoot); });
+    });
     // click sui sensori KPI → apre il more-info di HA
     this.shadowRoot.addEventListener("click", (ev) => {
       const del = ev.target && ev.target.closest ? ev.target.closest("[data-mdel]") : null;
@@ -3363,6 +3388,39 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       const cedit = ev.target && ev.target.closest ? ev.target.closest("[data-cedit]") : null;
       if (cedit) { this._editCharge(parseInt(cedit.dataset.cedit, 10)); return; }
+      const csplit = ev.target && ev.target.closest ? ev.target.closest("[data-csplit]") : null;
+      if (csplit) {
+        this._call("renault_ev_center", "split_charge",
+          { charge_id: parseInt(csplit.dataset.csplit, 10) }, _t("toast_charge_split", "✂️ Ricarica separata"));
+        return;
+      }
+      const rday = ev.target && ev.target.closest ? ev.target.closest("[data-rday]") : null;
+      if (rday) {
+        const k = rday.dataset.rday;
+        this._ricDay = this._ricDay === k ? null : k;
+        localStorage.setItem("rec_ric_day", this._ricDay || "");
+        this._tableRicariche(this.shadowRoot); this._calRic(this.shadowRoot);
+        return;
+      }
+      const rcal = ev.target && ev.target.closest ? ev.target.closest("[data-rcal]") : null;
+      if (rcal) {
+        const a = rcal.dataset.rcal;
+        const [cy, cm] = (this._ricMon || "").split("-").map(Number);
+        if (a === "prev" || a === "next") {
+          const dt = new Date(cy, cm - 1 + (a === "prev" ? -1 : 1), 1);
+          this._ricMon = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+        } else if (a === "today") {
+          const t = new Date();
+          this._ricMon = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}`;
+          this._ricDay = null;
+        } else if (a === "clear") {
+          this._ricDay = null;
+        }
+        localStorage.setItem("rec_ric_mon", this._ricMon);
+        localStorage.setItem("rec_ric_day", this._ricDay || "");
+        this._tableRicariche(this.shadowRoot); this._calRic(this.shadowRoot);
+        return;
+      }
       const target = ev.target && ev.target.closest ? ev.target.closest("[data-more], [data-f]") : null;
       if (!target) return;
       const key = target.dataset.more || target.dataset.f;
@@ -4071,6 +4129,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     // tabelle dati dinamici
     this._tableViaggi(root);
     this._tableRicariche(root);
+    this._calRic(root);
     this._tableSalute(root);
     this._tableMesi(root);
     this._treeViaggi(root);
@@ -4925,6 +4984,10 @@ class RenaultEvCenterPanel extends HTMLElement {
         kwh: d.kwh, kwh_per_100km: d.kwh_100, costo_stimato: NaN, zona_partenza: null,
       }));
     }
+    const tq = (this._tq || "").trim().toLowerCase();
+    if (tq) {
+      rows = rows.filter((r) => `${r.data || ""} ${r.zona_partenza || ""} ${r.zona_arrivo || ""} ${r.luogo_partenza || ""} ${r.luogo_arrivo || ""} ${r.paese_partenza || ""} ${r.paese_arrivo || ""} ${r.note || ""}`.toLowerCase().includes(tq));
+    }
     const tb = root.querySelector('[data-c="tab-viaggi"]');
     if (!tb) return;
     const selY = root.querySelector('[data-tf="year"]');
@@ -4992,23 +5055,72 @@ class RenaultEvCenterPanel extends HTMLElement {
       if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }
-  _tableRicariche(root) {
+  /** calendario mese delle ricariche: kWh per giorno, click filtra la tabella */
+  _calRic(root) {
+    const box = root.querySelector('[data-c="cal-ric"]');
+    if (!box) return;
     const rows = this._list(this._sid("lista_ricariche"));
+    const byDay = {};
+    rows.forEach((r) => {
+      const d = String(r.data || "");
+      if (d) byDay[d] = (byDay[d] || 0) + (parseFloat(r.kwh ?? r.energia ?? 0) || 0);
+    });
+    if (this._ricMon === undefined) this._ricMon = localStorage.getItem("rec_ric_mon") || "";
+    if (this._ricDay === undefined) this._ricDay = localStorage.getItem("rec_ric_day") || null;
+    const now = new Date();
+    if (!this._ricMon) this._ricMon = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const [y, m] = this._ricMon.split("-").map(Number);
+    const startDow = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+    const days = new Date(y, m, 0).getDate();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    let cells = "";
+    for (let i = 0; i < startDow; i++) cells += "<div></div>";
+    for (let d = 1; d <= days; d++) {
+      const key = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const kwh = byDay[key];
+      const sel = key === this._ricDay;
+      const isToday = key === today;
+      const bg = sel ? "background:var(--accent);color:#fff" : (isToday ? "outline:1px solid var(--accent)" : "");
+      cells += `<div data-rday="${key}" title="${kwh ? kwh.toFixed(1) + " kWh" : ""}" style="cursor:pointer;padding:3px 1px;text-align:center;border-radius:8px;font-size:11.5px;${bg}">${d}${kwh ? `<br><span style="font-size:9px;color:${sel ? "#fff" : "var(--muted)"}">${kwh.toFixed(0)}</span>` : ""}</div>`;
+    }
+    const mesi = NOMI_MESI();
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span class="chip" data-rcal="prev" style="cursor:pointer">‹</span>
+        <b style="font-size:12.5px">${mesi[(m - 1) % 12]} ${y}</b>
+        <span class="chip" data-rcal="next" style="cursor:pointer">›</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:10px;color:var(--muted);text-align:center">
+        ${["L", "M", "M", "G", "V", "S", "D"].map((x) => `<div>${x}</div>`).join("")}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">${cells}</div>
+      <div style="margin-top:6px;text-align:right">
+        <span class="chip" data-rcal="today" style="cursor:pointer">${_t("cal_today", "Oggi")}</span>
+        ${this._ricDay ? `<span class="chip" data-rcal="clear" style="cursor:pointer">✖</span>` : ""}
+      </div>`;
+  }
+  _tableRicariche(root) {
+    let rows = this._list(this._sid("lista_ricariche"));
+    const q = (this._ricQ || "").trim().toLowerCase();
+    if (q) {
+      rows = rows.filter((r) => `${r.tipo || ""} ${r.note || ""} ${r.luogo || ""} ${r.paese || ""} ${r.data || ""}`.toLowerCase().includes(q));
+    }
+    if (this._ricDay) rows = rows.filter((r) => String(r.data || "") === this._ricDay);
     const tb = root.querySelector('[data-c="tab-ricariche"]');
     if (!tb) return;
-    const vis = rows.slice(0, 8);
+    const vis = rows.slice(0, (q || this._ricDay) ? 60 : 8);
     const cells = vis.map((r) => {
       const dm = parseFloat(r.durata_min ?? r.durata ?? 0);
       const dur = dm > 0 ? this._fmt(dm / 60, 1) + " h" : "—";
       const dsoc = (r.soc_end !== undefined && r.soc_start !== undefined) ? "+" + Math.round(r.soc_end - r.soc_start) + "%" : "—";
       return `<tr><td>${this._d(r.data)}${r.ora_inizio ? " · " + r.ora_inizio : ""}</td>
-        <td>${r.tipo ?? "—"}${r.note ? `<br><span style="color:var(--muted);font-size:11px">${r.note}</span>` : ""}</td><td>${dur}</td>
+        <td>${r.tipo ?? "—"}${r.note ? `<br><span style="color:var(--muted);font-size:11px">${r.note}</span>` : ""}${r.luogo ? `<br><span style="color:var(--muted);font-size:11px">📍 ${r.luogo}${r.paese ? " · " + r.paese : ""}</span>` : ""}</td><td>${dur}</td>
         <td><b>${dsoc}</b></td>
         <td>${this._fmt(parseFloat(r.kwh ?? r.energia ?? 0), 2)}</td>
         <td>${this._fmt(parseFloat(r.potenza_media_kw ?? r.kw_medio ?? 0), 2)}</td>
         <td>${this._fmt(parseFloat(r.kwh > 0 ? r.costo / r.kwh : NaN), 3)}</td>
         <td><b>${this._fmt(parseFloat(r.costo ?? 0), 2)} €</b></td>
-        <td style="white-space:nowrap">${r.id != null ? `<span class="dchip" data-cedit="${r.id}" title="${_t("ttl_edit_charge", "Modifica")}">✏️</span> <span class="dchip" data-cdel="${r.id}" title="${_t("ttl_del_charge", "Elimina")}">🗑</span>` : ""}</td></tr>`;
+        <td style="white-space:nowrap">${r.id != null ? `${r._merged ? `<span class="dchip" data-csplit="${r.id}" title="${_t("ttl_split_charge", "Separa")}">✂️</span> ` : ""}<span class="dchip" data-cedit="${r.id}" title="${_t("ttl_edit_charge", "Modifica")}">✏️</span> <span class="dchip" data-cdel="${r.id}" title="${_t("ttl_del_charge", "Elimina")}">🗑</span>` : ""}</td></tr>`;
     });
     if (vis.length) {
       const totKwh = vis.reduce((a, r) => a + (parseFloat(r.kwh ?? r.energia ?? 0) || 0), 0);
@@ -5413,6 +5525,7 @@ const PAGES = () => ({
       <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">a
         <input type="date" data-tfd="to" style="width:auto"></span>
       <span class="chip" data-cmd="tfilter-reset" style="cursor:pointer">✖ azzera date</span>
+      <input data-tq placeholder="${_t("ph_cerca", "🔍 Cerca…")}" style="width:auto;min-width:140px">
     </div>
     <table><tr><th>Data</th><th>Ora</th><th>Km</th><th>SoC</th><th>Consumata</th><th>kWh</th><th>kWh/100km</th><th>Spesa</th><th>Partenza · via · paese</th><th>Arrivo · via · paese</th></tr>
     <tbody data-c="tab-viaggi"></tbody></table></div>`,
@@ -5492,9 +5605,15 @@ const PAGES = () => ({
       <select data-sel="sel_tipo"></select>
       <select data-sel="sel_periodo"></select>
       <select data-sel="sel_mese"></select>
-      <select data-sel="sel_anno"></select></div>
-    <table><tr><th>Data</th><th>Tipo</th><th>Durata</th><th>Δ SoC</th><th>kWh</th><th>Ø kW</th><th>€/kWh</th><th>Costo</th><th></th></tr>
-    <tbody data-c="tab-ricariche"></tbody></table></div>`,
+      <select data-sel="sel_anno"></select>
+      <input data-rs placeholder="${_t("ph_cerca", "🔍 Cerca…")}" style="width:auto;min-width:140px"></div>
+    <div style="display:grid;grid-template-columns:minmax(200px,260px) 1fr;gap:14px;align-items:start">
+      <div data-c="cal-ric" style="font-size:12px"></div>
+      <div style="overflow-x:auto">
+        <table><tr><th>Data</th><th>Tipo</th><th>Durata</th><th>Δ SoC</th><th>kWh</th><th>Ø kW</th><th>€/kWh</th><th>Costo</th><th></th></tr>
+        <tbody data-c="tab-ricariche"></tbody></table>
+      </div>
+    </div></div>`,
 
   p5: `<h1>Salute batteria</h1>
   <div class="tiles">

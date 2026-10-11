@@ -13,7 +13,8 @@
         "title": "Renault EV Center — Wallbox",
         "description": "Mappa i sensori della tua wallbox (Wallbox, go-e, Easee, OCPP…). Puoi lasciare vuoti i campi che non hai.",
         "data": {
-          "geocode_enabled": "Via e paese nei viaggi (geocoding OpenStreetMap)",
+          "geocode_enabled": "Via e paese in viaggi e ricariche (geocoding OpenStreetMap)",
+          "charge_merge": "Fondi le ricariche spezzate (una spina = una ricarica)",
           "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)"
         },
         "sections": {
@@ -219,7 +220,8 @@
               "co2_comparison": "Calcola confronto CO2 termico vs EV",
               "co2_thermal_gkm": "CO2 termico (g/km)",
               "co2_grid_gkwh": "CO2 rete (g/kWh)",
-              "geocode_enabled": "Via e paese nei viaggi (geocoding OpenStreetMap)",
+              "geocode_enabled": "Via e paese in viaggi e ricariche (geocoding OpenStreetMap)",
+          "charge_merge": "Fondi le ricariche spezzate (una spina = una ricarica)",
               "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)",
               "scadenze_enabled": "Abilita promemoria scadenze",
               "scadenza_bollo": "Scadenza bollo (YYYY-MM-DD)",
@@ -416,7 +418,8 @@
               "co2_comparison": "Calcola confronto CO2 termico vs EV",
               "co2_thermal_gkm": "CO2 termico (g/km)",
               "co2_grid_gkwh": "CO2 rete (g/kWh)",
-              "geocode_enabled": "Via e paese nei viaggi (geocoding OpenStreetMap)",
+              "geocode_enabled": "Via e paese in viaggi e ricariche (geocoding OpenStreetMap)",
+          "charge_merge": "Fondi le ricariche spezzate (una spina = una ricarica)",
               "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)",
               "scadenze_enabled": "Abilita promemoria scadenze",
               "scadenza_bollo": "Scadenza bollo (YYYY-MM-DD)",

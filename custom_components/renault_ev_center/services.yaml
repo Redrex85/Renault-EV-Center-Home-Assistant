@@ -43,6 +43,13 @@ delete_charge:
     charge_id:
       name: ID ricarica
       example: 1755864000
+split_charge:
+  name: Separa ricarica
+  description: Separa una ricarica fusa automaticamente, ripristinando le sessioni reali.
+  fields:
+    charge_id:
+      name: ID ricarica
+      example: 1755864000
 update_charge:
   name: Modifica ricarica
   description: Aggiorna kWh, costo, tipo, nota o data di una ricarica esistente.

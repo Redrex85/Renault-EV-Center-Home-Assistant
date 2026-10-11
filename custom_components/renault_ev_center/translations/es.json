@@ -13,7 +13,8 @@
         "title": "Renault EV Center — Wallbox",
         "description": "Asigna tus sensores de wallbox (Wallbox, go-e, Easee, OCPP…). Deja vacío lo que no tengas.",
         "data": {
-          "geocode_enabled": "Calle y país en los viajes (geocodificación OpenStreetMap)",
+          "geocode_enabled": "Calle y país en viajes y recargas (geocodificación OpenStreetMap)",
+          "charge_merge": "Fusionar recargas fragmentadas (un enchufe = una recarga)",
           "avg_speed_kmh": "Velocidad media estimada para la hora de salida del viaje"
         },
         "sections": {
@@ -219,7 +220,8 @@
               "co2_comparison": "Calcular comparación de CO2 térmico vs EV",
               "co2_thermal_gkm": "CO2 térmico (g/km)",
               "co2_grid_gkwh": "CO2 de la red (g/kWh)",
-              "geocode_enabled": "Calle y país en los viajes (geocodificación OpenStreetMap)",
+              "geocode_enabled": "Calle y país en viajes y recargas (geocodificación OpenStreetMap)",
+          "charge_merge": "Fusionar recargas fragmentadas (un enchufe = una recarga)",
               "avg_speed_kmh": "Velocidad media estimada para la hora de salida del viaje",
               "scadenze_enabled": "Activar recordatorios de vencimiento",
               "scadenza_bollo": "Fecha de vencimiento del impuesto (AAAA-MM-DD)",
@@ -416,7 +418,8 @@
               "co2_comparison": "Calcular comparación de CO2 térmico vs EV",
               "co2_thermal_gkm": "CO2 térmico (g/km)",
               "co2_grid_gkwh": "CO2 de la red (g/kWh)",
-              "geocode_enabled": "Calle y país en los viajes (geocodificación OpenStreetMap)",
+              "geocode_enabled": "Calle y país en viajes y recargas (geocodificación OpenStreetMap)",
+          "charge_merge": "Fusionar recargas fragmentadas (un enchufe = una recarga)",
               "avg_speed_kmh": "Velocidad media estimada para la hora de salida del viaje",
               "scadenze_enabled": "Activar recordatorios de vencimiento",
               "scadenza_bollo": "Fecha de vencimiento del impuesto (AAAA-MM-DD)",

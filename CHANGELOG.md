@@ -5,6 +5,21 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.13 - Diagnostica, indirizzi ricariche, auto-fusione e calendario
+
+- **Diagnostica** (Download diagnostics): snapshot redatto con stato delle entità sorgente,
+  ultimo errore classificato (timeout / DNS / refused / reset / unreachable / TLS), ultima
+  lettura riuscita, statistiche geocoding e conteggi dello store.
+- **Indirizzo delle ricariche**: a fine ricarica viene salvato il luogo (geocoding
+  OpenStreetMap, stessa cache dei viaggi) e mostrato nella tabella; l'opzione geocoding vale
+  ora per viaggi **e** ricariche. Richieste a Nominatim distanziate (>=1.1 s).
+- **Auto-fusione ricariche spezzate**: se la spina viene tolta e rimessa entro 6 minuti
+  (stessa zona/tipo, batteria non calata) le due sessioni vengono unite in una; icona
+  ✂️ nella tabella per separarle di nuovo. Opzione in configurazione.
+- **Calendario e ricerca**: nella pagina *Ricariche* un calendario mensile mostra i kWh per
+  giorno (click su un giorno filtra la tabella); ricerca libera in *Viaggi* e *Ricariche*.
+- Nuovo servizio `renault_ev_center.split_charge`.
+
 ## 1.1.12 - Prezzo carburante salvato per giorno (confronto termica stabile)
 
 - Il prezzo del carburante viene **salvato giorno per giorno** nello storico giornaliero

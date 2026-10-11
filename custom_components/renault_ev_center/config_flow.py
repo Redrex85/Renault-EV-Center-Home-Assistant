@@ -34,6 +34,7 @@ from .const import (
     CONF_CHARGING_EFFICIENCY,
     CONF_CHARGING_ENTITY,
     CONF_CHARGE_SCHED_MODE,
+    CONF_CHARGE_MERGE,
     CONF_CHARGE_START_TIME,
     CONF_CHARGE_STOP_TIME,
     CONF_CHARGE_START_SOC,
@@ -494,6 +495,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_CO2_GRID_GKWH, default=defaults.get(CONF_CO2_GRID_GKWH, DEFAULT_CO2_GRID_GKWH)): NumberSelector(
                 NumberSelectorConfig(min=0, max=800, step=10, unit_of_measurement="g/kWh", mode=NumberSelectorMode.BOX)),
             vol.Required(CONF_GEOCODE_ENABLED, default=defaults.get(CONF_GEOCODE_ENABLED, True)): BooleanSelector(),
+            vol.Required(CONF_CHARGE_MERGE, default=defaults.get(CONF_CHARGE_MERGE, True)): BooleanSelector(),
             vol.Required(CONF_AVG_KMH, default=defaults.get(CONF_AVG_KMH, 30.0)): NumberSelector(
                 NumberSelectorConfig(min=10, max=120, step=1, unit_of_measurement="km/h", mode=NumberSelectorMode.BOX)),
             vol.Required(CONF_SCADENZE_ENABLED, default=defaults.get(CONF_SCADENZE_ENABLED, False)): BooleanSelector(),

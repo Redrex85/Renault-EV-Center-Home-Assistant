@@ -126,6 +126,11 @@ HOME_METER_OPTIONS = ["3", "4.5", "6", "10"]
 # profili installazione: minimal (solo auto) · pro (auto+wallbox) · enterprise (+FV)
 CONF_HAS_PV = "has_pv"
 
+# --- fusione ricariche spezzate (una spina = una ricarica) --------------------
+CONF_CHARGE_MERGE = "charge_merge"        # fondi sessioni ravvicinate nello stesso posto
+DEFAULT_CHARGE_MERGE = True
+CHARGE_MERGE_WINDOW_S = 360               # finestra massima fra due sessioni da fondere
+
 # --- sperimentazione GSE (limite di potenza a fasce orarie) -------------------
 CONF_GSE_ENABLED = "gse_enabled"          # abilita la sperimentazione GSE (wizard/opzioni)
 CONF_GSE_WPA = "gse_wpa"                  # watt per ampere della wallbox (230 mono, 690 trifase)

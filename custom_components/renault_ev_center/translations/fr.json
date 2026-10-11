@@ -13,7 +13,8 @@
         "title": "Renault EV Center — Wallbox",
         "description": "Associez vos capteurs wallbox (Wallbox, go-e, Easee, OCPP…). Laissez vide ce que vous n'avez pas.",
         "data": {
-          "geocode_enabled": "Rue et pays dans les trajets (géocodage OpenStreetMap)",
+          "geocode_enabled": "Rue et pays dans les trajets et recharges (géocodage OpenStreetMap)",
+          "charge_merge": "Fusionner les recharges fractionnées (une prise = une recharge)",
           "avg_speed_kmh": "Vitesse moyenne estimée pour l'heure de départ des trajets"
         },
         "sections": {
@@ -219,7 +220,8 @@
               "co2_comparison": "Calculer la comparaison CO2 thermique vs EV",
               "co2_thermal_gkm": "CO2 thermique (g/km)",
               "co2_grid_gkwh": "CO2 réseau (g/kWh)",
-              "geocode_enabled": "Rue et pays dans les trajets (géocodage OpenStreetMap)",
+              "geocode_enabled": "Rue et pays dans les trajets et recharges (géocodage OpenStreetMap)",
+          "charge_merge": "Fusionner les recharges fractionnées (une prise = une recharge)",
               "avg_speed_kmh": "Vitesse moyenne estimée pour l'heure de départ",
               "scadenze_enabled": "Activer les rappels d'échéances",
               "scadenza_bollo": "Échéance taxe (AAAA-MM-JJ)",
@@ -416,7 +418,8 @@
               "co2_comparison": "Calculer la comparaison CO2 thermique vs EV",
               "co2_thermal_gkm": "CO2 thermique (g/km)",
               "co2_grid_gkwh": "CO2 réseau (g/kWh)",
-              "geocode_enabled": "Rue et pays dans les trajets (géocodage OpenStreetMap)",
+              "geocode_enabled": "Rue et pays dans les trajets et recharges (géocodage OpenStreetMap)",
+          "charge_merge": "Fusionner les recharges fractionnées (une prise = une recharge)",
               "avg_speed_kmh": "Vitesse moyenne estimée pour l'heure de départ",
               "scadenze_enabled": "Activer les rappels d'échéances",
               "scadenza_bollo": "Échéance taxe (AAAA-MM-JJ)",
