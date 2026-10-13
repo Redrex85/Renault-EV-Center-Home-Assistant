@@ -89,7 +89,7 @@
               "charging_entity": "Capteur en charge",
               "plug_entity": "Statut prise (optionnel)",
               "location_entity": "Traqueur GPS voiture (optionnel)",
-              "install_odo": "Kilométrage à l'activation (km, 0 = lu au premier démarrage)"
+              "install_odo": "Km à l'activation (0 = depuis l'installation, 1 = depuis la naissance de l'auto ; occasion : km à la date d'achat)"
             }
           },
           "commands": {
@@ -287,7 +287,7 @@
               "charging_entity": "Capteur en charge",
               "plug_entity": "Statut prise (optionnel)",
               "location_entity": "Traqueur GPS voiture (optionnel)",
-              "install_odo": "Kilométrage à l'activation (km, 0 = lu au premier démarrage)"
+              "install_odo": "Km à l'activation (0 = depuis l'installation, 1 = depuis la naissance de l'auto ; occasion : km à la date d'achat)"
             }
           },
           "commands": {

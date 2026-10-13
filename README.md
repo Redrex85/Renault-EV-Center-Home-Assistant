@@ -145,6 +145,8 @@ Dai un nome breve all'auto (es. `Renault`) — diventa il prefisso di tutte le e
 | Spina (opz.) | `sensor.plug_state` |
 | GPS (opz.) | `device_tracker.location` |
 
+> 🛣️ **Chilometri all'attivazione**: da dove parte il confronto "da installazione". `0` = dal **giorno in cui installi l'integrazione**; `1` = dall'**inizio della vita dell'auto** (km 0); auto **usata** → metti i **km alla data d'acquisto**.
+
 ### 2️⃣ La wallbox
 
 Attiva l'interruttore se hai una wallbox in HA e mappa i sensori:
@@ -425,6 +427,8 @@ Give the car a short name (e.g. `Renault`) — it becomes the prefix of every cr
 | Plug (opt.) | `sensor.plug_state` |
 | GPS (opt.) | `device_tracker.location` |
 
+> 🛣️ **Kilometres at activation**: where the "since install" comparison starts. `0` = from the **day you install the integration**; `1` = from the **car's birth** (km 0); **used** car → set the **km at the purchase date**.
+
 #### 2️⃣ The wallbox
 
 Flip the switch if you have a wallbox in HA and map the sensors:
@@ -704,6 +708,8 @@ Donnez un nom court à la voiture (ex. `Renault`) — il devient le préfixe de 
 | En charge | `binary_sensor.charging` ou `sensor.charge_state` |
 | Prise (opt.) | `sensor.plug_state` |
 | GPS (opt.) | `device_tracker.location` |
+
+> 🛣️ **Kilomètres à l'activation** : point de départ de la comparaison « depuis l'installation ». `0` = depuis le **jour d'installation de l'intégration** ; `1` = depuis la **naissance de l'auto** (km 0) ; auto **d'occasion** → mettez les **km à la date d'achat**.
 
 ### 2️⃣ La wallbox
 

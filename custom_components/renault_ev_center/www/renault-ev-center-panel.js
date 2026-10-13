@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.14";
+const REC_VER = "1.1.15";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -5059,7 +5059,9 @@ class RenaultEvCenterPanel extends HTMLElement {
   _calRic(root) {
     const box = root.querySelector('[data-c="cal-ric"]');
     if (!box) return;
-    const rows = this._list(this._sid("lista_ricariche"));
+    const st = this._st(this._sid("lista_ricariche"));
+    const all = st && st.attributes && Array.isArray(st.attributes.items_all) ? st.attributes.items_all : null;
+    const rows = all && all.length ? all : this._list(this._sid("lista_ricariche"));
     const byDay = {};
     rows.forEach((r) => {
       const d = String(r.data || "");

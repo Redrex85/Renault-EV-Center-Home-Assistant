@@ -257,8 +257,9 @@ def _car_schema(defaults: dict[str, Any]) -> vol.Schema:    return vol.Schema({
             vol.Optional(
                 CONF_LOCATION_ENTITY, description={"suggested_value": defaults.get(CONF_LOCATION_ENTITY)}
             ): EntitySelector(EntitySelectorConfig(domain=["device_tracker", "sensor"])),
-            # baseline del confronto "da installazione": 0 = catturata al primo avvio
-            vol.Optional(CONF_INSTALL_ODO, default=defaults.get(CONF_INSTALL_ODO, 0.0)): NumberSelector(
+            # baseline del confronto: 0 = dal giorno dell'installazione, 1 = dall'inizio
+            # vita dell'auto, oppure i km alla data d'acquisto (auto usata)
+            vol.Optional(CONF_INSTALL_ODO, default=defaults.get(CONF_INSTALL_ODO, 1.0)): NumberSelector(
                 NumberSelectorConfig(min=0, max=1000000, step=1, unit_of_measurement="km",
                                      mode=NumberSelectorMode.BOX)),
         }), {"collapsed": True}),

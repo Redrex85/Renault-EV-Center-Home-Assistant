@@ -1212,7 +1212,7 @@ try:
     # B) baseline del confronto "da installazione": campo nel wizard + logica in coordinatore
     assert "CONF_INSTALL_ODO" in flow, "il campo odometro installazione non e' nello schema"
     assert flow.count("CONF_INSTALL_ODO") >= 2, "import o campo CONF_INSTALL_ODO mancante"
-    assert '_man = _f(self.opts.get(CONF_INSTALL_ODO), 0.0)' in coord, \
+    assert '_man = _f(self.opts.get(CONF_INSTALL_ODO), 1.0)' in coord, \
         "il coordinatore non legge la baseline manuale"
     assert "_man > 0" in coord and '_inst["odometer"] = _man' in coord, \
         "la baseline manuale non prevale su quella automatica"

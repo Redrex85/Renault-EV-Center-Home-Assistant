@@ -89,7 +89,7 @@
               "charging_entity": "Lade-Binärsensor/Sensor",
               "plug_entity": "Steckerstatus (optional)",
               "location_entity": "Auto-GPS-Tracker (optional)",
-              "install_odo": "Kilometer bei Aktivierung (km, 0 = beim ersten Start auslesen)"
+              "install_odo": "km bei Aktivierung (0 = ab Installationstag, 1 = ab Fahrzeugleben; gebraucht: km am Kaufdatum)"
             }
           },
           "commands": {
@@ -287,7 +287,7 @@
               "charging_entity": "Lade-Binärsensor/Sensor",
               "plug_entity": "Steckerstatus (optional)",
               "location_entity": "Auto-GPS-Tracker (optional)",
-              "install_odo": "Kilometer bei Aktivierung (km, 0 = beim ersten Start auslesen)"
+              "install_odo": "km bei Aktivierung (0 = ab Installationstag, 1 = ab Fahrzeugleben; gebraucht: km am Kaufdatum)"
             }
           },
           "commands": {

@@ -89,7 +89,7 @@
               "charging_entity": "Sensore/binary sensor in carica",
               "plug_entity": "Stato spina collegata (opzionale)",
               "location_entity": "Tracker GPS posizione auto (opzionale)",
-              "install_odo": "Chilometri all'attivazione (km, 0 = rilevato al primo avvio)"
+              "install_odo": "Chilometri all'attivazione (0 = dal giorno d'installazione, 1 = dall'inizio vita auto; usata: km alla data d'acquisto)"
             }
           },
           "commands": {
@@ -287,7 +287,7 @@
               "charging_entity": "Sensore/binary sensor in carica",
               "plug_entity": "Stato spina collegata (opzionale)",
               "location_entity": "Tracker GPS posizione auto (opzionale)",
-              "install_odo": "Chilometri all'attivazione (km, 0 = rilevato al primo avvio)"
+              "install_odo": "Chilometri all'attivazione (0 = dal giorno d'installazione, 1 = dall'inizio vita auto; usata: km alla data d'acquisto)"
             }
           },
           "commands": {

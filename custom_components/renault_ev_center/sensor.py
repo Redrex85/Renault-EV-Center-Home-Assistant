@@ -957,6 +957,8 @@ class ListaRicariche(MateSensor):
         cf = self.coordinator.data["charges_filtered"]
         return {
             "items": cf["items"][:30],
+            # elenco completo per il calendario (non filtrato dai select)
+            "items_all": self.coordinator.data.get("charges_all", []),
             "total": cf["n"],
             "tipo": cf["tipo"],
             "periodo": cf["periodo"],

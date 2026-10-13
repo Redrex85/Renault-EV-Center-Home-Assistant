@@ -89,7 +89,7 @@
               "charging_entity": "Charging sensor/binary sensor",
               "plug_entity": "Plug status (optional)",
               "location_entity": "Car GPS tracker (optional)",
-              "install_odo": "Kilometres at activation (km, 0 = read at first boot)"
+              "install_odo": "Km at activation (0 = from install day, 1 = from car birth; used car: km at purchase date)"
             }
           },
           "commands": {
@@ -287,7 +287,7 @@
               "charging_entity": "Charging sensor/binary sensor",
               "plug_entity": "Plug status (optional)",
               "location_entity": "Car GPS tracker (optional)",
-              "install_odo": "Kilometres at activation (km, 0 = read at first boot)"
+              "install_odo": "Km at activation (0 = from install day, 1 = from car birth; used car: km at purchase date)"
             }
           },
           "commands": {

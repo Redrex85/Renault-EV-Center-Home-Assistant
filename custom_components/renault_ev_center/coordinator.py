@@ -1342,7 +1342,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # --- base odometro all'installazione: serve al confronto "km da quando usi l'integrazione"
         if odometer and odometer > 0:
             _inst = self.store.data.setdefault("install", {})
-            _man = _f(self.opts.get(CONF_INSTALL_ODO), 0.0)
+            _man = _f(self.opts.get(CONF_INSTALL_ODO), 1.0)
             if _man > 0:
                 # baseline scelta a mano in Configura: vale piu' della cattura automatica
                 if _inst.get("odometer") != _man:
@@ -2107,6 +2107,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "health": dict(self.store.data.get("health", {})),
             "mesi_storico": mesi_storico,
             "charges_filtered": charges_filtered,
+            # elenco completo (non filtrato) per il calendario del pannello
+            "charges_all": charges[-500:],
             "charges_stats": cstats,
             "consumi_temp": consumi_temp,
             "schedule": dict(self.store.data.get("schedule", {})),

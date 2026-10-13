@@ -5,15 +5,22 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.1.14 - Chiusura ricarica robusta + fix vampire drain
+## 1.1.15 - Fix vampire drain, calendario ricariche e km all'attivazione
+
+- **Vampire drain**: misura il calo di SoC da fermo dal **delta batteria** (senza usare i
+  viaggi, che a volte sbagliano). Un calo è "da fermo" se è **lento** (sotto ~3%/h) e
+  l'odometro non si è mosso; i cali veloci della guida vengono esclusi.
+- **Calendario ricariche**: il calendario della pagina *Ricariche* mostra ora **tutte** le
+  ricariche (anche i mesi vecchi), non solo quelle filtrate dai menu a tendina.
+- **Km all'attivazione**: default a **1** (dall'inizio vita dell'auto); `0` = dal giorno
+  dell'installazione; auto **usata** → i km alla data d'acquisto. Spiegato nel README.
+
+## 1.1.14 - Chiusura ricarica robusta
 
 - **Chiusura ricarica robusta**: la sessione si chiude solo se la spina è **staccata** oppure
   la wallbox segnala "ricarica finita/ferma" (debounce 2 poll). Se la spina è dentro e la
   wallbox è in pausa (load-balancing/surplus) la sessione resta aperta → niente più ricariche
   spezzettate.
-- **Vampire drain**: misura il calo di SoC da fermo dal **delta batteria** (senza usare i
-  viaggi, che a volte sbagliano). Un calo è "da fermo" se è **lento** (sotto ~3%/h) e
-  l'odometro non si è mosso; i cali veloci della guida vengono esclusi.
 
 ## 1.1.13 - Diagnostica, indirizzi ricariche, auto-fusione e calendario
 

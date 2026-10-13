@@ -89,7 +89,7 @@
               "charging_entity": "Sensor/binario de carga",
               "plug_entity": "Estado del enchufe (opcional)",
               "location_entity": "Rastreador GPS del coche (opcional)",
-              "install_odo": "Kilómetros en la activación (km, 0 = leer al primer arranque)"
+              "install_odo": "Km en la activación (0 = desde la instalación, 1 = desde el inicio del coche; usado: km en la fecha de compra)"
             }
           },
           "commands": {
@@ -287,7 +287,7 @@
               "charging_entity": "Sensor/binario de carga",
               "plug_entity": "Estado del enchufe (opcional)",
               "location_entity": "Rastreador GPS del coche (opcional)",
-              "install_odo": "Kilómetros en la activación (km, 0 = leer al primer arranque)"
+              "install_odo": "Km en la activación (0 = desde la instalación, 1 = desde el inicio del coche; usado: km en la fecha de compra)"
             }
           },
           "commands": {
