@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.16-beta.1";
+const REC_VER = "1.1.16-beta.2";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -220,6 +220,8 @@ const I18N = {
     note_confronto: "The <b>since installation</b> comparison is the most reliable: both sides come from real data\n      (km driven with the integration active vs recorded charges). The <b>total</b> one depends on the\n      kWh/€ you entered in Settings → Prices. Both use the km <b>since activation</b>, not the\n      full odometer: kilometres already driven by others (used car) do not enter the comparison.",
     note_crea: "Creates in HA: <b>charge completed</b> (kWh, SoC, cost),\n        <b>charge started</b> and <b>daily summary</b>. Editable from Settings → Automations.",
     mesi: "January|February|March|April|May|June|July|August|September|October|November|December",
+    mode_dark: "Dark",
+    mode_light: "Light",
     theme_ev: "EV Center",
     theme_blu: "Blue Megane",
     theme_giallo: "R5 Yellow",
@@ -459,6 +461,8 @@ const I18N = {
     note_confronto: "La comparaison <b>depuis l'installation</b> est la plus fiable : les deux côtés viennent de données réelles\n      (km parcourus avec l'intégration active contre recharges enregistrées). La <b>totale</b> dépend des\n      kWh/€ saisis dans Réglages → Prix. Les deux utilisent les km <b>depuis l'activation</b>, pas\n      l'odomètre complet : les kilomètres déjà parcourus par d'autres (voiture d'occasion) n'entrent pas dans la comparaison.",
     note_crea: "Crée dans HA : <b>recharge terminée</b> (kWh, SoC, coût),\n        <b>début de recharge</b> et <b>résumé quotidien</b>. Modifiables depuis Réglages → Automatisations.",
     mesi: "Janvier|Février|Mars|Avril|Mai|Juin|Juillet|Août|Septembre|Octobre|Novembre|Décembre",
+    mode_dark: "Sombre",
+    mode_light: "Clair",
     theme_ev: "EV Center",
     theme_blu: "Bleu Mégane",
     theme_giallo: "Jaune R5",
@@ -706,6 +710,8 @@ const I18N = {
     note_confronto: "La comparación <b>desde la instalación</b> es la más fiable: ambos lados vienen de datos reales\n      (km recorridos con la integración activa vs recargas registradas). La <b>total</b> depende de los\n      kWh/€ que introdujiste en Ajustes → Precios. Ambas usan los km <b>desde la activación</b>, no\n      el odómetro completo: los kilómetros ya recorridos por otros (coche usado) no entran en la comparación.",
     note_crea: "Crea en HA: <b>recarga completada</b> (kWh, SoC, coste),\n        <b>inicio de recarga</b> y <b>resumen diario</b>. Editables desde Ajustes → Automatizaciones.",
     mesi: "Enero|Febrero|Marzo|Abril|Mayo|Junio|Julio|Agosto|Septiembre|Octubre|Noviembre|Diciembre",
+    mode_dark: "Oscuro",
+    mode_light: "Claro",
     theme_ev: "EV Center",
     theme_blu: "Azul Mégane",
     theme_giallo: "Amarillo R5",
@@ -953,6 +959,8 @@ const I18N = {
     note_confronto: "Der Vergleich <b>seit Installation</b> ist der zuverlässigste: beide Seiten stammen aus realen Daten\n      (km mit aktiver Integration vs. erfasste Ladungen). Der <b>Gesamt</b>-Vergleich hängt von den\n      kWh/€ ab, die du unter Einstellungen → Preise eingegeben hast. Beide nutzen die km <b>seit Aktivierung</b>, nicht\n      den gesamten Kilometerstand: bereits von anderen gefahrene Kilometer (Gebrauchtwagen) fließen nicht ein.",
     note_crea: "Erstellt in HA: <b>Ladung abgeschlossen</b> (kWh, SoC, Kosten),\n        <b>Ladestart</b> und <b>Tageszusammenfassung</b>. Bearbeitbar unter Einstellungen → Automatisierungen.",
     mesi: "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember",
+    mode_dark: "Dunkel",
+    mode_light: "Hell",
     theme_ev: "EV Center",
     theme_blu: "Blaues Mégane",
     theme_giallo: "R5 Gelb",
@@ -2656,6 +2664,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     };
     this._page = localStorage.getItem("rec_panel_page") || "p1";
     this._theme = localStorage.getItem("rec_panel_theme") || "ev";
+    this._mode = localStorage.getItem("rec_panel_mode") || "dark";
     this._built = false;
     this._raf = null;
     // SOLO ORA: queste usano this._cfg, quindi vanno dopo la sua assegnazione
@@ -3329,7 +3338,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     const c = this._cfg;
     this.shadowRoot.innerHTML = `
     <style>${REC_CSS}</style>
-    <div class="app" data-theme="${this._theme}">
+    <div class="app" data-theme="${this._theme}" data-mode="${this._mode}">
       <div class="sidebar">
         <div class="logo">
           <svg class="ph" viewBox="-70 -70 140 140" aria-hidden="true"><path d="M0,-62 L40,0 L0,62 L-40,0 Z" fill="none" stroke="currentColor" stroke-width="10" stroke-linejoin="miter"/><path d="M0,-34 L21,0 L0,34 L-21,0 Z" fill="#FFCB00"/></svg>
@@ -3337,6 +3346,10 @@ class RenaultEvCenterPanel extends HTMLElement {
         </div>
         <div class="nav" id="nav">
           ${this._navItems().map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${_t("nav_" + id, label)}</button>`).join("")}
+        </div>
+        <div class="modes">
+          <button data-mode="dark" class="${this._mode === "light" ? "" : "on"}">${_t("mode_dark", "Scuro")}</button>
+          <button data-mode="light" class="${this._mode === "light" ? "on" : ""}">${_t("mode_light", "Chiaro")}</button>
         </div>
       </div>
       <div class="mobilenav" id="mnav">
@@ -3356,6 +3369,9 @@ class RenaultEvCenterPanel extends HTMLElement {
     this.shadowRoot.getElementById("mnav").addEventListener("click", gotoHandler);
     this.shadowRoot.querySelectorAll("[data-palette]").forEach((b) => {
       b.addEventListener("click", () => this._theme_(b.dataset.palette));
+    });
+    this.shadowRoot.querySelectorAll(".modes [data-mode]").forEach((b) => {
+      b.addEventListener("click", () => this._mode_(b.dataset.mode));
     });
     // comandi / bottoni
     this.shadowRoot.querySelectorAll("[data-cmd]").forEach((el) => {
@@ -3540,6 +3556,12 @@ class RenaultEvCenterPanel extends HTMLElement {
     // contesti WebGL inutilizzati lo fa il browser.
     const box = this.shadowRoot.querySelector("#evmap");
     if (box && box.clientHeight && !this._mapCard) this._drawMap();
+  }
+  _mode_(m) {
+    this._mode = m;
+    localStorage.setItem("rec_panel_mode", m);
+    this.shadowRoot.querySelector(".app").dataset.mode = m;
+    this.shadowRoot.querySelectorAll(".modes [data-mode]").forEach((b) => b.classList.toggle("on", b.dataset.mode === m));
   }
   _theme_(t) {
     this._theme = t;
@@ -5290,12 +5312,15 @@ const THEMES = [
 
 // NB: nome prefissato per NON ombreggiare window.CSS (romperebbe CSS.escape di altre card)
 const REC_CSS = `
-.app{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;transition:background .25s,color .25s;user-select:text}
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap");
+.app{background:var(--bg);color:var(--txt);font-family:Inter,'Segoe UI',system-ui,sans-serif;transition:background .25s,color .25s;user-select:text}
 .app[data-theme="ev"]{--bg:#0b0f17;--panel:rgba(255,255,255,.06);--panel2:#111826;--glass:rgba(255,255,255,.06);--glass-hi:rgba(255,255,255,.10);--line:rgba(255,255,255,.09);--txt:#f3f6fb;--muted:#8b97a8;--accent:#ffd23f;--accent-soft:rgba(255,210,63,.14);--good:#3ee08f;--warn:#ffb020;--bad:#ff5d6c;--blob1:rgba(77,141,255,.28)}
 .app[data-theme="blu"]{--bg:#0d1522;--panel:#14202f;--panel2:#101b2c;--glass:rgba(77,141,255,.07);--glass-hi:rgba(77,141,255,.12);--line:rgba(120,160,220,.14);--txt:#e8eef6;--muted:#8296ad;--accent:#4d8dff;--accent-soft:rgba(77,141,255,.15);--good:#4ade80;--warn:#fbbf24;--bad:#f87171;--blob1:rgba(77,141,255,.28)}
 .app[data-theme="giallo"]{--bg:#141414;--panel:#1d1d1d;--panel2:#181818;--glass:rgba(255,255,255,.05);--glass-hi:rgba(255,255,255,.09);--line:rgba(255,255,255,.10);--txt:#f2f2f2;--muted:#9e9e9e;--accent:#F5CB39;--accent-soft:rgba(245,203,57,.14);--good:#7ed957;--warn:#ff9f43;--bad:#ff5252;--blob1:rgba(245,203,57,.18)}
 .app[data-theme="verde"]{--bg:#0f1613;--panel:#16211c;--panel2:#121a16;--glass:rgba(87,185,138,.06);--glass-hi:rgba(87,185,138,.11);--line:rgba(120,200,160,.14);--txt:#e9f2ec;--muted:#87a094;--accent:#57b98a;--accent-soft:rgba(87,185,138,.15);--good:#57b98a;--warn:#fbbf24;--bad:#f87171;--blob1:rgba(87,185,138,.24)}
 .app[data-theme="aviation"]{--bg:#16181c;--panel:#20242b;--panel2:#1a1d23;--glass:rgba(255,255,255,.05);--glass-hi:rgba(255,255,255,.09);--line:rgba(255,255,255,.10);--txt:#eef1f5;--muted:#9aa4b1;--accent:#c9d4e2;--accent-soft:rgba(201,212,226,.13);--good:#7ed957;--warn:#fbbf24;--bad:#ff6b6b;--blob1:rgba(201,212,226,.12)}
+.app[data-mode="light"]{--bg:#eef2f8;--panel:#ffffff;--panel2:#f6f8fc;--glass:rgba(255,255,255,.8);--glass-hi:rgba(255,255,255,.95);--line:rgba(15,23,42,.09);--txt:#0f172a;--muted:#64748b;--blob1:rgba(37,99,235,.16)}
+.app[data-mode="light"][data-theme="ev"]{--accent:#2563eb;--accent-soft:rgba(37,99,235,.12);--good:#16a34a;--warn:#d97706;--bad:#dc2626}
 *{margin:0;padding:0;box-sizing:border-box}
 :host{display:block}
 .sidebar{position:absolute;top:0;bottom:0;left:0;width:230px;background:var(--glass);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border-right:1px solid var(--line);padding:18px 12px;overflow-y:auto}
@@ -5402,7 +5427,10 @@ select,input{background:var(--panel2);color:var(--txt);border:1px solid var(--li
 .netto{background:linear-gradient(135deg,var(--accent-soft),transparent);border-color:var(--accent)}
 .carbox{position:relative;border-radius:14px;overflow:hidden;border:1px dashed var(--accent);background:radial-gradient(ellipse at 50% 115%,var(--accent-soft),transparent 60%),var(--panel);display:flex;align-items:center;justify-content:center;min-height:210px;flex-direction:column;gap:8px}
 .carbox .ph{font-size:52px}
-.carbox img{max-height:190px;max-width:90%;object-fit:contain}
+.carbox img{max-height:190px;max-width:90%;object-fit:contain;-webkit-mask-image:linear-gradient(to bottom,#000 55%,transparent 100%);mask-image:linear-gradient(to bottom,#000 55%,transparent 100%)}
+.modes{display:flex;gap:6px;margin:12px 4px 0;background:var(--glass-hi);border-radius:999px;padding:4px}
+.modes button{flex:1;background:none;border:none;color:var(--muted);padding:6px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.modes button.on{background:var(--txt);color:var(--bg)}
 .mapbox{border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel2);height:100%;min-height:0}
 .mapbox ha-map{display:block;width:100%;height:100%}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--panel);color:var(--txt);border:1px solid var(--accent);border-radius:12px;padding:12px 20px;font-size:14px;opacity:0;transition:.3s;z-index:999}

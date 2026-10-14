@@ -3722,6 +3722,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             today_key = now.strftime("%Y-%m-%d")
             if (dentro and WEEKDAYS[now.weekday()] in self.low_soc_days
                     and (data.get("location") or "") == "home"
+                    and self._plug_connected() is not True
                     and data.get("battery", 100) <= soglia
                     and counters.get("last_low_notify") != today_key):
                 await self._send_notify(

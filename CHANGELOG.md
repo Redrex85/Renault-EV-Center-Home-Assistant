@@ -5,6 +5,14 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.16-beta.2 - Beta: tema chiaro/scuro, font Inter, foto auto senza bordo
+
+- **Tema chiaro/scuro**: interruttore Scuro/Chiaro in sidebar, scelta salvata nel browser.
+- **Font**: Inter (Google Fonts), con fallback Segoe UI se offline.
+- **Foto auto**: sfumatura in basso, niente stacco netto sul pannello.
+- **Notifica batteria bassa**: non arriva più con l'auto collegata alla wallbox.
+- **Beta, pre-release**: non installata in automatico da HACS.
+
 ## 1.1.16-beta.1 - Beta: nuovo stile grafico "EV Center"
 
 - **Beta, pre-release**: non installata in automatico da HACS; va scelta esplicitamente.
