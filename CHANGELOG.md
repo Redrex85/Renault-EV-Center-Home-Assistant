@@ -5,6 +5,12 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.16-beta.1 - Beta: nuovo stile grafico "EV Center"
+
+- **Beta, pre-release**: non installata in automatico da HACS; va scelta esplicitamente.
+- **Stile grafico**: palette `EV Center` predefinita (superfici glass, raggi più ampi, alone colorato); le palette Renault restano selezionabili in Impostazioni.
+- **Rollback**: CSS precedente salvato in `preview/backup_1.1.15_REC_CSS.txt`.
+
 ## 1.1.15 - Fix vampire drain, calendario ricariche e km all'attivazione
 
 - **Vampire drain**: misura il calo di SoC da fermo dal **delta batteria** (senza usare i
