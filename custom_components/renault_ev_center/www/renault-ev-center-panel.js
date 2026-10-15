@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.16-beta.2";
+const REC_VER = "1.1.16-beta.3";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -3348,8 +3348,8 @@ class RenaultEvCenterPanel extends HTMLElement {
           ${this._navItems().map(([id, em, label]) => `<button data-p="${id}" class="${id === this._page ? "active" : ""}"><span class="em">${em}</span> ${_t("nav_" + id, label)}</button>`).join("")}
         </div>
         <div class="modes">
-          <button data-mode="dark" class="${this._mode === "light" ? "" : "on"}">${_t("mode_dark", "Scuro")}</button>
-          <button data-mode="light" class="${this._mode === "light" ? "on" : ""}">${_t("mode_light", "Chiaro")}</button>
+          <button data-mode="dark" class="${this._mode === "light" ? "" : "on"}">🌙 ${_t("mode_dark", "Scuro")}</button>
+          <button data-mode="light" class="${this._mode === "light" ? "on" : ""}">☀️ ${_t("mode_light", "Chiaro")}</button>
         </div>
       </div>
       <div class="mobilenav" id="mnav">
@@ -5636,7 +5636,7 @@ const PAGES = () => ({
       <div class="tile"><div><div class="v" data-cs="costo">—</div><div class="l">Costo totale €</div></div></div>
       <div class="tile"><div><div class="v" data-cs="prezzo">—</div><div class="l">Prezzo medio €/kWh</div></div></div>
     </div></div>
-  <div class="card"><h3>${_t("h3_storico_ricariche", "Storico ricariche")}</h3>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_storico_ricariche", "Storico ricariche")}</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
       <select data-sel="sel_tipo"></select>
       <select data-sel="sel_periodo"></select>

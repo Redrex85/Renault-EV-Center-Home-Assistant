@@ -1290,7 +1290,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     "prezzo": self._price_for_zone(location or "home"),
                 }
                 started_charge = True
-            self.charge_session["soc_now"] = battery
+            if 0 < _f(battery) <= 100:
+                self.charge_session["soc_now"] = battery
             self.charge_session["power_kw"] = wb_power
             # la spina può scollegarsi a metà: il valore peggiore vince
             if self._plug_connected() is False:
@@ -2178,6 +2179,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
     def _finalize_charge(self, zone: str, battery: float) -> dict[str, Any]:
         s = self.charge_session
         assert s is not None
+        # lettura SoC a fine ricarica spesso 0/non valida (cloud Renault a spina staccata):
+        # si usa l'ultimo valore valido letto durante la sessione
+        if not 0 < _f(battery) <= 100:
+            battery = _f(s.get("soc_now"), battery)
         durata_min = int((time.time() - s["start_ts"]) / 60)
         counter_end = self._wb_counter()
         total_end = self._wb_total_counter()
