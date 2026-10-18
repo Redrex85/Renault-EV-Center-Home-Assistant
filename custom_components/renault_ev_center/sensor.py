@@ -718,6 +718,7 @@ class UltimaRicarica(MateSensor):
         if not ric:
             return {}
         return {
+            "id": ric.get("id"),
             "data": ric.get("data"),
             "ora_inizio": ric.get("ora_inizio"),
             "ora_fine": ric.get("ora_fine"),

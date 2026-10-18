@@ -2817,6 +2817,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 continue
             if "kwh" in fields:
                 c["kwh"] = round(_f(fields["kwh"]), 2)
+            for _k in ("soc_start", "soc_end"):
+                if _k in fields:
+                    c[_k] = round(_f(fields[_k]), 1)
             if "costo" in fields:
                 c["costo"] = round(_f(fields["costo"]), 2)
             if "tipo" in fields:

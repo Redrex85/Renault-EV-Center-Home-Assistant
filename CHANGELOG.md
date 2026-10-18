@@ -5,25 +5,15 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.1.16-beta.3 - Beta: correzioni ricarica e notifiche
+## 1.1.16 - Stile grafico "EV Center", tema chiaro/scuro e correzioni ricarica
 
-- **Ricarica: SoC fine**: a fine sessione una lettura batteria 0% non sovrascrive più il dato; si usa l'ultimo valore valido (niente più «30% → 0%»).
-- **Notifica batteria bassa**: non arriva più con l'auto collegata alla wallbox.
-- **Beta, pre-release**: non installata in automatico da HACS.
-
-## 1.1.16-beta.2 - Beta: tema chiaro/scuro, font Inter, foto auto senza bordo
-
-- **Tema chiaro/scuro**: interruttore Scuro/Chiaro in sidebar, scelta salvata nel browser.
+- **Stile grafico**: palette `EV Center` predefinita (superfici glass, raggi più ampi, alone colorato); le palette Renault restano selezionabili in Impostazioni. CSS precedente salvato in `preview/backup_1.1.15_REC_CSS.txt`.
+- **Tema chiaro/scuro**: interruttore 🌙 Scuro / ☀️ Chiaro in sidebar, scelta salvata nel browser.
 - **Font**: Inter (Google Fonts), con fallback Segoe UI se offline.
 - **Foto auto**: sfumatura in basso, niente stacco netto sul pannello.
-
-- **Beta, pre-release**: non installata in automatico da HACS.
-
-## 1.1.16-beta.1 - Beta: nuovo stile grafico "EV Center"
-
-- **Beta, pre-release**: non installata in automatico da HACS; va scelta esplicitamente.
-- **Stile grafico**: palette `EV Center` predefinita (superfici glass, raggi più ampi, alone colorato); le palette Renault restano selezionabili in Impostazioni.
-- **Rollback**: CSS precedente salvato in `preview/backup_1.1.15_REC_CSS.txt`.
+- **Ricarica: SoC fine**: a fine sessione una lettura batteria 0% non sovrascrive più il dato; si usa l'ultimo valore valido (niente più «30% → 0%»).
+- **Notifica batteria bassa**: non arriva più con l'auto collegata alla wallbox.
+- **Modifica ricarica**: il servizio `update_charge` accetta anche `soc_start` e `soc_end`; l'ID ricarica è esposto tra gli attributi di `ultima_ricarica`.
 
 ## 1.1.15 - Fix vampire drain, calendario ricariche e km all'attivazione
 

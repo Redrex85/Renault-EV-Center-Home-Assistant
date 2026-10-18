@@ -76,6 +76,12 @@ update_charge:
       name: Durata (min)
       description: Durata opzionale in minuti; calcola la potenza media.
       example: 45
+    soc_start:
+      name: Batteria inizio %
+      example: 23
+    soc_end:
+      name: Batteria fine %
+      example: 80
 delete_trip:
   name: Elimina viaggio
   description: Cancella un viaggio dallo storico per ID.

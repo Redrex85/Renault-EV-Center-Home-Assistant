@@ -162,7 +162,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_update_charge(call: ServiceCall) -> None:
         charge_id = int(call.data["charge_id"])
         fields = {k: call.data[k] for k in
-                  ("kwh", "costo", "tipo", "descrizione", "quando", "durata_min") if k in call.data}
+                  ("kwh", "costo", "tipo", "descrizione", "quando", "durata_min",
+                   "soc_start", "soc_end") if k in call.data}
         for coord in _all_coordinators(hass):
             if coord.service_update_charge(charge_id, fields):
                 _LOGGER.info("Ricarica %s modificata", charge_id)
@@ -300,6 +301,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                   vol.Optional("descrizione"): str,
                   vol.Optional("quando"): str,
                   vol.Optional("durata_min"): vol.Coerce(float),
+                  vol.Optional("soc_start"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
+                  vol.Optional("soc_end"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
               }))
     _register(SERVICE_SPLIT_CHARGE, handle_split_charge,
               schema=vol.Schema({vol.Required("charge_id"): cv.positive_int}))
