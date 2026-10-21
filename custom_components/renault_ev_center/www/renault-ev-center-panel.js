@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.17";
+const REC_VER = "1.1.18";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -220,6 +220,10 @@ const I18N = {
     note_confronto: "The <b>since installation</b> comparison is the most reliable: both sides come from real data\n      (km driven with the integration active vs recorded charges). The <b>total</b> one depends on the\n      kWh/€ you entered in Settings → Prices. Both use the km <b>since activation</b>, not the\n      full odometer: kilometres already driven by others (used car) do not enter the comparison.",
     note_crea: "Creates in HA: <b>charge completed</b> (kWh, SoC, cost),\n        <b>charge started</b> and <b>daily summary</b>. Editable from Settings → Automations.",
     mesi: "January|February|March|April|May|June|July|August|September|October|November|December",
+    h3_zone_ricariche: "🗺️ Charge zones",
+    btn_salva_zone: "💾 Save zones",
+    note_zone: "Charges in these zones count as public, with the price you set. Home stays the zone for wallbox balancing and solar.",
+    toast_zone_salvate: "💾 Zones saved",
     mode_dark: "Dark",
     mode_light: "Light",
     theme_ev: "EV Center",
@@ -461,6 +465,10 @@ const I18N = {
     note_confronto: "La comparaison <b>depuis l'installation</b> est la plus fiable : les deux côtés viennent de données réelles\n      (km parcourus avec l'intégration active contre recharges enregistrées). La <b>totale</b> dépend des\n      kWh/€ saisis dans Réglages → Prix. Les deux utilisent les km <b>depuis l'activation</b>, pas\n      l'odomètre complet : les kilomètres déjà parcourus par d'autres (voiture d'occasion) n'entrent pas dans la comparaison.",
     note_crea: "Crée dans HA : <b>recharge terminée</b> (kWh, SoC, coût),\n        <b>début de recharge</b> et <b>résumé quotidien</b>. Modifiables depuis Réglages → Automatisations.",
     mesi: "Janvier|Février|Mars|Avril|Mai|Juin|Juillet|Août|Septembre|Octobre|Novembre|Décembre",
+    h3_zone_ricariche: "🗺️ Zones de recharge",
+    btn_salva_zone: "💾 Enregistrer les zones",
+    note_zone: "Les recharges dans ces zones comptent comme publiques, avec le prix indiqué. Home reste la zone de l'équilibrage wallbox et du solaire.",
+    toast_zone_salvate: "💾 Zones enregistrées",
     mode_dark: "Sombre",
     mode_light: "Clair",
     theme_ev: "EV Center",
@@ -710,6 +718,10 @@ const I18N = {
     note_confronto: "La comparación <b>desde la instalación</b> es la más fiable: ambos lados vienen de datos reales\n      (km recorridos con la integración activa vs recargas registradas). La <b>total</b> depende de los\n      kWh/€ que introdujiste en Ajustes → Precios. Ambas usan los km <b>desde la activación</b>, no\n      el odómetro completo: los kilómetros ya recorridos por otros (coche usado) no entran en la comparación.",
     note_crea: "Crea en HA: <b>recarga completada</b> (kWh, SoC, coste),\n        <b>inicio de recarga</b> y <b>resumen diario</b>. Editables desde Ajustes → Automatizaciones.",
     mesi: "Enero|Febrero|Marzo|Abril|Mayo|Junio|Julio|Agosto|Septiembre|Octubre|Noviembre|Diciembre",
+    h3_zone_ricariche: "🗺️ Zonas de recarga",
+    btn_salva_zone: "💾 Guardar zonas",
+    note_zone: "Las recargas en estas zonas cuentan como públicas, con el precio indicado. Home sigue siendo la zona del balanceo wallbox y del solar.",
+    toast_zone_salvate: "💾 Zonas guardadas",
     mode_dark: "Oscuro",
     mode_light: "Claro",
     theme_ev: "EV Center",
@@ -959,6 +971,10 @@ const I18N = {
     note_confronto: "Der Vergleich <b>seit Installation</b> ist der zuverlässigste: beide Seiten stammen aus realen Daten\n      (km mit aktiver Integration vs. erfasste Ladungen). Der <b>Gesamt</b>-Vergleich hängt von den\n      kWh/€ ab, die du unter Einstellungen → Preise eingegeben hast. Beide nutzen die km <b>seit Aktivierung</b>, nicht\n      den gesamten Kilometerstand: bereits von anderen gefahrene Kilometer (Gebrauchtwagen) fließen nicht ein.",
     note_crea: "Erstellt in HA: <b>Ladung abgeschlossen</b> (kWh, SoC, Kosten),\n        <b>Ladestart</b> und <b>Tageszusammenfassung</b>. Bearbeitbar unter Einstellungen → Automatisierungen.",
     mesi: "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember",
+    h3_zone_ricariche: "🗺️ Ladezonen",
+    btn_salva_zone: "💾 Zonen speichern",
+    note_zone: "Ladungen in diesen Zonen zählen als öffentlich, mit dem angegebenen Preis. Home bleibt die Zone für Wallbox-Balancierung und Solar.",
+    toast_zone_salvate: "💾 Zonen gespeichert",
     mode_dark: "Dunkel",
     mode_light: "Hell",
     theme_ev: "EV Center",
@@ -3808,6 +3824,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "maint_tagliando": this._saveMaint("tagliando"); break;
       case "maint_gomme": this._saveMaint("gomme"); break;
       case "maint_add": this._addMaint(); break;
+      case "save_zones": this._saveZones(); break;
       case "reset_km": this._call(D, "reset_counters", { scope: "km" }, "🔄 Km azzerati"); break;
       case "reset_energia": this._call(D, "reset_counters", { scope: "energia" }, "🔄 Energia azzerata"); break;
       case "reset_costi": this._call(D, "reset_counters", { scope: "costi" }, "🔄 Costi azzerati"); break;
@@ -3959,6 +3976,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     // schedulazioni: ripopola i campi dai valori salvati (store → sensore Programmazione)
     const _prog = this._sensorByPrefix("programmazione");
+    this._drawZoneRows(_prog);
     const _sch = _prog && _prog.attributes ? _prog.attributes.schedule : null;
     if (_sch) {
       for (const tipo of ["ricarica", "clima", "promemoria"]) {
@@ -4206,6 +4224,48 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._schTouched = this._schTouched || {};
     this._schTouched[tipo] = false;
   }
+  /** 8 righe zona/prezzo: zone HA (tranne home) + tariffa propria */
+  _drawZoneRows(prog) {
+    const host = this.shadowRoot.querySelector('[data-c="zone-rows"]');
+    if (!host || !this._hass) return;
+    if (host.contains(host.getRootNode().activeElement)) return; // mentre si modifica
+    const saved = (prog && prog.attributes && prog.attributes.zone_prices) || {};
+    const names = {};
+    for (const s of Object.values(this._hass.states)) {
+      if (s.entity_id.startsWith("zone.") && s.entity_id !== "zone.home") {
+        names[s.entity_id.slice(5)] = s.attributes.friendly_name || s.entity_id.slice(5);
+      }
+    }
+    // zone salvate che non esistono più: restano selezionabili, così non si perdono
+    for (const z of Object.keys(saved)) if (!(z in names)) names[z] = z;
+    const keys = Object.keys(names).sort((a, b) => names[a].localeCompare(names[b]));
+    const pairs = Object.entries(saved);
+    const rows = [];
+    for (let i = 0; i < 8; i++) {
+      const [z, p] = pairs[i] || ["", ""];
+      const opts = [`<option value="">—</option>`]
+        .concat(keys.map((k) => `<option value="${k}"${k === z ? " selected" : ""}>${names[k]}</option>`))
+        .join("");
+      rows.push(`<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+        <select data-zone="${i}" style="flex:1">${opts}</select>
+        <input data-zprice="${i}" type="number" min="0" step="0.001" value="${p}" style="width:92px;text-align:right">
+        <span style="color:var(--muted);font-size:11px;width:44px">€/kWh</span></div>`);
+    }
+    host.innerHTML = rows.join("");
+  }
+
+  _saveZones() {
+    const host = this.shadowRoot.querySelector('[data-c="zone-rows"]');
+    if (!host) return;
+    const zones = [];
+    host.querySelectorAll("[data-zone]").forEach((sel) => {
+      if (!sel.value) return;
+      const inp = host.querySelector(`[data-zprice="${sel.dataset.zone}"]`);
+      zones.push({ zone: sel.value, price: parseFloat((inp && inp.value) || "0") || 0 });
+    });
+    this._call("renault_ev_center", "set_charge_zones", { zones }, _t("toast_zone_salvate", "💾 Zone salvate"));
+  }
+
   async _drawMap() {
     const box = this.shadowRoot && this.shadowRoot.querySelector("#evmap");
     if (!box) return;
@@ -5142,7 +5202,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const dur = dm > 0 ? this._fmt(dm / 60, 1) + " h" : "—";
       const dsoc = (r.soc_end !== undefined && r.soc_start !== undefined) ? "+" + Math.round(r.soc_end - r.soc_start) + "%" : "—";
       return `<tr><td>${this._d(r.data)}${r.ora_inizio ? " · " + r.ora_inizio : ""}</td>
-        <td>${r.tipo ?? "—"}${r.note ? `<br><span style="color:var(--muted);font-size:11px">${r.note}</span>` : ""}${r.luogo ? `<br><span style="color:var(--muted);font-size:11px">📍 ${r.luogo}${r.paese ? " · " + r.paese : ""}</span>` : ""}</td><td>${dur}</td>
+        <td>${r.tipo ?? "—"}${r.zona && r.zona !== r.tipo ? `<br><span style="color:var(--muted);font-size:11px">🗺️ ${r.zona}</span>` : ""}${r.note ? `<br><span style="color:var(--muted);font-size:11px">${r.note}</span>` : ""}${r.luogo ? `<br><span style="color:var(--muted);font-size:11px">📍 ${r.luogo}${r.paese ? " · " + r.paese : ""}</span>` : ""}</td><td>${dur}</td>
         <td><b>${dsoc}</b></td>
         <td>${this._fmt(parseFloat(r.kwh ?? r.energia ?? 0), 2)}</td>
         <td>${this._fmt(parseFloat(r.potenza_media_kw ?? r.kw_medio ?? 0), 2)}</td>
@@ -5904,6 +5964,10 @@ const PAGES = () => ({
         <div class="btn" data-cmd="reset_energia">🔄 Reset contatori Energia</div>
         <div class="btn" data-cmd="reset_costi">🔄 Reset contatori Costi</div>
         <div class="btn" data-cmd="csv">📥 Esporta viaggi CSV</div></div></div></div>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_zone_ricariche", "🗺️ Zone ricariche")}</h3>
+    <div data-c="zone-rows"><div style="color:var(--muted);font-size:12px">—</div></div>
+    <div class="btn" data-cmd="save_zones" style="margin-top:10px">${_t("btn_salva_zone", "💾 Salva zone")}</div>
+    <div style="color:var(--muted);font-size:11.5px;margin-top:8px">${_t("note_zone", "Le ricariche in queste zone contano come pubbliche, con il prezzo che imposti. Home resta la zona dei bilanciamenti wallbox e del fotovoltaico.")}</div></div>
   <div class="grid g3" style="margin-top:16px">
     <div class="card palette"><h3>${_t("h3_palette_colori_renault", "🎨 Palette (colori Renault)")}</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${THEMES.map(([id, dot, label]) => `<button class="btn" data-palette="${id}"><span class="sw" style="background:${dot}"></span> ${_t("theme_" + id, label)}</button>`).join("")}</div>

@@ -5,6 +5,14 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.18 - Zone di ricarica con tariffa propria
+
+- **Zone con prezzo**: puoi associare un prezzo (€/kWh) alle tue zone HA. Una ricarica che parte in quella zona usa quel prezzo al posto della tariffa pubblica generica.
+- **`home` resta speciale**: ripartizione rete/FV/batteria e bilanciamento wallbox continuano a valere solo per la zona casa; le ricariche nelle altre zone restano `Pubblica` e mostrano il **nome della zona** nella colonna Tipo dello storico (e nella notifica di fine carica).
+- **Dove si imposta**: *Impostazioni → Zone ricariche* nel pannello (8 righe, zona + prezzo) oppure *Configura → Prezzi* nel config flow. Entrambe scrivono la stessa opzione, quindi restano allineate.
+- **Servizio** `renault_ev_center.set_charge_zones` (`zones: [{zone, price}]`) per impostarle da automazione.
+- **Traduzioni**: etichette in IT/EN/FR/ES/DE.
+
 ## 1.1.17 - Fix I/O bloccante nell'export CSV
 
 - **Export CSV**: la creazione della cartella di export (`os.makedirs`) avviene ora nell'executor, fuori dall'event loop — segnalazione della review HACS.

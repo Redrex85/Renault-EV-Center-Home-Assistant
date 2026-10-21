@@ -82,6 +82,16 @@ update_charge:
     soc_end:
       name: Batteria fine %
       example: 80
+set_charge_zones:
+  name: Zone ricariche con tariffa
+  description: Zone HA (diverse da home) con tariffa propria, usate per calcolare il costo delle ricariche.
+  fields:
+    zones:
+      name: Zone
+      description: Elenco di zone con il prezzo da applicare (es. box 0.30).
+      example: '[{"zone": "box", "price": 0.3}]'
+      selector:
+        object:
 delete_trip:
   name: Elimina viaggio
   description: Cancella un viaggio dallo storico per ID.

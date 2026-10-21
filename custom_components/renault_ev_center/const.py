@@ -179,6 +179,10 @@ DEFAULT_CO2_GRID_GKWH = 300.0
 # zona considerata ricarica fotovoltaico/BEB ("beb", nome della tua zona...)
 CONF_SOLAR_ZONE = "solar_zone"
 
+# zone extra con tariffa propria: {"box": 0.30, "casa_genitori": 0.25}.
+# Restano "Pubblica" nelle statistiche, ma con il prezzo indicato.
+CONF_ZONE_PRICES = "zone_prices"
+
 # --- valori predefiniti -------------------------------------------------------
 DEFAULT_NAME = "Renault"
 DEFAULT_CAPACITY = 60.0

@@ -1349,6 +1349,7 @@ class Programmazione(MateSensor):
             "reduce_amps": c.home_reduce_amps,
         }
         return {"schedule": dict(sch), "gse": gse, "home": home,
+                "zone_prices": dict(c.zone_prices),
                 "notify_service": str(c.notify_service or "")}
 
 

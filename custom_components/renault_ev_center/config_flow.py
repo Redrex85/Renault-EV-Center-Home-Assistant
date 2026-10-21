@@ -98,6 +98,7 @@ from .const import (
     CONF_PRICE_HOME,
     CONF_PRICE_PUBLIC,
     CONF_PRICE_SOLAR,
+    CONF_ZONE_PRICES,
     CONF_PRE_KWH,
     CONF_PRE_EUR,
     CONF_INSTALL_ODO,
@@ -198,6 +199,66 @@ def _flat(data: dict[str, Any]) -> dict[str, Any]:
         else:
             out[k] = v
     return out
+
+
+ZONE_SLOTS = 8
+
+
+def _zone_pairs(raw: Any) -> list[tuple[str, float]]:
+    """Coppie (zona, prezzo) dall'opzione `zone_prices` (dict o testo)."""
+    if isinstance(raw, dict):
+        items = list(raw.items())
+    else:
+        items = [p.partition("=")[::2] for p in str(raw or "").split(",") if "=" in p]
+    out: list[tuple[str, float]] = []
+    for key, value in items:
+        z = str(key or "").strip().lower()
+        if z.startswith("zone."):
+            z = z[5:]
+        if not z:
+            continue
+        try:
+            out.append((z, float(value)))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def _zone_slot_schema(defaults: dict[str, Any]) -> dict[Any, Any]:
+    """8 righe zona/prezzo: dropdown delle zone HA + tariffa da applicare."""
+    pairs = _zone_pairs(defaults.get(CONF_ZONE_PRICES))
+    sch: dict[Any, Any] = {}
+    for i in range(1, ZONE_SLOTS + 1):
+        z, p = pairs[i - 1] if i <= len(pairs) else ("", 0.0)
+        desc = {"suggested_value": f"zone.{z}"} if z else {}
+        sch[vol.Optional(f"zone_{i}", description=desc)] = EntitySelector(
+            EntitySelectorConfig(domain="zone"))
+        sch[vol.Optional(f"price_{i}", default=p)] = NumberSelector(
+            NumberSelectorConfig(min=0, max=10, step=0.001, unit_of_measurement="€/kWh",
+                                 mode=NumberSelectorMode.BOX))
+    return sch
+
+
+def _collect_zone_prices(data: dict[str, Any]) -> None:
+    """zone_N/price_N → `zone_prices` {zona: prezzo}, togliendo le chiavi del form.
+
+    Se la sezione non è stata inviata (collassata) il valore salvato resta intatto.
+    """
+    if not any(f"zone_{i}" in data for i in range(1, ZONE_SLOTS + 1)):
+        return
+    pairs: dict[str, float] = {}
+    for i in range(1, ZONE_SLOTS + 1):
+        z = str(data.pop(f"zone_{i}", "") or "").strip().lower()
+        p = data.pop(f"price_{i}", None)
+        if z.startswith("zone."):
+            z = z[5:]
+        if not z:
+            continue
+        try:
+            pairs[z] = float(p) if p not in (None, "") else 0.0
+        except (TypeError, ValueError):
+            pairs[z] = 0.0
+    data[CONF_ZONE_PRICES] = pairs
 
 
 def _meter_opt(v: Any) -> str:
@@ -426,6 +487,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_PRICE_SOLAR, default=defaults.get(CONF_PRICE_SOLAR, DEFAULT_PRICE_SOLAR)): NumberSelector(
                 NumberSelectorConfig(min=0, max=10, step=0.001, unit_of_measurement="€/kWh", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_SOLAR_ZONE, default=defaults.get(CONF_SOLAR_ZONE, DEFAULT_SOLAR_ZONE)): TextSelector(),
+            **_zone_slot_schema(defaults),
             vol.Optional(CONF_PRE_KWH, default=defaults.get(CONF_PRE_KWH, 0.0)): NumberSelector(
                 NumberSelectorConfig(min=0, max=200000, step=0.1, unit_of_measurement="kWh",
                                      mode=NumberSelectorMode.BOX)),
@@ -535,6 +597,7 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Schermata UNICA di configurazione: tutte le sezioni (come le Opzioni)."""
         if user_input is not None:
             user_input = _flat(user_input)
+            _collect_zone_prices(user_input)
             # rifiuta la seconda entry che produrrebbe lo STESSO prefisso
             # (→ entità col suffisso `_2`, dashboard che punta a quelle vecchie)
             nuovo = _slug_name(user_input.get(CONF_NAME))
@@ -610,6 +673,7 @@ class RenaultMateOptionsFlow(config_entries.OptionsFlow):
                 base[_k] = _norm_date(base[_k])
         if user_input is not None:
             data = _flat(user_input)
+            _collect_zone_prices(data)
             _capacity_for_model(data)
             # I campi dentro una sezione collapsed possono NON essere riusati dal
             # form: async_create_entry(data=...) SOSTITUISCE entry.options, quindi

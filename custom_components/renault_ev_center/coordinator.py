@@ -111,6 +111,7 @@ DEFAULT_WB_START_W,
     CONF_SCADENZE_ENABLED,
     CONF_SOLAR_ZONE,
     CONF_TAG_EV,
+    CONF_ZONE_PRICES,
     CONF_TAG_TERMICO,
     CONF_TAGLIANDO_DATA,
     CONF_TAGLIANDO_INTERVALLO,
@@ -161,6 +162,25 @@ def _f(value: Any, default: float = 0.0) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def _parse_zone_prices(raw: Any) -> dict[str, float]:
+    """Tariffe per zona: da dict (config flow/pannello) o testo "box=0.30, ...".
+
+    Le chiavi sono gli object_id delle zone HA; il prefisso "zone." viene tolto.
+    """
+    out: dict[str, float] = {}
+    if isinstance(raw, dict):
+        items = list(raw.items())
+    else:
+        items = [p.partition("=")[::2] for p in str(raw or "").split(",") if "=" in p]
+    for key, value in items:
+        z = str(key or "").strip().lower()
+        if z.startswith("zone."):
+            z = z[5:]
+        if z:
+            out[z] = _f(value, 0.0)
+    return out
 
 
 def classify_error(err: BaseException) -> str:
@@ -480,6 +500,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.price_solar = _f(opts.get(CONF_PRICE_SOLAR), 0.0)
         self.charging_eff = (_f(opts.get(CONF_CHARGING_EFFICIENCY), DEFAULT_EFFICIENCY) or 90) / 100.0
         self.solar_zone = str(opts.get(CONF_SOLAR_ZONE) or "").lower()
+        self.zone_prices = _parse_zone_prices(opts.get(CONF_ZONE_PRICES))
         self.fuel_enabled = bool(opts.get(CONF_FUEL_ENABLED, True))
         self.fuel_label = str(opts.get(CONF_FUEL_LABEL) or "Diesel")
         self.fuel_consumption = _f(opts.get(CONF_FUEL_CONSUMPTION), 6.5)
@@ -875,10 +896,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
     def _price_for_zone(self, zone: str) -> float:
         z = (zone or "").lower()
+        if z.startswith("zone."):
+            z = z[5:]
         if z == "home":
             return self.price_home
         if self.solar_zone and z == self.solar_zone:
             return self.price_solar
+        if z in self.zone_prices:
+            return self.zone_prices[z]
         return self.price_public
 
     @staticmethod
@@ -2842,6 +2867,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             self.persist(force=True)
             return True
         return False
+
+    def service_set_charge_zones(self, pairs: list[dict[str, Any]]) -> dict[str, float]:
+        """Zone extra con tariffa propria: le salva nelle opzioni dell'entry."""
+        prices = _parse_zone_prices(
+            {str(p.get("zone") or ""): p.get("price") for p in (pairs or [])})
+        self.zone_prices = prices
+        self.hass.config_entries.async_update_entry(
+            self.entry, options={**self.entry.options, CONF_ZONE_PRICES: prices})
+        return prices
 
     def service_delete_trip(self, trip_id: int) -> bool:
         prima = len(self.store.data["trips"])
