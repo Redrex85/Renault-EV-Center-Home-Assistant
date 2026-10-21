@@ -3834,12 +3834,12 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
     async def service_export_csv(self) -> str:
         """Esporta viaggi e ricariche in CSV dentro config/renault_ev_center_export."""
         base = self.hass.config.path("renault_ev_center_export")
-        os.makedirs(base, exist_ok=True)
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         trips_path = os.path.join(base, f"{self.entry.entry_id[:8]}_trips_{stamp}.csv")
 
         def _write() -> str:
+            os.makedirs(base, exist_ok=True)
             fields = ["id", "data", "ora_inizio", "ora_fine", "durata_min", "km",
                       "mileage_inizio", "mileage_fine", "batteria_inizio", "batteria_fine",
                       "batteria_delta", "kwh_consumati", "kwh_per_100km",

@@ -5,6 +5,10 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.17 - Fix I/O bloccante nell'export CSV
+
+- **Export CSV**: la creazione della cartella di export (`os.makedirs`) avviene ora nell'executor, fuori dall'event loop — segnalazione della review HACS.
+
 ## 1.1.16 - Stile grafico "EV Center", tema chiaro/scuro e correzioni ricarica
 
 - **Stile grafico**: palette `EV Center` predefinita (superfici glass, raggi più ampi, alone colorato); le palette Renault restano selezionabili in Impostazioni. CSS precedente salvato in `preview/backup_1.1.15_REC_CSS.txt`.
