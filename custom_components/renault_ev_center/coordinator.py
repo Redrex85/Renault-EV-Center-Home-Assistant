@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import csv
+import json
 import logging
 import os
 import time
@@ -3886,3 +3888,32 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             return trips_path
 
         return await self.hass.async_add_executor_job(_write)
+
+    async def service_export_data(self) -> dict[str, Any]:
+        """Tutto lo store (viaggi, ricariche, storico, contatori) in un solo JSON."""
+        base = self.hass.config.path("renault_ev_center_export")
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = os.path.join(base, f"renault_ev_center_data_{stamp}.json")
+        payload = {"version": 1, "domain": "renault_ev_center",
+                   "data": copy.deepcopy(self.store.data)}
+
+        def _write() -> None:
+            os.makedirs(base, exist_ok=True)
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(payload, fh, ensure_ascii=False, indent=1, default=str)
+
+        await self.hass.async_add_executor_job(_write)
+        _LOGGER.info("Export dati scritto in %s", path)
+        return {"path": path, "json": payload,
+                "trips": len(self.store.data["trips"]),
+                "charges": len(self.store.data["charges"]),
+                "daily": len(self.store.data["daily"])}
+
+    def service_import_data(self, raw: Any) -> dict[str, int]:
+        """Sostituisce i dati dell'entry con quelli di un export (JSON)."""
+        counts = self.store.apply_data(raw)
+        self.cost_total = round(
+            sum(_f(c.get("costo")) for c in self.store.data["charges"]), 2)
+        self.persist(force=True)
+        _LOGGER.warning("Import dati: %s", counts)
+        return counts

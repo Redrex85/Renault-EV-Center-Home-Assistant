@@ -45,8 +45,22 @@ class MateStore:
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Store corrotto, riparto vuoto: %s", err)
             return
-        if not raw or not isinstance(raw, dict):
-            return
+        if isinstance(raw, dict):
+            self._apply(raw)
+
+    def apply_data(self, raw: Any) -> dict[str, int]:
+        """Sostituisce i dati con quelli di un export (stessa sanificazione del load)."""
+        if isinstance(raw, dict) and isinstance(raw.get("data"), dict):
+            raw = raw["data"]
+        if not isinstance(raw, dict):
+            raise ValueError("Dati non validi: atteso un oggetto JSON")
+        self._apply(raw)
+        return {"trips": len(self.data["trips"]),
+                "charges": len(self.data["charges"]),
+                "daily": len(self.data["daily"]),
+                "maintenance": len(self.data["maintenance"])}
+
+    def _apply(self, raw: dict[str, Any]) -> None:
         trips = [t for t in raw.get("trips", []) if self._valid_trip(t)]
         charges = [c for c in raw.get("charges", []) if self._valid_charge(c)]
         if len(trips) != len(raw.get("trips", [])):

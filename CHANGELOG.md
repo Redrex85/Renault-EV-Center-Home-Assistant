@@ -11,6 +11,7 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
 - **`home` resta speciale**: ripartizione rete/FV/batteria e bilanciamento wallbox continuano a valere solo per la zona casa; le ricariche nelle altre zone restano `Pubblica` e mostrano il **nome della zona** nella colonna Tipo dello storico (e nella notifica di fine carica).
 - **Dove si imposta**: *Impostazioni → Zone ricariche* nel pannello (8 righe, zona + prezzo) oppure *Configura → Prezzi* nel config flow. Entrambe scrivono la stessa opzione, quindi restano allineate.
 - **Servizio** `renault_ev_center.set_charge_zones` (`zones: [{zone, price}]`) per impostarle da automazione.
+- **Backup completo**: `export_data` scrive tutto in un unico JSON (`config/renault_ev_center_export/`); `import_data` lo rilegge e sostituisce i dati — così viaggi, ricariche e storico si portano su un'altra installazione senza toccare `.storage`. Anche dal pannello: *Impostazioni → 💾 Backup dati* (scarica il file / importa da file, con conferma prima di sovrascrivere).
 - **Traduzioni**: etichette in IT/EN/FR/ES/DE.
 
 ## 1.1.17 - Fix I/O bloccante nell'export CSV

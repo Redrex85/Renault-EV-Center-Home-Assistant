@@ -55,6 +55,8 @@ SERVICE_DELETE_CHARGE = "delete_charge"
 SERVICE_UPDATE_CHARGE = "update_charge"
 SERVICE_SPLIT_CHARGE = "split_charge"
 SERVICE_SET_CHARGE_ZONES = "set_charge_zones"
+SERVICE_EXPORT_DATA = "export_data"
+SERVICE_IMPORT_DATA = "import_data"
 SERVICE_DELETE_TRIP = "delete_trip"
 SERVICE_ADD_MAINTENANCE = "add_maintenance"
 SERVICE_DELETE_MAINTENANCE = "delete_maintenance"
@@ -136,6 +138,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             paths.append(await coord.service_export_csv())
         _LOGGER.info("Export CSV completato: %s", ", ".join(paths))
         return {"paths": paths} if call.return_response else None
+
+    async def handle_export_data(call: ServiceCall) -> dict | None:
+        out: dict = {}
+        for coord in _all_coordinators(hass):
+            out = await coord.service_export_data()
+        return out if call.return_response else None
+
+    async def handle_import_data(call: ServiceCall) -> dict | None:
+        path = str(call.data.get("path") or "")
+        raw = call.data.get("data")
+        if not raw and not path:
+            raise vol.Invalid("Serve 'path' (file JSON) oppure 'data' (oggetto)")
+        if path and not raw:
+            def _read() -> object:
+                with open(path, "r", encoding="utf-8") as fh:
+                    return json.load(fh)
+
+            raw = await hass.async_add_executor_job(_read)
+        out: dict = {}
+        for coord in _all_coordinators(hass):
+            out = coord.service_import_data(raw)
+            try:
+                await coord.async_request_refresh()
+            except Exception:  # noqa: BLE001 - l'entry può ricaricarsi
+                pass
+        return out if call.return_response else None
 
     async def handle_add_charge(call: ServiceCall) -> None:
         kwh = float(call.data["kwh"])
@@ -292,6 +320,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
               schema=vol.Schema({vol.Optional("scope", default="all"): vol.In(RESET_SCOPES)}))
     _register(SERVICE_EXPORT_CSV, handle_export_csv,
               supports_response=SupportsResponse.OPTIONAL)
+    _register(SERVICE_EXPORT_DATA, handle_export_data,
+              supports_response=SupportsResponse.OPTIONAL)
+    _register(SERVICE_IMPORT_DATA, handle_import_data,
+              supports_response=SupportsResponse.OPTIONAL,
+              schema=vol.Schema({
+                  vol.Optional("path"): cv.string,
+                  vol.Optional("data"): dict,
+              }))
     _register(SERVICE_ADD_CHARGE, handle_add_charge,
               schema=vol.Schema({
                   vol.Required("kwh"): cv.positive_float,
@@ -405,6 +441,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 SERVICE_CLOSE_TRIP, SERVICE_RESET_COUNTERS, SERVICE_EXPORT_CSV,
                 SERVICE_ADD_CHARGE, SERVICE_DELETE_CHARGE, SERVICE_UPDATE_CHARGE,
                 SERVICE_SPLIT_CHARGE, SERVICE_SET_CHARGE_ZONES,
+                SERVICE_EXPORT_DATA, SERVICE_IMPORT_DATA,
                 SERVICE_DELETE_TRIP, SERVICE_ADD_MAINTENANCE,
                 SERVICE_DELETE_MAINTENANCE, SERVICE_RENEW_INSURANCE,
                 SERVICE_SET_SCADENZA, SERVICE_SET_TAGLIANDO, SERVICE_CREATE_DASHBOARD,

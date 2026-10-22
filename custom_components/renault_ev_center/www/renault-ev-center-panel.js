@@ -220,6 +220,14 @@ const I18N = {
     note_confronto: "The <b>since installation</b> comparison is the most reliable: both sides come from real data\n      (km driven with the integration active vs recorded charges). The <b>total</b> one depends on the\n      kWh/€ you entered in Settings → Prices. Both use the km <b>since activation</b>, not the\n      full odometer: kilometres already driven by others (used car) do not enter the comparison.",
     note_crea: "Creates in HA: <b>charge completed</b> (kWh, SoC, cost),\n        <b>charge started</b> and <b>daily summary</b>. Editable from Settings → Automations.",
     mesi: "January|February|March|April|May|June|July|August|September|October|November|December",
+    h3_backup: "💾 Data backup",
+    btn_export_data: "⬇️ Export all data",
+    btn_import_data: "⬆️ Import from file",
+    note_backup: "One JSON file with trips, charges, history and counters. Importing it on another installation replaces the data.",
+    toast_export_ok: "✅ Backup downloaded",
+    toast_import_ok: "✅ Data imported",
+    toast_import_err: "⚠️ Invalid file or failed operation",
+    confirm_import: "Replace all data with the file content? This cannot be undone.",
     h3_zone_ricariche: "🗺️ Charge zones",
     btn_salva_zone: "💾 Save zones",
     note_zone: "Charges in these zones count as public, with the price you set. Home stays the zone for wallbox balancing and solar.",
@@ -465,6 +473,14 @@ const I18N = {
     note_confronto: "La comparaison <b>depuis l'installation</b> est la plus fiable : les deux côtés viennent de données réelles\n      (km parcourus avec l'intégration active contre recharges enregistrées). La <b>totale</b> dépend des\n      kWh/€ saisis dans Réglages → Prix. Les deux utilisent les km <b>depuis l'activation</b>, pas\n      l'odomètre complet : les kilomètres déjà parcourus par d'autres (voiture d'occasion) n'entrent pas dans la comparaison.",
     note_crea: "Crée dans HA : <b>recharge terminée</b> (kWh, SoC, coût),\n        <b>début de recharge</b> et <b>résumé quotidien</b>. Modifiables depuis Réglages → Automatisations.",
     mesi: "Janvier|Février|Mars|Avril|Mai|Juin|Juillet|Août|Septembre|Octobre|Novembre|Décembre",
+    h3_backup: "💾 Sauvegarde",
+    btn_export_data: "⬇️ Exporter toutes les données",
+    btn_import_data: "⬆️ Importer depuis un fichier",
+    note_backup: "Un seul fichier JSON avec trajets, recharges, historique et compteurs. L'import sur une autre installation remplace les données.",
+    toast_export_ok: "✅ Sauvegarde téléchargée",
+    toast_import_ok: "✅ Données importées",
+    toast_import_err: "⚠️ Fichier invalide ou opération échouée",
+    confirm_import: "Remplacer toutes les données par celles du fichier ? Action irréversible.",
     h3_zone_ricariche: "🗺️ Zones de recharge",
     btn_salva_zone: "💾 Enregistrer les zones",
     note_zone: "Les recharges dans ces zones comptent comme publiques, avec le prix indiqué. Home reste la zone de l'équilibrage wallbox et du solaire.",
@@ -718,6 +734,14 @@ const I18N = {
     note_confronto: "La comparación <b>desde la instalación</b> es la más fiable: ambos lados vienen de datos reales\n      (km recorridos con la integración activa vs recargas registradas). La <b>total</b> depende de los\n      kWh/€ que introdujiste en Ajustes → Precios. Ambas usan los km <b>desde la activación</b>, no\n      el odómetro completo: los kilómetros ya recorridos por otros (coche usado) no entran en la comparación.",
     note_crea: "Crea en HA: <b>recarga completada</b> (kWh, SoC, coste),\n        <b>inicio de recarga</b> y <b>resumen diario</b>. Editables desde Ajustes → Automatizaciones.",
     mesi: "Enero|Febrero|Marzo|Abril|Mayo|Junio|Julio|Agosto|Septiembre|Octubre|Noviembre|Diciembre",
+    h3_backup: "💾 Copia de datos",
+    btn_export_data: "⬇️ Exportar todos los datos",
+    btn_import_data: "⬆️ Importar desde archivo",
+    note_backup: "Un solo archivo JSON con viajes, recargas, historial y contadores. Al importarlo en otra instalación se sustituyen los datos.",
+    toast_export_ok: "✅ Copia descargada",
+    toast_import_ok: "✅ Datos importados",
+    toast_import_err: "⚠️ Archivo no válido u operación fallida",
+    confirm_import: "¿Sustituir todos los datos con los del archivo? Operación irreversible.",
     h3_zone_ricariche: "🗺️ Zonas de recarga",
     btn_salva_zone: "💾 Guardar zonas",
     note_zone: "Las recargas en estas zonas cuentan como públicas, con el precio indicado. Home sigue siendo la zona del balanceo wallbox y del solar.",
@@ -971,6 +995,14 @@ const I18N = {
     note_confronto: "Der Vergleich <b>seit Installation</b> ist der zuverlässigste: beide Seiten stammen aus realen Daten\n      (km mit aktiver Integration vs. erfasste Ladungen). Der <b>Gesamt</b>-Vergleich hängt von den\n      kWh/€ ab, die du unter Einstellungen → Preise eingegeben hast. Beide nutzen die km <b>seit Aktivierung</b>, nicht\n      den gesamten Kilometerstand: bereits von anderen gefahrene Kilometer (Gebrauchtwagen) fließen nicht ein.",
     note_crea: "Erstellt in HA: <b>Ladung abgeschlossen</b> (kWh, SoC, Kosten),\n        <b>Ladestart</b> und <b>Tageszusammenfassung</b>. Bearbeitbar unter Einstellungen → Automatisierungen.",
     mesi: "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember",
+    h3_backup: "💾 Daten-Backup",
+    btn_export_data: "⬇️ Alle Daten exportieren",
+    btn_import_data: "⬆️ Aus Datei importieren",
+    note_backup: "Eine einzige JSON-Datei mit Fahrten, Ladungen, Verlauf und Zählern. Beim Import auf einer anderen Installation werden die Daten ersetzt.",
+    toast_export_ok: "✅ Backup heruntergeladen",
+    toast_import_ok: "✅ Daten importiert",
+    toast_import_err: "⚠️ Ungültige Datei oder Vorgang fehlgeschlagen",
+    confirm_import: "Alle Daten durch die der Datei ersetzen? Nicht rückgängig zu machen.",
     h3_zone_ricariche: "🗺️ Ladezonen",
     btn_salva_zone: "💾 Zonen speichern",
     note_zone: "Ladungen in diesen Zonen zählen als öffentlich, mit dem angegebenen Preis. Home bleibt die Zone für Wallbox-Balancierung und Solar.",
@@ -3825,6 +3857,8 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "maint_gomme": this._saveMaint("gomme"); break;
       case "maint_add": this._addMaint(); break;
       case "save_zones": this._saveZones(); break;
+      case "export_data": this._exportData(); break;
+      case "import_data": this._importData(); break;
       case "reset_km": this._call(D, "reset_counters", { scope: "km" }, "🔄 Km azzerati"); break;
       case "reset_energia": this._call(D, "reset_counters", { scope: "energia" }, "🔄 Energia azzerata"); break;
       case "reset_costi": this._call(D, "reset_counters", { scope: "costi" }, "🔄 Costi azzerati"); break;
@@ -4264,6 +4298,59 @@ class RenaultEvCenterPanel extends HTMLElement {
       zones.push({ zone: sel.value, price: parseFloat((inp && inp.value) || "0") || 0 });
     });
     this._call("renault_ev_center", "set_charge_zones", { zones }, _t("toast_zone_salvate", "💾 Zone salvate"));
+  }
+
+  /** risposta servizio (returnResponse) → payload, qualunque sia la forma */
+  _resp(res) {
+    if (!res) return null;
+    const r = res.service_response || res.response || res;
+    return r.json || r;
+  }
+
+  async _exportData() {
+    try {
+      const res = await this._hass.callService(
+        "renault_ev_center", "export_data", {}, undefined, false, true);
+      const payload = this._resp(res);
+      const blob = new Blob([JSON.stringify(payload, null, 1)],
+        { type: "application/json" });
+      const a = document.createElement("a");
+      const d = new Date();
+      const p = (n) => String(n).padStart(2, "0");
+      a.href = URL.createObjectURL(blob);
+      a.download = `renault_ev_center_data_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      this._toast(_t("toast_export_ok", "✅ Backup scaricato"));
+    } catch (err) {
+      this._toast(_t("toast_import_err", "⚠️ Operazione non riuscita"));
+    }
+  }
+
+  _importData() {
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = ".json,application/json";
+    inp.onchange = async () => {
+      const file = inp.files && inp.files[0];
+      if (!file) return;
+      let raw = null;
+      try {
+        raw = JSON.parse(await file.text());
+      } catch (err) {
+        this._toast(_t("toast_import_err", "⚠️ File non valido"));
+        return;
+      }
+      if (!confirm(_t("confirm_import", "Sostituire tutti i dati con quelli del file? Operazione irreversibile."))) return;
+      try {
+        await this._hass.callService(
+          "renault_ev_center", "import_data", { data: raw }, undefined, false, true);
+        this._toast(_t("toast_import_ok", "✅ Dati importati"));
+      } catch (err) {
+        this._toast(_t("toast_import_err", "⚠️ Import fallito"));
+      }
+    };
+    inp.click();
   }
 
   async _drawMap() {
@@ -5964,6 +6051,11 @@ const PAGES = () => ({
         <div class="btn" data-cmd="reset_energia">🔄 Reset contatori Energia</div>
         <div class="btn" data-cmd="reset_costi">🔄 Reset contatori Costi</div>
         <div class="btn" data-cmd="csv">📥 Esporta viaggi CSV</div></div></div></div>
+  <div class="card" style="margin-top:16px"><h3>${_t("h3_backup", "💾 Backup dati")}</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="btn" data-cmd="export_data">${_t("btn_export_data", "⬇️ Esporta tutti i dati")}</div>
+      <div class="btn" data-cmd="import_data">${_t("btn_import_data", "⬆️ Importa da file")}</div></div>
+    <div style="color:var(--muted);font-size:11.5px;margin-top:8px">${_t("note_backup", "Un solo file JSON con viaggi, ricariche, storico e contatori. Importandolo su un'altra installazione i dati vengono sostituiti.")}</div></div>
   <div class="card" style="margin-top:16px"><h3>${_t("h3_zone_ricariche", "🗺️ Zone ricariche")}</h3>
     <div data-c="zone-rows"><div style="color:var(--muted);font-size:12px">—</div></div>
     <div class="btn" data-cmd="save_zones" style="margin-top:10px">${_t("btn_salva_zone", "💾 Salva zone")}</div>

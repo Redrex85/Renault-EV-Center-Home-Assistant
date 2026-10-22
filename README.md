@@ -524,6 +524,18 @@ data: { kwh: 24.8, costo: 11.90, tipo: Pubblica }
 # Exports all trips to CSV (config/renault_ev_center_export/)
 service: renault_ev_center.export_trips_csv
 
+# Full backup in one JSON: trips, charges, daily history, counters, maintenance
+service: renault_ev_center.export_data
+#   returns the path, e.g. config/renault_ev_center_export/renault_ev_center_data_20261022_120000.json
+
+# Restores that JSON on this installation (replaces everything, no merge)
+service: renault_ev_center.import_data
+data: { path: /config/renault_ev_center_export/renault_ev_center_data_20261022_120000.json }
+
+# Per-zone prices: charges starting in these zones use that price
+service: renault_ev_center.set_charge_zones
+data: { zones: [{ zone: box, price: 0.30 }, { zone: ufficio, price: 0.45 }] }
+
 # (Re)creates the side dashboard with all views
 service: renault_ev_center.create_dashboard
 

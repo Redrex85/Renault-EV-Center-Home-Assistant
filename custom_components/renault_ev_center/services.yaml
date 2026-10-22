@@ -82,6 +82,25 @@ update_charge:
     soc_end:
       name: Batteria fine %
       example: 80
+export_data:
+  name: Esporta tutti i dati
+  description: Scrive viaggi, ricariche, storico giornaliero e contatori in un unico JSON in config/renault_ev_center_export. Restituisce il percorso del file.
+  fields: {}
+import_data:
+  name: Importa tutti i dati
+  description: Sostituisce i dati dell'integrazione con quelli di un file esportato con export_data. Operazione irreversibile, nessuna fusione con i dati esistenti.
+  fields:
+    path:
+      name: File JSON
+      description: Percorso del file esportato (es. /config/renault_ev_center_export/renault_ev_center_data_20260101_120000.json).
+      example: /config/renault_ev_center_export/renault_ev_center_data_20260101_120000.json
+      selector:
+        text:
+    data:
+      name: Dati (alternativa al file)
+      description: 'Oggetto già presente nell''esportazione (formato {"data": {"trips": [...]}}). Usare al posto di "path".'
+      selector:
+        object:
 set_charge_zones:
   name: Zone ricariche con tariffa
   description: Zone HA (diverse da home) con tariffa propria, usate per calcolare il costo delle ricariche.
