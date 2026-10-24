@@ -237,7 +237,7 @@
               "co2_thermal_gkm": "CO2 thermique (g/km)",
               "co2_grid_gkwh": "CO2 réseau (g/kWh)",
               "geocode_enabled": "Rue et pays dans les trajets et recharges (géocodage OpenStreetMap)",
-          "charge_merge": "Fusionner les recharges fractionnées (une prise = une recharge)",
+              "charge_merge": "Fusionner les recharges fractionnées (une prise = une recharge)",
               "avg_speed_kmh": "Vitesse moyenne estimée pour l'heure de départ",
               "scadenze_enabled": "Activer les rappels d'échéances",
               "scadenza_bollo": "Échéance taxe (AAAA-MM-JJ)",
@@ -451,7 +451,7 @@
               "co2_thermal_gkm": "CO2 thermique (g/km)",
               "co2_grid_gkwh": "CO2 réseau (g/kWh)",
               "geocode_enabled": "Rue et pays dans les trajets et recharges (géocodage OpenStreetMap)",
-          "charge_merge": "Fusionner les recharges fractionnées (une prise = une recharge)",
+              "charge_merge": "Fusionner les recharges fractionnées (une prise = une recharge)",
               "avg_speed_kmh": "Vitesse moyenne estimée pour l'heure de départ",
               "scadenze_enabled": "Activer les rappels d'échéances",
               "scadenza_bollo": "Échéance taxe (AAAA-MM-JJ)",
@@ -581,10 +581,6 @@
       "name": "Créer tableau de bord",
       "description": "Créer/mettre à jour le tableau de bord latéral avec toutes les vues."
     },
-    "create_automations": {
-      "name": "Créer automatisations recommandées",
-      "description": "Créer les 3 automatisations recommandées dans Home Assistant."
-    },
     "set_maintenance": {
       "name": "Définir l'échéance d'entretien",
       "description": "Définir la prochaine échéance (entretien/pneus) par km et/ou date.",
@@ -629,6 +625,10 @@
           "name": "Jours"
         }
       }
+    },
+    "set_notify_texts": {
+      "name": "Textes des notifications",
+      "description": "Personnalise les textes des notifications (début, recharge terminée, batterie faible)."
     }
   },
   "selector": {

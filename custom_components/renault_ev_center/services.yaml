@@ -82,6 +82,16 @@ update_charge:
     soc_end:
       name: Batteria fine %
       example: 80
+set_notify_texts:
+  name: Testi delle notifiche
+  description: Personalizza i testi delle notifiche inviate dall'integrazione (avvio ricarica, fine ricarica, batteria bassa). Chiavi usate come titolo/messaggio predefinito.
+  fields:
+    texts:
+      name: Testi
+      description: 'Mappa chiave → testo. Chiavi: cs_title, cs_msg, cc_title, cc_body, lb_title, lb_msg. Il messaggio di fine ricarica accetta {zona}, {kwh}, {durata}, {soc0}, {soc1}, {costo}.'
+      example: '{"cc_title": "🔋 Carica finita", "cc_body": "📍 {zona}\n⚡️ {kwh:.1f} kWh\n💰 €{costo:.2f}"}'
+      selector:
+        object:
 export_data:
   name: Esporta tutti i dati
   description: Scrive viaggi, ricariche, storico giornaliero e contatori in un unico JSON in config/renault_ev_center_export. Restituisce il percorso del file.
@@ -192,10 +202,6 @@ set_tagliando:
       description: km assoluti (mode=km) oppure data YYYY-MM-DD (mode=data).
       example: "71218"
 
-create_automations:
-  name: Crea automazioni consigliate
-  description: Crea o aggiorna in Home Assistant le 3 automazioni consigliate
-    (ricarica completata, batteria bassa fuori casa, riassunto giornaliero).
 create_dashboard:
   name: Crea dashboard
   description: (Ri)crea la dashboard laterale "«Nome» EV Center" con tutte le viste.

@@ -5,6 +5,20 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.19 - Requisiti HACS: niente YAML utente, asset dell'integrazione, escaping
+
+**Cambiamenti che richiedono un'azione (una volta sola)**
+
+- **Automazioni non più create/scritte**: l'integrazione non tocca più `automations.yaml` (era la richiesta principale della review HACS: un file YAML malformato veniva sovrascritto). Notifiche di **avvio** e **fine ricarica** e **batteria bassa** sono inviate direttamente dall'integrazione; la **carica programmata** ora parte e si ferma dal coordinator. Se hai ancora le automazioni «Renault EV Center» create dalle versioni precedenti, **eliminale** da *Impostazioni → Automazioni*: restano attive e produrrebbero notifiche doppie (il pannello te lo segnala nel log).
+- **Risorse Lovelace spostate**: card e pannello non vengono più copiati in `/config/www/renault-ev-center/` ma serviti dall'integrazione (`/renault_ev_center/www/...` e `/renault_ev_center/images/...`). La risorsa viene migrata da sola; se in dashboard/card avevi un `image:` che puntava a `/local/renault-ev-center/auto.png`, sostituiscilo con `/renault_ev_center/images/<modello>.png`.
+- **`/config/www` non viene più toccato**: alla disinstallazione non cancella più la cartella con le tue immagini.
+
+**Novità**
+
+- **Testi delle notifiche personalizzabili**: *Impostazioni → 🔔 Notifiche* (o servizio `set_notify_texts`) per titolo avvio, titolo e messaggio di fine ricarica; variabili `{zona} {kwh} {durata} {soc0} {soc1} {costo}`.
+- **Sicurezza del pannello**: tutti i valori esterni (nomi zona, nomi entità, toponimi OpenStreetMap, note delle ricariche e dei viaggi) sono ora passati da escaping prima di finire nell'HTML.
+- Servizi `create_automations` rimosso; esempi pronti in `examples/` da importare a mano se li vuoi.
+
 ## 1.1.18 - Zone di ricarica con tariffa propria
 
 - **Zone con prezzo**: puoi associare un prezzo (€/kWh) alle tue zone HA. Una ricarica che parte in quella zona usa quel prezzo al posto della tariffa pubblica generica.

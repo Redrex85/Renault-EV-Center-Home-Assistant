@@ -1350,6 +1350,7 @@ class Programmazione(MateSensor):
         }
         return {"schedule": dict(sch), "gse": gse, "home": home,
                 "zone_prices": dict(c.zone_prices),
+                "notify_texts": dict(c.notify_texts),
                 "notify_service": str(c.notify_service or "")}
 
 

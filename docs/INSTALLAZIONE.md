@@ -159,7 +159,7 @@ I **viaggi** vengono rilevati automaticamente quando l'odometro aumenta; il viag
 ## 5. Automazioni consigliate
 
 Puoi crearle in automatico dalla vista **Automazioni → "Crea automazioni consigliate"**
-(oppure col servizio `renault_ev_center.create_automations`).
+(oppure col servizio `renault_ev_center.set_notify_texts`). Le notifiche sono native: nessuna automazione da creare.
 
 In alternativa copia ciò che ti serve da [`examples/automazioni_esempio.yaml`](../examples/automazioni_esempio.yaml):
 

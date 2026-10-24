@@ -7,18 +7,18 @@
  * Installazione:
  *   1) copia questo file in /config/www/renault-ev-center/
  *   2) Impostazioni → Dashboard → ⋮ → Risorse → + → URL:
- *      /local/renault-ev-center/renault-ev-center-card.js
+ *      /renault_ev_center/www/renault-ev-center-card.js
  *   3) aggiungi la card manuale di tipo "custom:renault-ev-center-card"
  *
  * Configurazione:
  *   type: custom:renault-ev-center-card
  *   name: Renault            # prefisso entità (il nome dell'auto)
- *   image: /local/renault-ev-center/auto.png
+ *   image: /renault_ev_center/images/custom.png
  *   battery_entity: sensor.battery_level
  *   range_entity: sensor.battery_autonomy
  *   odometer_entity: sensor.mileage
  */
-const CARD_VER = "1.1.18";
+const CARD_VER = "1.1.19";
 let _cardVerChecked = false;
 
 class RenaultEvCenterCard extends HTMLElement {
@@ -27,7 +27,7 @@ class RenaultEvCenterCard extends HTMLElement {
     if (_cardVerChecked) return;
     _cardVerChecked = true;
     try {
-      fetch(`/local/renault-ev-center/renault-ev-center-card.js?ts=${Date.now()}`, { cache: "no-store" })
+      fetch(`/renault_ev_center/www/renault-ev-center-card.js?ts=${Date.now()}`, { cache: "no-store" })
         .then((r) => (r.ok ? r.text() : ""))
         .then((t) => {
           const m = t && t.match(/const CARD_VER = "([^"]+)"/);
@@ -48,7 +48,7 @@ class RenaultEvCenterCard extends HTMLElement {
     this._config = Object.assign(
       {
         name: "Renault",
-        image: "/local/renault-ev-center/auto.png",
+        image: "/renault_ev_center/images/custom.png",
         battery_entity: "sensor.battery_level",
         range_entity: "sensor.battery_autonomy",
         odometer_entity: "sensor.mileage",
@@ -164,7 +164,7 @@ class RenaultEvCenterCard extends HTMLElement {
   }
 
   static getStubConfig() {
-    return { name: "Renault", image: "/local/renault-ev-center/auto.png" };
+      return { name: "Renault", image: "/renault_ev_center/images/custom.png" };
   }
 }
 
@@ -182,4 +182,4 @@ try {
   /* ambiente non-HA (demo): ignora */
 }
 
-  console.info("%c RENAULT EV CENTER CARD %c v1.1.18 " , "background:#4d8dff;color:#fff", "background:#333;color:#fff");
+  console.info("%c RENAULT EV CENTER CARD %c v1.1.19 " , "background:#4d8dff;color:#fff", "background:#333;color:#fff");

@@ -45,6 +45,7 @@ from .const import (
     CONF_NAME,
     CONF_NOTIFY_DAYS,
     CONF_NOTIFY_SERVICE,
+    CONF_NOTIFY_TEXTS,
     CONF_ODOMETER,
     CONF_NOTIFY_CHARGE_START,
     CONF_NOTIFY_CHARGE_END,
@@ -322,6 +323,7 @@ _NOTIFY_L10N: dict[str, dict[str, str]] = {
         "cc_title": "🔋 Ricarica Completata", "cc_loc": "📍 Location",
         "cc_energy": "⚡️ Energia", "cc_time": "🕐 Tempo", "cc_batt": "📊 Batteria",
         "cc_cost": "💰 Costo stimato", "cc_h": "ore",
+        "cc_body": "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} ore\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 €{costo:.2f}",
     },
     "en": {
         "cs_title": "⚡ Charging started",
@@ -347,6 +349,7 @@ _NOTIFY_L10N: dict[str, dict[str, str]] = {
         "cc_title": "🔋 Charging Complete", "cc_loc": "📍 Location",
         "cc_energy": "⚡️ Energy", "cc_time": "🕐 Time", "cc_batt": "📊 Battery",
         "cc_cost": "💰 Estimated cost", "cc_h": "h",
+        "cc_body": "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 €{costo:.2f}",
     },
     "fr": {
         "cs_title": "⚡ Recharge démarrée",
@@ -372,6 +375,7 @@ _NOTIFY_L10N: dict[str, dict[str, str]] = {
         "cc_title": "🔋 Recharge terminée", "cc_loc": "📍 Emplacement",
         "cc_energy": "⚡️ Énergie", "cc_time": "🕐 Durée", "cc_batt": "📊 Batterie",
         "cc_cost": "💰 Coût estimé", "cc_h": "h",
+        "cc_body": "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
     },
     "es": {
         "cs_title": "⚡ Recarga iniciada",
@@ -397,6 +401,7 @@ _NOTIFY_L10N: dict[str, dict[str, str]] = {
         "cc_title": "🔋 Recarga completada", "cc_loc": "📍 Ubicación",
         "cc_energy": "⚡️ Energía", "cc_time": "🕐 Tiempo", "cc_batt": "📊 Batería",
         "cc_cost": "💰 Coste estimado", "cc_h": "h",
+        "cc_body": "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
     },
     "de": {
         "cs_title": "⚡ Laden gestartet",
@@ -422,6 +427,7 @@ _NOTIFY_L10N: dict[str, dict[str, str]] = {
         "cc_title": "🔋 Ladung abgeschlossen", "cc_loc": "📍 Standort",
         "cc_energy": "⚡️ Energie", "cc_time": "🕐 Dauer", "cc_batt": "📊 Batterie",
         "cc_cost": "💰 Geschätzte Kosten", "cc_h": "h",
+        "cc_body": "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
     },
 }
 
@@ -524,6 +530,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.scad_revisione = str(opts.get(CONF_SCAD_REVISIONE) or "")
         self.scad_assicurazione = str(opts.get(CONF_SCAD_ASSICURAZIONE) or "")
         self.notify_service = str(opts.get(CONF_NOTIFY_SERVICE) or "")
+        # testi delle notifiche personalizzati dall'utente (chiave L10N → testo)
+        self.notify_texts = dict(opts.get(CONF_NOTIFY_TEXTS) or {})
         # versione dell'integrazione (impostata da async_setup_entry, fuori dall'event loop):
         # usata dagli attributi dei sensori per l'auto-refresh della card
         self.version = ""
@@ -2870,6 +2878,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             return True
         return False
 
+    def service_set_notify_texts(self, texts: dict[str, Any]) -> dict[str, str]:
+        """Testi personalizzati delle notifiche (chiave → testo). Vuoto = testo predefinito."""
+        clean = {str(k): str(v) for k, v in (texts or {}).items() if str(v or "").strip()}
+        self.notify_texts = clean
+        self.hass.config_entries.async_update_entry(
+            self.entry, options={**self.entry.options, CONF_NOTIFY_TEXTS: clean})
+        return clean
+
     def service_set_charge_zones(self, pairs: list[dict[str, Any]]) -> dict[str, float]:
         """Zone extra con tariffa propria: le salva nelle opzioni dell'entry."""
         prices = _parse_zone_prices(
@@ -2982,200 +2998,19 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.low_soc_days = validi
         return validi
 
-    async def service_create_automations(self) -> list[str]:
-        """Crea (solo se assenti) le automazioni consigliate in automations.yaml."""
-        from .dashboard import entry_name, slugify
-
-        n = slugify(entry_name(self.entry))
-        batt = str(self.opts.get("battery_level_entity") or f"sensor.{n}_batteria")
-        range_e = str(self.opts.get("range_entity") or f"sensor.{n}_autonomia_della_batteria")
-        # il nostro binary_sensor è SEMPRE on/off: l'entità sorgente può essere un sensore
-        # testuale ("charging"/"not_charging") e il trigger from on → off non scatterebbe mai
-        charging = f"binary_sensor.{n}_in_carica"
-        loc = str(self.opts.get("location_entity") or "")
-        wb_state_e = str(self.opts.get(CONF_WB_STATE) or "sensor.wallbox_charger_state")
-        target = ""
-        if self.notify_service:
-            target = self.notify_service if "." in self.notify_service else f"notify.{self.notify_service}"
-
-        def _pn(notif_id: str, title: str, msg: str) -> dict:
-            if target:
-                return {"action": target, "data": {"title": title, "message": msg}}
-            return {"action": "persistent_notification.create",
-                    "data": {"notification_id": notif_id, "title": title, "message": msg}}
-
-        # etichette notifica di fine ricarica, nella lingua scelta in Home Assistant
-        _ric_msg = (
-            self._tr("cc_loc") + ": {{ state_attr('sensor." + n + "_ultima_ricarica', 'zona') or '—' }}\n"
-            + self._tr("cc_energy") + ": {{ states('sensor." + n + "_ultima_ricarica') }} kWh\n"
-            + self._tr("cc_time") + ": {{ (state_attr('sensor." + n + "_ultima_ricarica', 'durata_min')"
-            " | float(0) / 60) | round(2) }} " + self._tr("cc_h") + "\n"
-            + self._tr("cc_batt") + ": {{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_start') }}% → "
-            "{{ state_attr('sensor." + n + "_ultima_ricarica', 'soc_end') }}%\n"
-            + self._tr("cc_cost") + ": €{{ state_attr('sensor." + n + "_ultima_ricarica', 'costo') }}"
-        )
-
-        autos: dict[str, dict] = {
-            f"renault_ev_center_{n}_ricarica_completata": {
-                "alias": f"Renault EV Center — Ricarica completata ({n})",
-                "trigger": [{"trigger": "state", "entity_id": charging,
-                              "from": "on", "to": "off", "for": {"minutes": 3}}],
-                # NIENTE condizione sulla data: una ricarica notturna inizia ieri e finisce oggi,
-                # quindi il confronto con la data di OGGI la scartava (notifica mai inviata).
-                "action": [_pn(f"rec_ric_{n}", self._tr("cc_title"), _ric_msg)],
-                "mode": "single",
-            },
-            f"renault_ev_center_{n}_avvio_ricarica": {
-                "alias": f"Renault EV Center — Notifica avvio ricarica ({n})",
-                "trigger": [{"trigger": "state", "entity_id": wb_state_e, "to": "charging"}],
-                "condition": [],
-                "action": [_pn(f"rec_start_{n}", self._tr("auto_start_title"),
-                                self._tr("auto_start_msg"))],
-                "mode": "single",
-            },
-            f"renault_ev_center_{n}_riassunto_giornaliero": {
-                "alias": f"Renault EV Center — Riassunto giornaliero ({n})",
-                "trigger": [{"trigger": "time", "at": "21:30:00"}],
-                "condition": [{"condition": "numeric_state",
-                                "entity_id": f"sensor.{n}_km_giornalieri", "above": 0.5}],
-                "action": [_pn(f"rec_sum_{n}", self._tr("sum_title"),
-                                "{% set kwh = states('sensor." + n + "_energia_batteria_giornaliero') | float(none) %}"
-                                "{% set prezzo = states('number." + n + "_costo_energia_casa') | float(none) %}"
-                                + self._tr("sum_km") + ": {{ states('sensor." + n + "_km_giornalieri') }} km\n"
-                                + self._tr("sum_energy") + ": {% if kwh is not none %}{{ kwh | round(2) }} kWh"
-                                "{% else %}" + self._tr("sum_na") + "{% endif %}\n"
-                                + self._tr("sum_cost") + ": "
-                                "{% if kwh is not none and prezzo is not none %}{{ (kwh * prezzo) | round(2) }} €"
-                                "{% else %}" + self._tr("sum_na") + "{% endif %}\n"
-                                + self._tr("sum_cons") + ": {{ states('sensor." + n + "_kwh_per_100km') }} kWh/100km · "
-                                + self._tr("sum_costkm") + ": {{ states('sensor." + n + "_costo_per_km') }} €/km")],
-                "mode": "single",
-            },
-            f"renault_ev_center_{n}_refresh_auto": {
-                "alias": f"Renault EV Center — Aggiorna posizione auto ({n})",
-                "trigger": [{"trigger": "time_pattern", "minutes": "/30"}],
-                "condition": [],
-                "action": [{"action": "renault_ev_center.refresh_car"}],
-                "mode": "single",
-            },
-        }
-
-        # la notifica "batteria bassa" è gestita NATIVAMENTE dall'integrazione (soglia, fascia
-        # oraria e giorni configurabili dalla vista Automazioni): l'automazione omonima va rimossa
-        return await self._automations_apply(
-            autos,
-            [f"renault_ev_center_{n}_promemoria", f"renault_ev_center_{n}_batteria_bassa"],
-        )
-
-    async def _automations_apply(self, upserts: dict[str, dict], removes: list[str]) -> list[str]:
-        """Scrive/aggiorna/rimuove automazioni in automations.yaml (come la UI HA)."""
-        from homeassistant.config import AUTOMATION_CONFIG_PATH
-        from homeassistant.util.file import write_utf8_file_atomic
-        from homeassistant.util.yaml import dump as _yaml_dump
-        from homeassistant.util.yaml import load_yaml as _yaml_load
-
-        from .dashboard import entry_name, slugify
-
-        nome = slugify(entry_name(self.entry))
-        # suffissi gestiti dall'integrazione: un id con slug diverso è un orfano (nome auto cambiato)
-        gestiti = ("_ricarica_completata", "_avvio_ricarica", "_batteria_bassa",
-                   "_riassunto_giornaliero", "_promemoria", "_programma_ricarica",
-                   "_programma_clima", "_scadenze", "_promemoria_batteria", "_refresh_auto")
-
-        def _orfana(aid: object) -> bool:
-            if not isinstance(aid, str) or not aid.startswith("renault_ev_center_"):
-                return False
-            if any(aid == f"renault_ev_center_{nome}{s}" for s in gestiti):
-                return False
-            return any(aid.endswith(s) for s in gestiti)
-
-        def _legacy(entry: object) -> bool:
-            """Automazioni NON più create dall'integrazione: vanno rimosse.
-
-            - 'batteria bassa' / 'batteria bassa fuori casa': sostituite dalla notifica NATIVA
-              (soglia, fascia oraria e giorni configurabili dalla vista Automazioni);
-            - 'promemoria collegamento': ridondante — la notifica «Avviso batteria bassa» dice
-              già «Collega la wallbox!».
-
-            Match su id O alias: i residui vecchi possono avere id diversi.
-            """
-            if not isinstance(entry, dict):
-                return False
-            aid = str(entry.get("id") or "")
-            alias = str(entry.get("alias") or "").lower()
-            if not (aid.startswith("renault_ev_center_") or "renault ev center" in alias):
-                return False
-            return (aid.endswith("_batteria_bassa") or "_batteria_bassa_" in aid
-                    or aid.endswith("_programma_promemoria") or "_promemoria_collegamento" in aid
-                    or "batteria bassa fuori casa" in alias
-                    or "promemoria collegamento" in alias)
-
-        path = self.hass.config.path(AUTOMATION_CONFIG_PATH)
-        rmset = set(removes)
-
-        def _eid(cfg: dict) -> str:
-            return f"automation.{slugify(str(cfg.get('alias', '')))}"
-
-        # stato on/off di TUTTE le automazioni PRIMA del reload: `automation.reload`
-        # riaccende tutto, quindi va ripristinata la scelta dell'utente (non solo le salvate).
-        prev_auto: dict[str, str] = {
-            s.entity_id: s.state for s in self.hass.states.async_all("automation")
-        }
-        prev_state: dict[str, str | None] = {
-            aid: prev_auto.get(_eid(cfg)) for aid, cfg in upserts.items()
-        }
-
-        def _apply() -> list[str]:
-            try:
-                data = _yaml_load(path)
-            except Exception:  # noqa: BLE001
-                data = None
-            if not isinstance(data, list):
-                data = []
-            n_before = len(data)
-            data = [d for d in data if not (isinstance(d, dict) and d.get("id") in rmset)]
-            data = [d for d in data if not (isinstance(d, dict) and _legacy(d))]
-            data = [d for d in data if not (isinstance(d, dict) and _orfana(d.get("id")))]
-            purged = len(data) != n_before   # legacy/orfane rimosse → va riscritto
-            byid = {d.get("id"): i for i, d in enumerate(data) if isinstance(d, dict) and d.get("id")}
-            made: list[str] = []
-            for aid, cfg in upserts.items():
-                entry = {"id": aid, **cfg}
-                if aid in byid:
-                    data[byid[aid]] = entry
-                else:
-                    data.append(entry)
-                made.append(aid)
-            if made or rmset or purged:
-                write_utf8_file_atomic(path, _yaml_dump(data))
-            return made, purged
-
-        changed, purged = await self.hass.async_add_executor_job(_apply)
-        if changed or rmset or purged:
-            await self.hass.services.async_call("automation", "reload", {}, blocking=True)
-            # 1) ripristina TUTTE le automazioni che l'utente aveva spento (il reload le riaccende)
-            for eid, stt in prev_auto.items():
-                if stt == "off" and self.hass.states.get(eid) is not None:
-                    await self.hass.services.async_call(
-                        "automation", "turn_off", {"entity_id": eid}, blocking=False)
-            # 2) accendi SOLO le automazioni appena create
-            for aid, cfg in upserts.items():
-                if prev_state.get(aid) is None:
-                    eid = _eid(cfg)
-                    if self.hass.states.get(eid) is not None:
-                        await self.hass.services.async_call(
-                            "automation", "turn_on", {"entity_id": eid}, blocking=False)
-        return changed
+    def legacy_automations(self) -> list[str]:
+        """Automazioni delle vecchie versioni: solo rilevate, mai riscritte."""
+        out: list[str] = []
+        for s in self.hass.states.async_all("automation"):
+            nm = str(s.attributes.get("friendly_name") or "").lower()
+            if "renault ev center" in nm or s.entity_id.startswith("automation.renault_ev_center_"):
+                out.append(s.entity_id)
+        return out
 
     async def service_set_schedule(self, tipo: str, attivo: bool, inizio: str,
                                    fine: str, soc: int, modo: str, temperatura: int,
                                    giorni: list[str]) -> list[str]:
         """Crea/aggiorna l'automazione di schedulazione ricarica o clima."""
-        from .dashboard import entry_name, slugify
-
-        n = slugify(entry_name(self.entry))
-        aid = f"renault_ev_center_{n}_programma_{tipo}"
-        # memorizzo i valori: il pannello li usa per ripopolare il form dopo un refresh
         self.store.data.setdefault("schedule", {})[tipo] = {
             "attivo": bool(attivo), "inizio": str(inizio), "fine": str(fine),
             "soc": int(soc or 0), "modo": str(modo), "temperatura": int(temperatura or 0),
@@ -3191,66 +3026,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     "switch", "turn_on" if attivo else "turn_off",
                     {"entity_id": gate}, blocking=False)
                 self._sched_sync_done = True
-        if not attivo:
-            return await self._automations_apply({}, [aid])
-
-        days = [d for d in (giorni or []) if d in ("mon", "tue", "wed", "thu", "fri", "sat", "sun")]
-        cond = [{"condition": "time", "weekday": days}] if days else []
-
-        if tipo == "ricarica":
-            actions: list[dict] = []
-            tgt = self.opts.get(CONF_CHARGE_TARGET_NUMBER)
-            if soc and tgt:
-                actions.append({"action": "number.set_value",
-                                "target": {"entity_id": tgt}, "data": {"value": int(soc)}})
-            wb = self.opts.get(CONF_WB_CHARGE_SWITCH)
-            btn = self.opts.get(CONF_CHARGE_START_BUTTON)
-            ent = wb or btn
-            if not ent:
-                # senza entità di avvio l'automazione non farebbe NULLA: provo i nomi comuni
-                for cand in ("button.wallbox_charger_start", f"button.{n}_start_charge"):
-                    if self.hass.states.get(cand) is not None:
-                        ent = cand
-                        break
-            if ent:
-                dom = str(ent).split(".")[0]
-                if dom == "switch":
-                    actions.append({"action": "switch.turn_on", "target": {"entity_id": ent}})
-                elif dom == "button":
-                    actions.append({"action": "button.press", "target": {"entity_id": ent}})
-                else:
-                    actions.append({"action": "homeassistant.turn_on", "target": {"entity_id": ent}})
-            if not actions:
-                _LOGGER.error(
-                    "Programma ricarica: NESSUNA azione possibile — mappa 'Avvio carica WALLBOX' "
-                    "(o il Pulsante Avvia carica) in Configura, altrimenti l'automazione non fa nulla"
-                )
-            cfg = {"alias": f"Renault EV Center — Programma ricarica ({n})",
-                   "trigger": [{"trigger": "time", "at": f"{inizio}:00"}],
-                   "condition": cond, "action": actions, "mode": "single"}
-        elif tipo == "promemoria":
-            target = ""
-            if self.notify_service:
-                target = self.notify_service if "." in self.notify_service else f"notify.{self.notify_service}"
-            act = ({"action": target, "data": {"title": "🔌 Ricarica", "message": "Ricordati di collegare l'auto alla ricarica."}}
-                   if target else
-                   {"action": "persistent_notification.create",
-                    "data": {"notification_id": f"rec_plug_{n}", "title": "🔌 Ricarica",
-                             "message": "Ricordati di collegare l'auto alla ricarica."}})
-            cfg = {"alias": f"Renault EV Center — Promemoria collegamento ({n})",
-                   "trigger": [{"trigger": "time", "at": f"{inizio}:00"}],
-                   "condition": cond, "action": [act], "mode": "single"}
-        else:
-            btn = self.opts.get(CONF_AC_BUTTON)
-            cfg = {"alias": f"Renault EV Center — Programma clima ({n})",
-                   "trigger": [{"trigger": "time", "at": f"{inizio}:00"}],
-                   "condition": cond,
-                   "action": [{"action": "button.press", "target": {"entity_id": btn}}] if btn else [],
-                   "mode": "single"}
-        made = await self._automations_apply({aid: cfg}, [])
-        # l'automazione appena salvata deve essere ATTIVA, altrimenti non parte mai
-        await self._enable_automation(cfg["alias"])
-        return made
+        return [f"schedule.{tipo}"]
 
     async def async_sync_schedule_from_automation(self) -> None:
         """Riprende orario, giorni e SoC della carica programmata DALL'automazione esistente.
@@ -3314,14 +3090,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     return
 
     async def async_cleanup_automations(self) -> None:
-        """All'avvio rimuove le automazioni legacy (es. 'batteria bassa fuori casa').
-
-        La notifica batteria bassa è gestita NATIVAMENTE: le automazioni omonime non servono.
-        """
-        try:
-            await self._automations_apply({}, [])
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.warning("Pulizia automazioni fallita: %s", err)
+        """Le automazioni non si scrivono piu (regola HACS): solo avviso su quelle vecchie."""
+        legacy = self.legacy_automations()
+        if legacy:
+            _LOGGER.warning(
+                "Automazioni Renault EV Center ancora presenti: %s - l'integrazione non le "
+                "gestisce piu, eliminale da Impostazioni > Automazioni per evitare notifiche doppie",
+                ", ".join(legacy))
 
     def _managed_auto_ids(self) -> list[str]:
         """Automazioni create dall'integrazione (per nome o entity_id)."""
@@ -3413,10 +3188,18 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         return code[:2] if code[:2] in _NOTIFY_L10N else "en"
 
     def _tr(self, key: str, **kw: Any) -> str:
-        """Stringa localizzata. Con kwargs formatta i placeholder nominati."""
-        d = _NOTIFY_L10N.get(self._lang()) or _NOTIFY_L10N["en"]
-        s = d.get(key) or _NOTIFY_L10N["en"].get(key, key)
-        return s.format(**kw) if kw else s
+        """Stringa localizzata, con override dell'utente e placeholder nominati."""
+        s = str((self.notify_texts or {}).get(key) or "")
+        if not s:
+            d = _NOTIFY_L10N.get(self._lang()) or _NOTIFY_L10N["en"]
+            s = d.get(key) or _NOTIFY_L10N["en"].get(key, key)
+        if not kw:
+            return s
+        try:
+            return s.format(**kw)
+        except (KeyError, IndexError, ValueError):
+            # testo utente con placeholder sbagliati: non far fallire la notifica
+            return s
 
     async def _send_notify(self, title: str, message: str) -> None:
         """Invia una notifica tramite il servizio notify configurato."""
@@ -3748,12 +3531,17 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 self._tr("cs_msg", cap=data.get('capacity', 60), tipo=zona,
                          soc=data.get('battery')),
             )
-        # NOTA: la notifica di FINE ricarica la manda l'automazione "Ricarica completata"
-        # (visibile e attivabile dalla vista Automazioni, con posizione inclusa).
-        # Qui NON la inviamo più: prima arrivavano DUE notifiche identiche.
+        # --- fine ricarica: notifica NATIVA (nessuna automazione da creare) --------
         if events.get("charge_finished"):
-            _LOGGER.info("Ricarica completata: %s kWh (notifica via automazione)",
-                         events["charge_finished"].get("kwh"))
+            rec = events["charge_finished"] or {}
+            dur = _f(rec.get("durata_min")) / 60.0
+            body = self._tr(
+                "cc_body", kwh=_f(rec.get("kwh")), zona=rec.get("zona") or "—",
+                durata=dur, soc0=_f(rec.get("soc_start")), soc1=_f(rec.get("soc_end")),
+                costo=_f(rec.get("costo")))
+            await self._send_notify(self._tr("cc_title"), body)
+            _LOGGER.info("Ricarica completata: %s kWh (notifica nativa)",
+                         rec.get("kwh"))
 
         # --- promemoria batteria bassa a casa --------------------------------------
         soglia = self._setting_num("low_soc", self.low_soc_threshold)
@@ -3809,11 +3597,19 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         stop_soc = self._setting_num("charge_stop_soc", self.charge_stop_soc)
         stop_target = _f(_sc_prog.get("soc"), 0.0) or stop_soc
 
-        # SOLO FERMO: l'AVVIO lo fa unicamente l'automazione della vista Automazioni.
-        # Premendo anche da qui, la carica partiva DUE volte (automazione alle 23:05
-        # e poll del coordinatore nello stesso istante).
+        # avvio E fermo sono gestiti QUI (niente più automazioni in automations.yaml)
+        counters = self.store.data["counters"]
         if mode == "orario":
             in_window = _in_window(hhmm, avvio_ora_s, stop_ora_s)
+            giorni = [d for d in (_sc_prog.get("giorni") or []) if d in WEEKDAYS]
+            oggi_ok = not giorni or WEEKDAYS[now.weekday()] in giorni
+            # avvio: una volta sola per finestra/giorno
+            key = f"sched_start_{now.strftime('%Y-%m-%d')}_{avvio_ora_s}"
+            if (in_window and oggi_ok and not charging
+                    and counters.get(key) != "1" and self.charge_start_button):
+                counters[key] = "1"
+                self.persist(force=True)
+                await self._press_start()
             # stop: fuori dalla finestra OPPURE SoC obiettivo raggiunto
             # (prima il SoC veniva ignorato: la carica proseguiva oltre il 70%)
             if charging and (not in_window or battery >= stop_target):

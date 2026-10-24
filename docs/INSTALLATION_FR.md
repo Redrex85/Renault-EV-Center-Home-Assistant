@@ -139,5 +139,5 @@ toute la vie de la voiture — pas seulement dans la case de comparaison. Laisse
 > la voiture. Ce n'est pas une erreur : ce sont deux questions différentes.
 
 ## 4. Services, FAQ et dépannage
-Les automatisations recommandées peuvent être créées depuis la vue **Automazioni → « Crea automazioni consigliate »** (ou le service `renault_ev_center.create_automations`).
+Les notifications (début, recharge terminée, batterie faible) sont envoyées par l'intégration : aucune automatisation à créer. Les textes se personnalisent depuis **Impostazioni → Notifiche** (service `renault_ev_center.set_notify_texts`).
 Voir `docs/INSTALLATION.md` (EN) pour la référence complète.

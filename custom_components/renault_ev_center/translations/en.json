@@ -237,7 +237,7 @@
               "co2_thermal_gkm": "Thermal CO2 (g/km)",
               "co2_grid_gkwh": "Grid CO2 (g/kWh)",
               "geocode_enabled": "Street and country in trips and charges (OpenStreetMap geocoding)",
-          "charge_merge": "Merge split charges (one plug-in = one charge)",
+              "charge_merge": "Merge split charges (one plug-in = one charge)",
               "avg_speed_kmh": "Average speed estimate for trip departure time",
               "scadenze_enabled": "Enable deadline reminders",
               "scadenza_bollo": "Road tax due date (YYYY-MM-DD)",
@@ -451,7 +451,7 @@
               "co2_thermal_gkm": "Thermal CO2 (g/km)",
               "co2_grid_gkwh": "Grid CO2 (g/kWh)",
               "geocode_enabled": "Street and country in trips and charges (OpenStreetMap geocoding)",
-          "charge_merge": "Merge split charges (one plug-in = one charge)",
+              "charge_merge": "Merge split charges (one plug-in = one charge)",
               "avg_speed_kmh": "Average speed estimate for trip departure time",
               "scadenze_enabled": "Enable deadline reminders",
               "scadenza_bollo": "Road tax due date (YYYY-MM-DD)",
@@ -581,10 +581,6 @@
       "name": "Create dashboard",
       "description": "Create/update the sidebar dashboard with all bundled views."
     },
-    "create_automations": {
-      "name": "Create recommended automations",
-      "description": "Create the 3 recommended automations in Home Assistant."
-    },
     "set_maintenance": {
       "name": "Set maintenance deadline",
       "description": "Set the next deadline (service/tyres) by km and/or date.",
@@ -629,6 +625,10 @@
           "name": "Days"
         }
       }
+    },
+    "set_notify_texts": {
+      "name": "Notification texts",
+      "description": "Customize the notification texts (start, charge finished, low battery)."
     }
   },
   "selector": {

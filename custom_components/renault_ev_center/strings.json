@@ -237,7 +237,7 @@
               "co2_thermal_gkm": "CO2 termico (g/km)",
               "co2_grid_gkwh": "CO2 rete (g/kWh)",
               "geocode_enabled": "Via e paese in viaggi e ricariche (geocoding OpenStreetMap)",
-          "charge_merge": "Fondi le ricariche spezzate (una spina = una ricarica)",
+              "charge_merge": "Fondi le ricariche spezzate (una spina = una ricarica)",
               "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)",
               "scadenze_enabled": "Abilita promemoria scadenze",
               "scadenza_bollo": "Scadenza bollo (YYYY-MM-DD)",
@@ -451,7 +451,7 @@
               "co2_thermal_gkm": "CO2 termico (g/km)",
               "co2_grid_gkwh": "CO2 rete (g/kWh)",
               "geocode_enabled": "Via e paese in viaggi e ricariche (geocoding OpenStreetMap)",
-          "charge_merge": "Fondi le ricariche spezzate (una spina = una ricarica)",
+              "charge_merge": "Fondi le ricariche spezzate (una spina = una ricarica)",
               "avg_speed_kmh": "Velocità media stimata nei viaggi (per l'orario di partenza)",
               "scadenze_enabled": "Abilita promemoria scadenze",
               "scadenza_bollo": "Scadenza bollo (YYYY-MM-DD)",
@@ -581,10 +581,6 @@
       "name": "Crea dashboard",
       "description": "(Ri)crea la dashboard laterale con tutte le viste."
     },
-    "create_automations": {
-      "name": "Crea automazioni consigliate",
-      "description": "Crea in Home Assistant le 3 automazioni consigliate."
-    },
     "set_maintenance": {
       "name": "Imposta scadenza manutenzione",
       "description": "Imposta la prossima scadenza (tagliando/gomme) per km e/o data.",
@@ -629,6 +625,10 @@
           "name": "Giorni"
         }
       }
+    },
+    "set_notify_texts": {
+      "name": "Testi delle notifiche",
+      "description": "Personalizza i testi delle notifiche (avvio, fine ricarica, batteria bassa)."
     }
   },
   "selector": {

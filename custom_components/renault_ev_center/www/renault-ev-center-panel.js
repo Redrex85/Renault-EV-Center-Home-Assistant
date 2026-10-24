@@ -14,13 +14,13 @@
  *   type: custom:renault-ev-center-panel
  *   name: Megane          # nome auto (prefisso entità integrazione)
  *   car: megane           # slug entità Renault core (battery, range, odometer, location)
- *   image: /local/renault-ev-center/auto.png
+ *   image: /renault_ev_center/images/custom.png
  *   notify: notify.michele
  *   overrides: {battery: "sensor.megane_battery", ...}
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.18";
+const REC_VER = "1.1.19";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -218,8 +218,15 @@ const I18N = {
     ttl_filtra_mese: "Filter: month",
     ttl_filtra_anno: "Filter: year",
     note_confronto: "The <b>since installation</b> comparison is the most reliable: both sides come from real data\n      (km driven with the integration active vs recorded charges). The <b>total</b> one depends on the\n      kWh/€ you entered in Settings → Prices. Both use the km <b>since activation</b>, not the\n      full odometer: kilometres already driven by others (used car) do not enter the comparison.",
-    note_crea: "Creates in HA: <b>charge completed</b> (kWh, SoC, cost),\n        <b>charge started</b> and <b>daily summary</b>. Editable from Settings → Automations.",
+    note_crea: "Notifications (start, charge finished, low battery) are sent by the integration itself: no automations needed. If you still have the old \"Renault EV Center\" automations, delete them in Settings → Automations to avoid duplicate notifications. Ready-made examples in examples/.",
     mesi: "January|February|March|April|May|June|July|August|September|October|November|December",
+    lbl_nt_start: "Start title",
+    lbl_nt_end_title: "Finished title",
+    lbl_nt_end_body: "Finished message",
+    ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 €{costo:.2f}",
+    btn_notify_save: "💾 Save texts",
+    note_nt_vars: "Variables: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Empty = default text.",
+    toast_notify_saved: "💾 Texts saved",
     h3_backup: "💾 Data backup",
     btn_export_data: "⬇️ Export all data",
     btn_import_data: "⬆️ Import from file",
@@ -471,8 +478,15 @@ const I18N = {
     ttl_filtra_mese: "Filtrer : mois",
     ttl_filtra_anno: "Filtrer : année",
     note_confronto: "La comparaison <b>depuis l'installation</b> est la plus fiable : les deux côtés viennent de données réelles\n      (km parcourus avec l'intégration active contre recharges enregistrées). La <b>totale</b> dépend des\n      kWh/€ saisis dans Réglages → Prix. Les deux utilisent les km <b>depuis l'activation</b>, pas\n      l'odomètre complet : les kilomètres déjà parcourus par d'autres (voiture d'occasion) n'entrent pas dans la comparaison.",
-    note_crea: "Crée dans HA : <b>recharge terminée</b> (kWh, SoC, coût),\n        <b>début de recharge</b> et <b>résumé quotidien</b>. Modifiables depuis Réglages → Automatisations.",
+    note_crea: "Les notifications (début, recharge terminée, batterie faible) sont envoyées par l'intégration : aucune automatisation nécessaire. Si tu as encore les anciennes automatisations « Renault EV Center », supprime-les dans Réglages → Automatisations pour éviter les doublons. Exemples prêts dans examples/.",
     mesi: "Janvier|Février|Mars|Avril|Mai|Juin|Juillet|Août|Septembre|Octobre|Novembre|Décembre",
+    lbl_nt_start: "Titre de début",
+    lbl_nt_end_title: "Titre de fin",
+    lbl_nt_end_body: "Message de fin",
+    ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
+    btn_notify_save: "💾 Enregistrer les textes",
+    note_nt_vars: "Variables : {zona} {kwh} {durata} {soc0} {soc1} {costo}. Vide = texte par défaut.",
+    toast_notify_saved: "💾 Textes enregistrés",
     h3_backup: "💾 Sauvegarde",
     btn_export_data: "⬇️ Exporter toutes les données",
     btn_import_data: "⬆️ Importer depuis un fichier",
@@ -732,8 +746,15 @@ const I18N = {
     ttl_filtra_mese: "Filtro: mes",
     ttl_filtra_anno: "Filtro: año",
     note_confronto: "La comparación <b>desde la instalación</b> es la más fiable: ambos lados vienen de datos reales\n      (km recorridos con la integración activa vs recargas registradas). La <b>total</b> depende de los\n      kWh/€ que introdujiste en Ajustes → Precios. Ambas usan los km <b>desde la activación</b>, no\n      el odómetro completo: los kilómetros ya recorridos por otros (coche usado) no entran en la comparación.",
-    note_crea: "Crea en HA: <b>recarga completada</b> (kWh, SoC, coste),\n        <b>inicio de recarga</b> y <b>resumen diario</b>. Editables desde Ajustes → Automatizaciones.",
+    note_crea: "Las notificaciones (inicio, recarga terminada, batería baja) las envía la propia integración: no hacen falta automatizaciones. Si aún tienes las antiguas automatizaciones «Renault EV Center», bórralas en Ajustes → Automatizaciones para evitar notificaciones duplicadas. Ejemplos listos en examples/.",
     mesi: "Enero|Febrero|Marzo|Abril|Mayo|Junio|Julio|Agosto|Septiembre|Octubre|Noviembre|Diciembre",
+    lbl_nt_start: "Título de inicio",
+    lbl_nt_end_title: "Título de fin",
+    lbl_nt_end_body: "Mensaje de fin",
+    ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
+    btn_notify_save: "💾 Guardar textos",
+    note_nt_vars: "Variables: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Vacío = texto por defecto.",
+    toast_notify_saved: "💾 Textos guardados",
     h3_backup: "💾 Copia de datos",
     btn_export_data: "⬇️ Exportar todos los datos",
     btn_import_data: "⬆️ Importar desde archivo",
@@ -993,8 +1014,15 @@ const I18N = {
     ttl_filtra_mese: "Filter: Monat",
     ttl_filtra_anno: "Filter: Jahr",
     note_confronto: "Der Vergleich <b>seit Installation</b> ist der zuverlässigste: beide Seiten stammen aus realen Daten\n      (km mit aktiver Integration vs. erfasste Ladungen). Der <b>Gesamt</b>-Vergleich hängt von den\n      kWh/€ ab, die du unter Einstellungen → Preise eingegeben hast. Beide nutzen die km <b>seit Aktivierung</b>, nicht\n      den gesamten Kilometerstand: bereits von anderen gefahrene Kilometer (Gebrauchtwagen) fließen nicht ein.",
-    note_crea: "Erstellt in HA: <b>Ladung abgeschlossen</b> (kWh, SoC, Kosten),\n        <b>Ladestart</b> und <b>Tageszusammenfassung</b>. Bearbeitbar unter Einstellungen → Automatisierungen.",
+    note_crea: "Benachrichtigungen (Start, Ladung beendet, niedriger Akku) sendet die Integration selbst: keine Automatisierungen nötig. Falls noch alte \"Renault EV Center\"-Automatisierungen existieren, lösche sie unter Einstellungen → Automatisierungen, um doppelte Meldungen zu vermeiden. Beispiele in examples/.",
     mesi: "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember",
+    lbl_nt_start: "Starttitel",
+    lbl_nt_end_title: "Titel bei Ende",
+    lbl_nt_end_body: "Meldung bei Ende",
+    ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
+    btn_notify_save: "💾 Texte speichern",
+    note_nt_vars: "Variablen: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Leer = Standardtext.",
+    toast_notify_saved: "💾 Texte gespeichert",
     h3_backup: "💾 Daten-Backup",
     btn_export_data: "⬇️ Alle Daten exportieren",
     btn_import_data: "⬆️ Aus Datei importieren",
@@ -2630,6 +2658,12 @@ function _ui(src) {
   const e = UI[src];
   return (e && (e[_LANG] || e.it)) || src;
 }
+/** testo non fidato (entità, zone, toponimi OSM, note) dentro innerHTML */
+function _esc(v) {
+  return String(v === null || v === undefined ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 const _LOCALES = { it: "it-IT", en: "en-GB", fr: "fr-FR", es: "es-ES", de: "de-DE" };
 function _loc() { return _LOCALES[_LANG] || "it-IT"; }
 function _detectLang(hass) {
@@ -2670,7 +2704,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         }
       } catch (e) { /* ignore */ }
       // ripiego: rilegge il file servito
-      fetch(`/local/renault-ev-center/renault-ev-center-panel.js?ts=${Date.now()}`, { cache: "no-store" })
+      fetch(`/renault_ev_center/www/renault-ev-center-panel.js?ts=${Date.now()}`, { cache: "no-store" })
         .then((r) => (r.ok ? r.text() : ""))
         .then((t) => {
           const m = t && t.match(/const REC_VER = "([^"]+)"/);
@@ -2703,7 +2737,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._cfg = {
       name,
       car: config.car || this._slug(name),
-      image: config.image || "/local/renault-ev-center/auto.png",
+      image: config.image || "/renault_ev_center/images/custom.png",
       notify: config.notify || "",
       overrides: config.overrides || {},
       capacity: config.capacity || 60,
@@ -3760,7 +3794,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       .sort((a, b) => String(a.attributes.friendly_name || a.entity_id)
         .localeCompare(String(b.attributes.friendly_name || b.entity_id), "it"));
     host.innerHTML = list.length
-      ? list.map((s) => `<div class="row"><span>🟢 ${s.attributes.friendly_name || s.entity_id}</span></div>`).join("")
+        ? list.map((s) => `<div class="row"><span>🟢 ${_esc(s.attributes.friendly_name || s.entity_id)}</span></div>`).join("")
       : `<div style="color:var(--muted);font-size:12px">Nessuna automazione attiva (Renault/Wallbox/Bilanciamento).</div>`;
   }
   /** Toggle on/off delle automazioni create (pagina Automazioni). */
@@ -3795,8 +3829,8 @@ class RenaultEvCenterPanel extends HTMLElement {
       host.dataset.sig = sig;
       host.innerHTML = list.length
         ? list.map((s) => {
-          const nome = s.attributes.friendly_name || s.entity_id;
-          return `<div class="row"><span>${S._autoIcon(nome + " " + s.entity_id)} ${nome}</span><label class="switch"><input type="checkbox" ${s.state === "on" ? "checked" : ""} data-auto="${s.entity_id}"><span></span></label></div>`;
+          const nome = _esc(s.attributes.friendly_name || s.entity_id);
+          return `<div class="row"><span>${S._autoIcon(nome + " " + s.entity_id)} ${nome}</span><label class="switch"><input type="checkbox" ${s.state === "on" ? "checked" : ""} data-auto="${_esc(s.entity_id)}"><span></span></label></div>`;
         }).join("")
         : `<div style="color:var(--muted);font-size:12px">Nessuna automazione Renault trovata. Usa "Crea automazioni consigliate" in Impostazioni.</div>`;
       host.querySelectorAll("[data-auto]").forEach((el) => el.addEventListener("change", () =>
@@ -3848,7 +3882,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "close_trip": this._call(D, "close_trip", {}, "🏁 Viaggio chiuso"); break;
       case "openmap": this._moreInfo(this._car("device_tracker", "posizione") || "device_tracker.megane_posizione"); break;
       case "csv": this._call(D, "export_trips_csv", {}, "📥 CSV esportato"); break;
-      case "create_automations": this._call(D, "create_automations", {}, "✨ Automazioni create"); break;
+      case "notify_save": this._saveNotifyTexts(); break;
       case "refresh_car": this._call(D, "refresh_car", {}, "🔄 Aggiornamento auto richiesto"); break;
       case "schsave_ricarica": this._saveSchedule("ricarica"); break;
       case "schsave_clima": this._saveSchedule("clima"); break;
@@ -4011,6 +4045,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     // schedulazioni: ripopola i campi dai valori salvati (store → sensore Programmazione)
     const _prog = this._sensorByPrefix("programmazione");
     this._drawZoneRows(_prog);
+    this._fillNotifyTexts(_prog);
     const _sch = _prog && _prog.attributes ? _prog.attributes.schedule : null;
     if (_sch) {
       for (const tipo of ["ricarica", "clima", "promemoria"]) {
@@ -4278,7 +4313,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     for (let i = 0; i < 8; i++) {
       const [z, p] = pairs[i] || ["", ""];
       const opts = [`<option value="">—</option>`]
-        .concat(keys.map((k) => `<option value="${k}"${k === z ? " selected" : ""}>${names[k]}</option>`))
+        .concat(keys.map((k) => `<option value="${_esc(k)}"${k === z ? " selected" : ""}>${_esc(names[k])}</option>`))
         .join("");
       rows.push(`<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
         <select data-zone="${i}" style="flex:1">${opts}</select>
@@ -4298,6 +4333,25 @@ class RenaultEvCenterPanel extends HTMLElement {
       zones.push({ zone: sel.value, price: parseFloat((inp && inp.value) || "0") || 0 });
     });
     this._call("renault_ev_center", "set_charge_zones", { zones }, _t("toast_zone_salvate", "💾 Zone salvate"));
+  }
+
+  /** testi notifiche: ripopola i campi dalla configurazione salvata */
+  _fillNotifyTexts(prog) {
+    const saved = (prog && prog.attributes && prog.attributes.notify_texts) || {};
+    this.shadowRoot.querySelectorAll("[data-nt]").forEach((el) => {
+      if (el.getRootNode().activeElement === el) return; // non sovrascrivere mentre si scrive
+      el.value = saved[el.dataset.nt] || "";
+    });
+  }
+
+  _saveNotifyTexts() {
+    const out = {};
+    this.shadowRoot.querySelectorAll("[data-nt]").forEach((el) => {
+      const v = String(el.value || "").trim();
+      if (v) out[el.dataset.nt] = v;
+    });
+    this._call("renault_ev_center", "set_notify_texts", { texts: out },
+      _t("toast_notify_saved", "💾 Testi salvati"));
   }
 
   /** risposta servizio (returnResponse) → payload, qualunque sia la forma */
@@ -5203,8 +5257,8 @@ class RenaultEvCenterPanel extends HTMLElement {
         <td>${soc}</td><td>${d !== undefined && d !== null ? d + "%" : "—"}</td><td>${this._fmt(parseFloat(r.kwh_consumati ?? r.kwh ?? 0), 2)}</td>
         <td><span class="badge">${this._fmt(parseFloat(eff ?? 0), 1)}</span></td>
         <td>${this._fmt(parseFloat(r.costo_stimato ?? r.costo ?? 0), 2)} €</td>
-        <td>${this._zn(r.zona_partenza ?? r.ricarica_precedente)}${r.luogo_partenza ? `<br><span style="color:var(--muted);font-size:11px">${r.luogo_partenza}${r.paese_partenza ? " · " + r.paese_partenza : ""}</span>` : ""}</td>
-        <td>${this._zn(r.zona_arrivo)}${r.luogo_arrivo ? `<br><span style="color:var(--muted);font-size:11px">${r.luogo_arrivo}${r.paese_arrivo ? " · " + r.paese_arrivo : ""}</span>` : ""}</td></tr>`;
+        <td>${_esc(this._zn(r.zona_partenza ?? r.ricarica_precedente))}${r.luogo_partenza ? `<br><span style="color:var(--muted);font-size:11px">${_esc(r.luogo_partenza)}${r.paese_partenza ? " · " + _esc(r.paese_partenza) : ""}</span>` : ""}</td>
+        <td>${_esc(this._zn(r.zona_arrivo))}${r.luogo_arrivo ? `<br><span style="color:var(--muted);font-size:11px">${_esc(r.luogo_arrivo)}${r.paese_arrivo ? " · " + _esc(r.paese_arrivo) : ""}</span>` : ""}</td></tr>`;
     }).join("") || `<tr><td colspan="10" style="color:var(--muted)">Nessun viaggio per il filtro scelto</td></tr>`;
   }
   /** carica una ricarica nel form "Aggiungi ricarica manuale" e passa in modalità modifica */
@@ -5289,7 +5343,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const dur = dm > 0 ? this._fmt(dm / 60, 1) + " h" : "—";
       const dsoc = (r.soc_end !== undefined && r.soc_start !== undefined) ? "+" + Math.round(r.soc_end - r.soc_start) + "%" : "—";
       return `<tr><td>${this._d(r.data)}${r.ora_inizio ? " · " + r.ora_inizio : ""}</td>
-        <td>${r.tipo ?? "—"}${r.zona && r.zona !== r.tipo ? `<br><span style="color:var(--muted);font-size:11px">🗺️ ${r.zona}</span>` : ""}${r.note ? `<br><span style="color:var(--muted);font-size:11px">${r.note}</span>` : ""}${r.luogo ? `<br><span style="color:var(--muted);font-size:11px">📍 ${r.luogo}${r.paese ? " · " + r.paese : ""}</span>` : ""}</td><td>${dur}</td>
+        <td>${_esc(r.tipo ?? "—")}${r.zona && r.zona !== r.tipo ? `<br><span style="color:var(--muted);font-size:11px">🗺️ ${_esc(r.zona)}</span>` : ""}${r.note ? `<br><span style="color:var(--muted);font-size:11px">${_esc(r.note)}</span>` : ""}${r.luogo ? `<br><span style="color:var(--muted);font-size:11px">📍 ${_esc(r.luogo)}${r.paese ? " · " + _esc(r.paese) : ""}</span>` : ""}</td><td>${dur}</td>
         <td><b>${dsoc}</b></td>
         <td>${this._fmt(parseFloat(r.kwh ?? r.energia ?? 0), 2)}</td>
         <td>${this._fmt(parseFloat(r.potenza_media_kw ?? r.kw_medio ?? 0), 2)}</td>
@@ -5441,7 +5495,7 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
 
   static getStubConfig() {
-    return { name: "Megane", car: "megane", image: "/local/renault-ev-center/auto.png" };
+      return { name: "Megane", car: "megane", image: "/renault_ev_center/images/custom.png" };
   }
 }
 
@@ -6066,7 +6120,13 @@ const PAGES = () => ({
       <div style="color:var(--muted);font-size:11.5px;margin-top:10px">Temi HA in /themes: renault-blu, giallo, verde, aviation</div></div>
     <div class="card"><h3>${_t("h3_notifiche", "🔔 Notifiche")}</h3>
       <div class="inp"><span>${_t("lbl_servizio_notify_2", "Servizio notify")}</span><input data-ls="rec_notify" data-f="notify" style="width:140px"><span class="u"></span></div>
-      <div class="inp"><span>${_t("lbl_preavviso_scadenze", "Preavviso scadenze")}</span><input data-ls="rec_preavviso" value="30"><span class="u">gg</span></div></div>
+      <div class="inp"><span>${_t("lbl_preavviso_scadenze", "Preavviso scadenze")}</span><input data-ls="rec_preavviso" value="30"><span class="u">gg</span></div>
+      <div class="inp" style="margin-top:8px"><span>${_t("lbl_nt_start", "Titolo avvio")}</span><input data-nt="cs_title" style="width:200px"><span class="u"></span></div>
+      <div class="inp"><span>${_t("lbl_nt_end_title", "Titolo fine")}</span><input data-nt="cc_title" style="width:200px"><span class="u"></span></div>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)">${_t("lbl_nt_end_body", "Messaggio fine ricarica")}</div>
+      <textarea data-nt="cc_body" rows="5" style="width:100%;font-family:inherit;font-size:12px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:8px" placeholder="${_t("ph_nt_body", "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 €{costo:.2f}")}"></textarea>
+      <div class="btn" data-cmd="notify_save" style="margin-top:8px">${_t("btn_notify_save", "💾 Salva testi")}</div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">${_t("note_nt_vars", "Variabili: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Vuoto = testo predefinito.")}</div></div>
     <div class="card"><h3>${_t("h3_lingua", "🌐 Lingua")}</h3>
       <div class="inp"><span>${_t("lbl_lingua_pannello", "Lingua pannello")}</span>
         <select data-lang style="width:150px">
@@ -6079,14 +6139,13 @@ const PAGES = () => ({
         </select></div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:4px">"Automatica" segue la lingua di HA.</div></div>
     <div class="card"><h3>${_t("h3_automazioni", "🤖 Automazioni")}</h3>
-      <div class="btn" data-cmd="create_automations">✨ Crea automazioni consigliate</div>
-      <div class="note" style="margin-top:8px">${_t("note_crea", "Crea in HA: <b>ricarica completata</b> (kWh, SoC, costo),\n        <b>avvio ricarica</b> e <b>riassunto giornaliero</b>. Modificabili da Impostazioni → Automazioni.")}</div></div>
+      <div class="note">${_t("note_crea", "Le notifiche (avvio, fine ricarica, batteria bassa) sono inviate direttamente dall'integrazione: non servono automazioni. Se hai ancora le vecchie automazioni «Renault EV Center», eliminale da Impostazioni → Automazioni per evitare notifiche doppie. Esempi pronti in examples/.")}</div></div>
   </div>`,
 
   p11: `<h1>Wallbox</h1>
   <div class="grid g3">
     <div class="card"><h3>${_t("h3_stato_wallbox", "🔌 Stato wallbox")}</h3>
-      <img src="/local/renault-ev-center/wallbox.png" alt="Wallbox" style="display:block;width:100%;max-width:230px;height:150px;object-fit:contain;margin:0 auto 10px;filter:drop-shadow(0 8px 20px rgba(0,0,0,.45))">
+      <img src="/renault_ev_center/images/wallbox.png" alt="Wallbox" style="display:block;width:100%;max-width:230px;height:150px;object-fit:contain;margin:0 auto 10px;filter:drop-shadow(0 8px 20px rgba(0,0,0,.45))">
       <div class="big" style="font-size:26px;color:var(--accent);text-align:center;margin-bottom:8px"><span data-wb="state">—</span></div>
       <div class="row"><span>${_t("lbl_potenza_ora", "Potenza ora")}</span><b><span data-wb="power">—</span></b></div>
       <div class="row"><span>${_t("lbl_corrente", "Corrente")}</span><b><span data-wb="current">—</span></b></div>

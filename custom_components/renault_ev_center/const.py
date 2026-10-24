@@ -74,6 +74,7 @@ DEFAULT_TAGLIANDO_INTERVALLO = 15000
 # notifiche scadenze
 CONF_NOTIFY_SERVICE = "notify_service"
 CONF_NOTIFY_DAYS = "notify_days"
+CONF_NOTIFY_TEXTS = "notify_texts"
 CONF_TAGLIANDO_MODE = "tagliando_mode"
 CONF_TAGLIANDO_DATA = "tagliando_data"
 CONF_ASSICURAZIONE_COSTO = "assicurazione_costo"

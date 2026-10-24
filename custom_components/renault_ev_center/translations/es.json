@@ -237,7 +237,7 @@
               "co2_thermal_gkm": "CO2 térmico (g/km)",
               "co2_grid_gkwh": "CO2 de la red (g/kWh)",
               "geocode_enabled": "Calle y país en viajes y recargas (geocodificación OpenStreetMap)",
-          "charge_merge": "Fusionar recargas fragmentadas (un enchufe = una recarga)",
+              "charge_merge": "Fusionar recargas fragmentadas (un enchufe = una recarga)",
               "avg_speed_kmh": "Velocidad media estimada para la hora de salida del viaje",
               "scadenze_enabled": "Activar recordatorios de vencimiento",
               "scadenza_bollo": "Fecha de vencimiento del impuesto (AAAA-MM-DD)",
@@ -451,7 +451,7 @@
               "co2_thermal_gkm": "CO2 térmico (g/km)",
               "co2_grid_gkwh": "CO2 de la red (g/kWh)",
               "geocode_enabled": "Calle y país en viajes y recargas (geocodificación OpenStreetMap)",
-          "charge_merge": "Fusionar recargas fragmentadas (un enchufe = una recarga)",
+              "charge_merge": "Fusionar recargas fragmentadas (un enchufe = una recarga)",
               "avg_speed_kmh": "Velocidad media estimada para la hora de salida del viaje",
               "scadenze_enabled": "Activar recordatorios de vencimiento",
               "scadenza_bollo": "Fecha de vencimiento del impuesto (AAAA-MM-DD)",
@@ -581,10 +581,6 @@
       "name": "Crear panel",
       "description": "Crea/actualiza el panel de la barra lateral con todas las vistas incluidas."
     },
-    "create_automations": {
-      "name": "Crear automatizaciones recomendadas",
-      "description": "Crea las 3 automatizaciones recomendadas en Home Assistant."
-    },
     "set_maintenance": {
       "name": "Establecer vencimiento de mantenimiento",
       "description": "Establece el próximo vencimiento (mantenimiento/neumáticos) por km y/o fecha.",
@@ -629,6 +625,10 @@
           "name": "Días"
         }
       }
+    },
+    "set_notify_texts": {
+      "name": "Textos de las notificaciones",
+      "description": "Personaliza los textos de las notificaciones (inicio, recarga terminada, batería baja)."
     }
   },
   "selector": {

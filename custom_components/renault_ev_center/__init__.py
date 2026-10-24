@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import shutil
 from datetime import datetime as dt
 
 import voluptuous as vol
@@ -18,12 +17,11 @@ from homeassistant.util import dt as dt_util
 from .const import CONF_CREATE_DASHBOARD, DOMAIN, PLATFORMS, WEEKDAYS
 from .coordinator import RenaultMateCoordinator
 from .dashboard import (
+    async_register_static,
     async_remove_dashboard,
     async_setup_dashboard,
     entry_name,
     register_card_resource,
-    setup_card_js,
-    setup_car_image,
     slugify,
 )
 
@@ -55,6 +53,7 @@ SERVICE_DELETE_CHARGE = "delete_charge"
 SERVICE_UPDATE_CHARGE = "update_charge"
 SERVICE_SPLIT_CHARGE = "split_charge"
 SERVICE_SET_CHARGE_ZONES = "set_charge_zones"
+SERVICE_SET_NOTIFY_TEXTS = "set_notify_texts"
 SERVICE_EXPORT_DATA = "export_data"
 SERVICE_IMPORT_DATA = "import_data"
 SERVICE_DELETE_TRIP = "delete_trip"
@@ -64,7 +63,6 @@ SERVICE_RENEW_INSURANCE = "renew_insurance"
 SERVICE_SET_SCADENZA = "set_scadenza"
 SERVICE_SET_TAGLIANDO = "set_tagliando"
 SERVICE_CREATE_DASHBOARD = "create_dashboard"
-SERVICE_CREATE_AUTOMATIONS = "create_automations"
 SERVICE_SET_LOW_SOC_DAYS = "set_low_soc_days"
 
 RESET_SCOPES = ["km", "energia", "costi", "viaggi", "ricariche", "all"]
@@ -108,14 +106,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Dashboard automatica non creata: %s", err)
     try:
-        await hass.async_add_executor_job(setup_car_image, hass, entry)
-    except Exception as err:  # noqa: BLE001
-        _LOGGER.warning("Immagine auto non copiata: %s", err)
-    try:
-        await hass.async_add_executor_job(setup_card_js, hass)
+        await async_register_static(hass)
         await register_card_resource(hass)
     except Exception as err:  # noqa: BLE001
-        _LOGGER.warning("Card non copiata/registrata: %s", err)
+        _LOGGER.warning("Card non registrata: %s", err)
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
@@ -197,6 +191,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if coord.service_update_charge(charge_id, fields):
                 _LOGGER.info("Ricarica %s modificata", charge_id)
             await coord.async_request_refresh()
+
+    async def handle_set_notify_texts(call: ServiceCall) -> None:
+        texts = call.data.get("texts") or {}
+        for coord in _all_coordinators(hass):
+            saved = coord.service_set_notify_texts(texts)
+            _LOGGER.info("Testi notifiche aggiornati: %s", list(saved))
 
     async def handle_set_charge_zones(call: ServiceCall) -> None:
         pairs = call.data.get("zones") or []
@@ -286,11 +286,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             giorni = coord.service_set_low_soc_days(list(call.data.get("giorni", []) or []))
             _LOGGER.info("Avviso batteria bassa — giorni: %s", giorni)
 
-    async def handle_create_automations(call: ServiceCall) -> None:
-        for coord in _all_coordinators(hass):
-            created = await coord.service_create_automations()
-            _LOGGER.info("Automazioni Renault EV Center create: %s", created)
-
     async def handle_set_schedule(call: ServiceCall) -> None:
         for coord in _all_coordinators(hass):
             made = await coord.service_set_schedule(
@@ -320,6 +315,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
               schema=vol.Schema({vol.Optional("scope", default="all"): vol.In(RESET_SCOPES)}))
     _register(SERVICE_EXPORT_CSV, handle_export_csv,
               supports_response=SupportsResponse.OPTIONAL)
+    _register(SERVICE_SET_NOTIFY_TEXTS, handle_set_notify_texts,
+              schema=vol.Schema({vol.Optional("texts", default={}): dict}))
     _register(SERVICE_EXPORT_DATA, handle_export_data,
               supports_response=SupportsResponse.OPTIONAL)
     _register(SERVICE_IMPORT_DATA, handle_import_data,
@@ -392,7 +389,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                   vol.Required("valore"): str,
               }))
     _register(SERVICE_CREATE_DASHBOARD, handle_create_dashboard)
-    _register(SERVICE_CREATE_AUTOMATIONS, handle_create_automations)
     _register("refresh_car", handle_refresh_car)
     _register("set_auto_state", handle_set_auto_state, schema=vol.Schema({
         vol.Required("entity_id"): str,
@@ -441,11 +437,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 SERVICE_CLOSE_TRIP, SERVICE_RESET_COUNTERS, SERVICE_EXPORT_CSV,
                 SERVICE_ADD_CHARGE, SERVICE_DELETE_CHARGE, SERVICE_UPDATE_CHARGE,
                 SERVICE_SPLIT_CHARGE, SERVICE_SET_CHARGE_ZONES,
-                SERVICE_EXPORT_DATA, SERVICE_IMPORT_DATA,
+                SERVICE_EXPORT_DATA, SERVICE_IMPORT_DATA, SERVICE_SET_NOTIFY_TEXTS,
                 SERVICE_DELETE_TRIP, SERVICE_ADD_MAINTENANCE,
                 SERVICE_DELETE_MAINTENANCE, SERVICE_RENEW_INSURANCE,
                 SERVICE_SET_SCADENZA, SERVICE_SET_TAGLIANDO, SERVICE_CREATE_DASHBOARD,
-                SERVICE_CREATE_AUTOMATIONS, SERVICE_SET_LOW_SOC_DAYS,
+                SERVICE_SET_LOW_SOC_DAYS,
             ):
                 hass.services.async_remove(DOMAIN, name)
     return unload_ok
@@ -465,11 +461,8 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
             {"notification_id": nid}, blocking=False,
         )
 
-    # 3) file copiati in /config/www/renault-ev-center/, YAML fallback e storage
+    # 3) YAML fallback e storage. /config/www NON si tocca: è dell'utente
     def _cleanup_files() -> None:
-        www = hass.config.path("www", "renault-ev-center")
-        if os.path.isdir(www):
-            shutil.rmtree(www, ignore_errors=True)
         storage_file = hass.config.path(".storage", f"renault_ev_center.{entry.entry_id}")
         for leftover in (
             hass.config.path(f"renault-ev-center_{slugify(name)}_dashboard.yaml"),

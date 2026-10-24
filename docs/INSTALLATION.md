@@ -85,7 +85,7 @@ renault_ev_center.reset_counters        # scope: km | energia | costi | viaggi |
 renault_ev_center.add_manual_charge     # kwh, costo, tipo
 renault_ev_center.export_trips_csv      # writes CSVs to config/renault_ev_center_export/
 renault_ev_center.create_dashboard      # (re)create the sidebar dashboard
-renault_ev_center.create_automations    # create the 3 recommended automations
+renault_ev_center.set_notify_texts      # customize notification texts
 renault_ev_center.add_maintenance       # data, km, costo, tipo, note
 renault_ev_center.renew_insurance       # mesi (6|12) or data
 renault_ev_center.set_scadenza          # nome, data

@@ -237,7 +237,7 @@
               "co2_thermal_gkm": "Verbrenner-CO2 (g/km)",
               "co2_grid_gkwh": "Netz-CO2 (g/kWh)",
               "geocode_enabled": "Straße und Land in Fahrten und Ladungen (OpenStreetMap-Geocoding)",
-          "charge_merge": "Geteilte Ladungen zusammenführen (ein Stecker = eine Ladung)",
+              "charge_merge": "Geteilte Ladungen zusammenführen (ein Stecker = eine Ladung)",
               "avg_speed_kmh": "Geschätzte Durchschnittsgeschwindigkeit für die Abfahrtszeit der Fahrt",
               "scadenze_enabled": "Fristenerinnerungen aktivieren",
               "scadenza_bollo": "Fälligkeitsdatum Kfz-Steuer (JJJJ-MM-TT)",
@@ -451,7 +451,7 @@
               "co2_thermal_gkm": "Verbrenner-CO2 (g/km)",
               "co2_grid_gkwh": "Netz-CO2 (g/kWh)",
               "geocode_enabled": "Straße und Land in Fahrten und Ladungen (OpenStreetMap-Geocoding)",
-          "charge_merge": "Geteilte Ladungen zusammenführen (ein Stecker = eine Ladung)",
+              "charge_merge": "Geteilte Ladungen zusammenführen (ein Stecker = eine Ladung)",
               "avg_speed_kmh": "Geschätzte Durchschnittsgeschwindigkeit für die Abfahrtszeit der Fahrt",
               "scadenze_enabled": "Fristenerinnerungen aktivieren",
               "scadenza_bollo": "Fälligkeitsdatum Kfz-Steuer (JJJJ-MM-TT)",
@@ -581,10 +581,6 @@
       "name": "Dashboard erstellen",
       "description": "Erstellt/aktualisiert das Seitenleisten-Dashboard mit allen enthaltenen Ansichten."
     },
-    "create_automations": {
-      "name": "Empfohlene Automatisierungen erstellen",
-      "description": "Erstellt die 3 empfohlenen Automatisierungen in Home Assistant."
-    },
     "set_maintenance": {
       "name": "Wartungsfrist festlegen",
       "description": "Nächste Frist (Wartung/Reifen) nach km und/oder Datum festlegen.",
@@ -629,6 +625,10 @@
           "name": "Tage"
         }
       }
+    },
+    "set_notify_texts": {
+      "name": "Benachrichtigungstexte",
+      "description": "Passe die Texte der Benachrichtigungen an (Start, Ladung beendet, niedriger Akku)."
     }
   },
   "selector": {

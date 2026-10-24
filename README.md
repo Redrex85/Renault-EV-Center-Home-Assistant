@@ -227,6 +227,13 @@ Foto dell'auto: scelta dal modello nel wizard o personale in `/config/www/renaul
 
 In [`examples/automazioni_esempio.yaml`](examples/automazioni_esempio.yaml) trovi notifiche pronte: ricarica completata, batteria bassa fuori casa, riassunto serale.
 
+## ⚠️ Aggiornamento alla 1.1.19
+
+- **Niente più automazioni scritte dall'integrazione**: le notifiche (avvio, fine ricarica, batteria bassa) e la carica programmata sono gestite internamente. Se hai ancora le automazioni "Renault EV Center" delle versioni precedenti, eliminale da *Impostazioni → Automazioni* per evitare notifiche doppie.
+- **Risorse Lovelace spostate**: card e pannello sono serviti da `/renault_ev_center/...` e non vengono più copiati in `/config/www`. Se una card o dashboard usa `image: /local/renault-ev-center/auto.png`, sostituiscilo con `/renault_ev_center/images/<modello>.png`.
+- **`/config/www` non viene più toccato**: disinstallando l'integrazione le tue immagini restano dove sono.
+- **Testi delle notifiche personalizzabili** da *Impostazioni → Notifiche* (o servizio `set_notify_texts`).
+
 ## 🛠️ Servizi
 
 ```yaml
@@ -247,8 +254,9 @@ service: renault_ev_center.export_trips_csv
 # (Ri)crea la dashboard laterale con tutte le viste
 service: renault_ev_center.create_dashboard
 
-# Crea in HA le 3 automazioni consigliate
-service: renault_ev_center.create_automations
+# Personalizza i testi delle notifiche (chiavi: cs_title, cs_msg, cc_title, cc_body, lb_title, lb_msg)
+service: renault_ev_center.set_notify_texts
+data: { texts: { cc_title: "🔋 Carica finita" } }
 
 # Manutenzione e assicurazione
 service: renault_ev_center.add_maintenance
@@ -507,6 +515,13 @@ Car photo: chosen from the model in the wizard or personal, in `/config/www/rena
 
 [`examples/automazioni_esempio.yaml`](examples/automazioni_esempio.yaml) has ready notifications: charge finished, low battery away from home, evening summary.
 
+### ⚠️ Upgrading to 1.1.19
+
+- **No more automations written by the integration**: notifications (start, charge finished, low battery) and scheduled charging are handled internally. If you still have the "Renault EV Center" automations from older versions, delete them in *Settings → Automations* to avoid duplicate notifications.
+- **Lovelace resources moved**: card and panel are served from `/renault_ev_center/...` and are no longer copied into `/config/www`. If a card or dashboard uses `image: /local/renault-ev-center/auto.png`, replace it with `/renault_ev_center/images/<model>.png`.
+- **`/config/www` is never touched again**: uninstalling the integration no longer deletes your images.
+- **Notification texts are customizable** from *Settings → Notifications* (or the `set_notify_texts` service).
+
 ### Services
 
 ```yaml
@@ -539,8 +554,9 @@ data: { zones: [{ zone: box, price: 0.30 }, { zone: ufficio, price: 0.45 }] }
 # (Re)creates the side dashboard with all views
 service: renault_ev_center.create_dashboard
 
-# Creates the 3 recommended automations in HA
-service: renault_ev_center.create_automations
+# Customize notification texts (keys: cs_title, cs_msg, cc_title, cc_body, lb_title, lb_msg)
+service: renault_ev_center.set_notify_texts
+data: { texts: { cc_title: "🔋 Charge finished" } }
 
 # Maintenance and insurance
 service: renault_ev_center.add_maintenance
@@ -805,6 +821,13 @@ Dans [`examples/automazioni_esempio.yaml`](examples/automazioni_esempio.yaml) vo
 trouvez des notifications prêtes : recharge terminée, batterie faible loin de la maison,
 résumé du soir.
 
+## ⚠️ Mise à jour vers la 1.1.19
+
+- **Plus d'automatisations écrites par l'intégration** : les notifications (début, recharge terminée, batterie faible) et la recharge programmée sont gérées en interne. Si tu as encore les automatisations « Renault EV Center » des versions précédentes, supprime-les dans *Réglages → Automatisations* pour éviter les notifications en double.
+- **Ressources Lovelace déplacées** : la carte et le panneau sont servis depuis `/renault_ev_center/...` et ne sont plus copiés dans `/config/www`. Si une carte ou un tableau de bord utilise `image: /local/renault-ev-center/auto.png`, remplace-le par `/renault_ev_center/images/<modèle>.png`.
+- **`/config/www` n'est plus touché** : désinstaller l'intégration ne supprime plus tes images.
+- **Textes des notifications personnalisables** depuis *Réglages → Notifications* (ou le service `set_notify_texts`).
+
 ## 🛠️ Services
 
 ```yaml
@@ -825,8 +848,9 @@ service: renault_ev_center.export_trips_csv
 # (Re)crée le tableau de bord latéral avec toutes les vues
 service: renault_ev_center.create_dashboard
 
-# Crée dans HA les 3 automatisations recommandées
-service: renault_ev_center.create_automations
+# Personnalise les textes des notifications (clés : cs_title, cs_msg, cc_title, cc_body, lb_title, lb_msg)
+service: renault_ev_center.set_notify_texts
+data: { texts: { cc_title: "🔋 Recharge terminée" } }
 
 # Entretien et assurance
 service: renault_ev_center.add_maintenance
