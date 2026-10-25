@@ -186,6 +186,17 @@ def _parse_zone_prices(raw: Any) -> dict[str, float]:
     return out
 
 
+def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Distanza in metri tra due coordinate (per capire se il GPS è dentro una zona)."""
+    from math import asin, cos, radians, sin, sqrt
+
+    p1, p2 = radians(lat1), radians(lat2)
+    dp = p2 - p1
+    dl = radians(lon2 - lon1)
+    a = sin(dp / 2) ** 2 + cos(p1) * cos(p2) * sin(dl / 2) ** 2
+    return 2 * 6371000.0 * asin(sqrt(min(1.0, a)))
+
+
 def classify_error(err: BaseException) -> str:
     """Classifica un errore in una parola fissa (per report/diagnostica).
 
@@ -1302,12 +1313,21 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     self._queue_geocode(chiuso_verifica)
                     closed_trip = chiuso_verifica
             if self.charge_session is None:
+                # la zona si fissa all'AVVIO: se il tracker è in ritardo (auto offline)
+                # il GPS decide; altrimenti una ricarica al B&B risultava "Casa"
+                gps_start = self._tracker_gps()
+                z_start = location or "unknown"
+                z_gps = self._zone_from_gps(gps_start)
+                if z_gps:
+                    z_start = z_gps
+                elif z_start == "home" and self._gps_outside_home(gps_start):
+                    z_start = "not_home"
                 self.charge_session = {
                     "id": int(time.time()),
                     "start_ts": time.time(),
-                    "zone": location or "unknown",
+                    "zone": z_start,
                     # posizione della ricarica (per l'indirizzo, come nei viaggi)
-                    "gps": self._tracker_gps(),
+                    "gps": gps_start,
                     "soc_start": battery,
                     "counter_start": self._wb_counter(),
                     "total_start": self._wb_total_counter(),
@@ -1322,7 +1342,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     "ts_last": time.time(),
                     "power_max_kw": 0.0,
                     "odometro_inizio": odometer,
-                    "prezzo": self._price_for_zone(location or "home"),
+                    "prezzo": self._price_for_zone(z_start),
                 }
                 started_charge = True
             if 0 < _f(battery) <= 100:
@@ -2420,6 +2440,34 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if lat is None or lon is None:
             return {}
         return {"lat": round(_f(lat), 5), "lon": round(_f(lon), 5)}
+
+    def _zone_from_gps(self, gps: dict[str, float]) -> str:
+        """Zona HA che contiene il GPS ('' se nessuna o GPS assente)."""
+        if not gps or gps.get("lat") is None or gps.get("lon") is None:
+            return ""
+        lat, lon = _f(gps.get("lat")), _f(gps.get("lon"))
+        best, best_d = "", None
+        for st in self.hass.states.async_all("zone"):
+            a = st.attributes
+            zlat, zlon = a.get("latitude"), a.get("longitude")
+            if zlat is None or zlon is None:
+                continue
+            d = _haversine_m(lat, lon, _f(zlat), _f(zlon))
+            if d <= _f(a.get("radius"), 100.0) and (best_d is None or d < best_d):
+                best, best_d = st.entity_id[5:], d
+        return best
+
+    def _gps_outside_home(self, gps: dict[str, float]) -> bool:
+        """True se il GPS è chiaramente fuori dalla zona casa (auto lontana)."""
+        if not gps or not gps.get("lat"):
+            return False
+        home = self.hass.states.get("zone.home")
+        a = home.attributes if home is not None else {}
+        lat, lon = a.get("latitude"), a.get("longitude")
+        if lat is None or lon is None:
+            return False
+        d = _haversine_m(_f(gps.get("lat")), _f(gps.get("lon")), _f(lat), _f(lon))
+        return d > max(_f(a.get("radius"), 100.0), 100.0) + 500.0
 
     def _zone_label(self, raw: str) -> str:
         """Traduce lo stato del tracker (home/not_home/zona) nel nome leggibile della zona HA."""

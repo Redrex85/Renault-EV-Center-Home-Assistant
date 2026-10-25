@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.20";
+const REC_VER = "1.1.21";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -5343,7 +5343,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const dur = dm > 0 ? this._fmt(dm / 60, 1) + " h" : "—";
       const dsoc = (r.soc_end !== undefined && r.soc_start !== undefined) ? "+" + Math.round(r.soc_end - r.soc_start) + "%" : "—";
       return `<tr><td>${this._d(r.data)}${r.ora_inizio ? " · " + r.ora_inizio : ""}</td>
-        <td>${_esc(r.tipo ?? "—")}${r.zona && r.zona !== r.tipo ? `<br><span style="color:var(--muted);font-size:11px">🗺️ ${_esc(r.zona)}</span>` : ""}${r.note ? `<br><span style="color:var(--muted);font-size:11px">${_esc(r.note)}</span>` : ""}${r.luogo ? `<br><span style="color:var(--muted);font-size:11px">📍 ${_esc(r.luogo)}${r.paese ? " · " + _esc(r.paese) : ""}</span>` : ""}</td><td>${dur}</td>
+        <td>${_esc(r.tipo ?? "—")}${r.zona && r.zona !== r.tipo && !["Fuori", "—"].includes(r.zona) ? `<br><span style="color:var(--muted);font-size:11px">🗺️ ${_esc(r.zona)}</span>` : ""}${r.note ? `<br><span style="color:var(--muted);font-size:11px">${_esc(r.note)}</span>` : ""}${r.luogo ? `<br><span style="color:var(--muted);font-size:11px">📍 ${_esc(r.luogo)}${r.paese ? " · " + _esc(r.paese) : ""}</span>` : ""}</td><td>${dur}</td>
         <td><b>${dsoc}</b></td>
         <td>${this._fmt(parseFloat(r.kwh ?? r.energia ?? 0), 2)}</td>
         <td>${this._fmt(parseFloat(r.potenza_media_kw ?? r.kw_medio ?? 0), 2)}</td>

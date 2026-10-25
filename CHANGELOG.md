@@ -5,6 +5,11 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.21 - Zona della ricarica decisa dal GPS all'avvio
+
+- **Fix ricariche fuori casa classificate come "Casa"**: se il tracker di posizione era in ritardo (auto offline o cloud Renault lento), la sessione nasceva con zona `home` e veniva tariffata col prezzo di casa. Ora la zona viene fissata all'avvio usando prima il **GPS** (zona HA che contiene il punto) e, se nessuna zona lo contiene ma il GPS è chiaramente lontano da casa, la ricarica è trattata come **pubblica**. Vale anche per prezzo e ripartizione rete/FV/batteria (che resta solo per la zona casa).
+- Le ricariche già registrate non cambiano: si correggono con `update_charge` (`tipo`, `costo`).
+
 ## 1.1.20 - Escaping completo e import_data riservato agli admin
 
 - **Escaping**: portati sotto `_esc()` anche gli ultimi renderer (storico posizioni, tabella rotte, grafico per zona incluse le `<text>`/`<title>` SVG, righe attributi, tabella manutenzione). Nessun valore di entità, zona o toponimo finisce più grezzo nell'HTML.
