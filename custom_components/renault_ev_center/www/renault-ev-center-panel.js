@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.22";
+const REC_VER = "1.1.23";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -4129,7 +4129,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const sig = opts.join("|");
       if (sel.dataset.sig !== sig) {
         sel.dataset.sig = sig;
-        sel.innerHTML = opts.map((o) => `<option value="${o}">${o}</option>`).join("") || `<option>—</option>`;
+        sel.innerHTML = opts.map((o) => `<option value="${_esc(o)}">${_esc(o)}</option>`).join("") || `<option>—</option>`;
       }
       if (s && s.state !== "unavailable") sel.value = s.state;
     });

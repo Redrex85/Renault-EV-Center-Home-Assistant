@@ -5,6 +5,12 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.23 - Zone di ricarica nel filtro
+
+- **Filtro tipo ricarica**: le opzioni non sono più fisse. Oltre a `Tutte`, `Casa`, `Fotovoltaico` e `Pubblica` compaiono i nomi delle zone configurate in *Impostazioni → Zone di ricarica* e quelli gia' presenti nelle ricariche salvate. Il filtro si popola da solo: aggiungi una zona e la trovi nell'elenco al refresh successivo.
+- **Filtro per zona**: scegliendo il nome di una zona, la lista mostra le ricariche fatte in quella zona (confronto sul campo `zona`) invece che per tipo. Se la zona viene rinominata o eliminata, il filtro torna a `Tutte`.
+- Nessuna entita' o impostazione nuova: e' lo stesso `select.<nome>_filtro_tipo_ricarica`.
+
 ## 1.1.22 - Filtro tipo ricarica e lista completa
 
 - **Filtro tipo**: il confronto ora normalizza il valore (`_norm_tipo`), quindi `fotovoltaico`, `Fotovoltaico ` o `FOTOVOLTAICO` finiscono nello stesso filtro. La normalizzazione si applica anche quando il tipo arriva da `update_charge` o dalla ricarica manuale, così il dato salvato resta canonico.

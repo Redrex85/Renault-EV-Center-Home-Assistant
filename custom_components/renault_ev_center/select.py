@@ -32,7 +32,8 @@ async def async_setup_entry(
     # (Settimana/Mese/Anno/Tutto, di default il mese corrente) e il mese resta
     # un'eccezione che la sostituisce solo quando scelto a mano.
     async_add_entities([
-        MateSelect(coordinator, f"{name} Filtro Tipo Ricarica", "filtro_tipo", TIPI, "Tutte", "mdi:filter-variant"),
+        MateSelect(coordinator, f"{name} Filtro Tipo Ricarica", "filtro_tipo", TIPI, "Tutte", "mdi:filter-variant",
+                   extra_options=coordinator.charge_zone_options),
         MateSelect(coordinator, f"{name} Filtro Periodo Ricariche", "filtro_periodo", PERIODI, "Mese", "mdi:calendar-range"),
         MateSelect(coordinator, f"{name} Filtro Mese Ricariche", "filtro_mese", MESI, "Tutti", "mdi:calendar-month"),
         MateSelect(coordinator, f"{name} Filtro Anno Ricariche", "filtro_anno", ANNI, "Tutti", "mdi:calendar-multiple"),
@@ -42,11 +43,14 @@ async def async_setup_entry(
 class MateSelect(CoordinatorEntity[RenaultMateCoordinator], RestoreEntity, SelectEntity):
     _attr_has_entity_name = False
 
-    def __init__(self, coordinator, label, key, options, default, icon) -> None:
+    def __init__(self, coordinator, label, key, options, default, icon,
+                 extra_options=None) -> None:
         super().__init__(coordinator)
         self._key = key
         self._options = options
         self._default = default
+        # opzioni che crescono da sole (es. nomi delle zone di ricarica)
+        self._extra_options = extra_options
         self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator.entry.entry_id}_sel_{key}"
         self._attr_name = label
@@ -62,9 +66,29 @@ class MateSelect(CoordinatorEntity[RenaultMateCoordinator], RestoreEntity, Selec
             if last is not None and last.state in self._options:
                 self._attr_current_option = last.state
         self.coordinator.register_setting("select", self._key, self.entity_id)
+        self._refresh_options()
+
+    def _refresh_options(self) -> None:
+        """Aggiunge le opzioni dinamiche e riporta a default un valore sparito."""
+        if not self._extra_options:
+            return
+        try:
+            extra = [str(o) for o in (self._extra_options() or [])]
+        except Exception:  # noqa: BLE001
+            extra = []
+        opts = list(self._options) + [o for o in extra if o not in self._options]
+        if opts != list(self._attr_options):
+            self._attr_options = opts
+        if self._attr_current_option not in self._attr_options:
+            self._attr_current_option = self._default
+
+    def _handle_coordinator_update(self) -> None:
+        self._refresh_options()
+        super()._handle_coordinator_update()
 
     async def async_select_option(self, option: str) -> None:
-        if option in self._options:
+        self._refresh_options()
+        if option in self._attr_options:
             self._attr_current_option = option
             self.async_write_ha_state()
             await self.coordinator.async_request_refresh()

@@ -2674,6 +2674,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             _LOGGER.info("Geocoding: rielaborati %s viaggi", n)
         self.persist()
 
+    def charge_zone_options(self) -> list[str]:
+        """Nomi zona delle zone configurate e di quelle già usate, per il filtro tipo."""
+        skip = {"", "—", "-", "Fuori", "not_home", "unknown", "None"}
+        zones = {str(c.get("zona") or "").strip() for c in self.store.data["charges"]}
+        zones |= {str(z).strip() for z in getattr(self, "zone_prices", {})}
+        return sorted(z for z in zones
+                      if z and z not in skip and z not in TIPI_RICARICA)
+
     def _filter_charges(self, charges: list[dict], now) -> dict[str, Any]:
         """Filtra le ricariche secondo i select tipo/periodo/anno e calcola i totali."""
         tipo = self._setting_opt("filtro_tipo", "Tutte")
@@ -2695,10 +2703,17 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             start = d.replace(month=1, day=1).isoformat()
         else:
             start = ""
+        tipo_norm = _norm_tipo(tipo)
+        # un valore che non è un tipo è il nome di una zona di ricarica
+        by_zone = tipo != "Tutte" and tipo_norm not in TIPI_RICARICA
         items = []
         for c in charges:
-            if tipo != "Tutte" and _norm_tipo(c.get("tipo")) != _norm_tipo(tipo):
-                continue
+            if tipo != "Tutte":
+                if by_zone:
+                    if str(c.get("zona") or "") != tipo:
+                        continue
+                elif _norm_tipo(c.get("tipo")) != tipo_norm:
+                    continue
             if anno != "Tutti" and str(c.get("data", ""))[:4] != anno:
                 continue
             if num_mese and str(c.get("data", ""))[5:7] != f"{num_mese:02d}":
