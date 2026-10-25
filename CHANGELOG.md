@@ -5,6 +5,11 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.20 - Escaping completo e import_data riservato agli admin
+
+- **Escaping**: portati sotto `_esc()` anche gli ultimi renderer (storico posizioni, tabella rotte, grafico per zona incluse le `<text>`/`<title>` SVG, righe attributi, tabella manutenzione). Nessun valore di entità, zona o toponimo finisce più grezzo nell'HTML.
+- **`import_data` riservato agli amministratori**: registrato con `async_register_admin_service`; il `path` è accettato solo se punta a un `.json` dentro `config/renault_ev_center_export/`. Dal pannello il file viene inviato come contenuto, quindi il percorso non serve.
+
 ## 1.1.19 - Requisiti HACS: niente YAML utente, asset dell'integrazione, escaping
 
 **Cambiamenti che richiedono un'azione (una volta sola)**

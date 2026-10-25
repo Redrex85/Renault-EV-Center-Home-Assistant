@@ -75,6 +75,9 @@ DEFAULT_TAGLIANDO_INTERVALLO = 15000
 CONF_NOTIFY_SERVICE = "notify_service"
 CONF_NOTIFY_DAYS = "notify_days"
 CONF_NOTIFY_TEXTS = "notify_texts"
+
+# cartella (sotto /config) dove export_data scrive i backup JSON
+EXPORT_DIR = "renault_ev_center_export"
 CONF_TAGLIANDO_MODE = "tagliando_mode"
 CONF_TAGLIANDO_DATA = "tagliando_data"
 CONF_ASSICURAZIONE_COSTO = "assicurazione_costo"

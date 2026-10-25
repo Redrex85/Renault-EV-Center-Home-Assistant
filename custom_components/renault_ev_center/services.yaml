@@ -102,7 +102,7 @@ import_data:
   fields:
     path:
       name: File JSON
-      description: Percorso del file esportato (es. /config/renault_ev_center_export/renault_ev_center_data_20260101_120000.json).
+      description: 'Percorso del file esportato. Ammessi solo file .json dentro config/renault_ev_center_export/. Servizio riservato agli amministratori.'
       example: /config/renault_ev_center_export/renault_ev_center_data_20260101_120000.json
       selector:
         text:

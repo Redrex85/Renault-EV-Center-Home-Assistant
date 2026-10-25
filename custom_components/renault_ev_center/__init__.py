@@ -12,9 +12,16 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_CREATE_DASHBOARD, DOMAIN, PLATFORMS, WEEKDAYS
+from .const import (
+    CONF_CREATE_DASHBOARD,
+    DOMAIN,
+    EXPORT_DIR,
+    PLATFORMS,
+    WEEKDAYS,
+)
 from .coordinator import RenaultMateCoordinator
 from .dashboard import (
     async_register_static,
@@ -145,6 +152,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if not raw and not path:
             raise vol.Invalid("Serve 'path' (file JSON) oppure 'data' (oggetto)")
         if path and not raw:
+            # solo file prodotti da export_data: nessuna apertura arbitraria di percorsi
+            base = os.path.realpath(hass.config.path(EXPORT_DIR))
+            try:
+                inside = os.path.commonpath([base, os.path.realpath(path)]) == base
+            except ValueError:
+                inside = False
+            if not inside or not path.endswith(".json"):
+                raise vol.Invalid(
+                    "Percorso non consentito: usa la cartella " + EXPORT_DIR)
+
             def _read() -> object:
                 with open(path, "r", encoding="utf-8") as fh:
                     return json.load(fh)
@@ -300,7 +317,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             )
             _LOGGER.info("Schedulazione %s: %s", call.data.get("tipo"), made)
 
-    def _register(name, handler, schema=None, supports_response=None):
+    def _register(name, handler, schema=None, supports_response=None, admin=False):
         if hass.services.has_service(DOMAIN, name):
             return
         kwargs: dict = {}
@@ -308,7 +325,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             kwargs["schema"] = schema
         if supports_response is not None:
             kwargs["supports_response"] = supports_response
-        hass.services.async_register(DOMAIN, name, handler, **kwargs)
+        if admin:
+            # async_register_admin_service non accetta supports_response
+            async_register_admin_service(hass, DOMAIN, name, handler,
+                                         schema=kwargs.get("schema"))
+        else:
+            hass.services.async_register(DOMAIN, name, handler, **kwargs)
 
     _register(SERVICE_CLOSE_TRIP, handle_close_trip)
     _register(SERVICE_RESET_COUNTERS, handle_reset_counters,
@@ -319,8 +341,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
               schema=vol.Schema({vol.Optional("texts", default={}): dict}))
     _register(SERVICE_EXPORT_DATA, handle_export_data,
               supports_response=SupportsResponse.OPTIONAL)
-    _register(SERVICE_IMPORT_DATA, handle_import_data,
-              supports_response=SupportsResponse.OPTIONAL,
+    _register(SERVICE_IMPORT_DATA, handle_import_data, admin=True,
               schema=vol.Schema({
                   vol.Optional("path"): cv.string,
                   vol.Optional("data"): dict,

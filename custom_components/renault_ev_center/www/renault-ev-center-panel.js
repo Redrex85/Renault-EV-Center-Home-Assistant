@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.19";
+const REC_VER = "1.1.20";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -3779,7 +3779,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     for (const day of Object.keys(byDay).reverse()) {
       html += `<div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px">${this._d(day)}</div>`;
       for (const e of byDay[day]) {
-        html += `<div class="row"><span style="font-family:monospace;min-width:64px">${e.t}</span><b>📍 ${e.loc}</b></div>`;
+        html += `<div class="row"><span style="font-family:monospace;min-width:64px">${_esc(e.t)}</span><b>📍 ${_esc(e.loc)}</b></div>`;
       }
     }
     host.innerHTML = html;
@@ -4137,7 +4137,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     root.querySelectorAll("[data-attr-list]").forEach((tb) => {
       const rows = this._list(this._sid(tb.dataset.attrList));
       tb.innerHTML = rows.slice(0, 8).map((r) =>
-        `<tr><td>${r.zona ?? r.nome ?? r.rotta ?? r.tipo ?? "—"}</td><td>${r.viaggi ?? r.n ?? "—"}</td>
+        `<tr><td>${_esc(r.zona ?? r.nome ?? r.rotta ?? r.tipo ?? "—")}</td><td>${_esc(r.viaggi ?? r.n ?? "—")}</td>
         <td>${this._fmt(parseFloat(r.km ?? 0), 1)}</td>
         <td><span class="badge">${this._fmt(parseFloat(r.kwh_100km ?? r.efficienza ?? r.eff ?? 0), 1)}</span></td></tr>`).join("")
         || `<tr><td colspan="4" style="color:var(--muted)">Nessun dato</td></tr>`;
@@ -4174,7 +4174,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       tbSc.innerHTML = _scRows.slice(0, 6).map((r) => {
         const haKm = r.km !== undefined && r.km !== null && !isNaN(parseFloat(r.km));
         const val = haKm ? `${this._i(parseFloat(r.km))} km` : `${r.giorni ?? r.gg ?? "—"} gg`;
-        return `<tr><td>${r.tipo ?? r.nome ?? "—"}</td><td><b>${val}</b></td></tr>`;
+        return `<tr><td>${_esc(r.tipo ?? r.nome ?? "—")}</td><td><b>${_esc(val)}</b></td></tr>`;
       }).join("") || `<tr><td colspan="2" style="color:var(--muted)">Nessuna scadenza</td></tr>`;
     }
     const scP1 = root.querySelector('[data-c="tab-scadenze-p1"]');
@@ -4186,7 +4186,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         const val = haKm ? `${this._i(parseFloat(r.km))} km` : (isNaN(g) ? "—" : g + " gg");
         const ref = haKm ? parseFloat(r.km) : g;
         const col = isNaN(ref) ? "var(--muted)" : (ref <= 15 ? "var(--bad)" : ref <= 45 ? "var(--warn)" : "var(--good)");
-        return `<div class="row"><span>${r.tipo ?? r.nome ?? "—"}</span>` +
+        return `<div class="row"><span>${_esc(r.tipo ?? r.nome ?? "—")}</span>` +
           `<b style="color:${col}">${val}</b></div>`;
       }).join("") || `<div style="color:var(--muted);font-size:12px">Nessuna scadenza</div>`;
     }
@@ -4226,7 +4226,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (tbTag) {
       const rows = this._list(this._sid("tagliandi"));
       tbTag.innerHTML = rows.slice(0, 12).map((r) =>
-        `<tr><td>${this._d(r.data)}</td><td>${this._i(parseFloat(r.km) || 0)}</td><td>${r.tipo ?? "—"}</td><td><b>${this._fmt(parseFloat(r.costo ?? r.euro ?? 0), 0)} €</b></td><td><span class="dchip" data-mdel="${r.id}" title="Elimina">🗑</span></td></tr>`).join("")
+        `<tr><td>${_esc(this._d(r.data))}</td><td>${this._i(parseFloat(r.km) || 0)}</td><td>${_esc(r.tipo ?? "—")}</td><td><b>${this._fmt(parseFloat(r.costo ?? r.euro ?? 0), 0)} €</b></td><td><span class="dchip" data-mdel="${_esc(r.id)}" title="Elimina">🗑</span></td></tr>`).join("")
         || `<tr><td colspan="5" style="color:var(--muted)">Nessun intervento registrato</td></tr>`;
     }
     // righe top/stop da attributi oggetto: [data-topstop="migliore|kwh_per_100km"]
@@ -4398,7 +4398,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       if (!confirm(_t("confirm_import", "Sostituire tutti i dati con quelli del file? Operazione irreversibile."))) return;
       try {
         await this._hass.callService(
-          "renault_ev_center", "import_data", { data: raw }, undefined, false, true);
+          "renault_ev_center", "import_data", { data: raw });
         this._toast(_t("toast_import_ok", "✅ Dati importati"));
       } catch (err) {
         this._toast(_t("toast_import_err", "⚠️ Import fallito"));
@@ -4800,11 +4800,11 @@ class RenaultEvCenterPanel extends HTMLElement {
       const dec = r.dec !== undefined ? r.dec : 1;
       const vtxt = this._fmt(r.v, dec);
       const tip = r.l + ": " + vtxt + (r.u || "") + (r.n !== undefined ? " (" + r.n + ")" : "");
-      svg += `<rect x="${x}" y="${y}" width="${bw * 0.7}" height="${h}" rx="4" fill="${r.color || "#3ea6ff"}" fill-opacity="0.85"><title>${tip}</title></rect>`;
-      svg += `<text x="${x + bw * 0.35}" y="${y - 5}" fill="var(--txt)" font-size="10" text-anchor="middle">${vtxt}</text>`;
-      svg += `<text x="${x + bw * 0.35}" y="${pt + ih + 14}" fill="var(--muted)" font-size="9" text-anchor="middle">${r.l}</text>`;
+      svg += `<rect x="${x}" y="${y}" width="${bw * 0.7}" height="${h}" rx="4" fill="${_esc(r.color || "#3ea6ff")}" fill-opacity="0.85"><title>${_esc(tip)}</title></rect>`;
+      svg += `<text x="${x + bw * 0.35}" y="${y - 5}" fill="var(--txt)" font-size="10" text-anchor="middle">${_esc(vtxt)}</text>`;
+      svg += `<text x="${x + bw * 0.35}" y="${pt + ih + 14}" fill="var(--muted)" font-size="9" text-anchor="middle">${_esc(r.l)}</text>`;
     });
-    if (xLabel) svg += `<text x="${pl + iw / 2}" y="${H - 3}" fill="var(--muted)" font-size="10" text-anchor="middle">${xLabel}</text>`;
+    if (xLabel) svg += `<text x="${pl + iw / 2}" y="${H - 3}" fill="var(--muted)" font-size="10" text-anchor="middle">${_esc(xLabel)}</text>`;
     if (yLabel) svg += `<text x="13" y="${pt + ih / 2}" fill="var(--muted)" font-size="10" text-anchor="middle" transform="rotate(-90 13 ${pt + ih / 2})">${yLabel}</text>`;
     svg += `</svg>`;
     box.innerHTML = svg;
@@ -5144,7 +5144,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     const rows = Object.entries(groups).sort((a, b) => b[1].km - a[1].km);
     tb.innerHTML = rows.map(([k, g]) => {
       const eff = g.km > 0 ? g.kwh / g.km * 100 : 0;
-      return `<tr><td>${k}</td><td>${g.n}</td><td>${this._i(g.km)}</td><td>${this._fmt(g.kwh, 1)}</td>
+      return `<tr><td>${_esc(k)}</td><td>${g.n}</td><td>${this._i(g.km)}</td><td>${this._fmt(g.kwh, 1)}</td>
         <td><span class="badge">${this._fmt(eff, 1)}</span></td><td>${this._fmt(g.costo, 2)} €</td></tr>`;
     }).join("") || `<tr><td colspan="6" style="color:var(--muted)">Nessun dato per il filtro</td></tr>`;
   }
