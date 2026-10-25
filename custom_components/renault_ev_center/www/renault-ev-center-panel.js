@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.21";
+const REC_VER = "1.1.22";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -5337,7 +5337,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (this._ricDay) rows = rows.filter((r) => String(r.data || "") === this._ricDay);
     const tb = root.querySelector('[data-c="tab-ricariche"]');
     if (!tb) return;
-    const vis = rows.slice(0, (q || this._ricDay) ? 60 : 8);
+    const vis = rows.slice(0, (q || this._ricDay) ? 60 : 30);
     const cells = vis.map((r) => {
       const dm = parseFloat(r.durata_min ?? r.durata ?? 0);
       const dur = dm > 0 ? this._fmt(dm / 60, 1) + " h" : "—";

@@ -186,6 +186,22 @@ def _parse_zone_prices(raw: Any) -> dict[str, float]:
     return out
 
 
+TIPI_RICARICA = ("Casa", "Fotovoltaico", "Pubblica")
+
+
+def _norm_tipo(value: Any) -> str:
+    """Normalizza il tipo di ricarica: 'fotovoltaico ' → 'Fotovoltaico'.
+
+    I tipi arrivano anche dall'esterno (servizi, form del pannello): senza
+    normalizzazione un valore con maiuscole/spazi diversi non entra nel filtro.
+    """
+    v = str(value or "").strip()
+    for t in TIPI_RICARICA:
+        if v.lower() == t.lower():
+            return t
+    return v
+
+
 def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Distanza in metri tra due coordinate (per capire se il GPS è dentro una zona)."""
     from math import asin, cos, radians, sin, sqrt
@@ -2681,7 +2697,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             start = ""
         items = []
         for c in charges:
-            if tipo != "Tutte" and c.get("tipo") != tipo:
+            if tipo != "Tutte" and _norm_tipo(c.get("tipo")) != _norm_tipo(tipo):
                 continue
             if anno != "Tutti" and str(c.get("data", ""))[:4] != anno:
                 continue
@@ -2875,7 +2891,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "soc_end": 0.0,
             "potenza_media_kw": round(kwh / (dur / 60), 2) if dur > 0 and kwh > 0 else 0.0,
             "costo": round(costo, 2),
-            "tipo": tipo or "Manuale",
+            "tipo": _norm_tipo(tipo or "Manuale"),
             "note": str(descrizione or "").strip(),
         }
         self.store.data["charges"].append(record)
@@ -2906,7 +2922,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             if "costo" in fields:
                 c["costo"] = round(_f(fields["costo"]), 2)
             if "tipo" in fields:
-                c["tipo"] = str(fields["tipo"])
+                c["tipo"] = _norm_tipo(fields["tipo"])
             if "descrizione" in fields:
                 c["note"] = str(fields["descrizione"] or "").strip()
             if "durata_min" in fields:
