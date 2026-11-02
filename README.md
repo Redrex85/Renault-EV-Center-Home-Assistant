@@ -98,12 +98,17 @@ Tutto è calcolato **localmente nel tuo Home Assistant** e salvato in `.storage`
 
 ### Via HACS (consigliato)
 
-1. **HACS** → ⋮ → **Repository personalizzati**
-2. Incolla `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant`
-3. Categoria: **Integrazione** e poi premi **Aggiungi**
-4. Cerca **Renault EV Center** → Scarica
-5. **Riavvia Home Assistant**
-6. **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → "Renault EV Center"**
+L'integrazione è nella **lista predefinita di HACS**: non serve più aggiungerla come repository personalizzato.
+
+1. **HACS** → **Integrazioni**
+2. Cerca **Renault EV Center**
+3. Apri la scheda → **Scarica**
+4. **Riavvia Home Assistant**
+5. **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → "Renault EV Center"**
+
+> Non la trovi? HACS tiene in cache la lista: apri **HACS → ⋮ → Ricarica i dati** (o riavvia HACS) e cerca di nuovo. Alla prima pubblicazione nella lista possono volerci fino a **48 ore** per tutti gli utenti.
+>
+> Se avevi aggiunto il repository come *personalizzato*, ora puoi toglierlo: **HACS → ⋮ → Repository personalizzati → ⋮ accanto alla voce → Rimuovi**. L'integrazione già installata resta al suo posto e gli aggiornamenti arrivano comunque dalla lista predefinita.
 
 > ⚠️ **Dopo aver aggiunto l'integrazione a volte la dashboard non si apre**: la prima volta che apri il
 > pannello può risultare vuoto o non caricato. **Riavvia nuovamente Home Assistant** (una seconda volta)
@@ -388,12 +393,17 @@ Everything is computed **locally in your Home Assistant** and saved to `.storage
 
 **Via HACS (recommended)**
 
-1. **HACS** → ⋮ → **Custom repositories**
-2. Paste `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant`
-3. Category: **Integration**, then press **Add**
-4. Search **Renault EV Center** → Download
-5. **Restart Home Assistant**
-6. **Settings → Devices & Services → Add Integration → "Renault EV Center"**
+The integration is in the **default HACS list**: you no longer need to add it as a custom repository.
+
+1. **HACS** → **Integrations**
+2. Search **Renault EV Center**
+3. Open it → **Download**
+4. **Restart Home Assistant**
+5. **Settings → Devices & Services → Add Integration → "Renault EV Center"**
+
+> Can't find it? HACS caches the list: open **HACS → ⋮ → Reload data** (or restart HACS) and search again. Right after the first publication in the default list it can take up to **48 hours** for every user.
+>
+> If you added the repository as a *custom* one, you can now remove it: **HACS → ⋮ → Custom repositories → ⋮ next to the entry → Remove**. The installed integration stays, and updates come from the default list anyway.
 
 > ⚠️ **After adding the integration the dashboard sometimes doesn't open**: the first time
 > you open the panel it may look empty or unloaded. **Restart Home Assistant again**
@@ -689,12 +699,17 @@ utility_meter à configurer à la main. Aucun envoi externe.
 
 ### Via HACS (recommandé)
 
-1. **HACS** → ⋮ → **Dépôts personnalisés**
-2. Collez `https://github.com/Redrex85/Renault-EV-Center-Home-Assistant`
-3. Catégorie : **Intégration** → Ajouter
-4. Recherchez **Renault EV Center** → Télécharger
-5. **Redémarrez Home Assistant**
-6. **Paramètres → Appareils et services → Ajouter l'intégration → "Renault EV Center"**
+L'intégration figure dans la **liste par défaut de HACS** : inutile de l'ajouter comme dépôt personnalisé.
+
+1. **HACS** → **Intégrations**
+2. Recherchez **Renault EV Center**
+3. Ouvrez la fiche → **Télécharger**
+4. **Redémarrez Home Assistant**
+5. **Paramètres → Appareils et services → Ajouter l'intégration → "Renault EV Center"**
+
+> Vous ne la trouvez pas ? HACS garde la liste en cache : **HACS → ⋮ → Recharger les données** (ou redémarrez HACS) puis relancez la recherche. Juste après la première publication dans la liste par défaut, il peut s'écouler jusqu'à **48 heures** pour tous les utilisateurs.
+>
+> Si vous aviez ajouté le dépôt comme *personnalisé*, vous pouvez le retirer : **HACS → ⋮ → Dépôts personnalisés → ⋮ à côté de l'entrée → Supprimer**. L'intégration installée reste en place et les mises à jour viennent de la liste par défaut.
 
 > ⚠️ **Après avoir ajouté l'intégration, le tableau de bord ne s'ouvre pas toujours** :
 > la première fois, le panneau peut apparaître vide ou non chargé. **Redémarrez à
