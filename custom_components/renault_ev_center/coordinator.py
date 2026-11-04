@@ -79,6 +79,7 @@ from .const import (
     CONF_CHARGE_SCHED_MODE,
     CONF_CHARGE_MERGE,
     CHARGE_MERGE_WINDOW_S,
+    CHARGE_STOP_CLOSE_S,
     CONF_CHARGE_START_TIME,
     CONF_CHARGE_STOP_TIME,
     CONF_CHARGE_START_SOC,
@@ -661,6 +662,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self._wb_sess_start: float | None = None
         self._wb_sess_time = 0.0
         self._charge_off_polls = 0
+        self._charge_idle_since = 0.0
         self._wb_counter_ref: float | None = None
 
         # --- storico giornaliero --------------------------------------------------
@@ -1319,6 +1321,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         started_charge = False
         if charging:
             self._charge_off_polls = 0
+            self._charge_idle_since = 0.0
             # DOPPIA VERIFICA: se si collega la carica il viaggio e' sicuramente finito
             if self.trip.active:
                 chiuso_verifica = self.trip.close(location, eff_kwh_100, now_wall)
@@ -1405,8 +1408,17 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 self._charge_off_polls += 1
                 if self._charge_off_polls >= 2:
                     finished_charge = self._finalize_charge(location, battery)
+            elif self._wb_power_kw() > 0.2:
+                # la wallbox sta ancora erogando: la flag dell'auto è in ritardo, non chiudere
+                self._charge_off_polls = 0
+                self._charge_idle_since = 0.0
             else:
-                self._charge_off_polls = 0  # spina dentro e wallbox attiva → sessione aperta
+                # carica ferma (potenza ~0) da CHARGE_STOP_CLOSE_S: sessione chiusa anche
+                # con spina inserita e stato wallbox non riconosciuto (es. "need_auth").
+                # Senza questo la ricarica restava appesa e non veniva MAI registrata.
+                self._charge_idle_since = self._charge_idle_since or time.time()
+                if time.time() - self._charge_idle_since > CHARGE_STOP_CLOSE_S:
+                    finished_charge = self._finalize_charge(location, battery)
 
         # --- storico giornaliero ---------------------------------------------------
         history = self.store.data["daily"]
@@ -2338,6 +2350,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if merged is not None:
             self.charge_session = None
             self._charge_off_polls = 0
+            self._charge_idle_since = 0.0
             self.persist(force=True)
             return merged
 
@@ -2378,6 +2391,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         )
         self.charge_session = None
         self._charge_off_polls = 0
+        self._charge_idle_since = 0.0
         self.persist(force=True)
         self._queue_geocode_charge(record)
         return record

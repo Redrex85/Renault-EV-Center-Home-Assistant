@@ -5,6 +5,13 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.24 - Chiusura delle ricariche e lista HACS
+
+- **Ricariche mai registrate (fix)**: la sessione si chiudeva solo con la spina staccata o con la wallbox che segnalava "finita". Con una Lektrico in `need_auth` e la spina `plugged` nessuna delle due condizioni era vera: la ricarica restava aperta e **non finiva mai nell'elenco** (l'ultima registrata era del 1 novembre, mentre i costi continuavano a salire dai contatori). Ora `need_auth`, `available`, `idle`, `ready` e `paused` contano come fine ricarica.
+- **Rete di sicurezza (15 min)**: se la potenza della wallbox resta a zero per 15 minuti, la sessione si chiude comunque, anche con spina inserita e stato della wallbox sconosciuto. Il timer riparte da zero appena la wallbox torna a erogare, e i 15 minuti stanno sotto la finestra di fusione: una pausa che riprende non spezza la ricarica in due.
+- **Fusione delle ricariche spezzate**: la finestra passa da 6 a **20 minuti**, così il top-off dopo il raggiungimento del target (es. 80% → 81%, 0,6 kWh) viene unito alla ricarica principale in una riga sola invece di restarne due.
+- **README**: installazione riscritta per la **lista predefinita di HACS** (basta cercare "Renault EV Center" in HACS → Integrazioni), niente più repository personalizzato. L'integrazione è stata approvata e inclusa nella lista (PR hacs/default#11769, 2 novembre 2026).
+
 ## 1.1.23 - Zone di ricarica nel filtro
 
 - **Filtro tipo ricarica**: le opzioni non sono più fisse. Oltre a `Tutte`, `Casa`, `Fotovoltaico` e `Pubblica` compaiono i nomi delle zone configurate in *Impostazioni → Zone di ricarica* e quelli gia' presenti nelle ricariche salvate. Il filtro si popola da solo: aggiungi una zona e la trovi nell'elenco al refresh successivo.

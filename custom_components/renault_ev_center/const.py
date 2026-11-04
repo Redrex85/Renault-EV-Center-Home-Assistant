@@ -133,7 +133,10 @@ CONF_HAS_PV = "has_pv"
 # --- fusione ricariche spezzate (una spina = una ricarica) --------------------
 CONF_CHARGE_MERGE = "charge_merge"        # fondi sessioni ravvicinate nello stesso posto
 DEFAULT_CHARGE_MERGE = True
-CHARGE_MERGE_WINDOW_S = 360               # finestra massima fra due sessioni da fondere
+CHARGE_MERGE_WINDOW_S = 1200              # finestra massima fra due sessioni da fondere (20 min:
+                                          # copre il top-off dopo il target, 80% -> 81%)
+CHARGE_STOP_CLOSE_S = 900                 # carica ferma per 15 min = sessione chiusa (anche se
+                                          # la spina resta inserita e lo stato wallbox non è noto)
 
 # --- sperimentazione GSE (limite di potenza a fasce orarie) -------------------
 CONF_GSE_ENABLED = "gse_enabled"          # abilita la sperimentazione GSE (wizard/opzioni)
@@ -223,7 +226,11 @@ PLUG_CONNECTED_VALUES = {"connected", "completed", "plugged", "plugged_in",
 # token nello stato della wallbox (CONF_WB_STATE) che significano "ricarica finita/ferma":
 # chiudono la sessione ANCHE con la spina ancora collegata (utile alle colonnine pubbliche)
 WALLBOX_FINISHED_TOKENS = ("finish", "charged", "complete", "full", "ended",
-                           "stopped", "no_vehicle", "not_connected", "error", "fault")
+                           "stopped", "no_vehicle", "not_connected", "error", "fault",
+                           # Lektrico: fine transazione / colonnina in attesa di
+                           # autorizzazione. Senza queste la sessione non si chiudeva
+                           # mai (spina "plugged" + wallbox need_auth = resta aperta).
+                           "need_auth", "available", "idle", "ready", "paused")
 
 # vampire drain: sotto questa velocita' di calo SoC (%/h) il calo e' "da fermo",
 # sopra e' guida (il cloud Renault riporta l'odometro solo a motore spento)
