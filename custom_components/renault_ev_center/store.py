@@ -29,6 +29,7 @@ class MateStore:
             "scadenze": {},
             "install": {},
             "schedule": {},
+            "charge_session": None,
         }
 
     @staticmethod
@@ -76,6 +77,10 @@ class MateStore:
         self.data["scadenze"] = raw.get("scadenze", {}) if isinstance(raw.get("scadenze"), dict) else {}
         self.data["install"] = raw.get("install", {}) if isinstance(raw.get("install"), dict) else {}
         self.data["schedule"] = raw.get("schedule", {}) if isinstance(raw.get("schedule"), dict) else {}
+        # sessione di ricarica in corso: deve sopravvivere al riavvio, altrimenti la
+        # ricarica non viene mai registrata (nessun record, energia persa)
+        sess = raw.get("charge_session")
+        self.data["charge_session"] = sess if isinstance(sess, dict) else None
         counters = raw.get("counters", {})
         if isinstance(counters, dict):
             self.data["counters"] = counters
@@ -96,6 +101,7 @@ class MateStore:
             "scadenze": self.data.get("scadenze", {}),
             "install": self.data.get("install", {}),
             "schedule": self.data.get("schedule", {}),
+            "charge_session": self.data.get("charge_session"),
         }
 
     def save(self) -> None:

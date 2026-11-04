@@ -663,6 +663,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self._wb_sess_time = 0.0
         self._charge_off_polls = 0
         self._charge_idle_since = 0.0
+        self._charge_restored = False
         self._wb_counter_ref: float | None = None
 
         # --- storico giornaliero --------------------------------------------------
@@ -1317,6 +1318,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     self._queue_geocode(closed_trip)
 
         # --- sessione di ricarica -------------------------------------------------
+        # prima di tutto: se HA è stato riavviato a ricarica in corso, riprendi la
+        # sessione salvata, altrimenti la ricarica non verrebbe mai registrata
+        if not self._charge_restored:
+            self._charge_restored = True
+            self._restore_charge_session()
         finished_charge = None
         started_charge = False
         if charging:
@@ -1419,6 +1425,13 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 self._charge_idle_since = self._charge_idle_since or time.time()
                 if time.time() - self._charge_idle_since > CHARGE_STOP_CLOSE_S:
                     finished_charge = self._finalize_charge(location, battery)
+
+        # copia della sessione nello store: se HA si riavvia a ricarica in corso,
+        # il record si chiude al riavvio successivo invece di sparire
+        self.store.data["charge_session"] = (dict(self.charge_session)
+                                             if self.charge_session else None)
+        if self.charge_session:
+            self.store.save()
 
         # --- storico giornaliero ---------------------------------------------------
         history = self.store.data["daily"]
@@ -2259,6 +2272,20 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         return data
 
     # ------------------------------------------------------------ fine ricarica
+    def _restore_charge_session(self) -> None:
+        """Riprende la sessione aperta prima di un riavvio di Home Assistant."""
+        raw = self.store.data.get("charge_session")
+        if self.charge_session is not None or not isinstance(raw, dict):
+            return
+        if not raw.get("start_ts"):
+            return
+        sess = dict(raw)
+        # l'integrale della potenza riparte da adesso: il buco del riavvio non va contato
+        sess["ts_last"] = time.time()
+        self.charge_session = sess
+        _LOGGER.info("Sessione di ricarica ripristinata dopo il riavvio (inizio %s)",
+                     datetime.fromtimestamp(_f(sess.get("start_ts"))).strftime("%d/%m %H:%M"))
+
     def _finalize_charge(self, zone: str, battery: float) -> dict[str, Any]:
         s = self.charge_session
         assert s is not None
@@ -2349,6 +2376,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         merged = self._try_merge_charge(record)
         if merged is not None:
             self.charge_session = None
+            self.store.data["charge_session"] = None
             self._charge_off_polls = 0
             self._charge_idle_since = 0.0
             self.persist(force=True)
@@ -2390,6 +2418,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             sum(_f(c.get("costo")) for c in self.store.data["charges"]), 2
         )
         self.charge_session = None
+        self.store.data["charge_session"] = None
         self._charge_off_polls = 0
         self._charge_idle_since = 0.0
         self.persist(force=True)

@@ -5,6 +5,12 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.25 - La ricarica sopravvive al riavvio
+
+- **Sessione di ricarica persistente**: la sessione aperta viene salvata nello store (con l'energia accumulata fino a quel momento). Se Home Assistant si riavvia mentre l'auto sta caricando — tipico durante un aggiornamento via HACS — la sessione viene ripresa al primo ciclo e chiusa normalmente: la ricarica entra nell'elenco invece di sparire.
+- L'integrale della potenza riparte dal momento del riavvio, quindi il buco tra spegnimento e riaccensione non viene contato due volte; l'energia accumulata prima del riavvio resta.
+- Il riferimento viene azzerato alla chiusura della sessione (fusa o registrata), così un record vecchio non può risorgere.
+
 ## 1.1.24 - Chiusura delle ricariche e lista HACS
 
 - **Ricariche mai registrate (fix)**: la sessione si chiudeva solo con la spina staccata o con la wallbox che segnalava "finita". Con una Lektrico in `need_auth` e la spina `plugged` nessuna delle due condizioni era vera: la ricarica restava aperta e **non finiva mai nell'elenco** (l'ultima registrata era del 1 novembre, mentre i costi continuavano a salire dai contatori). Ora `need_auth`, `available`, `idle`, `ready` e `paused` contano come fine ricarica.
