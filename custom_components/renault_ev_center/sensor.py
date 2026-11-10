@@ -146,7 +146,7 @@ async def async_setup_entry(
 class MateSensor(CoordinatorEntity[RenaultMateCoordinator], SensorEntity):
     """Base comune."""
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
 
     # Attributi SOLO per la UI, NON salvati nel database del recorder.
     # Sono liste/archivi grandi (fino a ~650 KB per ArchivioViaggi) che cambiano a ogni ciclo:
@@ -176,7 +176,7 @@ class EffKmPerKwh(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_eff_km_per_kwh"
-        self._attr_name = f"{name} Km per kWh"
+        self._attr_translation_key = "eff_km_per_kwh"
         self._attr_native_unit_of_measurement = "km/kWh"
         self._attr_icon = "mdi:speedometer"
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -190,7 +190,7 @@ class EffKwh100(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_eff_kwh_100km"
-        self._attr_name = f"{name} kWh per 100km"
+        self._attr_translation_key = "eff_kwh_100km"
         self._attr_native_unit_of_measurement = "kWh/100km"
         self._attr_icon = "mdi:battery-charging-100"
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -215,7 +215,7 @@ class EffKwh100Daily(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_eff_kwh_100km_daily"
-        self._attr_name = f"{name} kWh per 100km Giornaliero"
+        self._attr_translation_key = "eff_kwh_100km_daily"
         self._attr_native_unit_of_measurement = "kWh/100km"
         self._attr_icon = "mdi:battery-charging-100"
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -235,7 +235,7 @@ class BatteryKwh(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_battery_kwh"
-        self._attr_name = f"{name} Batteria kWh Disponibili"
+        self._attr_translation_key = "battery_kwh"
         self._attr_native_unit_of_measurement = "kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY_STORAGE
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -249,7 +249,7 @@ class CostPerKm(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_cost_per_km"
-        self._attr_name = f"{name} Costo per km"
+        self._attr_translation_key = "cost_per_km"
         self._attr_native_unit_of_measurement = "€/km"
         self._attr_icon = "mdi:currency-eur"
 
@@ -265,7 +265,7 @@ class CostPer100Km(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_cost_per_100km"
-        self._attr_name = f"{name} Costo per 100 km"
+        self._attr_translation_key = "cost_per_100km"
         self._attr_native_unit_of_measurement = "€/100km"
         self._attr_icon = "mdi:currency-eur"
 
@@ -281,7 +281,7 @@ class PeriodKmSensor(MateSensor):
         super().__init__(coordinator, name)
         self._period = period
         self._attr_unique_id = f"{coordinator.entry.entry_id}_km_{period}"
-        self._attr_name = f"{name} Km {label}"
+        self._attr_translation_key = f"km_{period}"
         self._attr_native_unit_of_measurement = "km"
         self._attr_device_class = SensorDeviceClass.DISTANCE
         self._attr_state_class = SensorStateClass.TOTAL
@@ -312,7 +312,7 @@ class WbEnergySensor(MateSensor):
             "total": "Energia Caricata Totale",
         }
         self._attr_unique_id = f"{coordinator.entry.entry_id}_wb_energy_{period}"
-        self._attr_name = f"{name} {labels[period]}"
+        self._attr_translation_key = f"wb_energy_{period}"
         self._attr_native_unit_of_measurement = "kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_state_class = SensorStateClass.TOTAL
@@ -340,7 +340,7 @@ class CostoRicaricaSensor(MateSensor):
         super().__init__(coordinator, name)
         self._period = period
         self._attr_unique_id = f"{coordinator.entry.entry_id}_cost_{period}"
-        self._attr_name = f"{name} Costo Ricarica {label}"
+        self._attr_translation_key = f"cost_{period}"
         self._attr_native_unit_of_measurement = "€"
         self._attr_device_class = SensorDeviceClass.MONETARY
         self._attr_state_class = SensorStateClass.TOTAL
@@ -366,7 +366,7 @@ class PctBatteriaOggi(MateSensor):
         self._direction = direction
         label = "Caricata" if direction == "up" else "Scaricata"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_pct_oggi_{direction}"
-        self._attr_name = f"{name} Batteria % {label} Oggi"
+        self._attr_translation_key = f"pct_oggi_{direction}"
         self._attr_native_unit_of_measurement = "%"
         self._attr_state_class = SensorStateClass.TOTAL
         self._attr_icon = "mdi:battery-charging" if direction == "up" else "mdi:battery-minus"
@@ -401,7 +401,7 @@ class EnergiaBatteriaSensor(MateSensor):
         super().__init__(coordinator, name)
         self._period = period
         self._attr_unique_id = f"{coordinator.entry.entry_id}_batt_energy_{period}"
-        self._attr_name = f"{name} Energia Batteria {label}"
+        self._attr_translation_key = f"batt_energy_{period}"
         self._attr_native_unit_of_measurement = "kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_state_class = SensorStateClass.TOTAL
@@ -434,7 +434,7 @@ class TempoRicarica(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_tempo_ricarica"
-        self._attr_name = f"{name} Tempo Ricarica Stimato"
+        self._attr_translation_key = "tempo_ricarica"
         self._attr_icon = "mdi:clock-end"
 
     @property
@@ -456,7 +456,7 @@ class OraCompletamento(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_ora_completamento"
-        self._attr_name = f"{name} Ora Completamento Ricarica"
+        self._attr_translation_key = "ora_completamento"
         self._attr_icon = "mdi:clock-time-four"
 
     @property
@@ -468,7 +468,7 @@ class CostoRicaricaCorrente(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_costo_corrente"
-        self._attr_name = f"{name} Costo Ricarica Corrente Stimato"
+        self._attr_translation_key = "costo_corrente"
         self._attr_native_unit_of_measurement = "€"
         self._attr_device_class = SensorDeviceClass.MONETARY
         self._attr_icon = "mdi:currency-eur"
@@ -482,7 +482,7 @@ class TipoRicarica(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_tipo_ricarica"
-        self._attr_name = f"{name} Tipo Ricarica Attuale"
+        self._attr_translation_key = "tipo_ricarica"
 
     @property
     def native_value(self):
@@ -505,7 +505,7 @@ class TripAttivoInfo(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_trip_attivo"
-        self._attr_name = f"{name} Trip Attivo"
+        self._attr_translation_key = "trip_attivo"
 
     @property
     def native_value(self):
@@ -531,7 +531,7 @@ class TripKmCorrenti(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_trip_km"
-        self._attr_name = f"{name} Km Trip Corrente"
+        self._attr_translation_key = "trip_km"
         self._attr_native_unit_of_measurement = "km"
         self._attr_device_class = SensorDeviceClass.DISTANCE
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -546,7 +546,7 @@ class TripDurata(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_trip_durata"
-        self._attr_name = f"{name} Durata Trip Corrente"
+        self._attr_translation_key = "trip_durata"
         self._attr_native_unit_of_measurement = "min"
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_icon = "mdi:timer-outline"
@@ -560,7 +560,7 @@ class UltimoTrip(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_ultimo_trip"
-        self._attr_name = f"{name} Ultimo Trip"
+        self._attr_translation_key = "ultimo_trip"
         self._attr_native_unit_of_measurement = "km"
         self._attr_device_class = SensorDeviceClass.DISTANCE
         self._attr_icon = "mdi:flag-checkered"
@@ -599,7 +599,7 @@ class TripsOggi(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_trips_oggi"
-        self._attr_name = f"{name} Trip Completati Oggi"
+        self._attr_translation_key = "trips_oggi"
         self._attr_native_unit_of_measurement = "trip"
         self._attr_state_class = SensorStateClass.TOTAL
         self._attr_icon = "mdi:counter"
@@ -613,7 +613,7 @@ class KmOggiTrip(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_km_oggi_trip"
-        self._attr_name = f"{name} Km Oggi (Trip)"
+        self._attr_translation_key = "km_oggi_trip"
         self._attr_native_unit_of_measurement = "km"
         self._attr_device_class = SensorDeviceClass.DISTANCE
         self._attr_state_class = SensorStateClass.TOTAL
@@ -628,7 +628,7 @@ class StatisticheViaggi(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_stat_viaggi"
-        self._attr_name = f"{name} Statistiche Viaggi"
+        self._attr_translation_key = "stat_viaggi"
         self._attr_native_unit_of_measurement = "km"
         self._attr_device_class = SensorDeviceClass.DISTANCE
         self._attr_state_class = SensorStateClass.TOTAL
@@ -663,7 +663,7 @@ class ViaggiRecenti(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_viaggi_recenti"
-        self._attr_name = f"{name} Viaggi Recenti"
+        self._attr_translation_key = "viaggi_recenti"
         self._attr_native_unit_of_measurement = "trip"
         self._attr_icon = "mdi:format-list-bulleted"
 
@@ -682,7 +682,7 @@ class StoricoGiornaliero(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_storico_giornaliero"
-        self._attr_name = f"{name} Storico Giornaliero"
+        self._attr_translation_key = "storico_giornaliero"
         self._attr_native_unit_of_measurement = "giorni"
         self._attr_icon = "mdi:calendar-clock"
 
@@ -702,7 +702,7 @@ class UltimaRicarica(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_ultima_ricarica"
-        self._attr_name = f"{name} Ultima Ricarica"
+        self._attr_translation_key = "ultima_ricarica"
         self._attr_native_unit_of_measurement = "kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_icon = "mdi:lightning-bolt"
@@ -738,7 +738,7 @@ class DeltaUltimaCarica(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_delta_ultima_carica"
-        self._attr_name = f"{name} Delta % Ultima Carica"
+        self._attr_translation_key = "delta_ultima_carica"
         self._attr_native_unit_of_measurement = "%"
         self._attr_icon = "mdi:battery-plus-variant"
 
@@ -756,7 +756,7 @@ class RicaricheContatore(MateSensor):
         self._periodo = periodo
         label = "Oggi" if periodo == "oggi" else "Mese"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_ricariche_{periodo}"
-        self._attr_name = f"{name} Ricariche {label}"
+        self._attr_translation_key = f"ricariche_{periodo}"
         self._attr_native_unit_of_measurement = "ricariche"
         self._attr_state_class = SensorStateClass.TOTAL
         self._attr_icon = "mdi:counter"
@@ -769,6 +769,8 @@ class RicaricheContatore(MateSensor):
 
 # ---------------------------------------------------------------------- risparmio
 class RisparmioTermica(MateSensor):
+    _attr_has_entity_name = False
+
     def __init__(self, coordinator, name, periodo):
         super().__init__(coordinator, name)
         self._periodo = periodo
@@ -807,7 +809,7 @@ class WbPotenza(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_wb_potenza"
-        self._attr_name = f"{name} Wallbox Potenza"
+        self._attr_translation_key = "wb_potenza"
         self._attr_native_unit_of_measurement = "kW"
         self._attr_device_class = SensorDeviceClass.POWER
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -844,7 +846,7 @@ class WbTempoSessione(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_wb_tempo_sessione"
-        self._attr_name = f"{name} Wallbox Tempo Sessione"
+        self._attr_translation_key = "wb_tempo_sessione"
         self._attr_native_unit_of_measurement = "s"
         self._attr_device_class = SensorDeviceClass.DURATION
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -870,7 +872,7 @@ class KwhTotaliConsumati(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_kwh_totali"
-        self._attr_name = f"{name} kWh Totali Consumati"
+        self._attr_translation_key = "kwh_totali"
         self._attr_native_unit_of_measurement = "kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_state_class = SensorStateClass.TOTAL
@@ -891,7 +893,7 @@ class PercPer100km(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_perc_per_100km"
-        self._attr_name = f"{name} Batteria % per 100km"
+        self._attr_translation_key = "perc_per_100km"
         self._attr_native_unit_of_measurement = "%/100km"
         self._attr_icon = "mdi:gauge"
 
@@ -920,7 +922,7 @@ class ArchivioViaggi(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_archivio_viaggi"
-        self._attr_name = f"{name} Archivio Viaggi"
+        self._attr_translation_key = "archivio_viaggi"
         self._attr_native_unit_of_measurement = "trip"
         self._attr_icon = "mdi:archive"
 
@@ -945,7 +947,7 @@ class ListaRicariche(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_lista_ricariche"
-        self._attr_name = f"{name} Lista Ricariche"
+        self._attr_translation_key = "lista_ricariche"
         self._attr_native_unit_of_measurement = "ricariche"
         self._attr_icon = "mdi:format-list-checks"
 
@@ -975,7 +977,7 @@ class ReportGenerale(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_report_generale"
-        self._attr_name = f"{name} Report Generale"
+        self._attr_translation_key = "report_generale"
         self._attr_icon = "mdi:table-large"
 
     @property
@@ -994,7 +996,7 @@ class EfficienzaRicarica(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_eff_ricarica"
-        self._attr_name = f"{name} Efficienza Ricarica"
+        self._attr_translation_key = "eff_ricarica"
         self._attr_native_unit_of_measurement = "%"
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_icon = "mdi:battery-charging-medium"
@@ -1010,7 +1012,7 @@ class PerditeRicarica(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_perdite_ricarica"
-        self._attr_name = f"{name} Perdite Ultima Ricarica"
+        self._attr_translation_key = "perdite_ricarica"
         self._attr_native_unit_of_measurement = "kWh"
         self._attr_icon = "mdi:lightning-bolt-circle"
 
@@ -1029,7 +1031,7 @@ class SohStimato(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_soh_stimato"
-        self._attr_name = f"{name} SOH Stimato"
+        self._attr_translation_key = "soh_stimato"
         self._attr_native_unit_of_measurement = "%"
         self._attr_icon = "mdi:heart-pulse"
 
@@ -1058,7 +1060,7 @@ class EnergiaBatteriaUltimaRicarica(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_batteria_ultima"
-        self._attr_name = f"{name} Energia Batteria Ultima Ricarica"
+        self._attr_translation_key = "batteria_ultima"
         self._attr_native_unit_of_measurement = "kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_icon = "mdi:battery-arrow-up"
@@ -1082,7 +1084,7 @@ class KwhPer1Pct(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_kwh_per_1pct"
-        self._attr_name = f"{name} kWh per 1% Batteria"
+        self._attr_translation_key = "kwh_per_1pct"
         self._attr_native_unit_of_measurement = "kWh"
         self._attr_icon = "mdi:percent"
 
@@ -1097,7 +1099,7 @@ class Tagliandi(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_tagliandi"
-        self._attr_name = f"{name} Tagliandi"
+        self._attr_translation_key = "tagliandi"
         self._attr_native_unit_of_measurement = "€"
         self._attr_device_class = SensorDeviceClass.MONETARY
         self._attr_state_class = SensorStateClass.TOTAL
@@ -1122,6 +1124,7 @@ class Tagliandi(MateSensor):
 class RisparmioExtra(MateSensor):
     """Risparmio aggiuntivo: tagliandi evitati, bollo, totale netto."""
 
+    _attr_has_entity_name = False
     LABELS = {
         "tagliandi": ("Risparmio Tagliandi vs", "mdi:wrench-clock"),
         "bollo": ("Risparmio Bollo vs", "mdi:file-certificate"),
@@ -1161,7 +1164,7 @@ class DrainFermo(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_drain_oggi"
-        self._attr_name = f"{name} Batteria Persa da Fermo Oggi"
+        self._attr_translation_key = "drain_oggi"
         self._attr_native_unit_of_measurement = "%"
         self._attr_state_class = SensorStateClass.TOTAL
         self._attr_icon = "mdi:battery-clock"
@@ -1186,7 +1189,7 @@ class DrainMese(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_drain_mese"
-        self._attr_name = f"{name} Batteria Persa da Fermo Mese"
+        self._attr_translation_key = "drain_mese"
         self._attr_native_unit_of_measurement = "%"
         self._attr_state_class = SensorStateClass.TOTAL
         self._attr_icon = "mdi:battery-clock-outline"
@@ -1207,7 +1210,7 @@ class ConsumoZona(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_consumo_zona"
-        self._attr_name = f"{name} Consumo per Zona"
+        self._attr_translation_key = "consumo_zona"
         self._attr_native_unit_of_measurement = "rotte"
         self._attr_icon = "mdi:routes"
 
@@ -1231,7 +1234,7 @@ class CO2Risparmiata(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_co2"
-        self._attr_name = f"{name} CO2 Risparmiata"
+        self._attr_translation_key = "co2"
         self._attr_native_unit_of_measurement = "kg"
         self._attr_state_class = SensorStateClass.TOTAL
         self._attr_icon = "mdi:molecule-co2"
@@ -1256,7 +1259,7 @@ class Scadenze(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_scadenze"
-        self._attr_name = f"{name} Prossima Scadenza"
+        self._attr_translation_key = "scadenze"
         self._attr_native_unit_of_measurement = "gg"
         self._attr_icon = "mdi:calendar-alert"
 
@@ -1283,7 +1286,7 @@ class ViaggioEstremo(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_viaggio_estremo"
-        self._attr_name = f"{name} Viaggio Top/Stop del Mese"
+        self._attr_translation_key = "viaggio_estremo"
         self._attr_native_unit_of_measurement = "kWh/100km"
         self._attr_icon = "mdi:trophy"
 
@@ -1309,7 +1312,7 @@ class EnergiaCasaTotale(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_energia_casa_tot"
-        self._attr_name = f"{name} Energia Caricata Casa (totale)"
+        self._attr_translation_key = "energia_casa_tot"
         self._attr_native_unit_of_measurement = "kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_state_class = SensorStateClass.TOTAL_INCREASING
@@ -1327,7 +1330,7 @@ class Programmazione(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_programmazione"
-        self._attr_name = f"{name} Programmazione"
+        self._attr_translation_key = "programmazione"
         self._attr_icon = "mdi:calendar-clock"
 
     @property
@@ -1360,7 +1363,7 @@ class Percorrenza(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_percorrenza"
-        self._attr_name = f"{name} Percorrenza"
+        self._attr_translation_key = "percorrenza"
         self._attr_native_unit_of_measurement = "righe"
         self._attr_icon = "mdi:car-clock"
 
@@ -1379,7 +1382,7 @@ class Assicurazione(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_assicurazione"
-        self._attr_name = f"{name} Assicurazione"
+        self._attr_translation_key = "assicurazione"
         self._attr_native_unit_of_measurement = "gg"
         self._attr_icon = "mdi:shield-car"
 
@@ -1413,7 +1416,7 @@ class FvMese(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_fv_mese"
-        self._attr_name = f"{name} Ricaricato Fotovoltaico Mese"
+        self._attr_translation_key = "fv_mese"
         self._attr_native_unit_of_measurement = "kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_state_class = SensorStateClass.TOTAL
@@ -1430,7 +1433,7 @@ class FvTotale(MateSensor):
     def __init__(self, coordinator, name):
         super().__init__(coordinator, name)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_fv_totale"
-        self._attr_name = f"{name} Energia Caricata Fotovoltaico (totale)"
+        self._attr_translation_key = "fv_totale"
         self._attr_native_unit_of_measurement = "kWh"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_state_class = SensorStateClass.TOTAL_INCREASING

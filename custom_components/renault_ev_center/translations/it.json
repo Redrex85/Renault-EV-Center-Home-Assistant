@@ -639,5 +639,341 @@
         "enterprise": "Enterprise — auto + wallbox + fotovoltaico"
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "eff_km_per_kwh": {
+        "name": "Km per kWh"
+      },
+      "eff_kwh_100km": {
+        "name": "kWh per 100km"
+      },
+      "eff_kwh_100km_daily": {
+        "name": "kWh per 100km Giornaliero"
+      },
+      "battery_kwh": {
+        "name": "Batteria kWh Disponibili"
+      },
+      "cost_per_km": {
+        "name": "Costo per km"
+      },
+      "cost_per_100km": {
+        "name": "Costo per 100 km"
+      },
+      "tempo_ricarica": {
+        "name": "Tempo Ricarica Stimato"
+      },
+      "ora_completamento": {
+        "name": "Ora Completamento Ricarica"
+      },
+      "costo_corrente": {
+        "name": "Costo Ricarica Corrente Stimato"
+      },
+      "tipo_ricarica": {
+        "name": "Tipo Ricarica Attuale"
+      },
+      "trip_attivo": {
+        "name": "Trip Attivo"
+      },
+      "trip_km": {
+        "name": "Km Trip Corrente"
+      },
+      "trip_durata": {
+        "name": "Durata Trip Corrente"
+      },
+      "ultimo_trip": {
+        "name": "Ultimo Trip"
+      },
+      "trips_oggi": {
+        "name": "Trip Completati Oggi"
+      },
+      "km_oggi_trip": {
+        "name": "Km Oggi (Trip)"
+      },
+      "stat_viaggi": {
+        "name": "Statistiche Viaggi"
+      },
+      "viaggi_recenti": {
+        "name": "Viaggi Recenti"
+      },
+      "archivio_viaggi": {
+        "name": "Archivio Viaggi"
+      },
+      "storico_giornaliero": {
+        "name": "Storico Giornaliero"
+      },
+      "lista_ricariche": {
+        "name": "Lista Ricariche"
+      },
+      "report_generale": {
+        "name": "Report Generale"
+      },
+      "ultima_ricarica": {
+        "name": "Ultima Ricarica"
+      },
+      "delta_ultima_carica": {
+        "name": "Delta % Ultima Carica"
+      },
+      "eff_ricarica": {
+        "name": "Efficienza Ricarica"
+      },
+      "perdite_ricarica": {
+        "name": "Perdite Ultima Ricarica"
+      },
+      "batteria_ultima": {
+        "name": "Energia Batteria Ultima Ricarica"
+      },
+      "soh_stimato": {
+        "name": "SOH Stimato"
+      },
+      "kwh_per_1pct": {
+        "name": "kWh per 1% Batteria"
+      },
+      "tagliandi": {
+        "name": "Tagliandi"
+      },
+      "drain_oggi": {
+        "name": "Batteria Persa da Fermo Oggi"
+      },
+      "drain_mese": {
+        "name": "Batteria Persa da Fermo Mese"
+      },
+      "consumo_zona": {
+        "name": "Consumo per Zona"
+      },
+      "co2": {
+        "name": "CO2 Risparmiata"
+      },
+      "scadenze": {
+        "name": "Prossima Scadenza"
+      },
+      "viaggio_estremo": {
+        "name": "Viaggio Top/Stop del Mese"
+      },
+      "energia_casa_tot": {
+        "name": "Energia Caricata Casa (totale)"
+      },
+      "programmazione": {
+        "name": "Programmazione"
+      },
+      "percorrenza": {
+        "name": "Percorrenza"
+      },
+      "assicurazione": {
+        "name": "Assicurazione"
+      },
+      "fv_mese": {
+        "name": "Ricaricato Fotovoltaico Mese"
+      },
+      "fv_totale": {
+        "name": "Energia Caricata Fotovoltaico (totale)"
+      },
+      "wb_potenza": {
+        "name": "Wallbox Potenza"
+      },
+      "wb_tempo_sessione": {
+        "name": "Wallbox Tempo Sessione"
+      },
+      "kwh_totali": {
+        "name": "kWh Totali Consumati"
+      },
+      "perc_per_100km": {
+        "name": "Batteria % per 100km"
+      },
+      "km_daily": {
+        "name": "Km Giornalieri"
+      },
+      "km_weekly": {
+        "name": "Km Settimanali"
+      },
+      "km_monthly": {
+        "name": "Km Mensili"
+      },
+      "km_yearly": {
+        "name": "Km Annuali"
+      },
+      "wb_energy_daily": {
+        "name": "Energia Caricata Giornaliera"
+      },
+      "wb_energy_weekly": {
+        "name": "Energia Caricata Settimanale"
+      },
+      "wb_energy_monthly": {
+        "name": "Energia Caricata Mensile"
+      },
+      "wb_energy_yearly": {
+        "name": "Energia Caricata Annuale"
+      },
+      "wb_energy_total": {
+        "name": "Energia Caricata Totale"
+      },
+      "cost_daily": {
+        "name": "Costo Ricarica Giornaliero"
+      },
+      "cost_weekly": {
+        "name": "Costo Ricarica Settimanale"
+      },
+      "cost_monthly": {
+        "name": "Costo Ricarica Mensile"
+      },
+      "cost_yearly": {
+        "name": "Costo Ricarica Annuale"
+      },
+      "cost_total": {
+        "name": "Costo Ricarica Totale"
+      },
+      "pct_oggi_up": {
+        "name": "Batteria % Caricata Oggi"
+      },
+      "pct_oggi_down": {
+        "name": "Batteria % Scaricata Oggi"
+      },
+      "batt_energy_daily": {
+        "name": "Energia Batteria Giornaliero"
+      },
+      "batt_energy_weekly": {
+        "name": "Energia Batteria Settimanale"
+      },
+      "batt_energy_monthly": {
+        "name": "Energia Batteria Mensile"
+      },
+      "batt_energy_yearly": {
+        "name": "Energia Batteria Annuale"
+      },
+      "ricariche_oggi": {
+        "name": "Ricariche Oggi"
+      },
+      "ricariche_mese": {
+        "name": "Ricariche Mese"
+      }
+    },
+    "binary_sensor": {
+      "in_carica": {
+        "name": "In Carica"
+      },
+      "wb_in_carica": {
+        "name": "Wallbox in Carica"
+      }
+    },
+    "button": {
+      "btn_close_trip": {
+        "name": "Chiudi Viaggio Ora"
+      },
+      "btn_export": {
+        "name": "Esporta Viaggi CSV"
+      },
+      "btn_reset_km": {
+        "name": "Reset Contatori Km"
+      },
+      "btn_reset_energia": {
+        "name": "Reset Contatori Energia"
+      },
+      "btn_reset_costi": {
+        "name": "Reset Contatori Costi"
+      }
+    },
+    "device_tracker": {
+      "posizione": {
+        "name": "Posizione"
+      }
+    },
+    "number": {
+      "price_home": {
+        "name": "Costo Energia Casa"
+      },
+      "price_public": {
+        "name": "Costo Colonnina"
+      },
+      "price_solar": {
+        "name": "Costo Fotovoltaico"
+      },
+      "fuel_price": {
+        "name": "Prezzo Carburante"
+      },
+      "capacity": {
+        "name": "Capacita Batteria"
+      },
+      "target": {
+        "name": "Obiettivo Ricarica"
+      },
+      "soh_official": {
+        "name": "SOH Ufficiale"
+      },
+      "assic_costo": {
+        "name": "Costo Assicurazione"
+      },
+      "low_soc": {
+        "name": "Batteria Minima Promemoria"
+      },
+      "charge_start_soc": {
+        "name": "Carica Avvio Sotto"
+      },
+      "charge_stop_soc": {
+        "name": "Carica Ferma Sopra"
+      },
+      "balance_min_amps": {
+        "name": "Bilanciamento Ampere Minimi"
+      },
+      "balance_max_amps": {
+        "name": "Bilanciamento Ampere Massimi"
+      },
+      "battery_priority": {
+        "name": "Priorità Batteria Casa"
+      }
+    },
+    "select": {
+      "filtro_tipo": {
+        "name": "Filtro Tipo Ricarica"
+      },
+      "filtro_periodo": {
+        "name": "Filtro Periodo Ricariche"
+      },
+      "filtro_mese": {
+        "name": "Filtro Mese Ricariche"
+      },
+      "filtro_anno": {
+        "name": "Filtro Anno Ricariche"
+      }
+    },
+    "switch": {
+      "notify_start": {
+        "name": "Notifica Avvio Ricarica"
+      },
+      "notify_end": {
+        "name": "Notifica Fine Ricarica"
+      },
+      "low_soc": {
+        "name": "Promemoria Batteria Bassa"
+      },
+      "charge_sched": {
+        "name": "Carica Programmata"
+      },
+      "balance": {
+        "name": "Bilanciamento Solare"
+      },
+      "home_balance": {
+        "name": "Bilanciamento Casa"
+      },
+      "battery_night_only": {
+        "name": "Batteria Solo Senza Sole"
+      },
+      "gse": {
+        "name": "Sperimentazione GSE"
+      }
+    },
+    "time": {
+      "low_soc_start": {
+        "name": "Promemoria Inizio"
+      },
+      "low_soc_end": {
+        "name": "Promemoria Fine"
+      },
+      "charge_start_time": {
+        "name": "Carica Orario Avvio"
+      },
+      "charge_stop_time": {
+        "name": "Carica Orario Stop"
+      }
+    }
   }
 }

@@ -639,5 +639,341 @@
         "enterprise": "Enterprise — coche + wallbox + solar"
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "eff_km_per_kwh": {
+        "name": "Km por kWh"
+      },
+      "eff_kwh_100km": {
+        "name": "kWh por 100 km"
+      },
+      "eff_kwh_100km_daily": {
+        "name": "kWh por 100 km (día)"
+      },
+      "battery_kwh": {
+        "name": "kWh de batería disponibles"
+      },
+      "cost_per_km": {
+        "name": "Coste por km"
+      },
+      "cost_per_100km": {
+        "name": "Coste por 100 km"
+      },
+      "tempo_ricarica": {
+        "name": "Tiempo de carga estimado"
+      },
+      "ora_completamento": {
+        "name": "Hora de fin de carga"
+      },
+      "costo_corrente": {
+        "name": "Coste estimado de la carga actual"
+      },
+      "tipo_ricarica": {
+        "name": "Tipo de carga actual"
+      },
+      "trip_attivo": {
+        "name": "Trayecto activo"
+      },
+      "trip_km": {
+        "name": "Km del trayecto en curso"
+      },
+      "trip_durata": {
+        "name": "Duración del trayecto en curso"
+      },
+      "ultimo_trip": {
+        "name": "Último trayecto"
+      },
+      "trips_oggi": {
+        "name": "Trayectos completados hoy"
+      },
+      "km_oggi_trip": {
+        "name": "Km hoy (trayectos)"
+      },
+      "stat_viaggi": {
+        "name": "Estadísticas de trayectos"
+      },
+      "viaggi_recenti": {
+        "name": "Trayectos recientes"
+      },
+      "archivio_viaggi": {
+        "name": "Archivo de trayectos"
+      },
+      "storico_giornaliero": {
+        "name": "Historial diario"
+      },
+      "lista_ricariche": {
+        "name": "Lista de cargas"
+      },
+      "report_generale": {
+        "name": "Informe general"
+      },
+      "ultima_ricarica": {
+        "name": "Última carga"
+      },
+      "delta_ultima_carica": {
+        "name": "Delta % última carga"
+      },
+      "eff_ricarica": {
+        "name": "Rendimiento de carga"
+      },
+      "perdite_ricarica": {
+        "name": "Pérdidas de la última carga"
+      },
+      "batteria_ultima": {
+        "name": "Energía de batería de la última carga"
+      },
+      "soh_stimato": {
+        "name": "SOH estimado"
+      },
+      "kwh_per_1pct": {
+        "name": "kWh por 1 % de batería"
+      },
+      "tagliandi": {
+        "name": "Mantenimientos"
+      },
+      "drain_oggi": {
+        "name": "Batería perdida en reposo hoy"
+      },
+      "drain_mese": {
+        "name": "Batería perdida en reposo este mes"
+      },
+      "consumo_zona": {
+        "name": "Consumo por zona"
+      },
+      "co2": {
+        "name": "CO2 ahorrado"
+      },
+      "scadenze": {
+        "name": "Próximo vencimiento"
+      },
+      "viaggio_estremo": {
+        "name": "Mejor/peor trayecto del mes"
+      },
+      "energia_casa_tot": {
+        "name": "Energía cargada en casa (total)"
+      },
+      "programmazione": {
+        "name": "Programaciones"
+      },
+      "percorrenza": {
+        "name": "Recorridos"
+      },
+      "assicurazione": {
+        "name": "Seguro"
+      },
+      "fv_mese": {
+        "name": "Cargado con solar este mes"
+      },
+      "fv_totale": {
+        "name": "Energía cargada con solar (total)"
+      },
+      "wb_potenza": {
+        "name": "Potencia del wallbox"
+      },
+      "wb_tempo_sessione": {
+        "name": "Tiempo de sesión del wallbox"
+      },
+      "kwh_totali": {
+        "name": "kWh totales consumidos"
+      },
+      "perc_per_100km": {
+        "name": "Batería % por 100 km"
+      },
+      "km_daily": {
+        "name": "Km diarios"
+      },
+      "km_weekly": {
+        "name": "Km semanales"
+      },
+      "km_monthly": {
+        "name": "Km mensuales"
+      },
+      "km_yearly": {
+        "name": "Km anuales"
+      },
+      "wb_energy_daily": {
+        "name": "Energía cargada (día)"
+      },
+      "wb_energy_weekly": {
+        "name": "Energía cargada (semana)"
+      },
+      "wb_energy_monthly": {
+        "name": "Energía cargada (mes)"
+      },
+      "wb_energy_yearly": {
+        "name": "Energía cargada (año)"
+      },
+      "wb_energy_total": {
+        "name": "Energía cargada (total)"
+      },
+      "cost_daily": {
+        "name": "Coste de carga (día)"
+      },
+      "cost_weekly": {
+        "name": "Coste de carga (semana)"
+      },
+      "cost_monthly": {
+        "name": "Coste de carga (mes)"
+      },
+      "cost_yearly": {
+        "name": "Coste de carga (año)"
+      },
+      "cost_total": {
+        "name": "Coste de carga (total)"
+      },
+      "pct_oggi_up": {
+        "name": "Batería % cargada hoy"
+      },
+      "pct_oggi_down": {
+        "name": "Batería % descargada hoy"
+      },
+      "batt_energy_daily": {
+        "name": "Energía de batería (día)"
+      },
+      "batt_energy_weekly": {
+        "name": "Energía de batería (semana)"
+      },
+      "batt_energy_monthly": {
+        "name": "Energía de batería (mes)"
+      },
+      "batt_energy_yearly": {
+        "name": "Energía de batería (año)"
+      },
+      "ricariche_oggi": {
+        "name": "Cargas hoy"
+      },
+      "ricariche_mese": {
+        "name": "Cargas del mes"
+      }
+    },
+    "binary_sensor": {
+      "in_carica": {
+        "name": "Cargando"
+      },
+      "wb_in_carica": {
+        "name": "Wallbox cargando"
+      }
+    },
+    "button": {
+      "btn_close_trip": {
+        "name": "Cerrar trayecto ahora"
+      },
+      "btn_export": {
+        "name": "Exportar trayectos CSV"
+      },
+      "btn_reset_km": {
+        "name": "Reiniciar contadores km"
+      },
+      "btn_reset_energia": {
+        "name": "Reiniciar contadores de energía"
+      },
+      "btn_reset_costi": {
+        "name": "Reiniciar contadores de costes"
+      }
+    },
+    "device_tracker": {
+      "posizione": {
+        "name": "Posición"
+      }
+    },
+    "number": {
+      "price_home": {
+        "name": "Coste de energía en casa"
+      },
+      "price_public": {
+        "name": "Coste de carga pública"
+      },
+      "price_solar": {
+        "name": "Coste de energía solar"
+      },
+      "fuel_price": {
+        "name": "Precio del combustible"
+      },
+      "capacity": {
+        "name": "Capacidad de batería"
+      },
+      "target": {
+        "name": "Objetivo de carga"
+      },
+      "soh_official": {
+        "name": "SOH oficial"
+      },
+      "assic_costo": {
+        "name": "Coste del seguro"
+      },
+      "low_soc": {
+        "name": "Batería mínima (recordatorio)"
+      },
+      "charge_start_soc": {
+        "name": "Iniciar carga por debajo de"
+      },
+      "charge_stop_soc": {
+        "name": "Detener carga por encima de"
+      },
+      "balance_min_amps": {
+        "name": "Equilibrado: amperios mínimos"
+      },
+      "balance_max_amps": {
+        "name": "Equilibrado: amperios máximos"
+      },
+      "battery_priority": {
+        "name": "Prioridad batería de casa"
+      }
+    },
+    "select": {
+      "filtro_tipo": {
+        "name": "Filtro tipo de carga"
+      },
+      "filtro_periodo": {
+        "name": "Filtro período de cargas"
+      },
+      "filtro_mese": {
+        "name": "Filtro mes de cargas"
+      },
+      "filtro_anno": {
+        "name": "Filtro año de cargas"
+      }
+    },
+    "switch": {
+      "notify_start": {
+        "name": "Notificación de inicio de carga"
+      },
+      "notify_end": {
+        "name": "Notificación de fin de carga"
+      },
+      "low_soc": {
+        "name": "Recordatorio de batería baja"
+      },
+      "charge_sched": {
+        "name": "Carga programada"
+      },
+      "balance": {
+        "name": "Equilibrado solar"
+      },
+      "home_balance": {
+        "name": "Equilibrado de casa"
+      },
+      "battery_night_only": {
+        "name": "Batería solo sin sol"
+      },
+      "gse": {
+        "name": "Experimentación GSE"
+      }
+    },
+    "time": {
+      "low_soc_start": {
+        "name": "Recordatorio: inicio"
+      },
+      "low_soc_end": {
+        "name": "Recordatorio: fin"
+      },
+      "charge_start_time": {
+        "name": "Hora de inicio de carga"
+      },
+      "charge_stop_time": {
+        "name": "Hora de fin de carga"
+      }
+    }
   }
 }

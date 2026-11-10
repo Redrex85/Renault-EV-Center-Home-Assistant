@@ -29,56 +29,55 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: RenaultMateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    name = str(entry.data.get("name") or entry.title or "Renault")
     base = {**entry.data, **entry.options}
 
     defs = [
-        ("price_home", f"{name} Costo Energia Casa",
+        ("price_home",
          float(base.get(CONF_PRICE_HOME, 0.25)), 0.0, 5.0, 0.001, "€/kWh", "mdi:home-lightning-bolt"),
-        ("price_public", f"{name} Costo Colonnina",
+        ("price_public",
          float(base.get(CONF_PRICE_PUBLIC, 0.45)), 0.0, 5.0, 0.001, "€/kWh", "mdi:ev-station"),
-        ("price_solar", f"{name} Costo Fotovoltaico",
+        ("price_solar",
          float(base.get(CONF_PRICE_SOLAR, 0.0)), 0.0, 5.0, 0.001, "€/kWh", "mdi:solar-power"),
         # FONTE UNICA del prezzo carburante: usata sia dal coordinator (risparmi) sia dal pannello
-        ("fuel_price", f"{name} Prezzo Carburante",
+        ("fuel_price",
          float(base.get("fuel_price", 2.00)), 0.5, 5.0, 0.01, "€/l", "mdi:gas-station"),
-        ("capacity", f"{name} Capacita Batteria",
+        ("capacity",
          float(base.get(CONF_CAPACITY, 60.0)), 20.0, 150.0, 0.5, "kWh", "mdi:car-battery"),
-        ("target", f"{name} Obiettivo Ricarica",
+        ("target",
          float(base.get(CONF_TARGET_SOC, 80.0)), 50.0, 100.0, 1.0, "%", "mdi:battery-charging-100"),
-        ("soh_official", f"{name} SOH Ufficiale",
+        ("soh_official",
          100.0, 50.0, 100.0, 0.1, "%", "mdi:heart-pulse"),
-        ("assic_costo", f"{name} Costo Assicurazione",
+        ("assic_costo",
          float(base.get("assicurazione_costo", 400.0)), 0.0, 3000.0, 10.0, "€/anno", "mdi:shield-car"),
-        ("low_soc", f"{name} Batteria Minima Promemoria",
+        ("low_soc",
          float(base.get("low_soc_threshold", 25.0)), 5.0, 80.0, 1.0, "%", "mdi:battery-alert"),
-        ("charge_start_soc", f"{name} Carica Avvio Sotto",
+        ("charge_start_soc",
          float(base.get("charge_start_soc", 30.0)), 5.0, 80.0, 1.0, "%", "mdi:play-circle"),
-        ("charge_stop_soc", f"{name} Carica Ferma Sopra",
+        ("charge_stop_soc",
          float(base.get("charge_stop_soc", 80.0)), 50.0, 100.0, 1.0, "%", "mdi:stop-circle"),
-        ("balance_min_amps", f"{name} Bilanciamento Ampere Minimi",
+        ("balance_min_amps",
          6.0, 4.0, 32.0, 1.0, "A", "mdi:current-ac"),
-        ("balance_max_amps", f"{name} Bilanciamento Ampere Massimi",
+        ("balance_max_amps",
          float(base.get("balance_max_amps", 16.0)), 6.0, 32.0, 1.0, "A", "mdi:current-ac"),
-        ("battery_priority", f"{name} Priorità Batteria Casa",
+        ("battery_priority",
          float(base.get("battery_priority_min", 80.0)), 0.0, 100.0, 5.0, "%", "mdi:home-battery"),
     ]
     async_add_entities([
-        MateNumber(coordinator, key, label, initial, vmin, vmax, step, unit, icon)
-        for key, label, initial, vmin, vmax, step, unit, icon in defs
+        MateNumber(coordinator, key, initial, vmin, vmax, step, unit, icon)
+        for key, initial, vmin, vmax, step, unit, icon in defs
     ])
 
 
 class MateNumber(CoordinatorEntity[RenaultMateCoordinator], RestoreEntity, NumberEntity):
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
     _attr_mode = NumberMode.BOX
 
-    def __init__(self, coordinator, key, label, initial, vmin, vmax, step, unit, icon) -> None:
+    def __init__(self, coordinator, key, initial, vmin, vmax, step, unit, icon) -> None:
         super().__init__(coordinator)
         self._key = key
         self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator.entry.entry_id}_num_{key}"
-        self._attr_name = label
+        self._attr_translation_key = key
         self._attr_native_unit_of_measurement = unit
         self._attr_icon = icon
         self._attr_native_min_value = vmin

@@ -31,30 +31,29 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: RenaultMateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    name = str(entry.data.get("name") or entry.title or "Renault")
     base = {**entry.data, **entry.options}
 
     defs = [
-        ("low_soc_start", f"{name} Promemoria Inizio", base.get("low_soc_start", "18:00"), "mdi:clock-start"),
-        ("low_soc_end", f"{name} Promemoria Fine", base.get("low_soc_end", "22:00"), "mdi:clock-end"),
-        ("charge_start_time", f"{name} Carica Orario Avvio", base.get("charge_start_time", "23:30"), "mdi:play-circle"),
-        ("charge_stop_time", f"{name} Carica Orario Stop", base.get("charge_stop_time", "07:00"), "mdi:stop-circle"),
+        ("low_soc_start", base.get("low_soc_start", "18:00"), "mdi:clock-start"),
+        ("low_soc_end", base.get("low_soc_end", "22:00"), "mdi:clock-end"),
+        ("charge_start_time", base.get("charge_start_time", "23:30"), "mdi:play-circle"),
+        ("charge_stop_time", base.get("charge_stop_time", "07:00"), "mdi:stop-circle"),
     ]
     async_add_entities([
-        MateTime(coordinator, key, label, _parse(initial), icon)
-        for key, label, initial, icon in defs
+        MateTime(coordinator, key, _parse(initial), icon)
+        for key, initial, icon in defs
     ])
 
 
 class MateTime(CoordinatorEntity[RenaultMateCoordinator], RestoreEntity, TimeEntity):
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
 
-    def __init__(self, coordinator, key, label, initial: dt_time, icon) -> None:
+    def __init__(self, coordinator, key, initial: dt_time, icon) -> None:
         super().__init__(coordinator)
         self._key = key
         self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator.entry.entry_id}_time_{key}"
-        self._attr_name = label
+        self._attr_translation_key = key
         self._attr_icon = icon
         self._attr_native_value = initial
 

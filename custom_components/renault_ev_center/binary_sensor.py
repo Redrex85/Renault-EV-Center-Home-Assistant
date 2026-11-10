@@ -24,7 +24,6 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: RenaultMateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    name = str(entry.data.get("name") or entry.title or "Renault")
     wb = bool(
         entry.options.get(
             CONF_WALLBOX_ENABLED, entry.data.get(CONF_WALLBOX_ENABLED, False)
@@ -32,13 +31,13 @@ async def async_setup_entry(
     )
 
     entities: list[BinarySensorEntity] = [
-        InCaricaSensor(coordinator, name, f"{coordinator.entry.entry_id}_in_carica",
-                       f"{name} In Carica", lambda d: d["charging"]),
+        InCaricaSensor(coordinator, f"{coordinator.entry.entry_id}_in_carica",
+                       "in_carica", lambda d: d["charging"]),
     ]
     if wb:
         entities.append(
-            InCaricaSensor(coordinator, name, f"{coordinator.entry.entry_id}_wb_in_carica",
-                           f"{name} Wallbox in Carica",
+            InCaricaSensor(coordinator, f"{coordinator.entry.entry_id}_wb_in_carica",
+                           "wb_in_carica",
                            lambda d: d["wb_state"] in WALLBOX_CHARGING_STATES,
                            icon="mdi:ev-station"),
         )
@@ -46,14 +45,14 @@ async def async_setup_entry(
 
 
 class InCaricaSensor(CoordinatorEntity[RenaultMateCoordinator], BinarySensorEntity):
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
 
-    def __init__(self, coordinator, name, unique_id, label, extractor,
+    def __init__(self, coordinator, unique_id, key, extractor,
                  device_class=BinarySensorDeviceClass.BATTERY_CHARGING, icon=None) -> None:
         super().__init__(coordinator)
         self._attr_device_info = coordinator.device_info
         self._attr_unique_id = unique_id
-        self._attr_name = label
+        self._attr_translation_key = key
         self._attr_device_class = device_class
         if icon:
             self._attr_icon = icon

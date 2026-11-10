@@ -22,40 +22,31 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: RenaultMateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    name = str(entry.data.get("name") or entry.title or "Renault")
     entities = [
-        MateSwitch(coordinator, "notify_start", f"{name} Notifica Avvio Ricarica",
-                   True, "mdi:battery-charging"),
-        MateSwitch(coordinator, "notify_end", f"{name} Notifica Fine Ricarica",
-                   True, "mdi:battery-charging-complete"),
-        MateSwitch(coordinator, "low_soc", f"{name} Promemoria Batteria Bassa",
-                   True, "mdi:battery-alert"),
-        MateSwitch(coordinator, "charge_sched", f"{name} Carica Programmata",
-                   False, "mdi:calendar-clock"),
-        MateSwitch(coordinator, "balance", f"{name} Bilanciamento Solare",
-                   False, "mdi:solar-power"),
-        MateSwitch(coordinator, "home_balance", f"{name} Bilanciamento Casa",
-                   False, "mdi:home-lightning-bolt"),
-        MateSwitch(coordinator, "battery_night_only", f"{name} Batteria Solo Senza Sole",
-                   False, "mdi:weather-night"),
+        MateSwitch(coordinator, "notify_start", True, "mdi:battery-charging"),
+        MateSwitch(coordinator, "notify_end", True, "mdi:battery-charging-complete"),
+        MateSwitch(coordinator, "low_soc", True, "mdi:battery-alert"),
+        MateSwitch(coordinator, "charge_sched", False, "mdi:calendar-clock"),
+        MateSwitch(coordinator, "balance", False, "mdi:solar-power"),
+        MateSwitch(coordinator, "home_balance", False, "mdi:home-lightning-bolt"),
+        MateSwitch(coordinator, "battery_night_only", False, "mdi:weather-night"),
     ]
     # lo switch GSE esiste solo se la sperimentazione è abilitata in configurazione
     if getattr(coordinator, "gse_enabled", False):
-        entities.append(MateSwitch(coordinator, "gse",
-                                   f"{name} Sperimentazione GSE", False, "mdi:transmission-tower"))
+        entities.append(MateSwitch(coordinator, "gse", False, "mdi:transmission-tower"))
     async_add_entities(entities)
 
 
 class MateSwitch(CoordinatorEntity[RenaultMateCoordinator], RestoreEntity, SwitchEntity):
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
 
-    def __init__(self, coordinator, key, label, default, icon) -> None:
+    def __init__(self, coordinator, key, default, icon) -> None:
         super().__init__(coordinator)
         self._key = key
         self._default = default
         self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator.entry.entry_id}_sw_{key}"
-        self._attr_name = label
+        self._attr_translation_key = key
         self._attr_icon = icon
         self._attr_is_on = default
 

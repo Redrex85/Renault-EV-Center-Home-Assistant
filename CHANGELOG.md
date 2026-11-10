@@ -5,6 +5,14 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.26-beta - Nomi entità tradotti (IT/EN/FR/ES/DE)
+
+- **Nomi delle entità tradotti**: le entità adottano `translation_key` + `has_entity_name`, quindi il nome segue la lingua di Home Assistant (IT/EN/FR/ES/DE). Traduzione francese basata sul CSV proposto dalla community.
+- Gli `entity_id` esistenti NON cambiano (basati su `unique_id`): aggiornare non rompe dashboard, automazioni né statistiche.
+- I valori di stato (`Non in Carica`, `Tutte`, `Mese`, ecc.) restano in italiano: sono confrontati come stringhe dalle dashboard, tradurli li romperebbe.
+- I 6 sensori "Risparmio vs <carburante>" mantengono il nome dinamico col carburante scelto (es. "vs Diesel") e non sono tradotti.
+- Lingua senza traduzione → fallback ai nomi italiani di `strings.json` (per le lingue fuori IT/EN/FR/ES/DE, fallback inglese).
+
 ## 1.1.25 - La ricarica sopravvive al riavvio
 
 - **Sessione di ricarica persistente**: la sessione aperta viene salvata nello store (con l'energia accumulata fino a quel momento). Se Home Assistant si riavvia mentre l'auto sta caricando — tipico durante un aggiornamento via HACS — la sessione viene ripresa al primo ciclo e chiusa normalmente: la ricarica entra nell'elenco invece di sparire.

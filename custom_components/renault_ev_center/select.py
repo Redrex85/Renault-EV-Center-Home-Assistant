@@ -27,23 +27,22 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: RenaultMateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    name = str(entry.data.get("name") or entry.title or "Renault")
     # default filtro mese = "Tutti": la finestra la decide il PERIODO
     # (Settimana/Mese/Anno/Tutto, di default il mese corrente) e il mese resta
     # un'eccezione che la sostituisce solo quando scelto a mano.
     async_add_entities([
-        MateSelect(coordinator, f"{name} Filtro Tipo Ricarica", "filtro_tipo", TIPI, "Tutte", "mdi:filter-variant",
+        MateSelect(coordinator, "filtro_tipo", TIPI, "Tutte", "mdi:filter-variant",
                    extra_options=coordinator.charge_zone_options),
-        MateSelect(coordinator, f"{name} Filtro Periodo Ricariche", "filtro_periodo", PERIODI, "Mese", "mdi:calendar-range"),
-        MateSelect(coordinator, f"{name} Filtro Mese Ricariche", "filtro_mese", MESI, "Tutti", "mdi:calendar-month"),
-        MateSelect(coordinator, f"{name} Filtro Anno Ricariche", "filtro_anno", ANNI, "Tutti", "mdi:calendar-multiple"),
+        MateSelect(coordinator, "filtro_periodo", PERIODI, "Mese", "mdi:calendar-range"),
+        MateSelect(coordinator, "filtro_mese", MESI, "Tutti", "mdi:calendar-month"),
+        MateSelect(coordinator, "filtro_anno", ANNI, "Tutti", "mdi:calendar-multiple"),
     ])
 
 
 class MateSelect(CoordinatorEntity[RenaultMateCoordinator], RestoreEntity, SelectEntity):
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
 
-    def __init__(self, coordinator, label, key, options, default, icon,
+    def __init__(self, coordinator, key, options, default, icon,
                  extra_options=None) -> None:
         super().__init__(coordinator)
         self._key = key
@@ -53,7 +52,7 @@ class MateSelect(CoordinatorEntity[RenaultMateCoordinator], RestoreEntity, Selec
         self._extra_options = extra_options
         self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator.entry.entry_id}_sel_{key}"
-        self._attr_name = label
+        self._attr_translation_key = key
         self._attr_icon = icon
         self._attr_options = options
         self._attr_current_option = default

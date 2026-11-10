@@ -26,22 +26,21 @@ async def async_setup_entry(
     if not source or hass.states.get(str(source)) is None:
         _LOGGER.info("Nessun tracker GPS configurato: device_tracker non creato")
         return
-    name = str(entry.data.get("name") or entry.title or "Renault")
-    async_add_entities([MateDeviceTracker(coordinator, name, str(source))])
+    async_add_entities([MateDeviceTracker(coordinator, str(source))])
 
 
 class MateDeviceTracker(CoordinatorEntity[RenaultMateCoordinator], TrackerEntity):
     """Specchia il device_tracker Renault come entità dell'integrazione."""
 
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
     _attr_source_type = SourceType.GPS
 
-    def __init__(self, coordinator: RenaultMateCoordinator, name: str, source: str) -> None:
+    def __init__(self, coordinator: RenaultMateCoordinator, source: str) -> None:
         super().__init__(coordinator)
         self._source = source
         self._attr_device_info = coordinator.device_info
         self._attr_unique_id = f"{coordinator.entry.entry_id}_tracker"
-        self._attr_name = f"{name} Posizione"
+        self._attr_translation_key = "posizione"
         self._attr_icon = "mdi:car-connected"
 
     @property

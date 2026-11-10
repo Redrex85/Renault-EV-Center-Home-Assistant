@@ -21,36 +21,30 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: RenaultMateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    name = str(entry.data.get("name") or entry.title or "Renault")
     entry_id = entry.entry_id
     async_add_entities([
-        MateButton(coordinator, name, f"{entry_id}_btn_close_trip",
-                   f"{name} Chiudi Viaggio Ora", "mdi:flag-checkered",
-                   lambda c: c.service_close_trip()),
-        MateButton(coordinator, name, f"{entry_id}_btn_export",
-                   f"{name} Esporta Viaggi CSV", "mdi:file-delimited",
-                   lambda c: None, coro=lambda c: c.service_export_csv()),
-        MateButton(coordinator, name, f"{entry_id}_btn_reset_km",
-                   f"{name} Reset Contatori Km", "mdi:restart",
-                   lambda c: c.service_reset_counters("km")),
-        MateButton(coordinator, name, f"{entry_id}_btn_reset_energia",
-                   f"{name} Reset Contatori Energia", "mdi:restart",
-                   lambda c: c.service_reset_counters("energia")),
-        MateButton(coordinator, name, f"{entry_id}_btn_reset_costi",
-                   f"{name} Reset Contatori Costi", "mdi:restart",
-                   lambda c: c.service_reset_counters("costi")),
+        MateButton(coordinator, f"{entry_id}_btn_close_trip", "btn_close_trip",
+                   "mdi:flag-checkered", lambda c: c.service_close_trip()),
+        MateButton(coordinator, f"{entry_id}_btn_export", "btn_export",
+                   "mdi:file-delimited", lambda c: None, coro=lambda c: c.service_export_csv()),
+        MateButton(coordinator, f"{entry_id}_btn_reset_km", "btn_reset_km",
+                   "mdi:restart", lambda c: c.service_reset_counters("km")),
+        MateButton(coordinator, f"{entry_id}_btn_reset_energia", "btn_reset_energia",
+                   "mdi:restart", lambda c: c.service_reset_counters("energia")),
+        MateButton(coordinator, f"{entry_id}_btn_reset_costi", "btn_reset_costi",
+                   "mdi:restart", lambda c: c.service_reset_counters("costi")),
     ])
 
 
 class MateButton(CoordinatorEntity[RenaultMateCoordinator], ButtonEntity):
-    _attr_has_entity_name = False
+    _attr_has_entity_name = True
 
-    def __init__(self, coordinator, name, unique_id, label, icon,
+    def __init__(self, coordinator, unique_id, key, icon,
                  sync_action=None, coro=None) -> None:
         super().__init__(coordinator)
         self._attr_device_info = coordinator.device_info
         self._attr_unique_id = unique_id
-        self._attr_name = label
+        self._attr_translation_key = key
         self._attr_icon = icon
         self._sync_action = sync_action
         self._coro = coro

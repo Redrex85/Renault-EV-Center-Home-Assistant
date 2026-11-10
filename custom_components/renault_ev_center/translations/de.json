@@ -639,5 +639,341 @@
         "enterprise": "Enterprise — Auto + Wallbox + Solar"
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "eff_km_per_kwh": {
+        "name": "Km pro kWh"
+      },
+      "eff_kwh_100km": {
+        "name": "kWh pro 100 km"
+      },
+      "eff_kwh_100km_daily": {
+        "name": "kWh pro 100 km (Tag)"
+      },
+      "battery_kwh": {
+        "name": "Verfügbare Batterie-kWh"
+      },
+      "cost_per_km": {
+        "name": "Kosten pro km"
+      },
+      "cost_per_100km": {
+        "name": "Kosten pro 100 km"
+      },
+      "tempo_ricarica": {
+        "name": "Geschätzte Ladezeit"
+      },
+      "ora_completamento": {
+        "name": "Ladeende-Uhrzeit"
+      },
+      "costo_corrente": {
+        "name": "Geschätzte Kosten der laufenden Ladung"
+      },
+      "tipo_ricarica": {
+        "name": "Aktueller Ladetyp"
+      },
+      "trip_attivo": {
+        "name": "Aktive Fahrt"
+      },
+      "trip_km": {
+        "name": "Km der aktuellen Fahrt"
+      },
+      "trip_durata": {
+        "name": "Dauer der aktuellen Fahrt"
+      },
+      "ultimo_trip": {
+        "name": "Letzte Fahrt"
+      },
+      "trips_oggi": {
+        "name": "Heute abgeschlossene Fahrten"
+      },
+      "km_oggi_trip": {
+        "name": "Km heute (Fahrten)"
+      },
+      "stat_viaggi": {
+        "name": "Fahrtstatistiken"
+      },
+      "viaggi_recenti": {
+        "name": "Letzte Fahrten"
+      },
+      "archivio_viaggi": {
+        "name": "Fahrtarchiv"
+      },
+      "storico_giornaliero": {
+        "name": "Tagesverlauf"
+      },
+      "lista_ricariche": {
+        "name": "Liste der Ladungen"
+      },
+      "report_generale": {
+        "name": "Gesamtbericht"
+      },
+      "ultima_ricarica": {
+        "name": "Letzte Ladung"
+      },
+      "delta_ultima_carica": {
+        "name": "Delta % der letzten Ladung"
+      },
+      "eff_ricarica": {
+        "name": "Ladeeffizienz"
+      },
+      "perdite_ricarica": {
+        "name": "Verluste der letzten Ladung"
+      },
+      "batteria_ultima": {
+        "name": "Batterieenergie der letzten Ladung"
+      },
+      "soh_stimato": {
+        "name": "Geschätzter SOH"
+      },
+      "kwh_per_1pct": {
+        "name": "kWh pro 1 % Batterie"
+      },
+      "tagliandi": {
+        "name": "Wartungen"
+      },
+      "drain_oggi": {
+        "name": "Heute im Standby verlorene Batterie"
+      },
+      "drain_mese": {
+        "name": "Diesen Monat im Standby verlorene Batterie"
+      },
+      "consumo_zona": {
+        "name": "Verbrauch nach Zone"
+      },
+      "co2": {
+        "name": "Eingespartes CO2"
+      },
+      "scadenze": {
+        "name": "Nächste Fälligkeit"
+      },
+      "viaggio_estremo": {
+        "name": "Beste/schlechteste Fahrt des Monats"
+      },
+      "energia_casa_tot": {
+        "name": "Zuhause geladene Energie (gesamt)"
+      },
+      "programmazione": {
+        "name": "Zeitpläne"
+      },
+      "percorrenza": {
+        "name": "Fahrübersicht"
+      },
+      "assicurazione": {
+        "name": "Versicherung"
+      },
+      "fv_mese": {
+        "name": "Diesen Monat mit Solar geladen"
+      },
+      "fv_totale": {
+        "name": "Mit Solar geladene Energie (gesamt)"
+      },
+      "wb_potenza": {
+        "name": "Wallbox-Leistung"
+      },
+      "wb_tempo_sessione": {
+        "name": "Wallbox-Sitzungsdauer"
+      },
+      "kwh_totali": {
+        "name": "Verbrauchte kWh gesamt"
+      },
+      "perc_per_100km": {
+        "name": "Batterie % pro 100 km"
+      },
+      "km_daily": {
+        "name": "Km (Tag)"
+      },
+      "km_weekly": {
+        "name": "Km (Woche)"
+      },
+      "km_monthly": {
+        "name": "Km (Monat)"
+      },
+      "km_yearly": {
+        "name": "Km (Jahr)"
+      },
+      "wb_energy_daily": {
+        "name": "Geladene Energie (Tag)"
+      },
+      "wb_energy_weekly": {
+        "name": "Geladene Energie (Woche)"
+      },
+      "wb_energy_monthly": {
+        "name": "Geladene Energie (Monat)"
+      },
+      "wb_energy_yearly": {
+        "name": "Geladene Energie (Jahr)"
+      },
+      "wb_energy_total": {
+        "name": "Geladene Energie (gesamt)"
+      },
+      "cost_daily": {
+        "name": "Ladekosten (Tag)"
+      },
+      "cost_weekly": {
+        "name": "Ladekosten (Woche)"
+      },
+      "cost_monthly": {
+        "name": "Ladekosten (Monat)"
+      },
+      "cost_yearly": {
+        "name": "Ladekosten (Jahr)"
+      },
+      "cost_total": {
+        "name": "Ladekosten (gesamt)"
+      },
+      "pct_oggi_up": {
+        "name": "Batterie % heute geladen"
+      },
+      "pct_oggi_down": {
+        "name": "Batterie % heute entladen"
+      },
+      "batt_energy_daily": {
+        "name": "Batterieenergie (Tag)"
+      },
+      "batt_energy_weekly": {
+        "name": "Batterieenergie (Woche)"
+      },
+      "batt_energy_monthly": {
+        "name": "Batterieenergie (Monat)"
+      },
+      "batt_energy_yearly": {
+        "name": "Batterieenergie (Jahr)"
+      },
+      "ricariche_oggi": {
+        "name": "Ladungen heute"
+      },
+      "ricariche_mese": {
+        "name": "Ladungen diesen Monat"
+      }
+    },
+    "binary_sensor": {
+      "in_carica": {
+        "name": "Lädt"
+      },
+      "wb_in_carica": {
+        "name": "Wallbox lädt"
+      }
+    },
+    "button": {
+      "btn_close_trip": {
+        "name": "Fahrt jetzt beenden"
+      },
+      "btn_export": {
+        "name": "Fahrten als CSV exportieren"
+      },
+      "btn_reset_km": {
+        "name": "Km-Zähler zurücksetzen"
+      },
+      "btn_reset_energia": {
+        "name": "Energiezähler zurücksetzen"
+      },
+      "btn_reset_costi": {
+        "name": "Kostenzähler zurücksetzen"
+      }
+    },
+    "device_tracker": {
+      "posizione": {
+        "name": "Position"
+      }
+    },
+    "number": {
+      "price_home": {
+        "name": "Stromkosten zu Hause"
+      },
+      "price_public": {
+        "name": "Kosten öffentliche Ladung"
+      },
+      "price_solar": {
+        "name": "Solarstrom-Kosten"
+      },
+      "fuel_price": {
+        "name": "Kraftstoffpreis"
+      },
+      "capacity": {
+        "name": "Batteriekapazität"
+      },
+      "target": {
+        "name": "Ladeziel"
+      },
+      "soh_official": {
+        "name": "Offizieller SOH"
+      },
+      "assic_costo": {
+        "name": "Versicherungskosten"
+      },
+      "low_soc": {
+        "name": "Minimale Batterie (Erinnerung)"
+      },
+      "charge_start_soc": {
+        "name": "Laden starten unter"
+      },
+      "charge_stop_soc": {
+        "name": "Laden stoppen über"
+      },
+      "balance_min_amps": {
+        "name": "Ausgleich: min. Ampere"
+      },
+      "balance_max_amps": {
+        "name": "Ausgleich: max. Ampere"
+      },
+      "battery_priority": {
+        "name": "Priorität Hausbatterie"
+      }
+    },
+    "select": {
+      "filtro_tipo": {
+        "name": "Filter Ladetyp"
+      },
+      "filtro_periodo": {
+        "name": "Filter Ladezeitraum"
+      },
+      "filtro_mese": {
+        "name": "Filter Lademonat"
+      },
+      "filtro_anno": {
+        "name": "Filter Ladejahr"
+      }
+    },
+    "switch": {
+      "notify_start": {
+        "name": "Benachrichtigung Ladebeginn"
+      },
+      "notify_end": {
+        "name": "Benachrichtigung Ladeende"
+      },
+      "low_soc": {
+        "name": "Erinnerung niedrige Batterie"
+      },
+      "charge_sched": {
+        "name": "Geplantes Laden"
+      },
+      "balance": {
+        "name": "Solar-Ausgleich"
+      },
+      "home_balance": {
+        "name": "Haus-Ausgleich"
+      },
+      "battery_night_only": {
+        "name": "Batterie nur ohne Sonne"
+      },
+      "gse": {
+        "name": "GSE-Experiment"
+      }
+    },
+    "time": {
+      "low_soc_start": {
+        "name": "Erinnerung: Start"
+      },
+      "low_soc_end": {
+        "name": "Erinnerung: Ende"
+      },
+      "charge_start_time": {
+        "name": "Ladebeginn"
+      },
+      "charge_stop_time": {
+        "name": "Ladeende"
+      }
+    }
   }
 }
