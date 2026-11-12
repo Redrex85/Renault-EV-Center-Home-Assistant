@@ -1480,8 +1480,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         _now_ts = time.time()
         if 0 < _f(battery) <= 100:
             if (self._vamp_prev_batt is not None and self._vamp_prev_ts is not None
-                    and not charging
-                    and (not odometer or odometer == self._vamp_prev_odo)):
+                    and not charging and not self.trip.active
+                    and odometer is not None and odometer == self._vamp_prev_odo):
                 _dt_h = (_now_ts - self._vamp_prev_ts) / 3600.0
                 _drop = self._vamp_prev_batt - _f(battery)
                 if _drop > 0 and 0 < _dt_h <= 24.0 and _drop / _dt_h < VAMP_RATE_MAX:

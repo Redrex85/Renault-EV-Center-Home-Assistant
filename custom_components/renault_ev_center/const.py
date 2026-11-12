@@ -234,7 +234,7 @@ WALLBOX_FINISHED_TOKENS = ("finish", "charged", "complete", "full", "ended",
 
 # vampire drain: sotto questa velocita' di calo SoC (%/h) il calo e' "da fermo",
 # sopra e' guida (il cloud Renault riporta l'odometro solo a motore spento)
-VAMP_RATE_MAX = 3.0
+VAMP_RATE_MAX = 1.0
 
 TRIP_MIN_KM = 0.5
 TRIP_MIN_MINUTES = 2

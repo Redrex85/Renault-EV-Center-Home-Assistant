@@ -5,6 +5,12 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.30 - Vampire drain piu' onesto
+
+- Il calo di batteria da fermo contava anche pezzi di **guida lenta**: ora serve che l'auto non abbia un viaggio in corso e che l'odometro sia **noto e immobile** tra due letture. Se l'odometro non si conosce, non si conta nulla (meglio zero che gonfiato).
+- Soglia velocita' di calo abbassata da 3 a **1 %/h**: sopra quella velocita' e' guida, non stand-by.
+- Pannello: corretto l'`entity_id` dello switch **Riepilogo giornaliero** nella nuova sezione notifiche (era `..._riepilogo_giornaliero`, l'entita' reale e' `switch.<auto>_daily_summary`).
+
 ## 1.1.29 - Lo switch "Notifica fine ricarica" ora funziona
 
 - Corretto: la notifica di **fine ricarica** veniva inviata anche con lo switch spento. Ora rispetta `switch.<auto>_notifica_fine_ricarica`, quindi le quattro notifiche (avvio, fine, batteria bassa, riepilogo) si accendono e spengono ognuna per conto suo dal pannello.

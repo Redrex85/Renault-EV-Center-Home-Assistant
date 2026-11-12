@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.29";
+const REC_VER = "1.1.30";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -3837,7 +3837,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (!host) return;
     const S = this;
     const rows = [
-      ["riepilogo_giornaliero", _t("nt_sum", "📊 Riepilogo giornaliero")],
+      ["daily_summary", _t("nt_sum", "📊 Riepilogo giornaliero")],
       ["notifica_avvio_ricarica", _t("nt_start", "⚡ Notifica avvio ricarica")],
       ["notifica_fine_ricarica", _t("nt_end", "🔋 Notifica fine ricarica")],
       ["promemoria_batteria_bassa", _t("nt_low", "⚠️ Promemoria batteria bassa")],
