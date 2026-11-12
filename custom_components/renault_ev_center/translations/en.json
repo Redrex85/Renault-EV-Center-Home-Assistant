@@ -959,6 +959,9 @@
       },
       "gse": {
         "name": "GSE trial"
+      },
+      "notify_daily": {
+        "name": "Daily summary"
       }
     },
     "time": {

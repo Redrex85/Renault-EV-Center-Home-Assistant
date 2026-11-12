@@ -959,6 +959,9 @@
       },
       "gse": {
         "name": "Experimentación GSE"
+      },
+      "notify_daily": {
+        "name": "Resumen diario"
       }
     },
     "time": {

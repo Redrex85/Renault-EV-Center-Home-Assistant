@@ -1887,6 +1887,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             scadenze.sort(key=lambda s: s["giorni"])
             await self._check_notifications(scadenze, now)
 
+        await self._check_daily_summary(now)
+
         zone_routes = heavy["zone_routes"]
         zone_best = heavy["zone_best"]
         zone_worst = heavy["zone_worst"]
@@ -3302,6 +3304,35 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         await self._send_notify(self._tr("dead_title"),
                                 self._tr("dead_msg", righe=righe))
         counters["last_notify"] = today_key
+        self.persist(force=True)
+
+    async def _check_daily_summary(self, oggi) -> None:
+        """Riepilogo giornaliero: una notifica al giorno dopo le 21 (switch notify_daily)."""
+        if not self.notify_service or not self._switch_on("notify_daily"):
+            return
+        if oggi.hour < 21:
+            return
+        counters = self.store.data["counters"]
+        today_key = oggi.strftime("%Y-%m-%d")
+        if counters.get("last_summary") == today_key:
+            return
+        d = self.data or {}
+        km = _f((d.get("km", {}).get("daily", {}) or {}).get("value"))
+        km = max(km, _f(d.get("km_oggi_trip")))
+        kwh = abs(_f(((d.get("kwh_batt", {}).get("daily", {}) or {}).get("down", {}) or {}).get("value")))
+        if km <= 0.5 or kwh <= 0:
+            return
+        cons = kwh / km * 100.0
+        costo = kwh * self.price_home
+        righe = "\n".join([
+            f"{self._tr('sum_km')}: {km:.1f} km",
+            f"{self._tr('sum_energy')}: {kwh:.2f} kWh",
+            f"{self._tr('sum_cost')}: {costo:.2f} €",
+            f"{self._tr('sum_cons')}: {cons:.2f} kWh/100km · "
+            f"{self._tr('sum_costkm')}: {costo / km:.3f} €/km",
+        ])
+        await self._send_notify(self._tr("sum_title"), righe)
+        counters["last_summary"] = today_key
         self.persist(force=True)
 
     def _lang(self) -> str:

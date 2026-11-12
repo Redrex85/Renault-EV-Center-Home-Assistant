@@ -23,6 +23,7 @@ async def async_setup_entry(
 ) -> None:
     coordinator: RenaultMateCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities = [
+        MateSwitch(coordinator, "notify_daily", True, "mdi:calendar-today"),
         MateSwitch(coordinator, "notify_start", True, "mdi:battery-charging"),
         MateSwitch(coordinator, "notify_end", True, "mdi:battery-charging-complete"),
         MateSwitch(coordinator, "low_soc", True, "mdi:battery-alert"),

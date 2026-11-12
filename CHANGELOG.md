@@ -5,6 +5,12 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.27-beta - Riepilogo giornaliero (notifica) con interruttore
+
+- **Riepilogo giornaliero di nuovo nativo**: ogni sera (dopo le 21:00) arriva una notifica con km del giorno, energia consumata, costo stimato (tariffa casa), consumo kWh/100km e costo/km. Prima lo mandava un'automazione esterna: se l'avevi eliminata, la notifica spariva.
+- Nuovo switch **`Riepilogo Giornaliero`** (`switch.<auto>_riepilogo_giornaliero`): spegnendolo la notifica non parte più. È acceso di default.
+- Testi personalizzabili in Configura → Notifiche; lingua seguendo Home Assistant (IT/EN/FR/ES/DE).
+
 ## 1.1.26-beta - Nomi entità tradotti (IT/EN/FR/ES/DE)
 
 - **Nomi delle entità tradotti**: le entità adottano `translation_key` + `has_entity_name`, quindi il nome segue la lingua di Home Assistant (IT/EN/FR/ES/DE). Traduzione francese basata sul CSV proposto dalla community.
