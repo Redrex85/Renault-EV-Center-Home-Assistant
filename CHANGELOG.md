@@ -5,11 +5,13 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
-## 1.1.27-beta - Riepilogo giornaliero (notifica) con interruttore
+## 1.1.27 - Nomi entità tradotti, riepilogo giornaliero e notifiche di prova
 
 - **Riepilogo giornaliero di nuovo nativo**: ogni sera (dopo le 21:00) arriva una notifica con km del giorno, energia consumata, costo stimato (tariffa casa), consumo kWh/100km e costo/km. Prima lo mandava un'automazione esterna: se l'avevi eliminata, la notifica spariva.
 - Nuovo switch **`Riepilogo Giornaliero`** (`switch.<auto>_riepilogo_giornaliero`): spegnendolo la notifica non parte più. È acceso di default.
 - Testi personalizzabili in Configura → Notifiche; lingua seguendo Home Assistant (IT/EN/FR/ES/DE).
+- **Notifiche di prova**: in Configura → Notifiche c'è ora un pulsante per ogni tipo di notifica (avvio/fine ricarica, batteria bassa, riepilogo giornaliero, scadenze, bilanciamenti, GSE, avvio programmato). Premendolo parte una notifica con dati di esempio, così vedi subito titolo, testo e se il servizio notify è configurato correttamente. Disponibile anche come servizio `renault_ev_center.test_notification` con campo `tipo`.
+- **Nomi entità tradotti** (vedi 1.1.26-beta): `translation_key` + `has_entity_name` per IT/EN/FR/ES/DE, `entity_id` invariati.
 
 ## 1.1.26-beta - Nomi entità tradotti (IT/EN/FR/ES/DE)
 

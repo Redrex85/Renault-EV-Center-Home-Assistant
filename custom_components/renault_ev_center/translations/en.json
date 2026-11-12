@@ -629,6 +629,16 @@
     "set_notify_texts": {
       "name": "Notification texts",
       "description": "Customize the notification texts (start, charge finished, low battery)."
+    },
+    "test_notification": {
+      "name": "Send test notification",
+      "description": "Sends a test notification with sample data so you can see what each notification looks like.",
+      "fields": {
+        "tipo": {
+          "name": "Notification type",
+          "description": "cs=charging started, cc=charging finished, lb=low battery, sum=daily summary, dead=deadlines, bal/sol=balancing, gse_stop/gse_go=GSE, auto_start=scheduled start"
+        }
+      }
     }
   },
   "selector": {

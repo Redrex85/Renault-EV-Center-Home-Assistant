@@ -629,6 +629,16 @@
     "set_notify_texts": {
       "name": "Testi delle notifiche",
       "description": "Personalizza i testi delle notifiche (avvio, fine ricarica, batteria bassa)."
+    },
+    "test_notification": {
+      "name": "Invia notifica di prova",
+      "description": "Invia una notifica di prova con dati di esempio: serve a vedere cosa arriva sul telefono per ogni tipo.",
+      "fields": {
+        "tipo": {
+          "name": "Tipo di notifica",
+          "description": "cs=avvio ricarica, cc=fine ricarica, lb=batteria bassa, sum=riepilogo giornaliero, dead=scadenze, bal/sol=bilanciamenti, gse_stop/gse_go=GSE, auto_start=avvio programmato"
+        }
+      }
     }
   },
   "selector": {

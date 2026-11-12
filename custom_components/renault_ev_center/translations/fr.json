@@ -629,6 +629,16 @@
     "set_notify_texts": {
       "name": "Textes des notifications",
       "description": "Personnalise les textes des notifications (début, recharge terminée, batterie faible)."
+    },
+    "test_notification": {
+      "name": "Envoyer une notification de test",
+      "description": "Envoie une notification de test avec des données d'exemple pour voir le rendu de chaque notification.",
+      "fields": {
+        "tipo": {
+          "name": "Type de notification",
+          "description": "cs=début de charge, cc=fin de charge, lb=batterie faible, sum=résumé quotidien, dead=échéances, bal/sol=équilibrages, gse_stop/gse_go=GSE, auto_start=démarrage programmé"
+        }
+      }
     }
   },
   "selector": {

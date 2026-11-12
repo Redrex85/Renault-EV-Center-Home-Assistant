@@ -215,6 +215,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             saved = coord.service_set_notify_texts(texts)
             _LOGGER.info("Testi notifiche aggiornati: %s", list(saved))
 
+    async def handle_test_notification(call: ServiceCall) -> None:
+        tipo = str(call.data.get("tipo") or "cs")
+        for coord in _all_coordinators(hass):
+            ok = await coord.service_test_notification(tipo)
+            if ok:
+                _LOGGER.info("Notifica di prova '%s' inviata via %s", tipo, coord.notify_service)
+            else:
+                _LOGGER.warning(
+                    "Notifica di prova '%s' NON inviata: tipo sconosciuto o servizio notify "
+                    "non configurato (Configura > Notifiche)", tipo)
+
     async def handle_set_charge_zones(call: ServiceCall) -> None:
         pairs = call.data.get("zones") or []
         for coord in _all_coordinators(hass):
@@ -411,6 +422,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
               }))
     _register(SERVICE_CREATE_DASHBOARD, handle_create_dashboard)
     _register("refresh_car", handle_refresh_car)
+    _register("test_notification", handle_test_notification,
+              schema=vol.Schema({vol.Optional("tipo", default="cs"): str}))
     _register("set_auto_state", handle_set_auto_state, schema=vol.Schema({
         vol.Required("entity_id"): str,
         vol.Required("state"): vol.In(["on", "off"]),

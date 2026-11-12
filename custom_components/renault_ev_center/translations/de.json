@@ -629,6 +629,16 @@
     "set_notify_texts": {
       "name": "Benachrichtigungstexte",
       "description": "Passe die Texte der Benachrichtigungen an (Start, Ladung beendet, niedriger Akku)."
+    },
+    "test_notification": {
+      "name": "Testbenachrichtigung senden",
+      "description": "Sendet eine Testbenachrichtigung mit Beispieldaten, damit du siehst, wie jede Benachrichtigung aussieht.",
+      "fields": {
+        "tipo": {
+          "name": "Benachrichtigungstyp",
+          "description": "cs=Ladebeginn, cc=Ladeende, lb=Batterie schwach, sum=Tageszusammenfassung, dead=Fälligkeiten, bal/sol=Ausgleich, gse_stop/gse_go=GSE, auto_start=geplanter Start"
+        }
+      }
     }
   },
   "selector": {

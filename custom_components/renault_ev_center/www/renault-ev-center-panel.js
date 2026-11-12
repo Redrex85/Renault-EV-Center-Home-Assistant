@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.27-beta";
+const REC_VER = "1.1.27";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -225,6 +225,7 @@ const I18N = {
     lbl_nt_end_body: "Finished message",
     ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 €{costo:.2f}",
     btn_notify_save: "💾 Save texts",
+    lbl_prova_notifiche: "▶ Send a test notification (sample data)",
     note_nt_vars: "Variables: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Empty = default text.",
     toast_notify_saved: "💾 Texts saved",
     h3_backup: "💾 Data backup",
@@ -485,6 +486,7 @@ const I18N = {
     lbl_nt_end_body: "Message de fin",
     ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
     btn_notify_save: "💾 Enregistrer les textes",
+    lbl_prova_notifiche: "▶ Envoyer une notification de test (données d'exemple)",
     note_nt_vars: "Variables : {zona} {kwh} {durata} {soc0} {soc1} {costo}. Vide = texte par défaut.",
     toast_notify_saved: "💾 Textes enregistrés",
     h3_backup: "💾 Sauvegarde",
@@ -753,6 +755,7 @@ const I18N = {
     lbl_nt_end_body: "Mensaje de fin",
     ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
     btn_notify_save: "💾 Guardar textos",
+    lbl_prova_notifiche: "▶ Enviar una notificación de prueba (datos de ejemplo)",
     note_nt_vars: "Variables: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Vacío = texto por defecto.",
     toast_notify_saved: "💾 Textos guardados",
     h3_backup: "💾 Copia de datos",
@@ -1021,6 +1024,7 @@ const I18N = {
     lbl_nt_end_body: "Meldung bei Ende",
     ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
     btn_notify_save: "💾 Texte speichern",
+    lbl_prova_notifiche: "▶ Testbenachrichtigung senden (Beispieldaten)",
     note_nt_vars: "Variablen: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Leer = Standardtext.",
     toast_notify_saved: "💾 Texte gespeichert",
     h3_backup: "💾 Daten-Backup",
@@ -3883,6 +3887,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "openmap": this._moreInfo(this._car("device_tracker", "posizione") || "device_tracker.megane_posizione"); break;
       case "csv": this._call(D, "export_trips_csv", {}, "📥 CSV esportato"); break;
       case "notify_save": this._saveNotifyTexts(); break;
+      case "notify_test": this._call(D, "test_notification", { tipo: el.dataset.ntype }, "🔔 Notifica di prova inviata"); break;
       case "refresh_car": this._call(D, "refresh_car", {}, "🔄 Aggiornamento auto richiesto"); break;
       case "schsave_ricarica": this._saveSchedule("ricarica"); break;
       case "schsave_clima": this._saveSchedule("clima"); break;
@@ -6126,6 +6131,10 @@ const PAGES = () => ({
       <div style="margin-top:8px;font-size:12px;color:var(--muted)">${_t("lbl_nt_end_body", "Messaggio fine ricarica")}</div>
       <textarea data-nt="cc_body" rows="5" style="width:100%;font-family:inherit;font-size:12px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:8px" placeholder="${_t("ph_nt_body", "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 €{costo:.2f}")}"></textarea>
       <div class="btn" data-cmd="notify_save" style="margin-top:8px">${_t("btn_notify_save", "💾 Salva testi")}</div>
+      <div style="margin-top:14px;font-size:12px;color:var(--muted)">${_t("lbl_prova_notifiche", "▶ Invia una notifica di prova (dati di esempio)")}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        ${[["cs", "🟢 Avvio ricarica"], ["cc", "🔋 Fine ricarica"], ["lb", "⚠️ Batteria bassa"], ["sum", "📊 Riepilogo giornaliero"], ["dead", "🛡️ Scadenze"], ["bal", "🏠 Bilanciamento casa"], ["sol", "☀️ Bilanciamento solare"], ["gse_stop", "⛔ GSE stop"], ["gse_go", "▶️ GSE ripresa"], ["auto_start", "⏰ Avvio programmato"]].map(([k, l]) => `<div class="btn" style="flex:0 0 auto;padding:6px 10px;font-size:12px" data-cmd="notify_test" data-ntype="${k}">${l}</div>`).join("")}
+      </div>
       <div style="color:var(--muted);font-size:11.5px;margin-top:6px">${_t("note_nt_vars", "Variabili: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Vuoto = testo predefinito.")}</div></div>
     <div class="card"><h3>${_t("h3_lingua", "🌐 Lingua")}</h3>
       <div class="inp"><span>${_t("lbl_lingua_pannello", "Lingua pannello")}</span>

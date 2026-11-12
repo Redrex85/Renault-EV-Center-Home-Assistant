@@ -629,6 +629,16 @@
     "set_notify_texts": {
       "name": "Textos de las notificaciones",
       "description": "Personaliza los textos de las notificaciones (inicio, recarga terminada, batería baja)."
+    },
+    "test_notification": {
+      "name": "Enviar notificación de prueba",
+      "description": "Envía una notificación de prueba con datos de ejemplo para ver cómo queda cada notificación.",
+      "fields": {
+        "tipo": {
+          "name": "Tipo de notificación",
+          "description": "cs=inicio de carga, cc=fin de carga, lb=batería baja, sum=resumen diario, dead=vencimientos, bal/sol=equilibrados, gse_stop/gse_go=GSE, auto_start=inicio programado"
+        }
+      }
     }
   },
   "selector": {

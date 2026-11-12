@@ -3335,6 +3335,40 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         counters["last_summary"] = today_key
         self.persist(force=True)
 
+    NOTIFY_TEST_TYPES = ("cs", "cc", "lb", "sum", "dead", "bal", "sol",
+                         "gse_stop", "gse_go", "auto_start")
+    NOTIFY_TEST_SAMPLES = {
+        "cs": {"cap": 60, "tipo": "Casa", "soc": 45},
+        "lb": {"soc": 20, "rng": 90},
+        "bal": {"cur": 10, "amps": 8, "motivo": "Surplus in calo"},
+        "sol": {"rete": 1500, "surplus": 800, "a0": 10, "a1": 12},
+        "gse_stop": {"casa": 2500, "budget": 3000},
+        "gse_go": {},
+        "dead": {"righe": "• Assicurazione: 2026-12-01 (tra 20 gg)"},
+        "auto_start": {},
+        "cc": {"zona": "Casa", "kwh": 12.3, "durata": 2.5,
+               "soc0": 22, "soc1": 80, "costo": 3.2},
+    }
+
+    async def service_test_notification(self, tipo: str) -> bool:
+        """Invia una notifica di PROVA del tipo scelto, con dati di esempio."""
+        tipo = str(tipo or "").strip().lower()
+        if tipo not in self.NOTIFY_TEST_TYPES:
+            return False
+        if tipo == "sum":
+            body = "\n".join([
+                f"{self._tr('sum_km')}: 42.5 km",
+                f"{self._tr('sum_energy')}: 8.12 kWh",
+                f"{self._tr('sum_cost')}: 2.03 €",
+                f"{self._tr('sum_cons')}: 19.11 kWh/100km · "
+                f"{self._tr('sum_costkm')}: 0.048 €/km",
+            ])
+        else:
+            key = "cc_body" if tipo == "cc" else f"{tipo}_msg"
+            body = self._tr(key, **(self.NOTIFY_TEST_SAMPLES.get(tipo) or {}))
+        await self._send_notify(self._tr(f"{tipo}_title"), body)
+        return True
+
     def _lang(self) -> str:
         """Codice lingua (2 lettere) da HA, con fallback a 'en'."""
         code = str(getattr(self.hass.config, "language", "") or "en").lower()
