@@ -3719,7 +3719,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                          soc=data.get('battery')),
             )
         # --- fine ricarica: notifica NATIVA (nessuna automazione da creare) --------
-        if events.get("charge_finished"):
+        if events.get("charge_finished") and self._switch_on("notify_end"):
             rec = events["charge_finished"] or {}
             dur = _f(rec.get("durata_min")) / 60.0
             body = self._tr(

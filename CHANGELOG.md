@@ -5,6 +5,10 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.29 - Lo switch "Notifica fine ricarica" ora funziona
+
+- Corretto: la notifica di **fine ricarica** veniva inviata anche con lo switch spento. Ora rispetta `switch.<auto>_notifica_fine_ricarica`, quindi le quattro notifiche (avvio, fine, batteria bassa, riepilogo) si accendono e spengono ognuna per conto suo dal pannello.
+
 ## 1.1.28 - Pannello: notifiche on/off e Impostazioni compatte
 
 - **Automazioni → Notifiche**: nuova sezione con gli interruttori delle notifiche (`Riepilogo Giornaliero`, `Notifica Avvio Ricarica`, `Notifica Fine Ricarica`, `Promemoria Batteria Bassa`): si accendono e spengono direttamente dal pannello.
