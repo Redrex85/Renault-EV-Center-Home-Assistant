@@ -5,6 +5,13 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.28 - Pannello: notifiche on/off e Impostazioni compatte
+
+- **Automazioni → Notifiche**: nuova sezione con gli interruttori delle notifiche (`Riepilogo Giornaliero`, `Notifica Avvio Ricarica`, `Notifica Fine Ricarica`, `Promemoria Batteria Bassa`): si accendono e spengono direttamente dal pannello.
+- **Impostazioni più compatte**: card ridotte, "Backup dati" unita a "Reset & export".
+- **Riga unica**: Zone ricariche, Palette, Lingua e Notifiche ora stanno su un solo rigo (2 colonne sotto i 1200 px, 1 colonna su mobile).
+- Etichette degli interruttori tradotte in IT/EN/FR/ES/DE.
+
 ## 1.1.27 - Nomi entità tradotti, riepilogo giornaliero e notifiche di prova
 
 - **Riepilogo giornaliero di nuovo nativo**: ogni sera (dopo le 21:00) arriva una notifica con km del giorno, energia consumata, costo stimato (tariffa casa), consumo kWh/100km e costo/km. Prima lo mandava un'automazione esterna: se l'avevi eliminata, la notifica spariva.

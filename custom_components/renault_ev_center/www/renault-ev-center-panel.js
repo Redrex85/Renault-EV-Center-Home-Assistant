@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.27";
+const REC_VER = "1.1.28";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -225,6 +225,10 @@ const I18N = {
     lbl_nt_end_body: "Finished message",
     ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 €{costo:.2f}",
     btn_notify_save: "💾 Save texts",
+   nt_sum: "📊 Daily summary",
+   nt_start: "⚡ Charging started notification",
+   nt_end: "🔋 Charging finished notification",
+   nt_low: "⚠️ Low battery reminder",
     lbl_prova_notifiche: "▶ Send a test notification (sample data)",
     note_nt_vars: "Variables: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Empty = default text.",
     toast_notify_saved: "💾 Texts saved",
@@ -486,6 +490,10 @@ const I18N = {
     lbl_nt_end_body: "Message de fin",
     ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
     btn_notify_save: "💾 Enregistrer les textes",
+   nt_sum: "📊 Résumé quotidien",
+   nt_start: "⚡ Notification début de charge",
+   nt_end: "🔋 Notification fin de charge",
+   nt_low: "⚠️ Rappel batterie faible",
     lbl_prova_notifiche: "▶ Envoyer une notification de test (données d'exemple)",
     note_nt_vars: "Variables : {zona} {kwh} {durata} {soc0} {soc1} {costo}. Vide = texte par défaut.",
     toast_notify_saved: "💾 Textes enregistrés",
@@ -755,6 +763,10 @@ const I18N = {
     lbl_nt_end_body: "Mensaje de fin",
     ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
     btn_notify_save: "💾 Guardar textos",
+   nt_sum: "📊 Resumen diario",
+   nt_start: "⚡ Notificación inicio de carga",
+   nt_end: "🔋 Notificación fin de carga",
+   nt_low: "⚠️ Recordatorio batería baja",
     lbl_prova_notifiche: "▶ Enviar una notificación de prueba (datos de ejemplo)",
     note_nt_vars: "Variables: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Vacío = texto por defecto.",
     toast_notify_saved: "💾 Textos guardados",
@@ -1024,6 +1036,10 @@ const I18N = {
     lbl_nt_end_body: "Meldung bei Ende",
     ph_nt_body: "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 {costo:.2f} €",
     btn_notify_save: "💾 Texte speichern",
+   nt_sum: "📊 Tageszusammenfassung",
+   nt_start: "⚡ Benachrichtigung Ladebeginn",
+   nt_end: "🔋 Benachrichtigung Ladeende",
+   nt_low: "⚠️ Erinnerung niedrige Batterie",
     lbl_prova_notifiche: "▶ Testbenachrichtigung senden (Beispieldaten)",
     note_nt_vars: "Variablen: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Leer = Standardtext.",
     toast_notify_saved: "💾 Texte gespeichert",
@@ -3816,6 +3832,31 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (/programma|ricarica/.test(t)) return "⏰";
     return "🤖";
   }
+  _drawNotifSwitches(root) {
+    const host = root.querySelector('[data-c="notif-switches"]');
+    if (!host) return;
+    const S = this;
+    const rows = [
+      ["riepilogo_giornaliero", _t("nt_sum", "📊 Riepilogo giornaliero")],
+      ["notifica_avvio_ricarica", _t("nt_start", "⚡ Notifica avvio ricarica")],
+      ["notifica_fine_ricarica", _t("nt_end", "🔋 Notifica fine ricarica")],
+      ["promemoria_batteria_bassa", _t("nt_low", "⚠️ Promemoria batteria bassa")],
+    ];
+    const sig = rows.map(([k]) => S._swid(k)).join("|");
+    if (host.dataset.sig !== sig) {
+      host.dataset.sig = sig;
+      host.innerHTML = rows.map(([k, label]) => `<div class="row"><span>${label}</span><label class="switch"><input type="checkbox" data-ntsw="${_esc(S._swid(k))}"><span></span></label></div>`).join("");
+      host.querySelectorAll("[data-ntsw]").forEach((el) => el.addEventListener("change", () =>
+        S._call("switch", el.checked ? "turn_on" : "turn_off", { entity_id: el.dataset.ntsw },
+          el.checked ? "🔔 Notifica attivata" : "🔕 Notifica disattivata")));
+    }
+    rows.forEach(([k]) => {
+      const id = S._swid(k);
+      const el = host.querySelector(`[data-ntsw="${id}"]`);
+      const st = S._hass.states[id];
+      if (el && st && el.getRootNode().activeElement !== el) el.checked = st.state === "on";
+    });
+  }
   _drawAutoToggles(root) {
     const host = root.querySelector('[data-c="autos-created"]');
     if (!host) return;
@@ -4152,6 +4193,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       this._drawAutos(root);
       this._drawPosHistory(root);
     this._drawAutoToggles(root);
+    this._drawNotifSwitches(root);
     // statistiche ricariche (ciambelle + tile) e grafico potenza wallbox
     this._drawChargesStats(root);
     if (root.querySelector("#wbchart")) {
@@ -5549,9 +5591,11 @@ h1{font-size:26px;margin-bottom:4px}
 .page{display:none}.page.active{display:block}
 .grid{display:grid;gap:16px}
 .g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
 .g2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:1200px){.g4{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:1100px){.g3{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:700px){.g3,.g2{grid-template-columns:1fr}.sidebar{display:none}.app{flex-direction:column;min-height:0}.main{margin-left:0;width:100%}}
+@media(max-width:700px){.g3,.g2,.g4{grid-template-columns:1fr}.sidebar{display:none}.app{flex-direction:column;min-height:0}.main{margin-left:0;width:100%}}
 .mobilenav{display:none;position:sticky;top:0;z-index:30;background:var(--panel2)}
   @media(max-width:700px){
     .card{overflow-x:auto}
@@ -5576,6 +5620,7 @@ h1{font-size:26px;margin-bottom:4px}
 .card{position:relative;background:var(--glass);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);border:1px solid var(--line);border-radius:24px;padding:20px;box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 -14px 30px rgba(0,0,0,.42),0 16px 36px rgba(0,0,0,.32)}
 .card::before{content:"";position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(135deg,var(--accent),transparent 42%,rgba(255,255,255,.04));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
 .card h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-weight:600}
+.compact .card{padding:14px}.compact .card h3{margin-bottom:8px}.compact .row{padding:5px 0;font-size:13.5px}.compact .inp{margin:5px 0;font-size:13.5px}.compact .btn{padding:7px 12px;font-size:13px}.compact .grid{gap:12px}
 .big{font-size:44px;font-weight:800;line-height:1}
 .big small{font-size:18px;font-weight:600;color:var(--muted)}
 .bar{height:10px;background:rgba(0,0,0,.35);border-radius:99px;margin-top:12px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
@@ -6046,6 +6091,10 @@ const PAGES = () => ({
   <div class="grid g2">
     <div class="card"><h3>${_t("h3_notifiche", "Notifiche")}</h3>
       <div class="row"><span>${_t("lbl_servizio_notify", "📨 Servizio notify")}</span><b data-f="notify">—</b></div>
+      <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
+        <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🔔 Notifiche — attiva/disattiva</div>
+        <div data-c="notif-switches" style="display:flex;flex-direction:column;gap:2px"></div>
+      </div>
       <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
         <div style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🤖 Automazioni create — attiva/disattiva</div>
         <div data-c="autos-created" style="display:flex;flex-direction:column;gap:2px"></div>
@@ -6092,6 +6141,7 @@ const PAGES = () => ({
       ("Renault EV Center" → switch).</div></div>`,
 
   p10: `<h1>Impostazioni</h1>
+  <div class="compact">
   <div class="grid g3">
     <div class="card"><h3>${_t("h3_prezzi_energia", "Prezzi energia")}</h3>
       <div class="inp"><span>${_t("lbl_costo_casa", "Costo casa")}</span><input data-n="n_price_home"><span class="u">€/kWh</span></div>
@@ -6109,36 +6159,21 @@ const PAGES = () => ({
         <div class="btn" data-cmd="reset_km">🔄 Reset contatori Km</div>
         <div class="btn" data-cmd="reset_energia">🔄 Reset contatori Energia</div>
         <div class="btn" data-cmd="reset_costi">🔄 Reset contatori Costi</div>
-        <div class="btn" data-cmd="csv">📥 Esporta viaggi CSV</div></div></div></div>
-  <div class="card" style="margin-top:16px"><h3>${_t("h3_backup", "💾 Backup dati")}</h3>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <div class="btn" data-cmd="export_data">${_t("btn_export_data", "⬇️ Esporta tutti i dati")}</div>
-      <div class="btn" data-cmd="import_data">${_t("btn_import_data", "⬆️ Importa da file")}</div></div>
-    <div style="color:var(--muted);font-size:11.5px;margin-top:8px">${_t("note_backup", "Un solo file JSON con viaggi, ricariche, storico e contatori. Importandolo su un'altra installazione i dati vengono sostituiti.")}</div></div>
-  <div class="card" style="margin-top:16px"><h3>${_t("h3_zone_ricariche", "🗺️ Zone ricariche")}</h3>
-    <div data-c="zone-rows"><div style="color:var(--muted);font-size:12px">—</div></div>
-    <div class="btn" data-cmd="save_zones" style="margin-top:10px">${_t("btn_salva_zone", "💾 Salva zone")}</div>
-    <div style="color:var(--muted);font-size:11.5px;margin-top:8px">${_t("note_zone", "Le ricariche in queste zone contano come pubbliche, con il prezzo che imposti. Home resta la zona dei bilanciamenti wallbox e del fotovoltaico.")}</div></div>
-  <div class="grid g3" style="margin-top:16px">
+        <div class="btn" data-cmd="csv">📥 Esporta viaggi CSV</div>
+        <div class="btn" data-cmd="export_data">${_t("btn_export_data", "⬇️ Esporta tutti i dati")}</div>
+        <div class="btn" data-cmd="import_data">${_t("btn_import_data", "⬆️ Importa da file")}</div></div>
+      <div style="color:var(--muted);font-size:11px;margin-top:8px">${_t("note_backup", "Un solo file JSON con viaggi, ricariche, storico e contatori. Importandolo su un'altra installazione i dati vengono sostituiti.")}</div></div></div>
+  <div class="grid g4" style="margin-top:12px">
+    <div class="card"><h3>${_t("h3_zone_ricariche", "🗺️ Zone ricariche")}</h3>
+      <div data-c="zone-rows"><div style="color:var(--muted);font-size:12px">—</div></div>
+      <div class="btn" data-cmd="save_zones" style="margin-top:8px">${_t("btn_salva_zone", "💾 Salva zone")}</div>
+      <div style="color:var(--muted);font-size:11px;margin-top:6px">${_t("note_zone", "Le ricariche in queste zone contano come pubbliche, con il prezzo che imposti. Home resta la zona dei bilanciamenti wallbox e del fotovoltaico.")}</div></div>
     <div class="card palette"><h3>${_t("h3_palette_colori_renault", "🎨 Palette (colori Renault)")}</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${THEMES.map(([id, dot, label]) => `<button class="btn" data-palette="${id}"><span class="sw" style="background:${dot}"></span> ${_t("theme_" + id, label)}</button>`).join("")}</div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:10px">Temi HA in /themes: renault-blu, giallo, verde, aviation</div></div>
-    <div class="card"><h3>${_t("h3_notifiche", "🔔 Notifiche")}</h3>
-      <div class="inp"><span>${_t("lbl_servizio_notify_2", "Servizio notify")}</span><input data-ls="rec_notify" data-f="notify" style="width:140px"><span class="u"></span></div>
-      <div class="inp"><span>${_t("lbl_preavviso_scadenze", "Preavviso scadenze")}</span><input data-ls="rec_preavviso" value="30"><span class="u">gg</span></div>
-      <div class="inp" style="margin-top:8px"><span>${_t("lbl_nt_start", "Titolo avvio")}</span><input data-nt="cs_title" style="width:200px"><span class="u"></span></div>
-      <div class="inp"><span>${_t("lbl_nt_end_title", "Titolo fine")}</span><input data-nt="cc_title" style="width:200px"><span class="u"></span></div>
-      <div style="margin-top:8px;font-size:12px;color:var(--muted)">${_t("lbl_nt_end_body", "Messaggio fine ricarica")}</div>
-      <textarea data-nt="cc_body" rows="5" style="width:100%;font-family:inherit;font-size:12px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:8px" placeholder="${_t("ph_nt_body", "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 €{costo:.2f}")}"></textarea>
-      <div class="btn" data-cmd="notify_save" style="margin-top:8px">${_t("btn_notify_save", "💾 Salva testi")}</div>
-      <div style="margin-top:14px;font-size:12px;color:var(--muted)">${_t("lbl_prova_notifiche", "▶ Invia una notifica di prova (dati di esempio)")}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
-        ${[["cs", "🟢 Avvio ricarica"], ["cc", "🔋 Fine ricarica"], ["lb", "⚠️ Batteria bassa"], ["sum", "📊 Riepilogo giornaliero"], ["dead", "🛡️ Scadenze"], ["bal", "🏠 Bilanciamento casa"], ["sol", "☀️ Bilanciamento solare"], ["gse_stop", "⛔ GSE stop"], ["gse_go", "▶️ GSE ripresa"], ["auto_start", "⏰ Avvio programmato"]].map(([k, l]) => `<div class="btn" style="flex:0 0 auto;padding:6px 10px;font-size:12px" data-cmd="notify_test" data-ntype="${k}">${l}</div>`).join("")}
-      </div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">${_t("note_nt_vars", "Variabili: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Vuoto = testo predefinito.")}</div></div>
+      <div style="color:var(--muted);font-size:11px;margin-top:8px">Temi HA in /themes: renault-blu, giallo, verde, aviation</div></div>
     <div class="card"><h3>${_t("h3_lingua", "🌐 Lingua")}</h3>
       <div class="inp"><span>${_t("lbl_lingua_pannello", "Lingua pannello")}</span>
-        <select data-lang style="width:150px">
+        <select data-lang style="width:130px">
           <option value="">🌐 ${_t("opt_automatica_home_assistant", "Automatica (Home Assistant)")}</option>
           <option value="it">🇮🇹 Italiano</option>
           <option value="en">🇬🇧 English</option>
@@ -6146,9 +6181,23 @@ const PAGES = () => ({
           <option value="es">🇪🇸 Español</option>
           <option value="de">🇩🇪 Deutsch</option>
         </select></div>
-      <div style="color:var(--muted);font-size:11.5px;margin-top:4px">"Automatica" segue la lingua di HA.</div></div>
-    <div class="card"><h3>${_t("h3_automazioni", "🤖 Automazioni")}</h3>
-      <div class="note">${_t("note_crea", "Le notifiche (avvio, fine ricarica, batteria bassa) sono inviate direttamente dall'integrazione: non servono automazioni. Se hai ancora le vecchie automazioni «Renault EV Center», eliminale da Impostazioni → Automazioni per evitare notifiche doppie. Esempi pronti in examples/.")}</div></div>
+      <div style="color:var(--muted);font-size:11px;margin-top:4px">"Automatica" segue la lingua di HA.</div></div>
+    <div class="card"><h3>${_t("h3_notifiche", "🔔 Notifiche")}</h3>
+      <div class="inp"><span>${_t("lbl_servizio_notify_2", "Servizio notify")}</span><input data-ls="rec_notify" data-f="notify" style="width:110px"><span class="u"></span></div>
+      <div class="inp"><span>${_t("lbl_preavviso_scadenze", "Preavviso scadenze")}</span><input data-ls="rec_preavviso" value="30"><span class="u">gg</span></div>
+      <div class="inp" style="margin-top:8px"><span>${_t("lbl_nt_start", "Titolo avvio")}</span><input data-nt="cs_title" style="width:150px"><span class="u"></span></div>
+      <div class="inp"><span>${_t("lbl_nt_end_title", "Titolo fine")}</span><input data-nt="cc_title" style="width:150px"><span class="u"></span></div>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)">${_t("lbl_nt_end_body", "Messaggio fine ricarica")}</div>
+      <textarea data-nt="cc_body" rows="4" style="width:100%;font-family:inherit;font-size:12px;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:8px" placeholder="${_t("ph_nt_body", "📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 €{costo:.2f}")}"></textarea>
+      <div class="btn" data-cmd="notify_save" style="margin-top:8px">${_t("btn_notify_save", "💾 Salva testi")}</div>
+      <div style="margin-top:10px;font-size:12px;color:var(--muted)">${_t("lbl_prova_notifiche", "▶ Invia una notifica di prova (dati di esempio)")}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+        ${[["cs", "🟢 Avvio ricarica"], ["cc", "🔋 Fine ricarica"], ["lb", "⚠️ Batteria bassa"], ["sum", "📊 Riepilogo giornaliero"], ["dead", "🛡️ Scadenze"], ["bal", "🏠 Bilanciamento casa"], ["sol", "☀️ Bilanciamento solare"], ["gse_stop", "⛔ GSE stop"], ["gse_go", "▶️ GSE ripresa"], ["auto_start", "⏰ Avvio programmato"]].map(([k, l]) => `<div class="btn" style="flex:0 0 auto;padding:6px 10px;font-size:12px" data-cmd="notify_test" data-ntype="${k}">${l}</div>`).join("")}
+      </div>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:6px">${_t("note_nt_vars", "Variabili: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Vuoto = testo predefinito.")}</div></div>
+  </div>
+  <div class="card" style="margin-top:12px"><h3>${_t("h3_automazioni", "🤖 Automazioni")}</h3>
+    <div class="note" style="margin-top:0;border-top:none;padding-top:0">${_t("note_crea", "Le notifiche (avvio, fine ricarica, batteria bassa) sono inviate direttamente dall'integrazione: non servono automazioni. Se hai ancora le vecchie automazioni «Renault EV Center», eliminale da Impostazioni → Automazioni per evitare notifiche doppie. Esempi pronti in examples/.")}</div></div>
   </div>`,
 
   p11: `<h1>Wallbox</h1>
