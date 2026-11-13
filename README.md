@@ -226,7 +226,12 @@ Alla configurazione viene creata **da sola** la dashboard laterale con tutte le 
 Card custom opzionali (HACS → Frontend), usate **solo** dalle dashboard YAML in `dashboards/`:
 **apexcharts-card** e **mini-graph-card** (grafici in `01_panoramica.yaml` e `04_ricariche.yaml`).
 Il pannello laterale (`renault-ev-center-panel.js`) **non ne ha bisogno**: disegna tutto da sé.
-Foto dell'auto: scelta dal modello nel wizard o personale in `/config/www/renault-ev-center/auto.png`.
+### 📷 Foto dell'auto
+
+- Il wizard sceglie l'immagine del modello tra quelle incluse nell'integrazione.
+- Per usare una tua foto: metti un file `auto.png` in `/config/www/renault-ev-center/` (crea la cartella se non c'è). Il pannello la usa al posto dell'immagine del modello e, se il file manca o non si carica, torna da solo all'immagine del modello. Sostituendo il file l'immagine cambia senza riavviare Home Assistant.
+- I nomi di vie e città dei viaggi (reverse geocoding OpenStreetMap) seguono la lingua di Home Assistant.
+- Lingue del pannello e del wizard: italiano, inglese, francese, spagnolo, tedesco, croato.
 
 > Se la tua auto non si chiama "Renault", sostituisci `sensor.renault_` con il prefisso giusto.
 
@@ -519,7 +524,12 @@ On setup the sidebar dashboard is **created for you** with every view
 Optional custom cards (HACS → Frontend), used **only** by the YAML dashboards in `dashboards/`:
 **apexcharts-card** and **mini-graph-card** (charts in `01_panoramica.yaml` and `04_ricariche.yaml`).
 The side panel (`renault-ev-center-panel.js`) **doesn't need them**: it draws everything itself.
-Car photo: chosen from the model in the wizard or personal, in `/config/www/renault-ev-center/auto.png`.
+### 📷 Car photo
+
+- The wizard picks the model image from the ones bundled with the integration.
+- To use your own photo: put an `auto.png` file in `/config/www/renault-ev-center/` (create the folder if it doesn't exist). The panel uses it instead of the model image and, if the file is missing or fails to load, falls back to the model image automatically. Replacing the file updates the picture without restarting Home Assistant.
+- Street and city names of your trips (OpenStreetMap reverse geocoding) follow the Home Assistant language.
+- Panel and wizard languages: Italian, English, French, Spanish, German, Croatian.
 
 > If your car isn't called "Renault", replace `sensor.renault_` with the right prefix.
 
@@ -827,8 +837,12 @@ Cartes custom optionnelles (HACS → Frontend), utilisées **seulement** par les
 tableaux de bord YAML dans `dashboards/` : **apexcharts-card** et **mini-graph-card**
 (graphiques dans `01_panoramica.yaml` et `04_ricariche.yaml`). Le panneau latéral
 (`renault-ev-center-panel.js`) **n'en a pas besoin** : il dessine tout lui-même.
-Photo de la voiture : choisie depuis le modèle dans l'assistant ou personnelle, dans
-`/config/www/renault-ev-center/auto.png`.
+### 📷 Photo de la voiture
+
+- L'assistant choisit l'image du modèle parmi celles fournies avec l'intégration.
+- Pour une photo personnelle : placez un fichier `auto.png` dans `/config/www/renault-ev-center/` (créez le dossier s'il n'existe pas). Le panneau l'utilise à la place de l'image du modèle et, si le fichier est absent ou ne se charge pas, revient automatiquement à l'image du modèle. Remplacer le fichier met l'image à jour sans redémarrer Home Assistant.
+- Les noms de rues et de villes des trajets (géocodage inverse OpenStreetMap) suivent la langue de Home Assistant.
+- Langues du panneau et de l'assistant : italien, anglais, français, espagnol, allemand, croate.
 
 > Si votre voiture ne s'appelle pas « Renault », remplacez `sensor.renault_` par le bon préfixe.
 
