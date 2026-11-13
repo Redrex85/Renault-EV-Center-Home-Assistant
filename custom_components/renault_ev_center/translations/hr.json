@@ -1,0 +1,992 @@
+{
+  "title": "Renault EV Center",
+  "config": {
+    "step": {
+      "user": {
+        "title": "🧩 Instalacijski profil",
+        "description": "Odaberi profil:\n- **Base** — samo auto\n- **Pro** — auto + wallbox\n- **Enterprise** — auto + wallbox + solar\n\nProfil određuje koje odjeljke vidiš pri postavljanju i koje se stranice pojavljuju na dashboardu (npr. Base nema stranicu Wallbox).",
+        "data": {
+          "profile": "Instalacijski profil"
+        }
+      },
+      "wallbox": {
+        "title": "Renault EV Center — Wallbox",
+        "description": "Poveži senzore wallboxa (Wallbox, go-e, Easee, OCPP…). Ostavi prazno ono što nemaš.",
+        "data": {
+          "geocode_enabled": "Ulica i država u vožnjama i punjenjima (OpenStreetMap geokodiranje)",
+          "charge_merge": "Spoji podijeljena punjenja (jedno priključivanje = jedno punjenje)",
+          "avg_speed_kmh": "Procjena prosječne brzine za vrijeme polaska"
+        },
+        "sections": {
+          "wallbox": {
+            "name": "🔌 Wallbox",
+            "data": {
+              "wallbox_enabled": "Imam wallbox u Home Assistantu",
+              "wallbox_power_entity": "Trenutna snaga punjenja (W ili kW)",
+              "wallbox_state_entity": "Stanje wallboxa (npr. puni)",
+              "wallbox_session_energy_entity": "Brojač energije punjenja (kWh)",
+              "wallbox_total_energy_entity": "Ukupni brojač energije (kWh) — koristi se ako nema brojača punjenja",
+              "wallbox_max_current_entity": "Broj za maks. struju punjenja (opcionalno)",
+              "wallbox_session_time_entity": "Trajanje punjenja wallboxa (s/min/h) — opcionalno, inače interni brojač",
+              "wb_charge_switch": "Pokretanje punjenja wallboxa (prekidač ili gumb) — za Pokreni punjenje i automatizaciju",
+              "wb_stop_switch": "Zaustavljanje punjenja wallboxa (prekidač ili gumb) — za Zaustavi punjenje",
+              "wallbox_temp_entity": "Senzor temperature wallboxa (opcionalno)"
+            }
+          },
+          "gse": {
+            "name": "⚡ GSE pilot program",
+            "data": {
+              "gse_enabled": "Koristi GSE pokus",
+              "gse_kw_max": "Dopuštena snaga unutar prozora (kW)",
+              "gse_kw_ridotta": "Snaga izvan prozora (kW)",
+              "gse_start": "Početak dopuštenog prozora",
+              "gse_end": "Kraj dopuštenog prozora",
+              "gse_domenica": "Nedjelja: puna snaga cijeli dan",
+              "gse_holiday_entity": "Senzor praznika (binary_sensor, opcionalno)",
+              "gse_wpa": "Vata po amperu wallboxa (230 jednofazno, 690 trofazno)"
+            }
+          },
+          "home": {
+            "name": "🏠 Balansiranje kuće",
+            "data": {
+              "home_power_sensor": "Senzor potrošnje kuće (W ili kW)",
+              "home_meter_kw": "Priključna snaga kuće: 3 · 4,5 · 6 · 10 (ili više) kW",
+              "home_max_amps": "Amperi wallboxa pri maloj potrošnji (vraćanje)",
+              "home_reduce_amps": "Amperi wallboxa pri velikoj potrošnji (smanjenje)"
+            }
+          },
+          "solar": {
+            "name": "☀️ Solar i balansiranje",
+            "data": {
+              "has_pv": "Imam solarnu elektranu (profil Enterprise)",
+              "balance_grid_sensor": "Senzor snage uvoza/izvoza iz mreže (W)",
+              "balance_battery_sensor": "Senzor snage kućne baterije (W, opcionalno)",
+              "balance_invert_grid": "Obrni predznak senzora mreže",
+              "balance_include_battery": "Uključi pražnjenje baterije u višak",
+              "balance_watts_per_amp": "Vata po amperu (230 V jednofazno ≈ 690)",
+              "balance_battery_soc_sensor": "Senzor SoC kućne baterije (%) — za prioritet",
+              "battery_priority_min": "Min. SoC kućne baterije prije davanja viška autu (%)"
+            }
+          }
+        }
+      },
+      "settings": {
+        "title": "🧩 Konfiguracija",
+        "description": "Odaberi entitete i postavke. Odjeljci su **zatvoreni**: otvori one koje trebaš. Odabrani profil određuje koji se prikazuju.",
+        "data": {
+          "charge_start_button": "Gumb za pokretanje punjenja (Renault)",
+          "model": "Model auta — prvi odabir: određuje sliku",
+          "create_dashboard": "Automatski stvori dashboard u bočnoj traci"
+        },
+        "sections": {
+          "car": {
+            "name": "🚗 Auto",
+            "data": {
+              "name": "Naziv auta",
+              "odometer_entity": "Senzor kilometraže",
+              "battery_level_entity": "Senzor razine baterije (%)",
+              "range_entity": "Senzor preostalog dometa",
+              "charging_entity": "Senzor/binarni senzor punjenja",
+              "plug_entity": "Stanje utikača (opcionalno)",
+              "location_entity": "GPS tracker auta (opcionalno)",
+              "install_odo": "Km pri aktivaciji (0 = od dana instalacije, 1 = od rođenja auta; rabljeni auto: km na dan kupnje)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Renault naredbe",
+            "data": {
+              "charge_start_button": "Gumb za pokretanje punjenja (Renault)",
+              "ac_button_entity": "Gumb za klimu (Renault)",
+              "climate_entity": "Renault entitet klime",
+              "light_entity": "Vanjska svjetla (light/switch/button)",
+              "horn_entity": "Sirena (button/switch)",
+              "charge_target_number": "Broj za cilj punjenja (za zaustavljanje)"
+            }
+          },
+          "wallbox": {
+            "name": "🔌 Wallbox",
+            "data": {
+              "wallbox_enabled": "Imam wallbox u Home Assistantu",
+              "wallbox_power_entity": "Trenutna snaga punjenja (W ili kW)",
+              "wallbox_state_entity": "Stanje wallboxa (npr. puni)",
+              "wallbox_session_energy_entity": "Brojač energije punjenja (kWh)",
+              "wallbox_total_energy_entity": "Ukupni brojač energije (kWh) — koristi se ako nema brojača punjenja",
+              "wallbox_max_current_entity": "Broj za maks. struju punjenja (opcionalno)",
+              "wallbox_session_time_entity": "Trajanje punjenja wallboxa (s/min/h) — opcionalno, inače interni brojač",
+              "wb_charge_switch": "Pokretanje punjenja wallboxa (prekidač ili gumb) — za Pokreni punjenje i automatizaciju",
+              "wb_stop_switch": "Zaustavljanje punjenja wallboxa (prekidač ili gumb) — za Zaustavi punjenje",
+              "wallbox_temp_entity": "Senzor temperature wallboxa (opcionalno)"
+            }
+          },
+          "gse": {
+            "name": "⚡ GSE pilot program",
+            "data": {
+              "gse_enabled": "Koristi GSE pokus",
+              "gse_kw_max": "Dopuštena snaga unutar prozora (kW)",
+              "gse_kw_ridotta": "Snaga izvan prozora (kW)",
+              "gse_start": "Početak dopuštenog prozora",
+              "gse_end": "Kraj dopuštenog prozora",
+              "gse_domenica": "Nedjelja: puna snaga cijeli dan",
+              "gse_holiday_entity": "Senzor praznika (binary_sensor, opcionalno)",
+              "gse_wpa": "Vata po amperu wallboxa (230 jednofazno, 690 trofazno)"
+            }
+          },
+          "home": {
+            "name": "🏠 Balansiranje kuće",
+            "data": {
+              "home_power_sensor": "Senzor potrošnje kuće (W ili kW)",
+              "home_meter_kw": "Priključna snaga kuće: 3 · 4,5 · 6 · 10 (ili više) kW",
+              "home_max_amps": "Amperi wallboxa pri maloj potrošnji (vraćanje)",
+              "home_reduce_amps": "Amperi wallboxa pri velikoj potrošnji (smanjenje)"
+            }
+          },
+          "solar": {
+            "name": "☀️ Solar i balansiranje",
+            "data": {
+              "has_pv": "Imam solarnu elektranu (profil Enterprise)",
+              "balance_grid_sensor": "Senzor snage uvoza/izvoza iz mreže (W)",
+              "balance_battery_sensor": "Senzor snage kućne baterije (W, opcionalno)",
+              "balance_invert_grid": "Obrni predznak senzora mreže",
+              "balance_include_battery": "Uključi pražnjenje baterije u višak",
+              "balance_watts_per_amp": "Vata po amperu (230 V jednofazno ≈ 690)",
+              "balance_battery_soc_sensor": "Senzor SoC kućne baterije (%) — za prioritet",
+              "battery_priority_min": "Min. SoC kućne baterije prije davanja viška autu (%)"
+            }
+          },
+          "battery": {
+            "name": "🔋 Baterija",
+            "data": {
+              "battery_capacity": "Iskoristivi kapacitet baterije",
+              "target_soc": "Cilj punjenja (% za procjenu kraja punjenja)",
+              "charging_efficiency": "Učinkovitost punjenja AC→baterija"
+            }
+          },
+          "prices": {
+            "name": "💶 Cijene energije",
+            "data": {
+              "price_home": "Cijena struje kod kuće",
+              "price_public": "Cijena javne punionice",
+              "price_solar": "Cijena solara (0 = besplatno)",
+              "solar_zone": "Naziv solarne zone (prazno = nema)",
+              "zone_1": "Dodatna zona 1 (vlastita cijena)",
+              "zone_2": "Dodatna zona 2 (vlastita cijena)",
+              "zone_3": "Dodatna zona 3 (vlastita cijena)",
+              "zone_4": "Dodatna zona 4 (vlastita cijena)",
+              "zone_5": "Dodatna zona 5 (vlastita cijena)",
+              "zone_6": "Dodatna zona 6 (vlastita cijena)",
+              "zone_7": "Dodatna zona 7 (vlastita cijena)",
+              "zone_8": "Dodatna zona 8 (vlastita cijena)",
+              "price_1": "Cijena zone 1 (€/kWh)",
+              "price_2": "Cijena zone 2 (€/kWh)",
+              "price_3": "Cijena zone 3 (€/kWh)",
+              "price_4": "Cijena zone 4 (€/kWh)",
+              "price_5": "Cijena zone 5 (€/kWh)",
+              "price_6": "Cijena zone 6 (€/kWh)",
+              "price_7": "Cijena zone 7 (€/kWh)",
+              "price_8": "Cijena zone 8 (€/kWh)",
+              "pre_kwh": "kWh napunjeno PRIJE korištenja integracije (za uštede)",
+              "pre_eur": "€ već potrošeno na punjenje prije integracije (ima prednost pred kWh)"
+            }
+          },
+          "fuel": {
+            "name": "⛽ Usporedba s gorivom",
+            "data": {
+              "fuel_comparison": "Usporedi uštedu s fosilnim autom",
+              "fuel_label": "Naziv goriva (Dizel, Benzin…)",
+              "fuel_consumption": "Potrošnja usporedivog fosilnog auta",
+              "fuel_price": "Cijena goriva",
+              "diesel_price_entity": "Senzor cijene dizela €/l (opcionalno)"
+            }
+          },
+          "maint": {
+            "name": "🔧 Održavanje i cestarina",
+            "data": {
+              "maint_comparison": "Usporedi troškove održavanja fosilni vs EV",
+              "service_cost_thermal": "Trošak servisa fosilnog (€/godina)",
+              "service_cost_ev": "Trošak servisa EV-a (€)",
+              "service_interval_km": "Servisni interval (km)",
+              "tyre_interval_km": "Interval zamjene guma (km)",
+              "purchase_date": "Datum isporuke/kupnje auta (za godišnji servis)",
+              "road_tax_thermal": "Cestarina fosilnog (€/godina)",
+              "road_tax_ev": "Cestarina EV-a (€/godina)",
+              "assicurazione_costo": "Godišnja cijena osiguranja",
+              "assicurazione_data": "Datum isteka osiguranja (GGGG-MM-DD)"
+            }
+          },
+          "notify": {
+            "name": "🔔 Obavijesti",
+            "data": {
+              "notify_service": "Servis obavijesti (npr. notify.mobile_app_telefon)",
+              "notify_days": "Dana upozorenja prije roka",
+              "notify_charge_start": "Obavijest o početku punjenja",
+              "notify_charge_end": "Obavijest o kraju punjenja",
+              "low_soc_enabled": "Podsjetnik na praznu bateriju (kod kuće)",
+              "low_soc_threshold": "Min. % za podsjetnik",
+              "low_soc_start": "Početak vremenskog prozora",
+              "low_soc_end": "Kraj vremenskog prozora",
+              "low_soc_days": "Dani u tjednu"
+            }
+          },
+          "advanced": {
+            "name": "⚙️ Napredno",
+            "data": {
+              "poll_interval": "Interval osvježavanja",
+              "trip_timeout": "Minute mirne kilometraže prije zatvaranja vožnje",
+              "temp_entity": "Senzor vanjske temperature (za CO2/vrijeme)",
+              "co2_comparison": "Izračunaj usporedbu CO2 fosilni vs EV",
+              "co2_thermal_gkm": "CO2 fosilnog (g/km)",
+              "co2_grid_gkwh": "CO2 mreže (g/kWh)",
+              "geocode_enabled": "Ulica i država u vožnjama i punjenjima (OpenStreetMap geokodiranje)",
+              "charge_merge": "Spoji podijeljena punjenja (jedno priključivanje = jedno punjenje)",
+              "avg_speed_kmh": "Procjena prosječne brzine za vrijeme polaska",
+              "scadenze_enabled": "Uključi podsjetnike na rokove",
+              "scadenza_bollo": "Datum isteka cestarine (GGGG-MM-DD)",
+              "scadenza_revisione": "Datum tehničkog pregleda (GGGG-MM-DD)",
+              "scadenza_assicurazione": "Datum isteka osiguranja (GGGG-MM-DD)",
+              "tagliando_mode": "Servis: rok po km ili datumu",
+              "tagliando_data": "Datum servisa (ako je po datumu)"
+            }
+          }
+        }
+      },
+      "car": {
+        "title": "🚗 Renault EV Center — Tvoj auto",
+        "description": "**Dobro došao!** Odaberi entitete svog Renault EV-a (službena Renault integracija).\n\n- Daj autu **kratko ime** (npr. `Zoe`): postaje prefiks svih novih entiteta.\n- **Model** određuje sliku auta.\n- **Dashboard** u bočnoj traci možeš stvoriti automatski.",
+        "data": {
+          "model": "Model auta — prvi odabir: određuje sliku",
+          "create_dashboard": "Automatski stvori dashboard u bočnoj traci"
+        },
+        "sections": {
+          "car": {
+            "name": "🚗 Auto",
+            "data": {
+              "name": "Naziv auta",
+              "odometer_entity": "Senzor kilometraže",
+              "battery_level_entity": "Senzor razine baterije (%)",
+              "range_entity": "Senzor preostalog dometa",
+              "charging_entity": "Binarni senzor/senzor punjenja",
+              "plug_entity": "Stanje utikača (opcionalno)",
+              "location_entity": "GPS tracker (opcionalno)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Renault naredbe",
+            "data": {
+              "charge_start_button": "Gumb za pokretanje punjenja (Renault)",
+              "ac_button_entity": "Gumb za klimu (Renault)",
+              "climate_entity": "Renault entitet klime",
+              "light_entity": "Vanjska svjetla (light/switch/button)",
+              "horn_entity": "Sirena (button/switch)"
+            }
+          }
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Renault EV Center — Opcije",
+        "description": "Promijeni povezane entitete i postavke.",
+        "data": {
+          "model": "Model auta — prvi odabir: određuje sliku",
+          "create_dashboard": "Automatski stvori dashboard u bočnoj traci"
+        },
+        "sections": {
+          "car": {
+            "name": "🚗 Auto",
+            "data": {
+              "name": "Naziv auta",
+              "odometer_entity": "Senzor kilometraže",
+              "battery_level_entity": "Senzor razine baterije (%)",
+              "range_entity": "Senzor preostalog dometa",
+              "charging_entity": "Senzor/binarni senzor punjenja",
+              "plug_entity": "Stanje utikača (opcionalno)",
+              "location_entity": "GPS tracker auta (opcionalno)",
+              "install_odo": "Km pri aktivaciji (0 = od dana instalacije, 1 = od rođenja auta; rabljeni auto: km na dan kupnje)"
+            }
+          },
+          "commands": {
+            "name": "🎛️ Renault naredbe",
+            "data": {
+              "charge_start_button": "Gumb za pokretanje punjenja (Renault)",
+              "ac_button_entity": "Gumb za klimu (Renault)",
+              "climate_entity": "Renault entitet klime",
+              "light_entity": "Vanjska svjetla (light/switch/button)",
+              "horn_entity": "Sirena (button/switch)",
+              "charge_target_number": "Broj za cilj punjenja (za zaustavljanje)"
+            }
+          },
+          "wallbox": {
+            "name": "🔌 Wallbox",
+            "data": {
+              "wallbox_enabled": "Imam wallbox u Home Assistantu",
+              "wallbox_power_entity": "Trenutna snaga punjenja (W ili kW)",
+              "wallbox_state_entity": "Stanje wallboxa (npr. puni)",
+              "wallbox_session_energy_entity": "Brojač energije punjenja (kWh)",
+              "wallbox_total_energy_entity": "Ukupni brojač energije (kWh) — koristi se ako nema brojača punjenja",
+              "wallbox_max_current_entity": "Broj za maks. struju punjenja (opcionalno)",
+              "wallbox_session_time_entity": "Trajanje punjenja wallboxa (s/min/h) — opcionalno, inače interni brojač",
+              "wb_charge_switch": "Pokretanje punjenja wallboxa (prekidač ili gumb) — za Pokreni punjenje i automatizaciju",
+              "wb_stop_switch": "Zaustavljanje punjenja wallboxa (prekidač ili gumb) — za Zaustavi punjenje",
+              "wallbox_temp_entity": "Senzor temperature wallboxa (opcionalno)"
+            }
+          },
+          "gse": {
+            "name": "⚡ GSE pilot program",
+            "data": {
+              "gse_enabled": "Koristi GSE pokus",
+              "gse_kw_max": "Dopuštena snaga unutar prozora (kW)",
+              "gse_kw_ridotta": "Snaga izvan prozora (kW)",
+              "gse_start": "Početak dopuštenog prozora",
+              "gse_end": "Kraj dopuštenog prozora",
+              "gse_domenica": "Nedjelja: puna snaga cijeli dan",
+              "gse_holiday_entity": "Senzor praznika (binary_sensor, opcionalno)",
+              "gse_wpa": "Vata po amperu wallboxa (230 jednofazno, 690 trofazno)"
+            }
+          },
+          "home": {
+            "name": "🏠 Balansiranje kuće",
+            "data": {
+              "home_power_sensor": "Senzor potrošnje kuće (W ili kW)",
+              "home_meter_kw": "Priključna snaga kuće: 3 · 4,5 · 6 · 10 (ili više) kW",
+              "home_max_amps": "Amperi wallboxa pri maloj potrošnji (vraćanje)",
+              "home_reduce_amps": "Amperi wallboxa pri velikoj potrošnji (smanjenje)"
+            }
+          },
+          "solar": {
+            "name": "☀️ Solar i balansiranje",
+            "data": {
+              "has_pv": "Imam solarnu elektranu (profil Enterprise)",
+              "balance_grid_sensor": "Senzor snage uvoza/izvoza iz mreže (W)",
+              "balance_battery_sensor": "Senzor snage kućne baterije (W, opcionalno)",
+              "balance_invert_grid": "Obrni predznak senzora mreže",
+              "balance_include_battery": "Uključi pražnjenje baterije u višak",
+              "balance_watts_per_amp": "Vata po amperu (230 V jednofazno ≈ 690)",
+              "balance_battery_soc_sensor": "Senzor SoC kućne baterije (%) — za prioritet",
+              "battery_priority_min": "Min. SoC kućne baterije prije davanja viška autu (%)"
+            }
+          },
+          "battery": {
+            "name": "🔋 Baterija",
+            "data": {
+              "battery_capacity": "Iskoristivi kapacitet baterije",
+              "target_soc": "Cilj punjenja (% za procjenu kraja punjenja)",
+              "charging_efficiency": "Učinkovitost punjenja AC→baterija"
+            }
+          },
+          "prices": {
+            "name": "💶 Cijene energije",
+            "data": {
+              "price_home": "Cijena struje kod kuće",
+              "price_public": "Cijena javne punionice",
+              "price_solar": "Cijena solara (0 = besplatno)",
+              "solar_zone": "Naziv solarne zone (prazno = nema)",
+              "zone_1": "Dodatna zona 1 (vlastita cijena)",
+              "zone_2": "Dodatna zona 2 (vlastita cijena)",
+              "zone_3": "Dodatna zona 3 (vlastita cijena)",
+              "zone_4": "Dodatna zona 4 (vlastita cijena)",
+              "zone_5": "Dodatna zona 5 (vlastita cijena)",
+              "zone_6": "Dodatna zona 6 (vlastita cijena)",
+              "zone_7": "Dodatna zona 7 (vlastita cijena)",
+              "zone_8": "Dodatna zona 8 (vlastita cijena)",
+              "price_1": "Cijena zone 1 (€/kWh)",
+              "price_2": "Cijena zone 2 (€/kWh)",
+              "price_3": "Cijena zone 3 (€/kWh)",
+              "price_4": "Cijena zone 4 (€/kWh)",
+              "price_5": "Cijena zone 5 (€/kWh)",
+              "price_6": "Cijena zone 6 (€/kWh)",
+              "price_7": "Cijena zone 7 (€/kWh)",
+              "price_8": "Cijena zone 8 (€/kWh)",
+              "pre_kwh": "kWh napunjeno PRIJE korištenja integracije (za uštede)",
+              "pre_eur": "€ već potrošeno na punjenje prije integracije (ima prednost pred kWh)"
+            }
+          },
+          "fuel": {
+            "name": "⛽ Usporedba s gorivom",
+            "data": {
+              "fuel_comparison": "Usporedi uštedu s fosilnim autom",
+              "fuel_label": "Naziv goriva (Dizel, Benzin…)",
+              "fuel_consumption": "Potrošnja usporedivog fosilnog auta",
+              "fuel_price": "Cijena goriva",
+              "diesel_price_entity": "Senzor cijene dizela €/l (opcionalno)"
+            }
+          },
+          "maint": {
+            "name": "🔧 Održavanje i cestarina",
+            "data": {
+              "maint_comparison": "Usporedi troškove održavanja fosilni vs EV",
+              "service_cost_thermal": "Trošak servisa fosilnog (€/godina)",
+              "service_cost_ev": "Trošak servisa EV-a (€)",
+              "service_interval_km": "Servisni interval (km)",
+              "tyre_interval_km": "Interval zamjene guma (km)",
+              "purchase_date": "Datum isporuke/kupnje auta (za godišnji servis)",
+              "road_tax_thermal": "Cestarina fosilnog (€/godina)",
+              "road_tax_ev": "Cestarina EV-a (€/godina)",
+              "assicurazione_costo": "Godišnja cijena osiguranja",
+              "assicurazione_data": "Datum isteka osiguranja (GGGG-MM-DD)"
+            }
+          },
+          "notify": {
+            "name": "🔔 Obavijesti",
+            "data": {
+              "notify_service": "Servis obavijesti (npr. notify.mobile_app_telefon)",
+              "notify_days": "Dana upozorenja prije roka",
+              "notify_charge_start": "Obavijest o početku punjenja",
+              "notify_charge_end": "Obavijest o kraju punjenja",
+              "low_soc_enabled": "Podsjetnik na praznu bateriju (kod kuće)",
+              "low_soc_threshold": "Min. % za podsjetnik",
+              "low_soc_start": "Početak vremenskog prozora",
+              "low_soc_end": "Kraj vremenskog prozora",
+              "low_soc_days": "Dani u tjednu"
+            }
+          },
+          "advanced": {
+            "name": "⚙️ Napredno",
+            "data": {
+              "poll_interval": "Interval osvježavanja",
+              "trip_timeout": "Minute mirne kilometraže prije zatvaranja vožnje",
+              "temp_entity": "Senzor vanjske temperature (za CO2/vrijeme)",
+              "co2_comparison": "Izračunaj usporedbu CO2 fosilni vs EV",
+              "co2_thermal_gkm": "CO2 fosilnog (g/km)",
+              "co2_grid_gkwh": "CO2 mreže (g/kWh)",
+              "geocode_enabled": "Ulica i država u vožnjama i punjenjima (OpenStreetMap geokodiranje)",
+              "charge_merge": "Spoji podijeljena punjenja (jedno priključivanje = jedno punjenje)",
+              "avg_speed_kmh": "Procjena prosječne brzine za vrijeme polaska",
+              "scadenze_enabled": "Uključi podsjetnike na rokove",
+              "scadenza_bollo": "Datum isteka cestarine (GGGG-MM-DD)",
+              "scadenza_revisione": "Datum tehničkog pregleda (GGGG-MM-DD)",
+              "scadenza_assicurazione": "Datum isteka osiguranja (GGGG-MM-DD)",
+              "tagliando_mode": "Servis: rok po km ili datumu",
+              "tagliando_data": "Datum servisa (ako je po datumu)"
+            }
+          }
+        }
+      }
+    }
+  },
+  "services": {
+    "close_trip": {
+      "name": "Zatvori vožnju sada",
+      "description": "Prisilno zatvori vožnju u tijeku."
+    },
+    "reset_counters": {
+      "name": "Resetiraj brojače",
+      "description": "Resetiraj odabrane brojače.",
+      "fields": {
+        "scope": {
+          "name": "Opseg",
+          "description": "km, energia, costi, viaggi, ricariche ili all"
+        }
+      }
+    },
+    "export_trips_csv": {
+      "name": "Izvezi vožnje u CSV",
+      "description": "Zapisuje CSV vožnji u config/renault_ev_center_export."
+    },
+    "add_manual_charge": {
+      "name": "Dodaj ručno punjenje",
+      "description": "Ručno upiši punjenje (korisno za DC punionice).",
+      "fields": {
+        "kwh": {
+          "name": "Napunjeno kWh"
+        },
+        "costo": {
+          "name": "Trošak €"
+        },
+        "tipo": {
+          "name": "Vrsta"
+        },
+        "quando": {
+          "name": "Datum/vrijeme (ISO, opcionalno)"
+        }
+      }
+    },
+    "delete_trip": {
+      "name": "Obriši vožnju",
+      "description": "Ukloni vožnju iz povijesti prema ID-u.",
+      "fields": {
+        "trip_id": {
+          "name": "ID vožnje"
+        }
+      }
+    },
+    "add_maintenance": {
+      "name": "Dodaj zapis servisa",
+      "description": "Upiši servis/održavanje.",
+      "fields": {
+        "data": {
+          "name": "Datum"
+        },
+        "km": {
+          "name": "Kilometraža km"
+        },
+        "costo": {
+          "name": "Trošak €"
+        },
+        "tipo": {
+          "name": "Vrsta"
+        },
+        "note": {
+          "name": "Napomene"
+        }
+      }
+    },
+    "delete_maintenance": {
+      "name": "Obriši zapis servisa",
+      "description": "Ukloni zapis održavanja prema ID-u.",
+      "fields": {
+        "maintenance_id": {
+          "name": "ID zapisa"
+        }
+      }
+    },
+    "renew_insurance": {
+      "name": "Obnovi osiguranje",
+      "description": "Postavi novi istek osiguranja (6/12 mjeseci od danas ili točan datum).",
+      "fields": {
+        "mesi": {
+          "name": "Mjeseci"
+        },
+        "data": {
+          "name": "Datum"
+        }
+      }
+    },
+    "set_scadenza": {
+      "name": "Postavi rok",
+      "description": "Ručno postavi rok (assicurazione, bollo, revisione, tagliando_data).",
+      "fields": {
+        "nome": {
+          "name": "Naziv"
+        },
+        "data": {
+          "name": "Datum"
+        }
+      }
+    },
+    "set_tagliando": {
+      "name": "Postavi sljedeći servis",
+      "description": "Odaberi je li sljedeći servis po km ili po datumu.",
+      "fields": {
+        "mode": {
+          "name": "Način"
+        },
+        "valore": {
+          "name": "Vrijednost"
+        }
+      }
+    },
+    "create_dashboard": {
+      "name": "Stvori dashboard",
+      "description": "Stvori/ažuriraj dashboard u bočnoj traci sa svim pogledima."
+    },
+    "set_maintenance": {
+      "name": "Postavi rok održavanja",
+      "description": "Postavi sljedeći rok (servis/gume) po km i/ili datumu.",
+      "fields": {
+        "tipo": {
+          "name": "Vrsta"
+        },
+        "km": {
+          "name": "Km"
+        },
+        "data": {
+          "name": "Datum"
+        }
+      }
+    },
+    "set_schedule": {
+      "name": "Postavi raspored",
+      "description": "Stvori/ažuriraj automatizaciju rasporeda punjenja ili klime.",
+      "fields": {
+        "tipo": {
+          "name": "Vrsta"
+        },
+        "attivo": {
+          "name": "Uključeno"
+        },
+        "inizio": {
+          "name": "Vrijeme"
+        },
+        "fine": {
+          "name": "Kraj (punjenje)"
+        },
+        "soc": {
+          "name": "Ciljni SoC %"
+        },
+        "modo": {
+          "name": "Način klime"
+        },
+        "temperatura": {
+          "name": "Temperatura °C"
+        },
+        "giorni": {
+          "name": "Dani"
+        }
+      }
+    },
+    "set_notify_texts": {
+      "name": "Tekstovi obavijesti",
+      "description": "Prilagodi tekstove obavijesti (početak, kraj punjenja, prazna baterija)."
+    },
+    "test_notification": {
+      "name": "Pošalji probnu obavijest",
+      "description": "Šalje probnu obavijest s primjerom podataka da vidiš kako izgleda svaka obavijest.",
+      "fields": {
+        "tipo": {
+          "name": "Vrsta obavijesti",
+          "description": "cs=početak punjenja, cc=kraj punjenja, lb=prazna baterija, sum=dnevni sažetak, dead=rokovi, bal/sol=balansiranje, gse_stop/gse_go=GSE, auto_start=zakazani početak"
+        }
+      }
+    }
+  },
+  "selector": {
+    "profile": {
+      "options": {
+        "base": "Base — samo auto",
+        "pro": "Pro — auto + wallbox",
+        "enterprise": "Enterprise — auto + wallbox + solar"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "eff_km_per_kwh": {
+        "name": "Km po kWh"
+      },
+      "eff_kwh_100km": {
+        "name": "kWh na 100 km"
+      },
+      "eff_kwh_100km_daily": {
+        "name": "kWh na 100 km (dnevno)"
+      },
+      "battery_kwh": {
+        "name": "Dostupni kWh u bateriji"
+      },
+      "cost_per_km": {
+        "name": "Trošak po km"
+      },
+      "cost_per_100km": {
+        "name": "Trošak na 100 km"
+      },
+      "tempo_ricarica": {
+        "name": "Procijenjeno vrijeme punjenja"
+      },
+      "ora_completamento": {
+        "name": "Vrijeme završetka punjenja"
+      },
+      "costo_corrente": {
+        "name": "Procijenjeni trošak trenutnog punjenja"
+      },
+      "tipo_ricarica": {
+        "name": "Vrsta trenutnog punjenja"
+      },
+      "trip_attivo": {
+        "name": "Aktivna vožnja"
+      },
+      "trip_km": {
+        "name": "Km trenutne vožnje"
+      },
+      "trip_durata": {
+        "name": "Trajanje trenutne vožnje"
+      },
+      "ultimo_trip": {
+        "name": "Zadnja vožnja"
+      },
+      "trips_oggi": {
+        "name": "Vožnje danas"
+      },
+      "km_oggi_trip": {
+        "name": "Km danas (vožnje)"
+      },
+      "stat_viaggi": {
+        "name": "Statistika vožnji"
+      },
+      "viaggi_recenti": {
+        "name": "Nedavne vožnje"
+      },
+      "archivio_viaggi": {
+        "name": "Arhiva vožnji"
+      },
+      "storico_giornaliero": {
+        "name": "Dnevna povijest"
+      },
+      "lista_ricariche": {
+        "name": "Popis punjenja"
+      },
+      "report_generale": {
+        "name": "Opći izvještaj"
+      },
+      "ultima_ricarica": {
+        "name": "Zadnje punjenje"
+      },
+      "delta_ultima_carica": {
+        "name": "Razlika % zadnjeg punjenja"
+      },
+      "eff_ricarica": {
+        "name": "Učinkovitost punjenja"
+      },
+      "perdite_ricarica": {
+        "name": "Gubici zadnjeg punjenja"
+      },
+      "batteria_ultima": {
+        "name": "Energija baterije zadnjeg punjenja"
+      },
+      "soh_stimato": {
+        "name": "Procijenjeni SOH"
+      },
+      "kwh_per_1pct": {
+        "name": "kWh po 1 % baterije"
+      },
+      "tagliandi": {
+        "name": "Održavanje"
+      },
+      "drain_oggi": {
+        "name": "Baterija izgubljena u mirovanju danas"
+      },
+      "drain_mese": {
+        "name": "Baterija izgubljena u mirovanju ovaj mjesec"
+      },
+      "consumo_zona": {
+        "name": "Potrošnja po zoni"
+      },
+      "co2": {
+        "name": "Ušteđeni CO2"
+      },
+      "scadenze": {
+        "name": "Sljedeći rok"
+      },
+      "viaggio_estremo": {
+        "name": "Najbolja/najgora vožnja mjeseca"
+      },
+      "energia_casa_tot": {
+        "name": "Energija napunjena kod kuće (ukupno)"
+      },
+      "programmazione": {
+        "name": "Rasporedi"
+      },
+      "percorrenza": {
+        "name": "Pregled kilometraže"
+      },
+      "assicurazione": {
+        "name": "Osiguranje"
+      },
+      "fv_mese": {
+        "name": "Napunjeno solarom ovaj mjesec"
+      },
+      "fv_totale": {
+        "name": "Energija napunjena solarom (ukupno)"
+      },
+      "wb_potenza": {
+        "name": "Snaga wallboxa"
+      },
+      "wb_tempo_sessione": {
+        "name": "Trajanje punjenja wallboxa"
+      },
+      "kwh_totali": {
+        "name": "Ukupno potrošeno kWh"
+      },
+      "perc_per_100km": {
+        "name": "% baterije na 100 km"
+      },
+      "km_daily": {
+        "name": "Km dnevno"
+      },
+      "km_weekly": {
+        "name": "Km tjedno"
+      },
+      "km_monthly": {
+        "name": "Km mjesečno"
+      },
+      "km_yearly": {
+        "name": "Km godišnje"
+      },
+      "wb_energy_daily": {
+        "name": "Napunjena energija (dan)"
+      },
+      "wb_energy_weekly": {
+        "name": "Napunjena energija (tjedan)"
+      },
+      "wb_energy_monthly": {
+        "name": "Napunjena energija (mjesec)"
+      },
+      "wb_energy_yearly": {
+        "name": "Napunjena energija (godina)"
+      },
+      "wb_energy_total": {
+        "name": "Napunjena energija (ukupno)"
+      },
+      "cost_daily": {
+        "name": "Trošak punjenja (dan)"
+      },
+      "cost_weekly": {
+        "name": "Trošak punjenja (tjedan)"
+      },
+      "cost_monthly": {
+        "name": "Trošak punjenja (mjesec)"
+      },
+      "cost_yearly": {
+        "name": "Trošak punjenja (godina)"
+      },
+      "cost_total": {
+        "name": "Trošak punjenja (ukupno)"
+      },
+      "pct_oggi_up": {
+        "name": "% baterije napunjeno danas"
+      },
+      "pct_oggi_down": {
+        "name": "% baterije ispražnjeno danas"
+      },
+      "batt_energy_daily": {
+        "name": "Energija baterije (dan)"
+      },
+      "batt_energy_weekly": {
+        "name": "Energija baterije (tjedan)"
+      },
+      "batt_energy_monthly": {
+        "name": "Energija baterije (mjesec)"
+      },
+      "batt_energy_yearly": {
+        "name": "Energija baterije (godina)"
+      },
+      "ricariche_oggi": {
+        "name": "Punjenja danas"
+      },
+      "ricariche_mese": {
+        "name": "Punjenja ovaj mjesec"
+      }
+    },
+    "binary_sensor": {
+      "in_carica": {
+        "name": "Punjenje"
+      },
+      "wb_in_carica": {
+        "name": "Wallbox puni"
+      }
+    },
+    "button": {
+      "btn_close_trip": {
+        "name": "Zatvori vožnju sada"
+      },
+      "btn_export": {
+        "name": "Izvezi vožnje u CSV"
+      },
+      "btn_reset_km": {
+        "name": "Resetiraj brojače km"
+      },
+      "btn_reset_energia": {
+        "name": "Resetiraj brojače energije"
+      },
+      "btn_reset_costi": {
+        "name": "Resetiraj brojače troškova"
+      }
+    },
+    "device_tracker": {
+      "posizione": {
+        "name": "Lokacija"
+      }
+    },
+    "number": {
+      "price_home": {
+        "name": "Cijena struje kod kuće"
+      },
+      "price_public": {
+        "name": "Cijena javne punionice"
+      },
+      "price_solar": {
+        "name": "Cijena solarne energije"
+      },
+      "fuel_price": {
+        "name": "Cijena goriva"
+      },
+      "capacity": {
+        "name": "Kapacitet baterije"
+      },
+      "target": {
+        "name": "Cilj punjenja"
+      },
+      "soh_official": {
+        "name": "Službeni SOH"
+      },
+      "assic_costo": {
+        "name": "Cijena osiguranja"
+      },
+      "low_soc": {
+        "name": "Razina podsjetnika na praznu bateriju"
+      },
+      "charge_start_soc": {
+        "name": "Pokreni punjenje ispod"
+      },
+      "charge_stop_soc": {
+        "name": "Zaustavi punjenje iznad"
+      },
+      "balance_min_amps": {
+        "name": "Min. amperi balansiranja"
+      },
+      "balance_max_amps": {
+        "name": "Maks. amperi balansiranja"
+      },
+      "battery_priority": {
+        "name": "Prioritet kućne baterije"
+      }
+    },
+    "select": {
+      "filtro_tipo": {
+        "name": "Filtar vrste punjenja"
+      },
+      "filtro_periodo": {
+        "name": "Filtar razdoblja punjenja"
+      },
+      "filtro_mese": {
+        "name": "Filtar mjeseca punjenja"
+      },
+      "filtro_anno": {
+        "name": "Filtar godine punjenja"
+      }
+    },
+    "switch": {
+      "notify_start": {
+        "name": "Obavijest o početku punjenja"
+      },
+      "notify_end": {
+        "name": "Obavijest o kraju punjenja"
+      },
+      "low_soc": {
+        "name": "Podsjetnik na praznu bateriju"
+      },
+      "charge_sched": {
+        "name": "Zakazano punjenje"
+      },
+      "balance": {
+        "name": "Solarno balansiranje"
+      },
+      "home_balance": {
+        "name": "Balansiranje kuće"
+      },
+      "battery_night_only": {
+        "name": "Baterija samo bez sunca"
+      },
+      "gse": {
+        "name": "GSE pokus"
+      },
+      "notify_daily": {
+        "name": "Dnevni sažetak"
+      }
+    },
+    "time": {
+      "low_soc_start": {
+        "name": "Početak podsjetnika"
+      },
+      "low_soc_end": {
+        "name": "Kraj podsjetnika"
+      },
+      "charge_start_time": {
+        "name": "Vrijeme početka punjenja"
+      },
+      "charge_stop_time": {
+        "name": "Vrijeme kraja punjenja"
+      }
+    }
+  }
+}

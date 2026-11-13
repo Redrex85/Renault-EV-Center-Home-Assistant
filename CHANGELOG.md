@@ -10,6 +10,7 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
 - **Voci `UI2` aggiunte** (fr/en/es/de, 68 voci, grazie a un contributo esterno): valori di stato che arrivano dal backend (`Ricarica a Casa`, `Ricarica Pubblica`, `Non disponibile`, `In carica (potenza non nota)`), mesi (`Gennaio`…`Dicembre`), opzioni dei filtri (`Fotovoltaico`, `Tutte`, `Tutti`), messaggi di tabella vuota (`Nessun viaggio.`, `Nessun dato storico.`, `Dati insufficienti.`, `Posizione non disponibile`…), etichette e tooltip (`Elimina`, `Modifica`, `Ricariche FV`, `SOH stimato %`, `Fascia di temperatura`…) e i toast inviati come stringa semplice.
 - Nessuna stringa esistente modificata o rimossa; i valori inviati a Home Assistant (`select_option`, attributi, entity_id) restano in italiano e **non cambiano**.
 - Cache-busting della risorsa: già presente (`?v=<versione>` in `dashboard.py:93`), nessuna modifica necessaria.
+- **Croato (hr) aggiunto** (contributo esterno): nuovo `translations/hr.json` (482 chiavi, completo come `en.json`) e pannello con `I18N.hr` (271 chiavi), `UI.hr` (213), `UI2.hr` (98), `PHRASES.hr`, `_LOCALES.hr = "hr-HR"`, indice DOM e voce `🇭🇷 Hrvatski` nel selettore lingua. Le 73 voci `UI2` assenti dal contributo sono state tradotte in questa release.
 
 ## 1.1.31 - Climatizzatore senza avvisi di deprecazione
 

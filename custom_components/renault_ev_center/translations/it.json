@@ -969,6 +969,9 @@
       },
       "gse": {
         "name": "Sperimentazione GSE"
+      },
+      "notify_daily": {
+        "name": "Riepilogo Giornaliero"
       }
     },
     "time": {
