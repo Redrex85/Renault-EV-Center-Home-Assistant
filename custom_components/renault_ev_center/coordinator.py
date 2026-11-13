@@ -2606,14 +2606,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if not self.geocode_enabled:
             return {}
         lat4, lon4 = round(_f(lat), 4), round(_f(lon), 4)
-        key = f"{lat4},{lon4}"
+        # lingua dei toponimi = lingua di Home Assistant (prima era "it" fisso)
+        lang = str(getattr(self.hass.config, "language", "") or "it").split("-")[0].lower()
+        key = f"{lat4},{lon4},{lang}"
         cache = self.store.data.setdefault("geocache", {})
         if key in cache:
             return cache[key]
         from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
         url = ("https://nominatim.openstreetmap.org/reverse?format=jsonv2"
-               f"&lat={lat4}&lon={lon4}&zoom=16&addressdetails=1&accept-language=it")
+               f"&lat={lat4}&lon={lon4}&zoom=16&addressdetails=1&accept-language={lang}")
         # throttle Nominatim: max ~1 richiesta/1.1 s (viaggi + ricariche)
         _wait = 1.1 - (time.monotonic() - self._geocode_last_ts)
         if _wait > 0:

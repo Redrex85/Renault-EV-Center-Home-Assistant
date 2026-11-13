@@ -11,6 +11,8 @@ al passaggio alla **1.0.6** (workflow *Collapse release series*).
 - Nessuna stringa esistente modificata o rimossa; i valori inviati a Home Assistant (`select_option`, attributi, entity_id) restano in italiano e **non cambiano**.
 - Cache-busting della risorsa: già presente (`?v=<versione>` in `dashboard.py:93`), nessuna modifica necessaria.
 - **Croato (hr) aggiunto** (contributo esterno): nuovo `translations/hr.json` (482 chiavi, completo come `en.json`) e pannello con `I18N.hr` (271 chiavi), `UI.hr` (213), `UI2.hr` (98), `PHRASES.hr`, `_LOCALES.hr = "hr-HR"`, indice DOM e voce `🇭🇷 Hrvatski` nel selettore lingua. Le 73 voci `UI2` assenti dal contributo sono state tradotte in questa release.
+- **Foto auto personalizzata**: metti `auto.png` in `/config/www/renault-ev-center/` e il pannello la usa al posto dell'immagine del modello (`dashboard.py`, mtime come cache-busting). Se il file sparisce o non si carica, il pannello torna da solo all'immagine del modello.
+- **Toponimi nella lingua di Home Assistant**: il reverse geocoding Nominatim usa `hass.config.language` invece di `it` fisso; la lingua fa parte della chiave di cache, quindi i nomi già salvati vengono riletti una volta con la lingua corretta (`coordinator.py`).
 
 ## 1.1.31 - Climatizzatore senza avvisi di deprecazione
 

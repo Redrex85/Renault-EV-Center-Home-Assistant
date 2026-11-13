@@ -3207,6 +3207,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       name,
       car: config.car || this._slug(name),
       image: config.image || "/renault_ev_center/images/custom.png",
+      imageFallback: config.imageFallback || "",
       notify: config.notify || "",
       overrides: config.overrides || {},
       capacity: config.capacity || 60,
@@ -4578,11 +4579,17 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (chipPlug) chipPlug.textContent = this._plugOn() ? _t("chip_collegata", "🔗 Collegata") : _t("chip_scollegata", "🔗 Scollegata");
     const chargeStatus = root.querySelector('[data-c="chargestatus"]');
     if (chargeStatus) chargeStatus.textContent = this._chargeOn() ? _t("state_in_carica", "In carica") : _t("state_non_in_carica", "Non in carica");
-    // foto auto
+    // foto auto: /config/www/renault-ev-center/auto.png se presente, altrimenti modello
     const img = root.querySelector('[data-c="carimg"]');
     if (img) {
+      const bust = (u) => u + (u.indexOf("?") < 0 ? "?v=" : "&v=") + REC_VER;
+      const fb = this._cfg.imageFallback;
+      const ph = "this.parentNode.innerHTML='<div class=\\'ph\\'>🚗</div>'";
+      const onerr = fb
+        ? `if(this.dataset.fb&&this.getAttribute('src')!==this.dataset.fb){this.src=this.dataset.fb}else{${ph}}`
+        : ph;
       img.innerHTML = this._cfg.image
-        ? `<img src="${this._cfg.image + (this._cfg.image.indexOf("?") < 0 ? "?v=" : "&v=") + REC_VER}" alt="${this._cfg.name}" onerror="this.parentNode.innerHTML='<div class=\\'ph\\'>🚗</div>'">`
+        ? `<img src="${bust(this._cfg.image)}" alt="${this._cfg.name}"${fb ? ` data-fb="${bust(fb)}"` : ""} onerror="${onerr}">`
         : `<div class="ph">🚗</div>`;
     }
     // comandi: valori
