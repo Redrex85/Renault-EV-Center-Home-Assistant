@@ -18,7 +18,7 @@
  *   range_entity: sensor.battery_autonomy
  *   odometer_entity: sensor.mileage
  */
-const CARD_VER = "1.1.31";
+const CARD_VER = "1.1.32-beta";
 let _cardVerChecked = false;
 
 class RenaultEvCenterCard extends HTMLElement {

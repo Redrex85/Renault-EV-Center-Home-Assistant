@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.31";
+const REC_VER = "1.1.32-beta";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -2539,7 +2539,446 @@ const UI2 = {
     "fr": "Km aujourd'hui",
     "es": "Km hoy",
     "de": "Km heute"
-  }
+  },
+  // --- ajouts fr/en/es/de : valeurs d'etat HA, messages vides, toasts (traduits par _translateDom) ---
+  "Fotovoltaico": {
+      "en": "Solar",
+      "fr": "Photovoltaïque",
+      "es": "Solar",
+      "de": "Photovoltaik"
+  },
+  "Gennaio": {
+      "en": "January",
+      "fr": "Janvier",
+      "es": "Enero",
+      "de": "Januar"
+  },
+  "Febbraio": {
+      "en": "February",
+      "fr": "Février",
+      "es": "Febrero",
+      "de": "Februar"
+  },
+  "Marzo": {
+      "en": "March",
+      "fr": "Mars",
+      "es": "Marzo",
+      "de": "März"
+  },
+  "Aprile": {
+      "en": "April",
+      "fr": "Avril",
+      "es": "Abril",
+      "de": "April"
+  },
+  "Maggio": {
+      "en": "May",
+      "fr": "Mai",
+      "es": "Mayo",
+      "de": "Mai"
+  },
+  "Giugno": {
+      "en": "June",
+      "fr": "Juin",
+      "es": "Junio",
+      "de": "Juni"
+  },
+  "Luglio": {
+      "en": "July",
+      "fr": "Juillet",
+      "es": "Julio",
+      "de": "Juli"
+  },
+  "Agosto": {
+      "en": "August",
+      "fr": "Août",
+      "es": "Agosto",
+      "de": "August"
+  },
+  "Settembre": {
+      "en": "September",
+      "fr": "Septembre",
+      "es": "Septiembre",
+      "de": "September"
+  },
+  "Ottobre": {
+      "en": "October",
+      "fr": "Octobre",
+      "es": "Octubre",
+      "de": "Oktober"
+  },
+  "Novembre": {
+      "en": "November",
+      "fr": "Novembre",
+      "es": "Noviembre",
+      "de": "November"
+  },
+  "Dicembre": {
+      "en": "December",
+      "fr": "Décembre",
+      "es": "Diciembre",
+      "de": "Dezember"
+  },
+  "Ricarica a Casa": {
+      "en": "Home charging",
+      "fr": "Recharge à la maison",
+      "es": "Carga en casa",
+      "de": "Laden zu Hause"
+  },
+  "Ricarica Pubblica": {
+      "en": "Public charging",
+      "fr": "Recharge publique",
+      "es": "Carga pública",
+      "de": "Öffentliches Laden"
+  },
+  "Non disponibile": {
+      "en": "Not available",
+      "fr": "Non disponible",
+      "es": "No disponible",
+      "de": "Nicht verfügbar"
+  },
+  "In carica (potenza non nota)": {
+      "en": "Charging (power unknown)",
+      "fr": "En charge (puissance inconnue)",
+      "es": "Cargando (potencia desconocida)",
+      "de": "Lädt (Leistung unbekannt)"
+  },
+  "Nessun viaggio.": {
+      "en": "No trips.",
+      "fr": "Aucun trajet.",
+      "es": "Ningún viaje.",
+      "de": "Keine Fahrten."
+  },
+  "Nessuna ricarica registrata": {
+      "en": "No charges logged",
+      "fr": "Aucune recharge enregistrée",
+      "es": "Ninguna recarga registrada",
+      "de": "Keine Ladungen erfasst"
+  },
+  "Nessuna sessione": {
+      "en": "No sessions",
+      "fr": "Aucune session",
+      "es": "Ninguna sesión",
+      "de": "Keine Sitzungen"
+  },
+  "Nessun dato storico.": {
+      "en": "No historical data.",
+      "fr": "Aucune donnée historique.",
+      "es": "Sin datos históricos.",
+      "de": "Keine Verlaufsdaten."
+  },
+  "Nessun dato risparmio.": {
+      "en": "No savings data.",
+      "fr": "Aucune donnée d'économies.",
+      "es": "Sin datos de ahorro.",
+      "de": "Keine Ersparnisdaten."
+  },
+  "Nessun dato per le fasce.": {
+      "en": "No data for the time bands.",
+      "fr": "Aucune donnée pour les plages.",
+      "es": "Sin datos para las franjas.",
+      "de": "Keine Daten für die Zeitfenster."
+  },
+  "Nessun dato per il filtro": {
+      "en": "No data for the filter",
+      "fr": "Aucune donnée pour le filtre",
+      "es": "Sin datos para el filtro",
+      "de": "Keine Daten für den Filter"
+  },
+  "Nessun dato per l'anno scelto": {
+      "en": "No data for the selected year",
+      "fr": "Aucune donnée pour l'année choisie",
+      "es": "Sin datos para el año elegido",
+      "de": "Keine Daten für das gewählte Jahr"
+  },
+  "Nessun intervento registrato": {
+      "en": "No maintenance logged",
+      "fr": "Aucune intervention enregistrée",
+      "es": "Ningún mantenimiento registrado",
+      "de": "Keine Wartung erfasst"
+  },
+  "Dati insufficienti.": {
+      "en": "Insufficient data.",
+      "fr": "Données insuffisantes.",
+      "es": "Datos insuficientes.",
+      "de": "Unzureichende Daten."
+  },
+  "Grafico non disponibile.": {
+      "en": "Chart not available.",
+      "fr": "Graphique indisponible.",
+      "es": "Gráfico no disponible.",
+      "de": "Diagramm nicht verfügbar."
+  },
+  "Mappa non disponibile": {
+      "en": "Map not available",
+      "fr": "Carte indisponible",
+      "es": "Mapa no disponible",
+      "de": "Karte nicht verfügbar"
+  },
+  "Posizione non disponibile": {
+      "en": "Location not available",
+      "fr": "Position indisponible",
+      "es": "Ubicación no disponible",
+      "de": "Standort nicht verfügbar"
+  },
+  "Nessuna automazione attiva (Renault/Wallbox/Bilanciamento).": {
+      "en": "No active automations (Renault/Wallbox/Balancing).",
+      "fr": "Aucune automatisation active (Renault/Wallbox/Équilibrage).",
+      "es": "Ninguna automatización activa (Renault/Wallbox/Balanceo).",
+      "de": "Keine aktiven Automatisierungen (Renault/Wallbox/Ausgleich)."
+  },
+  "Nessuna automazione Renault trovata. Usa \"Crea automazioni consigliate\" in Impostazioni.": {
+      "en": "No Renault automation found. Use \"Create recommended automations\" in Settings.",
+      "fr": "Aucune automatisation Renault trouvée. Utilise « Créer les automatisations recommandées » dans Réglages.",
+      "es": "No se encontró ninguna automatización Renault. Usa \"Crear automatizaciones recomendadas\" en Ajustes.",
+      "de": "Keine Renault-Automatisierung gefunden. Nutze \"Empfohlene Automatisierungen erstellen\" in den Einstellungen."
+  },
+  "Elimina": {
+      "en": "Delete",
+      "fr": "Supprimer",
+      "es": "Eliminar",
+      "de": "Löschen"
+  },
+  "Modifica": {
+      "en": "Edit",
+      "fr": "Modifier",
+      "es": "Editar",
+      "de": "Bearbeiten"
+  },
+  "Fascia di temperatura": {
+      "en": "Temperature band",
+      "fr": "Plage de température",
+      "es": "Franja de temperatura",
+      "de": "Temperaturbereich"
+  },
+  "kWh/100km (media)": {
+      "en": "kWh/100km (average)",
+      "fr": "kWh/100km (moyenne)",
+      "es": "kWh/100km (media)",
+      "de": "kWh/100km (Durchschnitt)"
+  },
+  "Ricariche FV": {
+      "en": "Solar charges",
+      "fr": "Recharges PV",
+      "es": "Recargas solares",
+      "de": "Solar-Ladungen"
+  },
+  "Ricariche Pubbliche": {
+      "en": "Public charges",
+      "fr": "Recharges publiques",
+      "es": "Recargas públicas",
+      "de": "Öffentliche Ladungen"
+  },
+  "SOH stimato %": {
+      "en": "Estimated SOH %",
+      "fr": "SOH estimé %",
+      "es": "SOH estimado %",
+      "de": "Geschätzter SOH %"
+  },
+  "Potenza istantanea wallbox": {
+      "en": "Instant wallbox power",
+      "fr": "Puissance instantanée wallbox",
+      "es": "Potencia instantánea wallbox",
+      "de": "Momentane Wallbox-Leistung"
+  },
+  "Mappa il sensore": {
+      "en": "Map the sensor",
+      "fr": "Associe le capteur",
+      "es": "Asigna el sensor",
+      "de": "Ordne den Sensor zu"
+  },
+  "in Configura → Wallbox.": {
+      "en": "in Settings → Wallbox.",
+      "fr": "dans Réglages → Wallbox.",
+      "es": "en Ajustes → Wallbox.",
+      "de": "unter Einstellungen → Wallbox."
+  },
+  "Serve la card «apexcharts-card»": {
+      "en": "The «apexcharts-card» card is required",
+      "fr": "La carte «apexcharts-card» est nécessaire",
+      "es": "Se necesita la tarjeta «apexcharts-card»",
+      "de": "Die Karte «apexcharts-card» wird benötigt"
+  },
+  "Per vedere questo grafico installa da": {
+      "en": "To see this chart, install from",
+      "fr": "Pour voir ce graphique, installe depuis",
+      "es": "Para ver este gráfico, instala desde",
+      "de": "Um dieses Diagramm zu sehen, installiere über"
+  },
+  "poi riavvia Home Assistant e ricarica la pagina.": {
+      "en": "then restart Home Assistant and reload the page.",
+      "fr": "puis redémarre Home Assistant et recharge la page.",
+      "es": "luego reinicia Home Assistant y recarga la página.",
+      "de": "starte dann Home Assistant neu und lade die Seite neu."
+  },
+  "Attiva il confronto con l'auto termica in": {
+      "en": "Enable the comparison with the petrol car in",
+      "fr": "Active la comparaison avec la voiture thermique dans",
+      "es": "Activa la comparación con el coche térmico en",
+      "de": "Aktiviere den Vergleich mit dem Verbrenner unter"
+  },
+  "Configura → Risparmi": {
+      "en": "Settings → Savings",
+      "fr": "Réglages → Économies",
+      "es": "Ajustes → Ahorros",
+      "de": "Einstellungen → Ersparnisse"
+  },
+  "Nessuno storico mensile ancora": {
+      "en": "No monthly history yet",
+      "fr": "Pas encore d'historique mensuel",
+      "es": "Aún no hay historial mensual",
+      "de": "Noch kein Monatsverlauf"
+  },
+  "Ricaricati": {
+      "en": "Charged",
+      "fr": "Rechargés",
+      "es": "Cargado",
+      "de": "Geladen"
+  },
+  "SOH ufficiale %": {
+      "en": "Official SOH %",
+      "fr": "SOH officiel %",
+      "es": "SOH oficial %",
+      "de": "Offizieller SOH %"
+  },
+  "Temperatura esterna (°C)": {
+      "en": "Outdoor temperature (°C)",
+      "fr": "Température extérieure (°C)",
+      "es": "Temperatura exterior (°C)",
+      "de": "Außentemperatur (°C)"
+  },
+  "A/C avviata": {
+      "en": "A/C started",
+      "fr": "Clim démarrée",
+      "es": "A/C iniciado",
+      "de": "Klima gestartet"
+  },
+  "Avvia carica (auto)": {
+      "en": "Start charge (car)",
+      "fr": "Démarrer la recharge (voiture)",
+      "es": "Iniciar carga (coche)",
+      "de": "Laden starten (Auto)"
+  },
+  "Viaggio chiuso": {
+      "en": "Trip closed",
+      "fr": "Trajet clôturé",
+      "es": "Viaje cerrado",
+      "de": "Fahrt beendet"
+  },
+  "CSV esportato": {
+      "en": "CSV exported",
+      "fr": "CSV exporté",
+      "es": "CSV exportado",
+      "de": "CSV exportiert"
+  },
+  "Aggiornamento auto richiesto": {
+      "en": "Car refresh requested",
+      "fr": "Actualisation de la voiture demandée",
+      "es": "Actualización del coche solicitada",
+      "de": "Fahrzeugaktualisierung angefordert"
+  },
+  "Km azzerati": {
+      "en": "Km reset",
+      "fr": "Km remis à zéro",
+      "es": "Km reiniciados",
+      "de": "Km zurückgesetzt"
+  },
+  "Energia azzerata": {
+      "en": "Energy reset",
+      "fr": "Énergie remise à zéro",
+      "es": "Energía reiniciada",
+      "de": "Energie zurückgesetzt"
+  },
+  "Costi azzerati": {
+      "en": "Costs reset",
+      "fr": "Coûts remis à zéro",
+      "es": "Costes reiniciados",
+      "de": "Kosten zurückgesetzt"
+  },
+  "Rinnovata +6 mesi": {
+      "en": "Renewed +6 months",
+      "fr": "Renouvelée +6 mois",
+      "es": "Renovado +6 meses",
+      "de": "Verlängert +6 Monate"
+  },
+  "Rinnovata +1 anno": {
+      "en": "Renewed +1 year",
+      "fr": "Renouvelée +1 an",
+      "es": "Renovado +1 año",
+      "de": "Verlängert +1 Jahr"
+  },
+  "Ricarica avviata": {
+      "en": "Charge started",
+      "fr": "Recharge démarrée",
+      "es": "Carga iniciada",
+      "de": "Ladung gestartet"
+  },
+  "Ricarica fermata": {
+      "en": "Charge stopped",
+      "fr": "Recharge arrêtée",
+      "es": "Carga detenida",
+      "de": "Ladung gestoppt"
+  },
+  "Luci": {
+      "en": "Lights",
+      "fr": "Feux",
+      "es": "Luces",
+      "de": "Lichter"
+  },
+  "Luci lampeggianti": {
+      "en": "Flashing lights",
+      "fr": "Appel de phares",
+      "es": "Luces intermitentes",
+      "de": "Lichthupe"
+  },
+  "Giorni avviso salvati": {
+      "en": "Alert days saved",
+      "fr": "Jours d'alerte enregistrés",
+      "es": "Días de aviso guardados",
+      "de": "Warntage gespeichert"
+  },
+  "Stop carica": {
+      "en": "Stop charge",
+      "fr": "Arrêter la recharge",
+      "es": "Detener carga",
+      "de": "Laden stoppen"
+  },
+  "Intervento registrato": {
+      "en": "Maintenance logged",
+      "fr": "Intervention enregistrée",
+      "es": "Mantenimiento registrado",
+      "de": "Wartung erfasst"
+  },
+  "🔔 Notifiche — attiva/disattiva": {
+    "en": "🔔 Notifications — on/off",
+    "fr": "🔔 Notifications — activer/désactiver",
+    "es": "🔔 Notificaciones — activar/desactivar",
+    "de": "🔔 Benachrichtigungen — ein/aus"
+  },
+  "Notifica attivata": {
+    "en": "Notification enabled",
+    "fr": "Notification activée",
+    "es": "Notificación activada",
+    "de": "Benachrichtigung aktiviert"
+  },
+  "Notifica disattivata": {
+    "en": "Notification disabled",
+    "fr": "Notification désactivée",
+    "es": "Notificación desactivada",
+    "de": "Benachrichtigung deaktiviert"
+  },
+  "Automazione attivata": {
+    "en": "Automation enabled",
+    "fr": "Automatisation activée",
+    "es": "Automatización activada",
+    "de": "Automatisierung aktiviert"
+  },
+  "Automazione disattivata": {
+    "en": "Automation disabled",
+    "fr": "Automatisation désactivée",
+    "es": "Automatización desactivada",
+    "de": "Automatisierung deaktiviert"
+  },
 };
 
 // Frasi da tradurre anche dentro testi piu lunghi (tooltip, celle con numeri, ecc.).
