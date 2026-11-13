@@ -54,7 +54,7 @@ class MateClimate(CoordinatorEntity[RenaultMateCoordinator], ClimateEntity):
     _attr_has_entity_name = False
     _attr_hvac_modes = [HVACMode.OFF, HVACMode.HEAT_COOL]
     _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_min_temp = 15
     _attr_max_temp = 25
     _attr_target_temperature_step = 1
@@ -78,12 +78,12 @@ class MateClimate(CoordinatorEntity[RenaultMateCoordinator], ClimateEntity):
         return HVACMode.OFF if s.state in ("off", "unavailable", "unknown") else HVACMode.HEAT_COOL
 
     @property
-    def target_temperature(self) -> float | None:
+    def native_target_temperature(self) -> float | None:
         s = self._src
         return s.attributes.get("temperature") if s else None
 
     @property
-    def current_temperature(self) -> float | None:
+    def native_current_temperature(self) -> float | None:
         s = self._src
         return s.attributes.get("current_temperature") if s else None
 

@@ -5,6 +5,10 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.31 - Climatizzatore senza avvisi di deprecazione
+
+- `climate.py` passa alle API native richieste da Home Assistant: `_attr_native_temperature_unit`, `native_target_temperature`, `native_current_temperature`. Spariscono i tre avvisi `provides the deprecated ... this will stop working in Home Assistant 2027.11`.
+
 ## 1.1.30 - Vampire drain piu' onesto
 
 - Il calo di batteria da fermo contava anche pezzi di **guida lenta**: ora serve che l'auto non abbia un viaggio in corso e che l'odometro sia **noto e immobile** tra due letture. Se l'odometro non si conosce, non si conta nulla (meglio zero che gonfiato).
