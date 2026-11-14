@@ -5,6 +5,16 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.36-beta - Testi del pannello traducibili, plurali croati, geocoding a più passate
+
+- **Pannello**: i testi che erano scritti solo in italiano dentro il codice ora passano dalle traduzioni (IT/EN/FR/ES/DE/HR): avviso "kWh/€ mancanti" nella pagina Risparmi, `TOTALE` nelle tabelle, `sess`, `gg`, legenda e tooltip del grafico Termica/Elettrica/Netto, riga riepilogo mensile `FV · Bat · Pub`, "da configurare" nelle Automazioni, unità `gg` delle scadenze. Era lo stesso problema in tutte le lingue, non solo in croato.
+- **Plurali**: nuova funzione `_pl()`; in croato "1 vožnja / 2-4 vožnje / 5+ vožnji" e "1 dan / 5 dana" (istogramma orari, temperatura, archivio viaggi).
+- **Geocoding**: il backfill non è più una tantum. Prima si fermava dopo 120 viaggi + 40 ricariche e la lingua veniva segnata come "fatta" comunque: i record oltre il limite restavano per sempre in italiano. Ora si riprova a ogni passata finché non resta nulla e `geo_lang` viene scritto solo se il toponimo è stato davvero aggiornato.
+- **Options flow**: giorni della settimana, `€/anno`, `gg`, opzione `data` e opzione `Custom` del modello ora seguono la lingua di Home Assistant (i selector HA non traducono label né unità).
+- **Fix**: il campo "€ già speso su ricarica prima dell'integrazione" aveva `?` come unità di misura invece di `€`.
+- **Foto auto**: l'URL aggiunge un parametro per caricamento pagina, così sostituire `auto.png` si vede subito senza ricaricare l'integrazione.
+- **Croato**: applicate le 17 correzioni proposte dal revisore (Puni se (snaga nepoznata), Raspon temperature, Punjenja iz solara, Produljeno za …, Klima pokrenuta, Vožnja završena, … vraćeni na nulu, Balansiranje opterećenja kuće, Balansiranje prema solaru, "u Postavkama → …").
+
 ## 1.1.35-beta - Archivio viaggi: espanso solo l'ultimo mese
 
 - Nell'albero **Archivio viaggi** restava aperto ogni mese tranne quello precedente a oggi: l'elenco diventava lunghissimo. Ora di default è espanso **solo l'ultimo mese presente in archivio**, gli altri restano chiusi; gli anni restano contenitori aperti e un mese aperto a mano viene ricordato.

@@ -521,6 +521,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.entry = entry
         self.geocode_enabled = bool(opts.get(CONF_GEOCODE_ENABLED, True))
         self._geocode_lang_done: str | None = None  # ultima lingua geocodificata
+        self._geocode_busy = False  # passata di backfill in corso
         # diagnostica (report): ultimo errore classificato, ultimo successo, geocoding
         self.last_error: dict[str, Any] | None = None
         self.last_success: str | None = None
@@ -2660,7 +2661,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
     async def _geocode_trip(self, record: dict[str, Any]) -> None:
         """Scrive via/città/paese di partenza e arrivo sul viaggio (best-effort)."""
         lang = self._geo_lang()
-        touched = False
+        got = False
         for gkey, lkey, pkey in (("gps_partenza", "luogo_partenza", "paese_partenza"),
                                  ("gps_arrivo", "luogo_arrivo", "paese_arrivo")):
             if record.get(lkey) and record.get("geo_lang") == lang:
@@ -2669,12 +2670,14 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             lat, lon = gps.get("lat"), gps.get("lon")
             if lat is None or lon is None:
                 continue
-            touched = True
             info = await self._reverse_geocode(lat, lon)
             if info:
                 record[lkey] = info.get("label") or info.get("citta") or ""
                 record[pkey] = info.get("paese") or ""
-        if touched:
+                got = True
+        # la lingua si marca solo se almeno un toponimo è stato scritto: altrimenti il
+        # record resterebbe con il testo vecchio e non verrebbe più riprovato
+        if got:
             record["geo_lang"] = lang
         self.persist()
 
@@ -2701,8 +2704,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if lat is None or lon is None:
             return
         info = await self._reverse_geocode(lat, lon)
-        record["geo_lang"] = lang
         if info:
+            record["geo_lang"] = lang
             record["luogo"] = info.get("label") or info.get("citta") or ""
             record["paese"] = info.get("paese") or ""
         self.persist()
@@ -2710,20 +2713,19 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
     def _maybe_backfill_geocode(self) -> None:
         """Rigeocodifica viaggi/ricariche quando cambia la lingua di Home Assistant.
 
-        Gira una volta per lingua avviata: la cache è già per lingua e il throttle
-        Nominatim resta quello di `_reverse_geocode`.
+        Nominatim ha un throttle, quindi il lavoro è spezzato in più passate: la lingua
+        si considera chiusa (`_geocode_lang_done`) solo quando una passata non trova più
+        niente da rifare. Prima era un flag una-tantum e i record oltre il limite
+        restavano per sempre in italiano.
         """
-        if not self.geocode_enabled:
+        if not self.geocode_enabled or self._geocode_busy:
             return
-        lang = self._geo_lang()
-        if self._geocode_lang_done == lang:
+        if self._geocode_lang_done == self._geo_lang():
             return
-        self._geocode_lang_done = lang
         self.hass.async_create_task(self._geocode_backfill())
 
-    async def _geocode_backfill(self) -> None:
-        """Geocodifica i record senza toponimi o con lingua diversa, 1 alla volta (~1 req/s)."""
-        lang = self._geo_lang()
+    def _geocode_pending(self, lang: str) -> int:
+        """Quanti record hanno ancora bisogno di toponimi nella lingua `lang`."""
         n = 0
         for t in self.store.data.get("trips", []):
             if not (t.get("gps_partenza") or t.get("gps_arrivo")):
@@ -2731,23 +2733,49 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             if (t.get("geo_lang") == lang and t.get("luogo_partenza")
                     and t.get("luogo_arrivo")):
                 continue
-            await self._geocode_trip(t)
             n += 1
-            if n >= 120:
-                break
-            await asyncio.sleep(1.1)
         for c in self.store.data.get("charges", []):
             if not c.get("gps"):
                 continue
             if c.get("geo_lang") == lang and c.get("luogo"):
                 continue
-            await self._geocode_charge(c)
             n += 1
-            if n >= 160:
-                break
-            await asyncio.sleep(1.1)
+        return n
+
+    async def _geocode_backfill(self) -> None:
+        """Geocodifica i record senza toponimi o con lingua diversa, 1 alla volta (~1 req/s)."""
+        lang = self._geo_lang()
+        self._geocode_busy = True
+        n = 0
+        try:
+            for t in self.store.data.get("trips", []):
+                if not (t.get("gps_partenza") or t.get("gps_arrivo")):
+                    continue
+                if (t.get("geo_lang") == lang and t.get("luogo_partenza")
+                        and t.get("luogo_arrivo")):
+                    continue
+                await self._geocode_trip(t)
+                n += 1
+                if n >= 120:
+                    break
+                await asyncio.sleep(1.1)
+            for c in self.store.data.get("charges", []):
+                if not c.get("gps"):
+                    continue
+                if c.get("geo_lang") == lang and c.get("luogo"):
+                    continue
+                await self._geocode_charge(c)
+                n += 1
+                if n >= 160:
+                    break
+                await asyncio.sleep(1.1)
+        finally:
+            self._geocode_busy = False
         if n:
             _LOGGER.info("Geocoding: rielaborati %s record (%s)", n, lang)
+        # resta qualcosa? si riprova alla passata successiva, senza martellare Nominatim
+        if self._geocode_pending(lang) == 0:
+            self._geocode_lang_done = lang
         self.persist()
 
     def charge_zone_options(self) -> list[str]:

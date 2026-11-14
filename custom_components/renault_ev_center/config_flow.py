@@ -189,6 +189,53 @@ WEEKDAY_LABELS = {
 }
 WEEKDAY_OPTIONS = [SelectOptionDict(value=k, label=v) for k, v in WEEKDAY_LABELS.items()]
 
+# HA non traduce le label dei SelectSelector né lo unit_of_measurement dei NumberSelector:
+# si passano già nella lingua di Home Assistant.
+_WEEKDAYS = {
+    "it": ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"],
+    "en": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "fr": ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"],
+    "es": ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
+    "de": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
+    "hr": ["Ponedjeljak", "Utorak", "Srijeda", "Četvrtak", "Petak", "Subota", "Nedjelja"],
+}
+_WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+_UNITS = {
+    "€/anno": {"en": "€/year", "fr": "€/an", "es": "€/año", "de": "€/Jahr", "hr": "€/godina"},
+    "gg": {"en": "days", "fr": "j", "es": "días", "de": "Tage", "hr": "dana"},
+}
+_MODE_LABELS = {
+    "it": "data", "en": "date", "fr": "date", "es": "fecha", "de": "Datum", "hr": "datum",
+}
+_MODEL_LABELS = {
+    "it": "Custom", "en": "Custom", "fr": "Personnalisé", "es": "Personalizado",
+    "de": "Benutzerdefiniert", "hr": "Prilagođeno",
+}
+
+
+def _flow_lang(hass: Any) -> str:
+    lang = str(getattr(getattr(hass, "config", None), "language", "") or "it")
+    return (lang.split("-")[0] or "it").lower()
+
+
+def _unit(lang: str, unit: str) -> str:
+    return _UNITS.get(unit, {}).get(lang, unit)
+
+
+def _weekday_options(lang: str) -> list[SelectOptionDict]:
+    labels = _WEEKDAYS.get(lang) or _WEEKDAYS["it"]
+    return [SelectOptionDict(value=k, label=labels[i]) for i, k in enumerate(_WEEKDAY_KEYS)]
+
+
+def _tagliando_mode_options(lang: str) -> list[SelectOptionDict]:
+    return [SelectOptionDict(value="km", label="km"),
+            SelectOptionDict(value="data", label=_MODE_LABELS.get(lang, "data"))]
+
+
+def _model_options(lang: str) -> list[SelectOptionDict]:
+    return [SelectOptionDict(value=m, label=(_MODEL_LABELS.get(lang, "Custom")
+                                            if m == "Custom" else m)) for m in MODELS]
+
 
 def _flat(data: dict[str, Any]) -> dict[str, Any]:
     """Appiattisce i campi dentro le sezioni (config flow con section())."""
@@ -294,11 +341,12 @@ def _sugg_date(v: Any) -> dict:
     return {"description": {"suggested_value": s}} if s else {}
 
 
-def _car_schema(defaults: dict[str, Any]) -> vol.Schema:    return vol.Schema({
+def _car_schema(defaults: dict[str, Any], lang: str = "it") -> vol.Schema:
+    return vol.Schema({
         vol.Required("car"): section(vol.Schema({
             # PRIMO campo: il modello decide la foto dell'auto (e la dashboard)
             vol.Required(CONF_MODEL, default=defaults.get(CONF_MODEL, MODELS[0])): SelectSelector(
-                SelectSelectorConfig(options=MODELS)),
+                SelectSelectorConfig(options=_model_options(lang))),
             vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, DEFAULT_NAME)): str,
             vol.Required(
                 CONF_ODOMETER, description={"suggested_value": defaults.get(CONF_ODOMETER)}
@@ -466,7 +514,7 @@ def _capacity_for_model(user_input: dict[str, Any]) -> None:
         user_input[CONF_CAPACITY] = real
 
 
-def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
+def _settings_schema(defaults: dict[str, Any], lang: str = "it") -> vol.Schema:
     return vol.Schema({
         vol.Required("battery"): section(vol.Schema({
             vol.Required(CONF_CAPACITY, default=defaults.get(
@@ -492,7 +540,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
                 NumberSelectorConfig(min=0, max=200000, step=0.1, unit_of_measurement="kWh",
                                      mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_PRE_EUR, default=defaults.get(CONF_PRE_EUR, 0.0)): NumberSelector(
-                NumberSelectorConfig(min=0, max=200000, step=1, unit_of_measurement="?",
+                NumberSelectorConfig(min=0, max=200000, step=1, unit_of_measurement="€",
                                      mode=NumberSelectorMode.BOX)),
         }), {"collapsed": True}),
         vol.Required("fuel"): section(vol.Schema({
@@ -510,26 +558,26 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
         vol.Required("maint"): section(vol.Schema({
             vol.Required(CONF_MAINT_ENABLED, default=defaults.get(CONF_MAINT_ENABLED, True)): BooleanSelector(),
             vol.Optional(CONF_TAG_TERMICO, default=defaults.get(CONF_TAG_TERMICO, DEFAULT_TAG_TERMICO)): NumberSelector(
-                NumberSelectorConfig(min=0, max=1000, step=5, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
+                NumberSelectorConfig(min=0, max=1000, step=5, unit_of_measurement=_unit(lang, "€/anno"), mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_TAG_EV, default=defaults.get(CONF_TAG_EV, DEFAULT_TAG_EV)): NumberSelector(
                 NumberSelectorConfig(min=0, max=1000, step=5, unit_of_measurement="€", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_BOLLO_TERMICO, default=defaults.get(CONF_BOLLO_TERMICO, DEFAULT_BOLLO_TERMICO)): NumberSelector(
-                NumberSelectorConfig(min=0, max=2000, step=5, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
+                NumberSelectorConfig(min=0, max=2000, step=5, unit_of_measurement=_unit(lang, "€/anno"), mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_BOLLO_EV, default=defaults.get(CONF_BOLLO_EV, DEFAULT_BOLLO_EV)): NumberSelector(
-                NumberSelectorConfig(min=0, max=2000, step=5, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
+                NumberSelectorConfig(min=0, max=2000, step=5, unit_of_measurement=_unit(lang, "€/anno"), mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_TAGLIANDO_INTERVALLO, default=defaults.get(CONF_TAGLIANDO_INTERVALLO, DEFAULT_TAGLIANDO_INTERVALLO)): NumberSelector(
                 NumberSelectorConfig(min=5000, max=50000, step=1000, unit_of_measurement="km", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_TYRE_INTERVAL, default=defaults.get(CONF_TYRE_INTERVAL, DEFAULT_TYRE_INTERVAL)): NumberSelector(
                 NumberSelectorConfig(min=5000, max=150000, step=1000, unit_of_measurement="km", mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_PURCHASE_DATE, **_sugg_date(defaults.get(CONF_PURCHASE_DATE))): DateSelector(),
             vol.Optional(CONF_ASSICURAZIONE_COSTO, default=defaults.get(CONF_ASSICURAZIONE_COSTO, DEFAULT_ASSICURAZIONE_COSTO)): NumberSelector(
-                NumberSelectorConfig(min=0, max=3000, step=10, unit_of_measurement="€/anno", mode=NumberSelectorMode.BOX)),
+                NumberSelectorConfig(min=0, max=3000, step=10, unit_of_measurement=_unit(lang, "€/anno"), mode=NumberSelectorMode.BOX)),
             vol.Optional(CONF_ASSICURAZIONE_DATA, **_sugg_date(defaults.get(CONF_ASSICURAZIONE_DATA))): DateSelector(),
         }), {"collapsed": True}),
         vol.Required("notify"): section(vol.Schema({
             vol.Optional(CONF_NOTIFY_SERVICE, description={"suggested_value": defaults.get(CONF_NOTIFY_SERVICE, "")}): TextSelector(),
             vol.Optional(CONF_NOTIFY_DAYS, default=defaults.get(CONF_NOTIFY_DAYS, DEFAULT_NOTIFY_DAYS)): NumberSelector(
-                NumberSelectorConfig(min=1, max=90, step=1, unit_of_measurement="gg")),
+                NumberSelectorConfig(min=1, max=90, step=1, unit_of_measurement=_unit(lang, "gg"))),
             vol.Required(CONF_NOTIFY_CHARGE_START, default=defaults.get(CONF_NOTIFY_CHARGE_START, True)): BooleanSelector(),
             vol.Required(CONF_NOTIFY_CHARGE_END, default=defaults.get(CONF_NOTIFY_CHARGE_END, True)): BooleanSelector(),
             vol.Required(CONF_LOW_SOC_ENABLED, default=defaults.get(CONF_LOW_SOC_ENABLED, True)): BooleanSelector(),
@@ -538,7 +586,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(CONF_LOW_SOC_START, default=defaults.get(CONF_LOW_SOC_START, DEFAULT_LOW_SOC_START)): TimeSelector(),
             vol.Optional(CONF_LOW_SOC_END, default=defaults.get(CONF_LOW_SOC_END, DEFAULT_LOW_SOC_END)): TimeSelector(),
             vol.Optional(CONF_LOW_SOC_DAYS, default=defaults.get(CONF_LOW_SOC_DAYS, DEFAULT_LOW_SOC_DAYS)): SelectSelector(
-                SelectSelectorConfig(options=WEEKDAY_OPTIONS, multiple=True)),
+                SelectSelectorConfig(options=_weekday_options(lang), multiple=True)),
         }), {"collapsed": True}),
         vol.Required("advanced"): section(vol.Schema({
             vol.Required(CONF_POLL_INTERVAL, default=defaults.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)): NumberSelector(
@@ -546,7 +594,7 @@ def _settings_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Required(CONF_TRIP_TIMEOUT, default=defaults.get(CONF_TRIP_TIMEOUT, DEFAULT_TRIP_TIMEOUT)): NumberSelector(
                 NumberSelectorConfig(min=5, max=60, step=1, unit_of_measurement="min")),
             vol.Optional(CONF_TAGLIANDO_MODE, default=defaults.get(CONF_TAGLIANDO_MODE, "km")): SelectSelector(
-                SelectSelectorConfig(options=["km", "data"])),
+                SelectSelectorConfig(options=_tagliando_mode_options(lang))),
             vol.Optional(CONF_TAGLIANDO_DATA, **_sugg_date(defaults.get(CONF_TAGLIANDO_DATA))): DateSelector(),
             vol.Optional(
                 CONF_TEMP_ENTITY,
@@ -648,7 +696,7 @@ class RenaultMateConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         schema: dict[Any, Any] = {
             **_car_schema({}).schema,
             **_wallbox_schema({}, prof).schema,
-            **_settings_schema({}).schema,
+            **_settings_schema({}, _flow_lang(self.hass)).schema,
             vol.Required(CONF_CREATE_DASHBOARD, default=True): BooleanSelector(),
         }
         return self.async_show_form(step_id="settings", data_schema=vol.Schema(schema))
@@ -686,8 +734,8 @@ class RenaultMateOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema({
-                **_car_schema(base).schema,
+                **_car_schema(base, _flow_lang(self.hass)).schema,
                 **_wallbox_schema(base, str(base.get(CONF_PROFILE) or DEFAULT_PROFILE)).schema,
-                **_settings_schema(base).schema,
+                **_settings_schema(base, _flow_lang(self.hass)).schema,
             }),
         )
