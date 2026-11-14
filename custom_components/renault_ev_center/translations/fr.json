@@ -476,7 +476,7 @@
       "fields": {
         "scope": {
           "name": "Portée",
-          "description": "km, energia, costi, viaggi, ricariche ou all"
+          "description": "Valeurs : km, energia, costi, viaggi, ricariche ou all"
         }
       }
     },
