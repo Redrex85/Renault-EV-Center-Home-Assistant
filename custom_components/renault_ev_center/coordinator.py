@@ -520,7 +520,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         opts = {**entry.data, **entry.options}
         self.entry = entry
         self.geocode_enabled = bool(opts.get(CONF_GEOCODE_ENABLED, True))
-        self._geocode_backfilled = False
+        self._geocode_lang_done: str | None = None  # ultima lingua geocodificata
         # diagnostica (report): ultimo errore classificato, ultimo successo, geocoding
         self.last_error: dict[str, Any] | None = None
         self.last_success: str | None = None
@@ -2588,11 +2588,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         record["carica_precedente"] = carica_prec
 
     # ------------------------------------------------------ reverse geocoding GPS
+    def _geo_lang(self) -> str:
+        """Lingua dei toponimi = lingua di Home Assistant (prima era "it" fisso)."""
+        return str(getattr(self.hass.config, "language", "") or "it").split("-")[0].lower()
+
     def _queue_geocode(self, record: dict[str, Any]) -> None:
         """Avvia in background il reverse-geocoding partenza+arrivo (non blocca il ciclo)."""
         if not self.geocode_enabled:
             return
-        if record.get("luogo_partenza") and record.get("luogo_arrivo"):
+        if (record.get("luogo_partenza") and record.get("luogo_arrivo")
+                and record.get("geo_lang") == self._geo_lang()):
             return
         if not (record.get("gps_partenza") or record.get("gps_arrivo")):
             return
@@ -2607,7 +2612,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             return {}
         lat4, lon4 = round(_f(lat), 4), round(_f(lon), 4)
         # lingua dei toponimi = lingua di Home Assistant (prima era "it" fisso)
-        lang = str(getattr(self.hass.config, "language", "") or "it").split("-")[0].lower()
+        lang = self._geo_lang()
         key = f"{lat4},{lon4},{lang}"
         cache = self.store.data.setdefault("geocache", {})
         if key in cache:
@@ -2654,25 +2659,32 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
     async def _geocode_trip(self, record: dict[str, Any]) -> None:
         """Scrive via/città/paese di partenza e arrivo sul viaggio (best-effort)."""
+        lang = self._geo_lang()
+        touched = False
         for gkey, lkey, pkey in (("gps_partenza", "luogo_partenza", "paese_partenza"),
                                  ("gps_arrivo", "luogo_arrivo", "paese_arrivo")):
-            if record.get(lkey):
+            if record.get(lkey) and record.get("geo_lang") == lang:
                 continue
             gps = record.get(gkey) or {}
             lat, lon = gps.get("lat"), gps.get("lon")
             if lat is None or lon is None:
                 continue
+            touched = True
             info = await self._reverse_geocode(lat, lon)
             if info:
                 record[lkey] = info.get("label") or info.get("citta") or ""
                 record[pkey] = info.get("paese") or ""
+        if touched:
+            record["geo_lang"] = lang
         self.persist()
 
     def _queue_geocode_charge(self, record: dict[str, Any]) -> None:
         """Avvia in background il reverse-geocoding della ricarica (non blocca il ciclo)."""
         if not self.geocode_enabled:
             return
-        if record.get("luogo") or not record.get("gps"):
+        if record.get("luogo") and record.get("geo_lang") == self._geo_lang():
+            return
+        if not record.get("gps"):
             return
         try:
             self.hass.async_create_task(self._geocode_charge(record))
@@ -2681,44 +2693,61 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
     async def _geocode_charge(self, record: dict[str, Any]) -> None:
         """Scrive via/città/paese della ricarica (best-effort)."""
-        if record.get("luogo"):
+        lang = self._geo_lang()
+        if record.get("luogo") and record.get("geo_lang") == lang:
             return
         gps = record.get("gps") or {}
         lat, lon = gps.get("lat"), gps.get("lon")
         if lat is None or lon is None:
             return
         info = await self._reverse_geocode(lat, lon)
+        record["geo_lang"] = lang
         if info:
             record["luogo"] = info.get("label") or info.get("citta") or ""
             record["paese"] = info.get("paese") or ""
-            self.persist()
+        self.persist()
 
     def _maybe_backfill_geocode(self) -> None:
-        """Una tantum: geocodifica i viaggi registrati prima che il geocoding esistesse."""
-        if self._geocode_backfilled or not self.geocode_enabled:
+        """Rigeocodifica viaggi/ricariche quando cambia la lingua di Home Assistant.
+
+        Gira una volta per lingua avviata: la cache è già per lingua e il throttle
+        Nominatim resta quello di `_reverse_geocode`.
+        """
+        if not self.geocode_enabled:
             return
-        self._geocode_backfilled = True
-        legacy = [t for t in self.store.data.get("trips", [])
-                  if (t.get("gps_partenza") or t.get("gps_arrivo"))
-                  and not (t.get("luogo_partenza") and t.get("luogo_arrivo"))]
-        if legacy:
-            self.hass.async_create_task(self._geocode_backfill())
+        lang = self._geo_lang()
+        if self._geocode_lang_done == lang:
+            return
+        self._geocode_lang_done = lang
+        self.hass.async_create_task(self._geocode_backfill())
 
     async def _geocode_backfill(self) -> None:
-        """Geocodifica i viaggi vecchi, 1 alla volta (rispetta il limite ~1 req/s)."""
+        """Geocodifica i record senza toponimi o con lingua diversa, 1 alla volta (~1 req/s)."""
+        lang = self._geo_lang()
         n = 0
         for t in self.store.data.get("trips", []):
-            if t.get("luogo_partenza") and t.get("luogo_arrivo"):
-                continue
             if not (t.get("gps_partenza") or t.get("gps_arrivo")):
+                continue
+            if (t.get("geo_lang") == lang and t.get("luogo_partenza")
+                    and t.get("luogo_arrivo")):
                 continue
             await self._geocode_trip(t)
             n += 1
             if n >= 120:
                 break
             await asyncio.sleep(1.1)
+        for c in self.store.data.get("charges", []):
+            if not c.get("gps"):
+                continue
+            if c.get("geo_lang") == lang and c.get("luogo"):
+                continue
+            await self._geocode_charge(c)
+            n += 1
+            if n >= 160:
+                break
+            await asyncio.sleep(1.1)
         if n:
-            _LOGGER.info("Geocoding: rielaborati %s viaggi", n)
+            _LOGGER.info("Geocoding: rielaborati %s record (%s)", n, lang)
         self.persist()
 
     def charge_zone_options(self) -> list[str]:

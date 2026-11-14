@@ -5,6 +5,12 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.33-beta - Toponimi nella lingua di HA (anche per i viaggi già salvati)
+
+- **Reverse geocoding per lingua, davvero**: ogni viaggio/ricarica salva la lingua con cui è stato geocodificato (`geo_lang`); al cambio di lingua di Home Assistant i record vengono riletti una volta sola (cache e throttle Nominatim invariati). Prima il backfill si fermava ai record senza toponimi, quindi i viaggi vecchi restavano in italiano.
+- **Pulsanti di test notifica tradotti**: le 9 etichette della pagina Impostazioni non passano da `_t()`, ora sono voci `UI2` (en/fr/es/de/hr).
+- **"Fuori" dentro testi composti**: aggiunto a `PHRASES`, così la tabella Rotte mostra "Dehors → Dehors" e non "Dehors → Fuori".
+
 ## 1.1.32-beta - Pannello: testi residui tradotti (contributo esterno)
 
 - **Voci `UI2` aggiunte** (fr/en/es/de, 68 voci, grazie a un contributo esterno): valori di stato che arrivano dal backend (`Ricarica a Casa`, `Ricarica Pubblica`, `Non disponibile`, `In carica (potenza non nota)`), mesi (`Gennaio`…`Dicembre`), opzioni dei filtri (`Fotovoltaico`, `Tutte`, `Tutti`), messaggi di tabella vuota (`Nessun viaggio.`, `Nessun dato storico.`, `Dati insufficienti.`, `Posizione non disponibile`…), etichette e tooltip (`Elimina`, `Modifica`, `Ricariche FV`, `SOH stimato %`, `Fascia di temperatura`…) e i toast inviati come stringa semplice.
