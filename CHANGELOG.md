@@ -5,6 +5,10 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.35-beta - Archivio viaggi: espanso solo l'ultimo mese
+
+- Nell'albero **Archivio viaggi** restava aperto ogni mese tranne quello precedente a oggi: l'elenco diventava lunghissimo. Ora di default è espanso **solo l'ultimo mese presente in archivio**, gli altri restano chiusi; gli anni restano contenitori aperti e un mese aperto a mano viene ricordato.
+
 ## 1.1.34-beta - Fix: manifest con BOM UTF-8 (la 1.1.33-beta non si caricava)
 
 - `manifest.json`, `VERSION` e i due JS erano stati riscritti con il **BOM UTF-8**: Home Assistant non riesce a leggere il manifest e hassfest si ferma (`AssertionError: manifest has not been loaded`). Rimossi i BOM da tutti e cinque i file (anche `preview/index.html`).

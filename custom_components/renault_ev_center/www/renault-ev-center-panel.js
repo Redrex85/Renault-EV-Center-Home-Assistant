@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.34-beta";
+const REC_VER = "1.1.35-beta";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -5931,25 +5931,27 @@ class RenaultEvCenterPanel extends HTMLElement {
     const effOf = (day) => day.n_eff ? (day.peso_eff / day.n_eff) : NaN;
     // stato aperto/chiuso ricordato per chiave: il re-render non riapre più i rami chiusi
     const opened = (this._treeOpen = this._treeOpen || {});
-    // il mese PRECEDENTE resta chiuso di default: con tutti i mesi aperti
-    // l'albero diventava lunghissimo. Un'apertura manuale viene ricordata.
-    const _d0 = new Date();
-    const prevKey = `${_d0.getMonth() ? _d0.getFullYear() : _d0.getFullYear() - 1}-` +
-      `${String(_d0.getMonth() || 12).padStart(2, "0")}`;
-    const op = (k) => {
+    // solo l'ULTIMO mese presente in archivio resta espanso: con tutti i mesi aperti
+    // l'albero diventava lunghissimo. Gli anni sono contenitori sempre aperti, un'apertura
+    // manuale di un mese viene ricordata.
+    const _ys = Object.keys(tree).sort((a, b) => b.localeCompare(a));
+    const _lastY = _ys[0] || "";
+    const _ms = _lastY ? Object.keys(tree[_lastY]).sort((a, b) => b.localeCompare(a)) : [];
+    const lastKey = _ms.length ? `${_lastY}-${_ms[0]}` : "";
+    const op = (k, dflt) => {
       if (opened[k] === true) return "open";
       if (opened[k] === false) return "";
-      return k === prevKey ? "" : "open";
+      return dflt ? "open" : "";
     };
     box.innerHTML = Object.entries(tree).sort((a, b) => b[0].localeCompare(a[0])).map(([y, mesi]) => {
       const tot = Object.values(mesi).flat();
       const km = tot.reduce((a, r) => a + r.km, 0);
-      return `<details class="anno" data-tk="${y}" ${op(y)}>
+      return `<details class="anno" data-tk="${y}" ${op(y, true)}>
         <summary>▼ ${y} <span class="tr">${tot.length} giorni · <b>${this._i(km)} km</b></span></summary>
         ${Object.entries(mesi).sort((a, b) => b[0].localeCompare(a[0])).map(([m, rs]) => {
           const kmM = rs.reduce((a, r) => a + r.km, 0);
           const nm = NOMI_MESI()[parseInt(m, 10) - 1] || m;
-          return `<details class="mese" data-tk="${y}-${m}" ${op(`${y}-${m}`)}>
+          return `<details class="mese" data-tk="${y}-${m}" ${op(`${y}-${m}`, `${y}-${m}` === lastKey)}>
             <summary>▼ ${nm} <span class="tr">${rs.length} giorni · <b>${this._i(kmM)} km</b></span></summary>
             ${rs.map((r) => `<div class="giorno">• <b>${this._d(r.data)}</b> — ${this._fmt(r.km, 1)} km <span class="badge">${this._fmt(effOf(r), 1)}</span> · ${this._fmt(r.costo, 2)} €</div>`).join("")}
           </details>`;
