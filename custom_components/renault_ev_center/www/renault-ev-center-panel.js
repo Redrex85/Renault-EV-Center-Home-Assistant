@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Renault EV Center Panel
  * =======================
  * Plancia custom stile "LeapMotor": replica preview/index.html con dati reali.
@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.33-beta";
+const REC_VER = "1.1.34-beta";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---

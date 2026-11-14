@@ -5,6 +5,11 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.34-beta - Fix: manifest con BOM UTF-8 (la 1.1.33-beta non si caricava)
+
+- `manifest.json`, `VERSION` e i due JS erano stati riscritti con il **BOM UTF-8**: Home Assistant non riesce a leggere il manifest e hassfest si ferma (`AssertionError: manifest has not been loaded`). Rimossi i BOM da tutti e cinque i file (anche `preview/index.html`).
+- Nessun'altra modifica funzionale: contiene i tre fix della 1.1.33-beta (toponimi ri-geocodificati al cambio lingua, pulsanti di test notifica tradotti, "Fuori" nei testi composti).
+
 ## 1.1.33-beta - Toponimi nella lingua di HA (anche per i viaggi già salvati)
 
 - **Reverse geocoding per lingua, davvero**: ogni viaggio/ricarica salva la lingua con cui è stato geocodificato (`geo_lang`); al cambio di lingua di Home Assistant i record vengono riletti una volta sola (cache e throttle Nominatim invariati). Prima il backfill si fermava ai record senza toponimi, quindi i viaggi vecchi restavano in italiano.

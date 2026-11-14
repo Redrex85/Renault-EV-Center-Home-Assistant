@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Renault EV Center Card
  * ======================
  * Card Lovelace dedicata: auto con barra batteria, stato carica,
@@ -18,7 +18,7 @@
  *   range_entity: sensor.battery_autonomy
  *   odometer_entity: sensor.mileage
  */
-const CARD_VER = "1.1.33-beta";
+const CARD_VER = "1.1.34-beta";
 let _cardVerChecked = false;
 
 class RenaultEvCenterCard extends HTMLElement {
