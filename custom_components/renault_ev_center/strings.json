@@ -296,6 +296,7 @@
           "car": {
             "name": "🚗 L'auto",
             "data": {
+              "model": "Modello dell'auto — 1ª scelta: imposta la foto",
               "name": "Nome dell'auto",
               "odometer_entity": "Sensore odometro/chilometraggio",
               "battery_level_entity": "Sensore livello batteria (%)",

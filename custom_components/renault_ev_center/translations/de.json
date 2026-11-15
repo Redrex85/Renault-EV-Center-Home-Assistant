@@ -296,6 +296,7 @@
           "car": {
             "name": "🚗 Auto",
             "data": {
+              "model": "Automodell — 1. Wahl: legt das Bild fest",
               "name": "Autoname",
               "odometer_entity": "Tacho-Sensor",
               "battery_level_entity": "Batteriestand-Sensor (%)",

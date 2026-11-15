@@ -1,3 +1,10 @@
+## 1.1.39-beta
+
+- **Foto auto che sfarfallava**: l'URL della foto utente era rigenerato con un timestamp nuovo a ogni aggiornamento `hass`, ricaricando l'immagine più volte al secondo. Ora il cache-busting usa un timestamp per **caricamento pagina** e l'elemento viene ricostruito solo se il markup cambia (segnalato da Branimir).
+- **Configura → Auto**: nel form di configurazione la label del campo "Modello" compariva grezza (`model`) perché la traduzione era solo nel blocco `data` e non in `sections.car.data`. Aggiunta in tutte le 6 lingue (segnalato da Branimir).
+- **Manutenzione → Prossimo cambio**: il backend anteponeva "a" alla data-km (`a 105573 km`) in italiano fisso, non traducibile. Ora restituisce `105573 km` e la traduzione resta al pannello (segnalato da Branimir).
+- **Croato**: mancava uno spazio dopo "dodaje" nel suggerimento del cambio gomme ("dodajeinterval" → "dodaje interval", segnalato da Branimir).
+
 # Changelog
 
 Release accorpate: **1.0.4 · 1.0.3 · 1.0.1 · 1.0.0** — le patch `1.0.3.x` / `1.0.4.x`

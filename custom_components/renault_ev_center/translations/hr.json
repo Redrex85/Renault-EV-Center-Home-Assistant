@@ -296,6 +296,7 @@
           "car": {
             "name": "🚗 Auto",
             "data": {
+              "model": "Model auta — prvi odabir: određuje sliku",
               "name": "Naziv auta",
               "odometer_entity": "Senzor kilometraže",
               "battery_level_entity": "Senzor razine baterije (%)",
