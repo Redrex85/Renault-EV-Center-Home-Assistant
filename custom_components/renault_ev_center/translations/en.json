@@ -296,6 +296,7 @@
           "car": {
             "name": "🚗 Car",
             "data": {
+              "model": "Car model — 1st choice: sets the picture",
               "name": "Car name",
               "odometer_entity": "Odometer sensor",
               "battery_level_entity": "Battery level sensor (%)",
