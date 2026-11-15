@@ -5,6 +5,19 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.38 - Release: internazionalizzazione completa (accorpa le beta 1.1.35→1.1.37)
+
+Release stabile che raccoglie le ultime tre beta. In sintesi rispetto alla **1.1.34-beta**:
+
+- **Archivio viaggi**: espanso solo l'ultimo mese (gli anni restano aperti, l'apertura manuale viene ricordata).
+- **Testi del pannello tradotti in IT/EN/FR/ES/DE/HR**: tutte le stringhe che erano letterali italiani nel codice (avvisi, `TOTALE`, `sess`, `gg`, legenda e tooltip dei grafici, "da configurare", `FV · Bat · Pub`, ~30 messaggi "Nessun dato…" e i **toast**) ora passano dalle tabelle di traduzione.
+- **Plurali**: supporto alle forme croate 1 / 2-4 / 5+ (vožnja/vožnje/vožnji, dan/dana) e corretta pluralizzazione italiana/inglese/francese/spagnola/tedesca.
+- **Geocoding**: il backfill non è più una tantum (prima si fermava dopo 120 viaggi + 40 ricariche e il resto restava in italiano) e la lingua viene marcata solo se il toponimo è stato davvero aggiornato.
+- **Options flow**: giorni della settimana, `€/anno`, `gg`, opzione `data` e opzione `Custom` seguono la lingua di Home Assistant.
+- **Fix**: unità `?` → `€` sul campo "speso prima dell'integrazione"; la foto auto si aggiorna senza ricaricare l'integrazione.
+- **Francese** (PR #5, grazie al contributor): toast tradotti, 24 voci UI2 nuove in sei lingue, correzioni minori.
+- **Croato**: 17 correzioni del revisore applicate; pannello e config flow completi.
+
 ## 1.1.37-beta - Toast tradotti e ultime stringhe del pannello (PR #5)
 
 - **Toast tradotti**: la logica di traduzione del DOM è stata estratta in `_trText()` e applicata anche ai toast, che prima restavano in italiano in ogni lingua.
