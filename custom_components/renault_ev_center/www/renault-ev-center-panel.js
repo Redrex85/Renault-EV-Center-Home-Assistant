@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.36-beta";
+const REC_VER = "1.1.37-beta";
 let _recVerChecked = false;
 
 // --- i18n del pannello: lingua da hass.language (IT base, EN/FR). ES/DE in arrivo ---
@@ -454,7 +454,7 @@ const I18N = {
     lbl_attiva: "Active",
     lbl_limite_adesso: "Limite actuelle",
     lbl_fascia_piena: "Plage pleine",
-    lbl_batteria_solo_senza_sole: "Batterie seule sans soleil",
+    lbl_batteria_solo_senza_sole: "Batterie uniquement sans soleil",
     lbl_surplus_rete: "Surplus réseau",
     lbl_prelievo_rete: "Prélèvement réseau",
     lbl_ampere_impostati: "Ampères définis",
@@ -3004,6 +3004,133 @@ const UI2 = {
     "es": "⚠️ Faltan los kWh/€ cargados antes: este valor está inflado (las cargas anteriores no se cuentan). Rellena Ajustes → Precios.",
     "de": "⚠️ Es fehlen die vorher geladenen kWh/€: dieser Wert ist überhöht (frühere Ladungen zählen nicht mit). Trage Einstellungen → Preise ein."
   },
+  // --- toasts / messages encore absents de UI2 (traduits par _trText / _toast) ---
+  "Nessun dato.": {
+    "en": "No data.",
+    "fr": "Aucune donnée.",
+    "es": "Sin datos.",
+    "de": "Keine Daten."
+  },
+  "inviato": {
+    "en": "sent",
+    "fr": "envoyé",
+    "es": "enviado",
+    "de": "gesendet"
+  },
+  "Filtro": {
+    "en": "Filter",
+    "fr": "Filtre",
+    "es": "Filtro",
+    "de": "Filter"
+  },
+  "Limite corrente": {
+    "en": "Current limit",
+    "fr": "Limite de courant",
+    "es": "Límite de corriente",
+    "de": "Stromlimit"
+  },
+  "Intervento eliminato": {
+    "en": "Maintenance deleted",
+    "fr": "Intervention supprimée",
+    "es": "Mantenimiento eliminado",
+    "de": "Wartung gelöscht"
+  },
+  "Ricarica eliminata": {
+    "en": "Charge deleted",
+    "fr": "Recharge supprimée",
+    "es": "Recarga eliminada",
+    "de": "Ladung gelöscht"
+  },
+  "Ricarica separata": {
+    "en": "Charge split",
+    "fr": "Recharge séparée",
+    "es": "Recarga separada",
+    "de": "Ladung geteilt"
+  },
+  "Ricarica modificata": {
+    "en": "Charge updated",
+    "fr": "Recharge modifiée",
+    "es": "Recarga actualizada",
+    "de": "Ladung aktualisiert"
+  },
+  "Ricarica registrata": {
+    "en": "Charge logged",
+    "fr": "Recharge enregistrée",
+    "es": "Recarga registrada",
+    "de": "Ladung erfasst"
+  },
+  "Notifica di prova inviata": {
+    "en": "Test notification sent",
+    "fr": "Notification de test envoyée",
+    "es": "Notificación de prueba enviada",
+    "de": "Testbenachrichtigung gesendet"
+  },
+  "Testi salvati": {
+    "en": "Texts saved",
+    "fr": "Textes enregistrés",
+    "es": "Textos guardados",
+    "de": "Texte gespeichert"
+  },
+  "Zone salvate": {
+    "en": "Zones saved",
+    "fr": "Zones enregistrées",
+    "es": "Zonas guardadas",
+    "de": "Zonen gespeichert"
+  },
+  "A/C: 21 °C": {
+    "en": "A/C: 21 °C",
+    "fr": "Clim : 21 °C",
+    "es": "A/A: 21 °C",
+    "de": "A/C: 21 °C"
+  },
+  "Configura → Bilanciamento casa": {
+    "en": "Settings → Home balancing",
+    "fr": "Configurer → Équilibrage maison",
+    "es": "Configurar → Balanceo del hogar",
+    "de": "Einstellungen → Hausausgleich"
+  },
+  "Configura → Fotovoltaico": {
+    "en": "Settings → Solar",
+    "fr": "Configurer → Photovoltaïque",
+    "es": "Configurar → Solar",
+    "de": "Einstellungen → Photovoltaik"
+  },
+  "Configura → Sperimentazione GSE": {
+    "en": "Settings → GSE trial",
+    "fr": "Configurer → Essai GSE",
+    "es": "Configurar → Prueba GSE",
+    "de": "Einstellungen → GSE-Test"
+  },
+  "Configura → Prezzi": {
+    "en": "Settings → Prices",
+    "fr": "Configurer → Prix",
+    "es": "Configurar → Precios",
+    "de": "Einstellungen → Preise"
+  },
+  "Configura → Comandi": {
+    "en": "Settings → Commands",
+    "fr": "Configurer → Commandes",
+    "es": "Configurar → Comandos",
+    "de": "Einstellungen → Befehle"
+  },
+  "Configura → Wallbox": {
+    "en": "Settings → Wallbox",
+    "fr": "Configurer → Wallbox",
+    "es": "Configurar → Wallbox",
+    "de": "Einstellungen → Wallbox"
+  },
+  "Batteria solo senza sole": {
+    "en": "Battery only without sun",
+    "fr": "Batterie uniquement sans soleil",
+    "es": "Batería solo sin sol",
+    "de": "Batterie nur ohne Sonne"
+  },
+  "Archivio viaggi vuoto": {
+    "en": "Trip archive empty",
+    "fr": "Archive des trajets vide",
+    "es": "Archivo de viajes vacío",
+    "de": "Fahrtarchiv leer"
+  },
 };
 
 // Frasi da tradurre anche dentro testi piu lunghi (tooltip, celle con numeri, ecc.).
@@ -3126,7 +3253,7 @@ const PHRASES = [
 I18N.hr = {"nav_p1":"Pregled","nav_p2":"Vožnje","nav_p3":"Statistika","nav_p4":"Punjenja","nav_p11":"Wallbox","nav_p5":"Zdravlje baterije","nav_p6":"Održavanje","nav_p7":"Uštede","nav_p8":"Dodatno","nav_p9":"Automatizacije","nav_p10":"Postavke","h3_comandi_renault":"Renault naredbe","h3_efficienza":"Učinkovitost","h3_oggi_a_colpo_d_occhio":"Danas ukratko","h3_ultima_ricarica":"Zadnje punjenje","h3_km_percorsi_7_giorni":"📈 Prijeđeni km (7 dana)","h3_cronologia_posizione":"📍 Povijest lokacija","h3_automazioni_attive":"🤖 Aktivne automatizacije","h3_scadenze_e_manutenzione":"🔧 Rokovi i održavanje","h3_archivio":"Arhiva","h3_dettaglio_viaggi_recenti":"Detalji nedavnih vožnji","h3_energia_caricata_differenziata":"Napunjena energija po izvoru","h3_percorrenza":"Kilometraža","h3_rotte_consumo_per_zona":"Rute (potrošnja po području)","h3_storico_mensile_tutti_gli_anni":"Mjesečna povijest (sve godine)","h3_aggiungi_ricarica_manuale":"➕ Dodaj ručno punjenje","h3_distribuzione_ricariche":"📊 Raspodjela punjenja","h3_storico_ricariche":"Povijest punjenja","h3_soh_ufficiale":"Službeni SOH ✏️","h3_soh_stimato":"Procijenjeni SOH","h3_kwh_per_1":"kWh po 1 %","h3_dove_finisce_l_energia":"Kamo odlazi energija","h3_sessioni_analizzate":"Analizirana punjenja","h3_tagliando":"🔧 Servis","h3_cambio_gomme":"🛞 Zamjena guma","h3_assicurazione":"🛡️ Osiguranje","h3_registra_intervento":"➕ Upiši održavanje","h3_interventi_registrati":"📋 Upisani servisi","h3_risparmio_manutenzione":"🏆 Ušteda na održavanju","h3_termica_vs_elettrica":"⚖️ Fosilno vs električno","h3_confronto_costi":"📊 Usporedba troškova","h3_risparmio_per_periodo":"📅 Ušteda po razdoblju","h3_fotovoltaico":"☀️ Solar","h3_come_si_calcola":"ℹ️ Kako se računa","h3_affidabilità_del_confronto":"🎯 Pouzdanost usporedbe","h3_vampire_drain":"🔋 Gubitak u mirovanju","h3_co2_evitata":"🌍 Izbjegnuti CO2","h3_scadenze":"📅 Rokovi","h3_meteo_vs_consumi":"🌦️ Vrijeme vs potrošnja","h3_top_e_stop_mese":"🏆 Najbolje i najgore · mjesec","h3_consumi_vs_temperatura":"🌡️ Potrošnja vs temperatura","h3_consumi_per_fascia":"📊 Potrošnja po dobu dana","h3_trend_mensile_kwh_100km":"📈 Mjesečni trend kWh/100 km","h3_efficienza_per_zona":"📍 Učinkovitost po području","h3_vampire_drain_7_gg":"🔋 Gubitak u mirovanju (7 dana)","h3_costo_ricarica_mese":"💶 Trošak punjenja · mjesec","h3_prezzo_medio_kwh":"⚡ Prosječna cijena €/kWh","h3_risparmio_vs_termica":"💰 Ušteda vs fosilno","h3_orario_di_partenza":"🕐 Vrijeme polaska","h3_note":"ℹ️ Napomene","h3_notifiche":"Obavijesti","h3_programma_ricarica":"⏰ Raspored punjenja","h3_programma_clima":"❄️ Raspored klime","h3_avviso_batteria_bassa":"🔔 Upozorenje: prazna baterija","h3_come_si_cambiano_i_parametri":"Kako mijenjati postavke","h3_prezzi_energia":"Cijene energije","h3_batteria":"Baterija","h3_reset_e_export":"Reset i izvoz","h3_palette_colori_renault":"🎨 Paleta (Renault boje)","h3_automazioni":"🤖 Automatizacije","h3_stato_wallbox":"🔌 Stanje wallboxa","h3_sessione_corrente":"⏱️ Trenutno punjenje","h3_stima_ricarica":"⏱️ Procjena punjenja","h3_potenza_wallbox_48_h":"⚡ Snaga wallboxa (48 h)","h3_bilanciamento_casa":"🏠 Balansiranje kućne potrošnje","h3_sperimentazione_gse":"⚡ GSE pokus","h3_bilanciamento_fotovoltaico":"☀️ Solarno balansiranje","h3_lingua":"🌐 Jezik","lbl_viaggio_in_corso":"Vožnja u tijeku","lbl_wallbox_ora":"⚡ Wallbox sada","lbl_carburante_evitato":"Ušteđeno gorivo","lbl_tagliandi":"+ Servisi","lbl_bollo":"+ Cestarina","lbl_consumata_oggi":"🔴 Potrošeno danas","lbl_kwh_usati_oggi":"🔋 kWh potrošeno danas","lbl_km_oggi":"🚗 Km danas","lbl_ricaricati_oggi":"⚡ Napunjeno danas","lbl_ricariche_oggi":"💰 Punjenja danas","lbl_ricariche_mensili":"💰 Punjenja ovaj mjesec","lbl_data":"Datum","lbl_energia":"Energija","lbl_batteria":"Baterija","lbl_media":"Prosjek","lbl_costo_eff":"Trošak · Učink.","lbl_casa_wallbox":"🏠 Kuća (wallbox)","lbl_fotovoltaico":"☀️ Solar","lbl_colonnine":"⚡ Javne punionice","lbl_dalla_rete_ac":"Iz mreže (AC)","lbl_in_batteria":"U bateriju","lbl_dispersa":"Izgubljeno","lbl_efficienza":"Učinkovitost","lbl_prossimo_km":"Sljedeći (km)","lbl_speso_finora":"Potrošeno do sada","lbl_scadenza_a_km":"Rok po km","lbl_scadenza_a_data":"Rok po datumu","lbl_ultimo_cambio_a":"Zadnja zamjena na","lbl_prossimo_cambio":"Sljedeća zamjena","lbl_ultimo_cambio_km":"Zadnja zamjena (km)","lbl_scadenza_a_data_opz":"Rok po datumu (opc.)","lbl_scadenza":"Rok","lbl_costo_annuo":"Godišnji trošak","lbl_termica_teorica_450_×_tagliandi":"Teorijski fosilni (450 € × servisi)","lbl_spesa_reale_ev":"Stvarni trošak EV-a","lbl_risparmio_tagliandi":"Ušteda na servisima","lbl_risparmio_bollo":"Ušteda na cestarini","lbl_mese":"Mjesec","lbl_anno":"Godina","lbl_km_miei_dall_attivazione":"Moji km (od aktivacije)","lbl_prezzo_carburante":"Cijena goriva","lbl_risparmiato_col_fv":"Ušteđeno solarom","lbl_energia_dal_fv":"Energija iz solara","lbl_ricaricato_fv_questo_mese":"Napunjeno solarom ovaj mjesec","lbl_energia_fv_totale":"Ukupno solarne energije","lbl_temperatura_esterna":"Vanjska temperatura","lbl_consumo_attuale":"Trenutna potrošnja","lbl_migliore":"Najbolje","lbl_peggiore":"Najgore","lbl_energia_casa_totale":"Energija kod kuće (ukupno)","lbl_servizio_notify":"📨 Servis obavijesti","lbl_attivo":"Aktivno","lbl_inizio":"Početak","lbl_fine":"Kraj","lbl_soc_obiettivo":"Ciljni SoC %","lbl_giorni":"Dani","lbl_orario":"Vrijeme","lbl_soglia":"Prag","lbl_dalle":"Od","lbl_alle":"Do","lbl_costo_casa":"Cijena kod kuće","lbl_costo_colonnina":"Cijena javne punionice","lbl_costo_fotovoltaico":"Cijena solara","lbl_obiettivo_ricarica":"Cilj punjenja","lbl_capacità":"Kapacitet","lbl_soh_ufficiale":"Službeni SOH","lbl_costo_assicurazione":"Cijena osiguranja","lbl_servizio_notify_2":"Servis obavijesti","lbl_preavviso_scadenze":"Podsjetnik na rokove","lbl_lingua_pannello":"Jezik panela","lbl_potenza_ora":"Snaga sada","lbl_corrente":"Struja","lbl_tensione":"Napon","lbl_temperatura":"Temperatura","lbl_motivo_limite":"Razlog ograničenja","lbl_tempo_di_ricarica":"Vrijeme punjenja","lbl_potenza_wallbox":"Snaga wallboxa","lbl_energia_totale":"Ukupna energija","lbl_limite":"Ograničenje","lbl_tempo_stimato":"Procijenjeno trajanje","lbl_orario_stimato":"Procijenjeno vrijeme","lbl_costo_stimato":"Procijenjeni trošak","lbl_consumo_casa":"Potrošnja kuće","lbl_soglia_contatore":"Prag brojila","lbl_ampere_wallbox":"Ampera wallboxa","lbl_attiva":"Aktivno","lbl_limite_adesso":"Ograničenje sada","lbl_fascia_piena":"Puni pojas","lbl_batteria_solo_senza_sole":"Baterija samo bez sunca","lbl_surplus_rete":"Višak u mrežu","lbl_prelievo_rete":"Uzimanje iz mreže","lbl_ampere_impostati":"Postavljeni amperi","opt_tutti_gli_anni":"Sve godine","opt_tutti_i_mesi":"Svi mjeseci","opt_casa":"Kuća","opt_fotovoltaico":"Solar","opt_pubblica":"Javno","opt_manuale":"Ručno","opt_tagliando":"Servis","opt_cambio_gomme":"Zamjena guma","opt_riparazione":"Popravak","opt_altro":"Ostalo","opt_settimana":"Tjedan","opt_mese":"Mjesec","opt_stagione":"Sezona","opt_tutto":"Sve","opt_automatica_home_assistant":"Automatski (Home Assistant)","note_stima_verso_il_obiettivo_configurato_con":"Procjena do postavljenog ciljnog %. Kad se auto ne puni, prikazuje zadnje stanje.","note_sopra_la_soglia_10_min_ridotta_a_sotto_l":"Iznad praga 10 min → smanjeni A; ispod 80 % 15 min → maks. A. Senzor/brojilo u <b>Postavke → Balansiranje kuće</b>.","note_fuori_fascia_la_wallbox_è_limitata_alla_":"Izvan pojasa wallbox je ograničen na smanjenu snagu. Vremena u <b>Postavke → GSE pokus</b>.","note_adatta_gli_ampere_per_tenere_il_prelievo":"Prilagođava ampere da uzimanje iz mreže bude ~0. Uz <b>Baterija samo bez sunca</b> auto se danju puni <b>čistim solarom</b>; kućna baterija uskače tek kad se uzima iz mreže (večer/noć). Senzori u <b>Postavke → Solar</b>.","ph_es_colonnina_dc_autostrada":"npr. DC punionica na autocesti","ph_es_60000":"npr. 60000","ttl_filtra_settimana":"Filtar: tjedan","ttl_filtra_mese":"Filtar: mjesec","ttl_filtra_anno":"Filtar: godina","note_confronto":"Usporedba <b>od instalacije</b> je najpouzdanija: obje strane dolaze iz stvarnih podataka (km odvoženi uz aktivnu integraciju vs upisana punjenja). <b>Ukupna</b> ovisi o kWh/€ upisanima u Postavke → Cijene. Obje koriste km <b>od aktivacije</b>, ne cijelu kilometražu: km koje su odvozili drugi (rabljeni auto) ne ulaze u usporedbu.","note_crea":"Obavijesti (početak, kraj punjenja, prazna baterija) šalje sama integracija: automatizacije nisu potrebne. Ako još imaš stare \"Renault EV Center\" automatizacije, obriši ih u Postavke → Automatizacije da ne dobivaš dvostruke obavijesti. Gotovi primjeri su u examples/.","mesi":"siječanj|veljača|ožujak|travanj|svibanj|lipanj|srpanj|kolovoz|rujan|listopad|studeni|prosinac","lbl_nt_start":"Naslov početka","lbl_nt_end_title":"Naslov završetka","lbl_nt_end_body":"Poruka završetka","ph_nt_body":"📍 {zona}\n⚡️ {kwh:.2f} kWh\n🕐 {durata:.2f} h\n📊 {soc0:.0f}% → {soc1:.0f}%\n💰 €{costo:.2f}","btn_notify_save":"💾 Spremi tekstove","nt_sum":"📊 Dnevni sažetak","nt_start":"⚡ Obavijest o početku punjenja","nt_end":"🔋 Obavijest o kraju punjenja","nt_low":"⚠️ Podsjetnik: prazna baterija","lbl_prova_notifiche":"▶ Pošalji probnu obavijest (primjer podataka)","note_nt_vars":"Varijable: {zona} {kwh} {durata} {soc0} {soc1} {costo}. Prazno = zadani tekst.","toast_notify_saved":"💾 Tekstovi spremljeni","h3_backup":"💾 Sigurnosna kopija podataka","btn_export_data":"⬇️ Izvezi sve podatke","btn_import_data":"⬆️ Uvezi iz datoteke","note_backup":"Jedna JSON datoteka s vožnjama, punjenjima, poviješću i brojačima. Uvoz na drugoj instalaciji zamjenjuje podatke.","toast_export_ok":"✅ Kopija preuzeta","toast_import_ok":"✅ Podaci uvezeni","toast_import_err":"⚠️ Neispravna datoteka ili neuspjela radnja","confirm_import":"Zamijeniti sve podatke sadržajem datoteke? Ovo se ne može poništiti.","h3_zone_ricariche":"🗺️ Zone punjenja","btn_salva_zone":"💾 Spremi zone","note_zone":"Punjenja u ovim zonama računaju se kao javna, po cijeni koju postaviš. Kuća (home) ostaje zona za balansiranje wallboxa i solar.","toast_zone_salvate":"💾 Zone spremljene","mode_dark":"Tamno","mode_light":"Svijetlo","theme_ev":"EV Center","theme_blu":"Plavi Megane","theme_giallo":"R5 žuta","theme_verde":"R4 zelena","theme_aviation":"Aviation siva","chip_in_carica":"🔌 Puni se","chip_non_in_carica":"🔓 Ne puni se","state_in_carica":"Puni se","state_non_in_carica":"Ne puni se","chip_collegata":"🔗 Priključen","chip_scollegata":"🔗 Isključen","state_collegata":"Priključen","state_scollegata":"Isključen","wb_attiva":"Wallbox aktivan","st_available":"Spreman","st_charging":"Puni","st_preparing":"Priprema","st_suspended":"Pauzirano","st_finishing":"Završava","st_faulted":"Greška","st_idle":"Miruje","st_connected":"Priključen","st_disconnected":"Isključen","st_completed":"Završeno","st_error":"Greška","st_need_auth":"Priključen, čeka","st_paused":"Pauzirano","st_locked":"Zaključan","toast_no_ac":"⚠️ Nije pronađena naredba za klimu u autu","toast_no_start":"⚠️ Nije pronađen početak punjenja (poveži 'Charge start button' u postavkama)","toast_no_wb_start":"⚠️ Nije pronađena naredba za pokretanje wallboxa (postavi wallbox)","toast_no_wb_stop":"⚠️ Zaustavljanje wallboxa nije povezano (Postavke → Wallbox → Charge stop)","toast_no_horn":"⚠️ Sirena nije povezana (Postavke → Naredbe)","toast_no_lights":"⚠️ Svjetla nisu povezana (Postavke → Naredbe)","toast_kwh":"⚠️ Upiši kWh","confirm_del_charge":"Obrisati ovo punjenje?","btn_save_charge":"💾 Spremi promjene","btn_add_charge":"💾 Upiši punjenje","ttl_edit_charge":"Uredi","ttl_del_charge":"Obriši","ttl_split_charge":"Podijeli","toast_charge_split":"✂️ Punjenje podijeljeno","ph_cerca":"🔍 Traži…","cal_today":"Danas","toast_charge_added":"➕ Punjenje upisano","toast_charge_updated":"✏️ Punjenje ažurirano","toast_charge_deleted":"🗑 Punjenje obrisano","toast_no_stop":"⚠️ Zaustavljanje punjenja nije povezano (Postavke → Wallbox)"};
 (function () {
   const ui = {"\"Automatica\" segue la lingua di HA.":"\"Automatski\" prati jezik HA.","% batt./100km":"% bat./100 km","% batteria persa da fermo ogni giorno.":"% baterije izgubljeno u mirovanju dnevno.","% consumata oggi":"% potrošeno danas","% oggi":"% danas","(dichiarate,":"(deklarirano,","(revisione/bollo/assicurazione).":"(tehnički/cestarina/osiguranje).",", sotto la soglia, nella fascia oraria e nei giorni scelti.":", ispod praga, u odabranom vremenu i danima.",". La linea tratteggiata è la tendenza. Passa il mouse sui punti per i dettagli.":". Isprekidana linija je trend. Prijeđi mišem preko točaka za detalje.",": km × consumo × prezzo carburante + tagliandi + bollo.":": km × potrošnja × cijena goriva + servisi + cestarina.",": l'integrazione aggiunge l'":": integracija dodaje",": ricariche registrate + quelle dichiarate + tagliandi reali + bollo EV.":": upisana punjenja + deklarirana + stvarni servisi + cestarina za EV.",": servizio notify, % minima e fascia oraria del promemoria, modalità programmazione (orario o %), orari e % di avvio/stop, pulsante di avvio carica e number target per lo stop. Gli interruttori si trovano anche tra i dispositivi (\"Renault EV Center\" → switch).":": servis obavijesti, min. % podsjetnika i vremenski prozor, način rasporeda (vrijeme ili %), vremena i % početka/kraja, gumb za početak punjenja i ciljni broj za zaustavljanje. Prekidači su i pod uređajima (\"Renault EV Center\" → prekidač).",": termica − elettrica. Periodi (mese/anno) usano i dati di quel periodo.":": fosilno − električno. Razdoblja (mjesec/godina) koriste podatke tog razdoblja.","= capacità × SOH ÷ 100":"= kapacitet × SOH ÷ 100","A che ora parti di più: histogram per ora.":"Kad najčešće krećeš: histogram po satu.","Anno:":"Godina:","Arrivo · via · paese":"Dolazak · ulica · država","Automazioni":"Automatizacije","Avg efficienza":"Prosj. učinkovitost","Avvia A/C":"Upali klimu","Avvia carica":"Pokreni punjenje","Batteria":"Baterija","Batteria FV":"Baterija FN","CAPACITÀ STIM. (kWh)":"PROCIJ. KAPACITET (kWh)","CO2 evitata vs termica (termica − rete).":"Izbjegnuti CO2 vs benzin (benzin − mreža).","Carica":"Punjenje","Caricati":"Napunjeno","Casa vs Pubblica":"Kuća vs javno","Clacson":"Sirena","Configura → Wallbox → Potenza istantanea":"Postavke → Wallbox → Trenutna snaga","Consumata":"Potrošeno","Consumo medio kWh/100km":"Prosječna potrošnja kWh/100 km","Costo":"Trošak","Costo totale €":"Ukupni trošak €","Costo €":"Trošak €","Da installazione":"Od instalacije","Data":"Datum","Descrizione":"Opis","Distanza km":"Udaljenost km","Distanza viaggi (km)":"Udaljenost vožnje (km)","Dom":"Ned","Durata":"Trajanje","Durata min":"Trajanje min","Durata media":"Prosječno trajanje","Eff.":"Učink.","Elettrica":"Električni","Energia caricata kWh":"Napunjena energija kWh","Energia totale kWh":"Ukupna energija kWh","Energia usata kWh":"Potrošena energija kWh","Extra":"Dodatno","Fine ricarica":"Kraj punjenja","Freddo = blu, caldo = rosso":"Hladno = plavo, toplo = crveno","Gio":"Čet","Il risparmio è la differenza fra quello che avresti speso con l'auto termica e quello che hai speso davvero.":"Ušteda je razlika između onoga što bi potrošio s fosilnim autom i onoga što si stvarno potrošio.","Impostazioni":"Postavke","Impostazioni → Integrazioni → Renault EV Center → Configura":"Postavke → Integracije → Renault EV Center → Configure","Indirizzo":"Adresa","Inserisci i":"Upiši","Km":"Km","Km / Giorni":"Km / dani","La schedulazione crea/aggiorna un'":"Raspored stvara/ažurira","Lampeggia":"Žmigavci","Lun":"Pon","Manutenzione":"Održavanje","Mar":"Uto","Media kWh/100km in ogni fascia di temperatura. Passa il mouse sulle barre per i dettagli.":"Prosječni kWh/100 km u svakom temperaturnom pojasu. Prijeđi mišem preko stupaca za detalje.","Media mensile del consumo: vedi se migliora o peggiora.":"Mjesečna prosječna potrošnja: vidi poboljšava li se ili pogoršava.","Media per stagione":"Prosjek po sezoni","Mer":"Sri","NOMINALE (kWh)":"NAZIVNI (kWh)","Nessun cambio di posizione registrato.":"Nema zabilježene promjene lokacije.","Nessuna scadenza":"Nema roka","Non in carica":"Ne puni se","Ora":"Vrijeme","Panoramica":"Pregled","Partenza · via · paese":"Polazak · ulica · država","Periodo":"Razdoblje","Potenza picco kW":"Vršna snaga kW","Premi ▸":"Pritisni ▸","Premе il tasto Avvia A/C all'orario scelto (modo/temperatura non sono inviabili coi button Renault).":"Pritišće gumb za klimu u odabrano vrijeme (način/temperatura se ne mogu poslati Renault gumbima).","Presa":"Utikač","Prezzo medio di ogni kWh ricaricato.":"Prosječna cijena svakog napunjenog kWh.","Prezzo medio €/kWh":"Prosječna cijena €/kWh","Prossima scadenza":"Sljedeći rok","Quanto avresti speso a termica vs quanto hai speso con l'EV.":"Koliko bi potrošio na gorivo vs koliko si potrošio na EV.","Quanto spendi ogni mese in ricariche.":"Koliko svaki mjesec trošiš na punjenje.","Rete":"Mreža","Ricariche":"Punjenja","Rinnova +1 anno":"Obnovi +1 godina","Rinnova +6 mesi":"Obnovi +6 mjeseci","Risparmi":"Uštede","Risparmio":"Ušteda","Risparmio = kWh dal FV × (costo rete casa − costo FV).":"Ušteda = kWh iz solara × (cijena mreže kod kuće − cijena solara).","Rotta":"Ruta","Sab":"Sub","Salute batteria":"Zdravlje baterije","Scadenze: da":"Rokovi: od","Sensore preso da":"Senzor iz","Sessioni":"Punjenja","Settimana:":"Tjedan:","Sono le automazioni create in Home Assistant (Impostazioni → Automazioni). Accendile/spegni da qui, senza YAML.":"Ovo su automatizacije stvorene u Home Assistantu (Postavke → Automatizacije). Pali ih i gasi ovdje, bez YAML-a.","Spesa":"Trošak","Statistiche":"Statistika","Temi HA in /themes: renault-blu, giallo, verde, aviation":"HA teme u /themes: renault-blu, giallo, verde, aviation","Tempo di guida":"Vrijeme vožnje","Termica":"Benzin","Tipo":"Vrsta","Totale":"Ukupno","Totale viaggi":"Ukupno vožnji","Tutto in":"Sve uključeno","Un punto per viaggio (≥3 km): kWh/100km vs temperatura.":"Jedna točka po vožnji (≥3 km): kWh/100 km vs temperatura.","Una notifica al giorno quando l'auto è":"Jedna obavijest dnevno kad je auto","Usati":"Iskorišteno","Utile per le colonnine DC. Se lasci vuoto il costo, resta 0 €.":"Korisno za DC punionice. Ako ostaviš cijenu praznu, ostaje 0 €.","Vampire drain: % persa a fermo (batteria spenta).":"Gubitak u mirovanju: % izgubljen dok auto stoji (ugašen).","Ven":"Pet","Viaggi":"Vožnje","Viaggi totali":"Ukupno vožnji","Voce":"Stavka","WLTP casa madre a 100% vs reale (capacità ÷ media di tutti i viaggi).":"Tvornički WLTP na 100 % vs stvarni (kapacitet ÷ prosjek svih vožnji).","Zona ricarica":"Zona punjenja","a":"do","a casa":"kod kuće","automazione":"automatizacija","configurato e ti dice a quanti km cambiarle.":"postavljen i javlja ti na koliko km ih mijenjati.","costo/100km":"trošak/100 km","costo/km":"trošak/km","da":"od","dalle ricariche a casa":"od punjenja kod kuće","evitata = termica − rete":"izbjegnuto = benzin − mreža","gg":"d","in Home Assistant (orario + giorni) che preme il tasto di avvio.":"u Home Assistantu (vrijeme + dani) koja pritišće gumb za početak.","intervallo gomme":"interval guma","interventi)":"servisa)","kWh a bordo":"kWh u bateriji","kWh oggi":"kWh danas","kWh oggi · ieri":"kWh danas · jučer","kWh) · Mese:":"kWh) · Mjesec:","kWh/100km medi per zona d'arrivo: dove consumi di più.":"Prosječni kWh/100 km po području dolaska: gdje najviše trošiš.","km dal":"km od","km dall'attivazione (odometro − km iniziali)":"km od aktivacije (kilometraža − početni km)","km dell'ultimo cambio":"km zadnje zamjene","modificabile, si salva nel number":"može se mijenjati, sprema se u broj","· termica":"· benzin","— include i valori dichiarati":"— uključuje deklarirane vrijednosti","— solo dati reali ✅":"— samo stvarni podaci ✅","€ vs elettrica":"€ vs električni","€/anno":"€/godina","⏹️ FERMA":"⏹️ STOP","▶️ AVVIA":"▶️ START","★ NETTO":"★ NETO","⛽ Carburante":"⛽ Gorivo","✖ azzera date":"✖ obriši datume","✨ Crea automazioni consigliate":"✨ Stvori preporučene automatizacije","➕ Aggiungi intervento":"➕ Dodaj servis","🎚️ Corrente di carica (A)":"🎚️ Struja punjenja (A)","🏁 Chiudi viaggio ora":"🏁 Zatvori vožnju sada","💚 Differenza":"💚 Razlika","💰 Risparmio netto":"💰 Neto ušteda","💾 Applica corrente":"💾 Primijeni struju","💾 Registra ricarica":"💾 Upiši punjenje","💾 Salva":"💾 Spremi","💾 Salva giorni":"💾 Spremi dane","💾 Salva programma clima":"💾 Spremi raspored klime","💾 Salva programma ricarica":"💾 Spremi raspored punjenja","💾 Salva scadenza tagliando":"💾 Spremi rok servisa","📄 Bollo":"📄 Cestarina","📥 Esporta viaggi CSV":"📥 Izvezi vožnje u CSV","🔄 Aggiorna posizione auto":"🔄 Osvježi lokaciju auta","🔄 Reset contatori Costi":"🔄 Resetiraj brojače troškova","🔄 Reset contatori Energia":"🔄 Resetiraj brojače energije","🔄 Reset contatori Km":"🔄 Resetiraj brojače km","🔧 Tagliandi":"🔧 Servisi","🔴 Auto termica":"🔴 Fosilni auto","🕘 Ricariche prima":"🕘 Ranija punjenja","🟢 Auto elettrica":"🟢 Električni auto","🤖 Automazioni create — attiva/disattiva":"🤖 Stvorene automatizacije — uklj./isklj.","🧭 Range reale vs dichiarato":"🧭 Stvarni vs deklarirani domet","Sconosciuto":"Nepoznato","attivo":"aktivno","spento":"isključeno","Netto":"Neto","Reale · media viaggi":"Stvarni · prosjek vožnji","Dichiarato · WLTP":"Deklarirani · WLTP","casa madre al 100%":"tvornički na 100 %","Nessun number corrente wallbox in configurazione":"Nije postavljen broj za struju wallboxa","Nessun viaggio per il filtro scelto":"Nema vožnji za odabrani filtar","n. viaggi":"br. vožnji","ora di partenza":"vrijeme polaska","zona d'arrivo":"područje dolaska","giorno":"dan","mese":"mjesec","Km Percorsi":"Prijeđeni km","Media Consumi":"Prosj. potrošnja","Primavera":"Proljeće","Estate":"Ljeto","Autunno":"Jesen","Inverno":"Zima","Cambio gomme":"Zamjena guma","Assicurazione":"Osiguranje","Tagliando":"Servis","Bollo":"Cestarina","Revisione":"Tehnički","Gomme":"Gume","Scadenza":"Rok","giorni":"dana","Km mancanti":"km preostalo","Nessun dato":"Nema podataka","Nessun intervento":"Nema servisa","Ricarica":"Punjenje","Avvia":"Početak","Ferma":"Stop"};
-  const ui2 = {"Oggi":"Danas","Ieri":"Jučer","Settimana":"Tjedan","Mese":"Mjesec","Anno":"Godina","Fuori":"Vani","Casa":"Kuća","Pubblica":"Javno","attesa":"čeka","viaggi":"vožnji","AC (lenta)":"AC (sporo)","DC (fast)":"DC (brzo)","i filtri":"filtere","in archivio":"u arhivi","Tagliando annuale":"Godišnji servis","(consegna)":"(isporuka)","Nessun dato stagionale":"Nema sezonskih podataka","Nessun viaggio nel periodo scelto (servono viaggi ≥3 km con la temperatura esterna).":"Nema vožnje u odabranom razdoblju (potrebne vožnje ≥3 km s vanjskom temperaturom).","Tutte":"Sve","Tutto":"Sve","Tutti":"Sve","Auto in movimento":"Auto u vožnji","Auto parcheggiata":"Auto parkiran","Inattiva":"Neaktivno","Km oggi":"Km danas","Fotovoltaico":"Solar","Gennaio":"Siječanj","Febbraio":"Veljača","Marzo":"Ožujak","Aprile":"Travanj","Maggio":"Svibanj","Giugno":"Lipanj","Luglio":"Srpanj","Agosto":"Kolovoz","Settembre":"Rujan","Ottobre":"Listopad","Novembre":"Studeni","Dicembre":"Prosinac","Ricarica a Casa":"Punjenje kod kuće","Ricarica Pubblica":"Javno punjenje","Non disponibile":"Nije dostupno","In carica (potenza non nota)":"Puni se (snaga nepoznata)","Nessun viaggio.":"Nema vožnji.","Nessuna ricarica registrata":"Nema zabilježenih punjenja","Nessuna sessione":"Nema sesija","Nessun dato storico.":"Nema povijesnih podataka.","Nessun dato risparmio.":"Nema podataka o uštedi.","Nessun dato per le fasce.":"Nema podataka po tarifama.","Nessun dato per il filtro":"Nema podataka za odabrani filtar","Nessun dato per l'anno scelto":"Nema podataka za odabranu godinu","Nessun intervento registrato":"Nema zabilježenih servisa","Dati insufficienti.":"Nedovoljno podataka.","Grafico non disponibile.":"Grafikon nije dostupan.","Mappa non disponibile":"Karta nije dostupna","Posizione non disponibile":"Lokacija nije dostupna","Nessuna automazione attiva (Renault/Wallbox/Bilanciamento).":"Nema aktivnih automatizacija (Renault/Wallbox/Balansiranje).","Nessuna automazione Renault trovata. Usa \"Crea automazioni consigliate\" in Impostazioni.":"Nije pronađena Renault automatizacija. Koristi \"Stvori preporučene automatizacije\" u Postavkama.","Elimina":"Izbriši","Modifica":"Uredi","Fascia di temperatura":"Raspon temperature","kWh/100km (media)":"kWh/100 km (prosjek)","Ricariche FV":"Punjenja iz solara","Ricariche Pubbliche":"Javna punjenja","SOH stimato %":"Procijenjeni SOH %","Potenza istantanea wallbox":"Trenutna snaga wallboxa","Mappa il sensore":"Poveži senzor","in Configura → Wallbox.":"u Postavkama → Wallbox.","Serve la card «apexcharts-card»":"Potrebna je kartica «apexcharts-card»","Per vedere questo grafico installa da":"Za prikaz ovog grafikona instaliraj iz","poi riavvia Home Assistant e ricarica la pagina.":"zatim ponovno pokreni Home Assistant i osvježi stranicu.","Attiva il confronto con l'auto termica in":"Omogući usporedbu s benzinskim autom u","Configura → Risparmi":"Postavke → Uštede","Nessuno storico mensile ancora":"Još nema mjesečne povijesti","Ricaricati":"Napunjeno","SOH ufficiale %":"Službeni SOH %","Temperatura esterna (°C)":"Vanjska temperatura (°C)","A/C avviata":"Klima pokrenuta","Avvia carica (auto)":"Pokreni punjenje (auto)","Viaggio chiuso":"Vožnja završena","CSV esportato":"CSV izvezen","Aggiornamento auto richiesto":"Zatraženo osvježavanje auta","Km azzerati":"Kilometri vraćeni na nulu","Energia azzerata":"Energija vraćena na nulu","Costi azzerati":"Troškovi vraćeni na nulu","Rinnovata +6 mesi":"Produljeno za 6 mjeseci","Rinnovata +1 anno":"Produljeno za 1 godinu","Ricarica avviata":"Punjenje pokrenuto","Ricarica fermata":"Punjenje zaustavljeno","Luci":"Svjetla","Luci lampeggianti":"Bljeskanje svjetlima","Giorni avviso salvati":"Dani upozorenja spremljeni","Stop carica":"Zaustavi punjenje","Intervento registrato":"Servis zabilježen","🔔 Notifiche — attiva/disattiva":"🔔 Obavijesti — uključi/isključi","Notifica attivata":"Obavijest uključena","Notifica disattivata":"Obavijest isključena","Automazione attivata":"Automatizacija uključena","Automazione disattivata":"Automatizacija isključena","Avvio ricarica":"Početak punjenja","Batteria bassa":"Niska razina baterije","Riepilogo giornaliero":"Dnevni sažetak","Scadenze":"Rokovi","Bilanciamento casa":"Balansiranje opterećenja kuće","Bilanciamento solare":"Balansiranje prema solaru","GSE stop":"GSE zaustavljanje","GSE ripresa":"GSE nastavak","Avvio programmato":"Planirani početak","da configurare":"treba postaviti","TOTALE":"UKUPNO","sess":"sesija","gg":"dana","giorni":"dana","FV":"Sol","Bat":"Bat","Pub":"Jav","⚠️ Mancano i kWh/€ caricati prima: questo valore è gonfiato (le ricariche fatte prima non sono contate). Compila Configura → Prezzi.":"⚠️ Nedostaju kWh/€ napunjeni prije integracije: ova vrijednost je prenapuhana (ranija punjenja nisu uračunata). Ispuni Postavke → Cijene."};
+  const ui2 = {"Oggi":"Danas","Ieri":"Jučer","Settimana":"Tjedan","Mese":"Mjesec","Anno":"Godina","Fuori":"Vani","Casa":"Kuća","Pubblica":"Javno","attesa":"čeka","viaggi":"vožnji","AC (lenta)":"AC (sporo)","DC (fast)":"DC (brzo)","i filtri":"filtere","in archivio":"u arhivi","Tagliando annuale":"Godišnji servis","(consegna)":"(isporuka)","Nessun dato stagionale":"Nema sezonskih podataka","Nessun viaggio nel periodo scelto (servono viaggi ≥3 km con la temperatura esterna).":"Nema vožnje u odabranom razdoblju (potrebne vožnje ≥3 km s vanjskom temperaturom).","Tutte":"Sve","Tutto":"Sve","Tutti":"Sve","Auto in movimento":"Auto u vožnji","Auto parcheggiata":"Auto parkiran","Inattiva":"Neaktivno","Km oggi":"Km danas","Fotovoltaico":"Solar","Gennaio":"Siječanj","Febbraio":"Veljača","Marzo":"Ožujak","Aprile":"Travanj","Maggio":"Svibanj","Giugno":"Lipanj","Luglio":"Srpanj","Agosto":"Kolovoz","Settembre":"Rujan","Ottobre":"Listopad","Novembre":"Studeni","Dicembre":"Prosinac","Ricarica a Casa":"Punjenje kod kuće","Ricarica Pubblica":"Javno punjenje","Non disponibile":"Nije dostupno","In carica (potenza non nota)":"Puni se (snaga nepoznata)","Nessun viaggio.":"Nema vožnji.","Nessuna ricarica registrata":"Nema zabilježenih punjenja","Nessuna sessione":"Nema sesija","Nessun dato storico.":"Nema povijesnih podataka.","Nessun dato risparmio.":"Nema podataka o uštedi.","Nessun dato per le fasce.":"Nema podataka po tarifama.","Nessun dato per il filtro":"Nema podataka za odabrani filtar","Nessun dato per l'anno scelto":"Nema podataka za odabranu godinu","Nessun intervento registrato":"Nema zabilježenih servisa","Dati insufficienti.":"Nedovoljno podataka.","Grafico non disponibile.":"Grafikon nije dostupan.","Mappa non disponibile":"Karta nije dostupna","Posizione non disponibile":"Lokacija nije dostupna","Nessuna automazione attiva (Renault/Wallbox/Bilanciamento).":"Nema aktivnih automatizacija (Renault/Wallbox/Balansiranje).","Nessuna automazione Renault trovata. Usa \"Crea automazioni consigliate\" in Impostazioni.":"Nije pronađena Renault automatizacija. Koristi \"Stvori preporučene automatizacije\" u Postavkama.","Elimina":"Izbriši","Modifica":"Uredi","Fascia di temperatura":"Raspon temperature","kWh/100km (media)":"kWh/100 km (prosjek)","Ricariche FV":"Punjenja iz solara","Ricariche Pubbliche":"Javna punjenja","SOH stimato %":"Procijenjeni SOH %","Potenza istantanea wallbox":"Trenutna snaga wallboxa","Mappa il sensore":"Poveži senzor","in Configura → Wallbox.":"u Postavkama → Wallbox.","Serve la card «apexcharts-card»":"Potrebna je kartica «apexcharts-card»","Per vedere questo grafico installa da":"Za prikaz ovog grafikona instaliraj iz","poi riavvia Home Assistant e ricarica la pagina.":"zatim ponovno pokreni Home Assistant i osvježi stranicu.","Attiva il confronto con l'auto termica in":"Omogući usporedbu s benzinskim autom u","Configura → Risparmi":"Postavke → Uštede","Nessuno storico mensile ancora":"Još nema mjesečne povijesti","Ricaricati":"Napunjeno","SOH ufficiale %":"Službeni SOH %","Temperatura esterna (°C)":"Vanjska temperatura (°C)","A/C avviata":"Klima pokrenuta","Avvia carica (auto)":"Pokreni punjenje (auto)","Viaggio chiuso":"Vožnja završena","CSV esportato":"CSV izvezen","Aggiornamento auto richiesto":"Zatraženo osvježavanje auta","Km azzerati":"Kilometri vraćeni na nulu","Energia azzerata":"Energija vraćena na nulu","Costi azzerati":"Troškovi vraćeni na nulu","Rinnovata +6 mesi":"Produljeno za 6 mjeseci","Rinnovata +1 anno":"Produljeno za 1 godinu","Ricarica avviata":"Punjenje pokrenuto","Ricarica fermata":"Punjenje zaustavljeno","Luci":"Svjetla","Luci lampeggianti":"Bljeskanje svjetlima","Giorni avviso salvati":"Dani upozorenja spremljeni","Stop carica":"Zaustavi punjenje","Intervento registrato":"Servis zabilježen","🔔 Notifiche — attiva/disattiva":"🔔 Obavijesti — uključi/isključi","Notifica attivata":"Obavijest uključena","Notifica disattivata":"Obavijest isključena","Automazione attivata":"Automatizacija uključena","Automazione disattivata":"Automatizacija isključena","Avvio ricarica":"Početak punjenja","Batteria bassa":"Niska razina baterije","Riepilogo giornaliero":"Dnevni sažetak","Scadenze":"Rokovi","Bilanciamento casa":"Balansiranje opterećenja kuće","Bilanciamento solare":"Balansiranje prema solaru","GSE stop":"GSE zaustavljanje","GSE ripresa":"GSE nastavak","Avvio programmato":"Planirani početak","da configurare":"treba postaviti","TOTALE":"UKUPNO","sess":"sesija","gg":"dana","giorni":"dana","FV":"Sol","Bat":"Bat","Pub":"Jav","⚠️ Mancano i kWh/€ caricati prima: questo valore è gonfiato (le ricariche fatte prima non sono contate). Compila Configura → Prezzi.":"⚠️ Nedostaju kWh/€ napunjeni prije integracije: ova vrijednost je prenapuhana (ranija punjenja nisu uračunata). Ispuni Postavke → Cijene.","Nessun dato.":"Nema podataka.","inviato":"poslano","Filtro":"Filtar","Limite corrente":"Ograničenje struje","Intervento eliminato":"Servis obrisan","Ricarica eliminata":"Punjenje obrisano","Ricarica separata":"Punjenje podijeljeno","Ricarica modificata":"Punjenje ažurirano","Ricarica registrata":"Punjenje upisano","Notifica di prova inviata":"Probna obavijest poslana","Testi salvati":"Tekstovi spremljeni","Zone salvate":"Zone spremljene","A/C: 21 °C":"Klima: 21 °C","Configura → Bilanciamento casa":"Postavke → Balansiranje kuće","Configura → Fotovoltaico":"Postavke → Solar","Configura → Sperimentazione GSE":"Postavke → GSE pokus","Configura → Prezzi":"Postavke → Cijene","Configura → Comandi":"Postavke → Naredbe","Configura → Wallbox":"Postavke → Wallbox","Batteria solo senza sole":"Baterija samo bez sunca","Archivio viaggi vuoto":"Arhiva vožnji prazna","Per vedere questo grafico installa da":"Za prikaz ovog grafikona instaliraj iz","poi riavvia Home Assistant e ricarica la pagina.":"zatim ponovno pokreni Home Assistant i osvježi stranicu."};
   const ph = {"km mancanti":"km preostalo","in archivio":"u arhivi","i filtri":"filtere","Tagliando annuale":"Godišnji servis","attesa":"čeka","viaggi":"vožnji","giorni":"dana","charge history":"povijest punjenja","(ridotta)":"(smanjeno)","(piena)":"(puno)","Fuori":"Vani"};
   for (const k in ui) if (UI[k]) UI[k].hr = ui[k];
   for (const k in ui2) if (UI2[k]) UI2[k].hr = ui2[k];
@@ -3194,6 +3321,47 @@ function _loc() { return _LOCALES[_LANG] || "it-IT"; }
 function _detectLang(hass) {
   const l = String((hass && hass.language) || "it").slice(0, 2).toLowerCase();
   return I18N[l] ? l : "it";
+}
+
+/** Traduit une chaîne IT (toasts, HTML dynamique) via UI/UI2/PHRASES. */
+function _trText(raw) {
+  if (raw == null || raw === "") return raw;
+  if (_LANG === "it") return String(raw);
+  try {
+    const { R, P } = _uiIndex();
+    const lang = _LANG;
+    const tr = (text) => {
+      if (!text) return text;
+      const lead = (text.match(/^\s*/) || [""])[0];
+      const trail = (text.match(/\s*$/) || [""])[0];
+      const core = text.replace(/\s+/g, " ").trim();
+      if (!core) return text;
+      let out = null, pre = "", suf = "";
+      const ex = R[core] || R[core.toLowerCase()];
+      if (ex) out = ex[lang] || ex.it || core;
+      if (out === null) {
+        let body = core.replace(/^[^\p{L}\p{N}]+/u, "").replace(/^[\d.,\s]+/u, "");
+        pre = core.slice(0, core.length - body.length);
+        let e = R[body] || R[body.toLowerCase()];
+        if (!e) {
+          const tail = body.replace(/[^\p{L}\p{N}]+$/u, "");
+          if (tail) { e = R[tail] || R[tail.toLowerCase()]; if (e) suf = body.slice(tail.length); }
+        }
+        if (e) out = e[lang] || e.it || body;
+      }
+      if (out === null) return text;
+      if (/[A-ZÀ-ÖØ-Þ]/.test(core) && core === core.toUpperCase()) out = out.toUpperCase();
+      return lead + pre + out + suf + trail;
+    };
+    let v = tr(String(raw));
+    for (const [re, map] of P) {
+      const t = map[lang] || map.it;
+      if (t) v = v.replace(re, t);
+    }
+    return v;
+  } catch (e) {
+    return String(raw);
+  }
 }
 
 class RenaultEvCenterPanel extends HTMLElement {
@@ -3281,47 +3449,18 @@ class RenaultEvCenterPanel extends HTMLElement {
   }
 
   _translateDom() {
-    const lang = _LANG;
     if (!this.shadowRoot) return;
     try {
-      const { R, P } = _uiIndex();
-      const tr = (raw) => {
-        if (!raw) return raw;
-        const lead = (raw.match(/^\s*/) || [""])[0];
-        const trail = (raw.match(/\s*$/) || [""])[0];
-        const core = raw.replace(/\s+/g, " ").trim();
-        if (!core) return raw;
-        let out = null, pre = "", suf = "";
-        const ex = R[core] || R[core.toLowerCase()];
-        if (ex) out = ex[lang] || ex.it || core;
-        if (out === null) {
-          let body = core.replace(/^[^\p{L}\p{N}]+/u, "").replace(/^[\d.,\s]+/u, "");
-          pre = core.slice(0, core.length - body.length);
-          let e = R[body] || R[body.toLowerCase()];
-          if (!e) {
-            const tail = body.replace(/[^\p{L}\p{N}]+$/u, "");
-            if (tail) { e = R[tail] || R[tail.toLowerCase()]; if (e) suf = body.slice(tail.length); }
-          }
-          if (e) out = e[lang] || e.it || body;
-        }
-        if (out === null) return raw;
-        if (/[A-ZÀ-ÖØ-Þ]/.test(core) && core === core.toUpperCase()) out = out.toUpperCase();
-        return lead + pre + out + suf + trail;
-      };
       const w = document.createTreeWalker(this.shadowRoot, NodeFilter.SHOW_TEXT);
       let n;
       while ((n = w.nextNode())) {
-        let v = tr(n.nodeValue);
-        for (const [re, map] of P) {
-          const t = map[lang] || map.it;
-          if (t) v = v.replace(re, t);
-        }
+        const v = _trText(n.nodeValue);
         if (v !== n.nodeValue) n.nodeValue = v;
       }
       this.shadowRoot.querySelectorAll("[title],[placeholder],[aria-label]").forEach((el) => {
         ["title", "placeholder", "aria-label"].forEach((a) => {
           const v = el.getAttribute(a);
-          const t = tr(v);
+          const t = _trText(v);
           if (t !== v) el.setAttribute(a, t);
         });
       });
@@ -3514,7 +3653,7 @@ class RenaultEvCenterPanel extends HTMLElement {
   _toast(text) {
     const t = this.shadowRoot.getElementById("toast");
     if (!t) return;
-    t.textContent = text;
+    t.textContent = _trText(text);
     t.classList.add("show");
     clearTimeout(this._toastT);
     this._toastT = setTimeout(() => t.classList.remove("show"), 2600);
@@ -4291,7 +4430,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     const s = this._st(this._sid("viaggi_recenti"));
     const hist = (s && Array.isArray(s.attributes.pos_history)) ? s.attributes.pos_history : [];
     if (!hist.length) {
-      host.innerHTML = `<div style="color:var(--muted);font-size:12px">Nessun cambio di posizione registrato.</div>`;
+      host.innerHTML = `<div style="color:var(--muted);font-size:12px">${_ui("Nessun cambio di posizione registrato.")}</div>`;
       return;
     }
     const byDay = {};
@@ -4321,7 +4460,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         .localeCompare(String(b.attributes.friendly_name || b.entity_id), "it"));
     host.innerHTML = list.length
         ? list.map((s) => `<div class="row"><span>🟢 ${_esc(s.attributes.friendly_name || s.entity_id)}</span></div>`).join("")
-      : `<div style="color:var(--muted);font-size:12px">Nessuna automazione attiva (Renault/Wallbox/Bilanciamento).</div>`;
+      : `<div style="color:var(--muted);font-size:12px">${_ui("Nessuna automazione attiva (Renault/Wallbox/Bilanciamento).")}</div>`;
   }
   /** Toggle on/off delle automazioni create (pagina Automazioni). */
   /** icona per automazione creata, dedotta dall'alias */
@@ -4383,7 +4522,7 @@ class RenaultEvCenterPanel extends HTMLElement {
           const nome = _esc(s.attributes.friendly_name || s.entity_id);
           return `<div class="row"><span>${S._autoIcon(nome + " " + s.entity_id)} ${nome}</span><label class="switch"><input type="checkbox" ${s.state === "on" ? "checked" : ""} data-auto="${_esc(s.entity_id)}"><span></span></label></div>`;
         }).join("")
-        : `<div style="color:var(--muted);font-size:12px">Nessuna automazione Renault trovata. Usa "Crea automazioni consigliate" in Impostazioni.</div>`;
+        : `<div style="color:var(--muted);font-size:12px">${_ui("Nessuna automazione Renault trovata. Usa \"Crea automazioni consigliate\" in Impostazioni.")}</div>`;
       host.querySelectorAll("[data-auto]").forEach((el) => el.addEventListener("change", () =>
         S._call("renault_ev_center", "set_auto_state",
           { entity_id: el.dataset.auto, state: el.checked ? "on" : "off" },
@@ -4476,7 +4615,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         const eid = this._ov("wallbox_max_current") || "number.wallbox_user_limit";
         const inp = this.shadowRoot.getElementById("wb_amp");
         const v = inp ? parseFloat(inp.value) : null;
-        if (v) this._call("number", "set_value", { entity_id: eid, value: v }, `🔌 Limite corrente: ${v} A`);
+        if (v) this._call("number", "set_value", { entity_id: eid, value: v }, `🔌 ${_ui("Limite corrente")}: ${v} A`);
         break;
       }
       case "horn": {
@@ -4500,7 +4639,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         if (!sel) break;
         sel.value = per;
         const eid = sel.dataset.ent || this._field("sel_periodo");
-        if (eid) this._call("select", "select_option", { entity_id: eid, option: per }, `📅 Filtro: ${per}`);
+        if (eid) this._call("select", "select_option", { entity_id: eid, option: per }, `📅 ${_ui("Filtro")}: ${_ui(per)}`);
         break;
       }
       case "lowsave": {
@@ -4789,7 +4928,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const rows = this._list(this._sid("tagliandi"));
       tbTag.innerHTML = rows.slice(0, 12).map((r) =>
         `<tr><td>${_esc(this._d(r.data))}</td><td>${this._i(parseFloat(r.km) || 0)}</td><td>${_esc(r.tipo ?? "—")}</td><td><b>${this._fmt(parseFloat(r.costo ?? r.euro ?? 0), 0)} €</b></td><td><span class="dchip" data-mdel="${_esc(r.id)}" title="Elimina">🗑</span></td></tr>`).join("")
-        || `<tr><td colspan="5" style="color:var(--muted)">Nessun intervento registrato</td></tr>`;
+        || `<tr><td colspan="5" style="color:var(--muted)">${_ui("Nessun intervento registrato")}</td></tr>`;
     }
     // righe top/stop da attributi oggetto: [data-topstop="migliore|kwh_per_100km"]
     root.querySelectorAll("[data-topstop]").forEach((el) => {
@@ -4990,7 +5129,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     // GPS assente: la card di HA riceverebbe un'entità senza lat/lon e va in errore
     // ("Expected value to be of type string, but found null instead")
     if (!pos) {
-      if (!this._mapCard) box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Posizione non disponibile</div>`;
+      if (!this._mapCard) box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">${_ui("Posizione non disponibile")}</div>`;
       return;
     }
     if (this._mapCard) {
@@ -5027,7 +5166,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         if (this._mapCard) this._mapCard.hass = this._hass;
       }, ms));
     } catch (e) {
-      box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">Mappa non disponibile</div>`;
+      box.innerHTML = `<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--muted);font-size:12px">${_ui("Mappa non disponibile")}</div>`;
     }
   }
   /**
@@ -5108,10 +5247,10 @@ class RenaultEvCenterPanel extends HTMLElement {
     box.style.cssText = "";
     box.innerHTML =
       `<div style="padding:16px;border:1px dashed var(--accent);border-radius:12px;background:rgba(255,255,255,.04)">
-        <div style="font-weight:700;margin-bottom:6px">📦 Serve la card «apexcharts-card»</div>
+        <div style="font-weight:700;margin-bottom:6px">📦 ${_ui("Serve la card «apexcharts-card»")}</div>
         <div style="font-size:13px;color:var(--muted);line-height:1.7">
-          Per vedere questo grafico installa da <b>HACS → Frontend</b> → <code>apexcharts-card</code>,
-          poi riavvia Home Assistant e ricarica la pagina.
+          ${_ui("Per vedere questo grafico installa da")} <b>HACS → Frontend</b> → <code>apexcharts-card</code>,
+          ${_ui("poi riavvia Home Assistant e ricarica la pagina.")}
         </div></div>`;
   }
   /** ciambella con CSS conic-gradient: nessuna card HACS richiesta */
@@ -5149,8 +5288,8 @@ class RenaultEvCenterPanel extends HTMLElement {
     const d2 = root.querySelector('[data-c="donut-casa"]');
     if (!st || !st.n) {
       ["n", "kwh", "durata", "picco", "costo", "prezzo"].forEach((k) => set(k, "—"));
-      if (d1) d1.innerHTML = `<div style="color:var(--muted);font-size:12px">Nessuna ricarica registrata</div>`;
-      if (d2) d2.innerHTML = `<div style="color:var(--muted);font-size:12px">Nessuna ricarica registrata</div>`;
+      if (d1) d1.innerHTML = `<div style="color:var(--muted);font-size:12px">${_ui("Nessuna ricarica registrata")}</div>`;
+      if (d2) d2.innerHTML = `<div style="color:var(--muted);font-size:12px">${_ui("Nessuna ricarica registrata")}</div>`;
       return;
     }
     set("n", this._i(st.n));
@@ -5175,7 +5314,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     const ent = this._ov("wallbox_power");
     if (!ent) {
       box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">
-        Mappa il sensore <b>Potenza istantanea wallbox</b> in Configura → Wallbox.</div>`;
+        ${_ui("Mappa il sensore")} <b>${_ui("Potenza istantanea wallbox")}</b> ${_ui("in Configura → Wallbox.")}</div>`;
       return;
     }
     const hasApex = typeof customElements !== "undefined" && !!customElements.get("apexcharts-card");
@@ -5227,7 +5366,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       box.appendChild(card);
       this._wbChart = card;
     } catch (e) {
-      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Grafico non disponibile.</div>`;
+      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">${_ui("Grafico non disponibile.")}</div>`;
     }
   }
   /** grafico a dispersione consumi vs temperatura esterna (apex), con periodo selezionabile */
@@ -5256,7 +5395,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     }
     const vis = pts.filter((p) => (p.d || "0000-01-01") >= lim);
     if (!vis.length) {
-      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio nel periodo scelto (servono viaggi ≥3 km con la temperatura esterna).</div>`;
+      box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">${_ui("Nessun viaggio nel periodo scelto (servono viaggi ≥3 km con la temperatura esterna).")}</div>`;
       return;
     }
     // scatter SVG nativo: x = temperatura esterna (°C), y = consumo (kWh/100km)
@@ -5308,7 +5447,7 @@ class RenaultEvCenterPanel extends HTMLElement {
   /** Barre per fasce di temperatura: media kWh/100km in ogni fascia. */
   _drawTempBars(box, vis) {
     if (!box) return;
-    if (!vis || !vis.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio.</div>`; return; }
+    if (!vis || !vis.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">${_ui("Nessun viaggio.")}</div>`; return; }
     const bins = [[0, 10], [10, 18], [18, 26], [26, 99]];
     const rows = [];
     bins.forEach(([a, b]) => {
@@ -5318,7 +5457,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         rows.push({ l: `${a}–${b >= 99 ? "∞" : b}°`, v: sum / v.length, n: v.length });
       }
     });
-    if (!rows.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun dato per le fasce.</div>`; return; }
+    if (!rows.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">${_ui("Nessun dato per le fasce.")}</div>`; return; }
     const W = 560, H = 150, pl = 44, pr = 12, pt = 14, pb = 30;
     const iw = W - pl - pr, ih = H - pt - pb;
     const max = Math.max(...rows.map((r) => r.v)) * 1.15;
@@ -5337,7 +5476,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       svg += `<text x="${x + bw * 0.3}" y="${pt + ih + 15}" fill="var(--muted)" font-size="10" text-anchor="middle">${r.l}</text>`;
       svg += `<text x="${x + bw * 0.3}" y="${pt + ih + 28}" fill="var(--muted)" font-size="9" text-anchor="middle">${r.n} ${_pl(r.n, "viaggi")}</text>`;
     });
-    svg += `<text x="${pl + iw / 2}" y="${H - 4}" fill="var(--muted)" font-size="10" text-anchor="middle">Fascia di temperatura</text>`;
+    svg += `<text x="${pl + iw / 2}" y="${H - 4}" fill="var(--muted)" font-size="10" text-anchor="middle">${_ui("Fascia di temperatura")}</text>`;
     svg += `<text x="13" y="${pt + ih / 2}" fill="var(--muted)" font-size="10" text-anchor="middle" transform="rotate(-90 13 ${pt + ih / 2})">kWh/100km (media)</text>`;
     svg += `</svg>`;
     box.innerHTML = svg;
@@ -5345,7 +5484,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     /** Grafico a barre generico: rows = [{l, v, n?, u?, color?}] */
   _svgBars(box, rows, yLabel, xLabel) {
     if (!box) return;
-    if (!rows || !rows.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun dato.</div>`; return; }
+    if (!rows || !rows.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">${_ui("Nessun dato.")}</div>`; return; }
     const W = 560, H = 150, pl = 44, pr = 12, pt = 14, pb = 30;
     const iw = W - pl - pr, ih = H - pt - pb;
     const max = Math.max.apply(null, rows.map((r) => r.v)) * 1.15 || 1;
@@ -5377,7 +5516,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (!box) return;
     const s = this._st(this._sid("storico_giornaliero"));
     const days = (s && Array.isArray(s.attributes.days)) ? s.attributes.days : [];
-    if (!days.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun dato storico.</div>`; return; }
+    if (!days.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">${_ui("Nessun dato storico.")}</div>`; return; }
     const byM = {};
     days.forEach((d) => {
       const m = String(d.data || "").slice(0, 7);
@@ -5398,7 +5537,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (!box) return;
     const s = this._st(this._sid("viaggi_recenti"));
     const trips = (s && Array.isArray(s.attributes.trips)) ? s.attributes.trips : [];
-    if (!trips.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio.</div>`; return; }
+    if (!trips.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">${_ui("Nessun viaggio.")}</div>`; return; }
     const byZ = {};
     trips.forEach((t) => {
       let z = String(t.zona_arrivo || "Sconosciuto");
@@ -5457,7 +5596,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       { l: _ui("Elettrica"), v: parseFloat(a.elettrico_totale) || 0, color: "#3ea6ff" },
       { l: _ui("Netto"), v: parseFloat(a.netto) || 0, color: a.netto >= 0 ? "#22c55e" : "#ef4444" },
     ];
-    if (!rows.some((r) => r.v > 0)) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun dato risparmio.</div>`; return; }
+    if (!rows.some((r) => r.v > 0)) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">${_ui("Nessun dato risparmio.")}</div>`; return; }
     this._svgBars(box, rows, "€", "");
   }
 
@@ -5466,7 +5605,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     if (!box) return;
     const s = this._st(this._sid("viaggi_recenti"));
     const trips = (s && Array.isArray(s.attributes.trips)) ? s.attributes.trips : [];
-    if (!trips.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Nessun viaggio.</div>`; return; }
+    if (!trips.length) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">${_ui("Nessun viaggio.")}</div>`; return; }
     const byH = {};
     trips.forEach((t) => {
       const h = parseInt(String(t.ora_inizio || "").split(":")[0], 10);
@@ -5493,7 +5632,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     const cap = this._num(this._nid("capacita_batteria")) || parseFloat(this._cfg.capacity) || 60;
     const real = kwh100 && kwh100 > 0 ? (cap / kwh100) * 100 : null;
     const okD = declared !== null && declared !== undefined && !isNaN(declared);
-    if (!okD && real === null) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">Dati insufficienti.</div>`; return; }
+    if (!okD && real === null) { box.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px">${_ui("Dati insufficienti.")}</div>`; return; }
     const cell = (label, val, color, sub, right) =>
       `<div style="flex:1;min-width:0;padding:10px 12px;border-radius:10px;background:rgba(128,128,128,.10);text-align:${right ? "right" : "left"}">
          <div style="font-size:11px;color:var(--muted)">${label}</div>
@@ -5567,7 +5706,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       keys.forEach((k) => money(k, null));
       root.querySelectorAll('[data-sv="km"]').forEach((el) => { el.textContent = "—"; });
       root.querySelectorAll('[data-sv="prezzo"]').forEach((el) => { el.textContent = "—"; });
-      if (bar) bar.innerHTML = `<div style="color:var(--muted);font-size:12px">Attiva il confronto con l'auto termica in <b>Configura → Risparmi</b>.</div>`;
+      if (bar) bar.innerHTML = `<div style="color:var(--muted);font-size:12px">${_ui("Attiva il confronto con l'auto termica in")} <b>${_ui("Configura → Risparmi")}</b>.</div>`;
       return;
     }
     const t = a.termica, e = a.elettrica;
@@ -5708,7 +5847,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const eff = g.km > 0 ? g.kwh / g.km * 100 : 0;
       return `<tr><td>${_esc(k)}</td><td>${g.n}</td><td>${this._i(g.km)}</td><td>${this._fmt(g.kwh, 1)}</td>
         <td><span class="badge">${this._fmt(eff, 1)}</span></td><td>${this._fmt(g.costo, 2)} €</td></tr>`;
-    }).join("") || `<tr><td colspan="6" style="color:var(--muted)">Nessun dato per il filtro</td></tr>`;
+    }).join("") || `<tr><td colspan="6" style="color:var(--muted)">${_ui("Nessun dato per il filtro")}</td></tr>`;
   }
   _tableMesi(root) {
     const box = root.querySelector('[data-c="tab-mesi"]');
@@ -5716,7 +5855,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     const st = this._st(this._sid("storico_giornaliero"));
     const mesi = st && st.attributes ? st.attributes.mesi : null;
     if (!mesi || !Object.keys(mesi).length) {
-      box.innerHTML = `<div style="color:var(--muted)">Nessuno storico mensile ancora</div>`;
+      box.innerHTML = `<div style="color:var(--muted)">${_ui("Nessuno storico mensile ancora")}</div>`;
       return;
     }
     const now = new Date();
@@ -5756,7 +5895,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       return `<details class="anno" data-mk="${y}" ${op(y)}><summary><span class="tr">${y} · ${this._fmt(tC, 2)} € · ${this._fmt(tK, 1)} kWh · ${_ui("FV")} ${this._fmt(tFv, 1)} · ${_ui("Bat")} ${this._fmt(tBat, 1)} · ${_ui("Pub")} ${this._fmt(tPub, 1)} · ${this._i(tKm)} km</span></summary>
         <table><tr><th>Mese</th><th>Costo</th><th>Ricaricati</th><th>Ricariche FV</th><th>Batteria FV</th><th>Ricariche Pubbliche</th><th>KM</th></tr>${rows}
         <tr class="totrow"><td>${_ui("TOTALE")}</td><td>${this._fmt(tC, 2)} €</td><td>${this._fmt(tK, 1)} kWh</td><td>${this._fmt(tFv, 1)} kWh</td><td>${this._fmt(tBat, 1)} kWh</td><td>${this._fmt(tPub, 1)} kWh</td><td>${this._i(tKm)} km</td></tr></table></details>`;
-    }).join("") || `<div style="color:var(--muted)">Nessun dato per l'anno scelto</div>`;
+    }).join("") || `<div style="color:var(--muted)">${_ui("Nessun dato per l'anno scelto")}</div>`;
     box.querySelectorAll("details[data-mk]").forEach((d) => {
       d.addEventListener("toggle", () => { this._mesiOpen[d.dataset.mk] = d.open; });
     });
@@ -5821,7 +5960,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         <td>${this._fmt(parseFloat(r.costo_stimato ?? r.costo ?? 0), 2)} €</td>
         <td>${_esc(this._zn(r.zona_partenza ?? r.ricarica_precedente))}${r.luogo_partenza ? `<br><span style="color:var(--muted);font-size:11px">${_esc(r.luogo_partenza)}${r.paese_partenza ? " · " + _esc(r.paese_partenza) : ""}</span>` : ""}</td>
         <td>${_esc(this._zn(r.zona_arrivo))}${r.luogo_arrivo ? `<br><span style="color:var(--muted);font-size:11px">${_esc(r.luogo_arrivo)}${r.paese_arrivo ? " · " + _esc(r.paese_arrivo) : ""}</span>` : ""}</td></tr>`;
-    }).join("") || `<tr><td colspan="10" style="color:var(--muted)">Nessun viaggio per il filtro scelto</td></tr>`;
+    }).join("") || `<tr><td colspan="10" style="color:var(--muted)">${_ui("Nessun viaggio per il filtro scelto")}</td></tr>`;
   }
   /** carica una ricarica nel form "Aggiungi ricarica manuale" e passa in modalità modifica */
   _editCharge(id) {
@@ -5918,7 +6057,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const totCost = vis.reduce((a, r) => a + (parseFloat(r.costo ?? 0) || 0), 0);
       cells.push(`<tr class="totrow"><td colspan="4" style="color:var(--muted);font-weight:700">${_ui("TOTALE")} (${vis.length})</td><td><b>${this._fmt(totKwh, 2)}</b></td><td></td><td></td><td><b>${this._fmt(totCost, 2)} €</b></td><td></td></tr>`);
     }
-    tb.innerHTML = cells.join("") || `<tr><td colspan="9" style="color:var(--muted)">Nessuna ricarica registrata</td></tr>`;
+    tb.innerHTML = cells.join("") || `<tr><td colspan="9" style="color:var(--muted)">${_ui("Nessuna ricarica registrata")}</td></tr>`;
   }
   _tableSalute(root) {
     const rows = this._list(this._sid("lista_ricariche"));
@@ -5932,7 +6071,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       return `<tr><td>${this._d(r.data)}</td><td>${dsoc}</td>
         <td>${this._fmt(rete, 2)}</td><td>${this._fmt(batt, 2)}</td>
         <td><span class="badge">${this._fmt(eff, 1)}%</span></td></tr>`;
-    }).join("") || `<tr><td colspan="5" style="color:var(--muted)">Nessuna sessione</td></tr>`;
+    }).join("") || `<tr><td colspan="5" style="color:var(--muted)">${_ui("Nessuna sessione")}</td></tr>`;
   }
   _treeViaggi(root) {
     const box = root.querySelector('[data-c="tree"]');
@@ -5944,7 +6083,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       const days = th && Array.isArray(th.attributes.days) ? th.attributes.days : [];
       rows = days.map((d) => ({ data: d.date, km: d.km, kwh_per_100km: d.kwh_100, costo_stimato: null }));
     }
-    if (!rows.length) { box.innerHTML = `<div style="color:var(--muted)">Archivio viaggi vuoto</div>`; return; }
+    if (!rows.length) { box.innerHTML = `<div style="color:var(--muted)">${_ui("Archivio viaggi vuoto")}</div>`; return; }
     // aggrega per giorno
     const byDay = {};
     rows.forEach((r) => {
@@ -6042,7 +6181,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     box.innerHTML = ["Inverno", "Primavera", "Estate", "Autunno"].map((s) => {
       const eff = acc[s].km > 0 ? acc[s].kwh / acc[s].km * 100 : NaN;
       return `<div class="row"><span>${icons[s]} ${s}</span><b>${isNaN(eff) ? "—" : this._fmt(eff, 1) + " kWh/100km"}</b></div>`;
-    }).join("") || `<div style="color:var(--muted)">Nessun dato stagionale</div>`;
+    }).join("") || `<div style="color:var(--muted)">${_ui("Nessun dato stagionale")}</div>`;
   }
   _rowsAttr(root) {
     // righe generiche: [data-attr="entityKey|attrKeys"] → testo
@@ -6301,7 +6440,7 @@ const PAGES = () => ({
   </div>
 
   <div class="card" style="margin-top:16px"><h3>${_t("h3_cronologia_posizione", "📍 Cronologia posizione")}</h3>
-    <div data-c="pos-history"><div style="color:var(--muted);font-size:12px">Nessun cambio di posizione registrato.</div></div>
+    <div data-c="pos-history"><div style="color:var(--muted);font-size:12px">${_ui("Nessun cambio di posizione registrato.")}</div></div>
   </div>
 
   <div class="grid g2" style="margin-top:16px">
