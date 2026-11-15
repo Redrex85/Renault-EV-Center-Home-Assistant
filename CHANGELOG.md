@@ -5,6 +5,13 @@ non esistono più come release separate.
 La serie **1.0.5** è ancora attiva come `1.0.5.x`; verrà accorpata in un unico tag `1.0.5`
 al passaggio alla **1.0.6** (workflow *Collapse release series*).
 
+## 1.1.37-beta - Toast tradotti e ultime stringhe del pannello (PR #5)
+
+- **Toast tradotti**: la logica di traduzione del DOM è stata estratta in `_trText()` e applicata anche ai toast, che prima restavano in italiano in ogni lingua.
+- **24 voci nuove in UI2** (IT/EN/FR/ES/DE/HR): esiti delle azioni ("Ricarica eliminata/modificata/separata/registrata", "Intervento eliminato", "Testi salvati", "Zone salvate", "Notifica di prova inviata"), "Limite corrente", "Filtro", "A/C: 21 °C", i rimandi "Configura → …" e "Archivio viaggi vuoto".
+- **~30 stringhe residue** nei punti dove l'HTML viene generato da codice ora passano da `_ui()` (stesso problema in tutte le lingue): "Serve la card apexcharts", "Mappa il sensore …", "Nessun viaggio.", "Nessuna sessione", "Posizione non disponibile", "Nessuno storico mensile ancora", "Nessun dato stagionale", …
+- **Francese**: "Batterie uniquement sans soleil"; completata la descrizione del campo `scope` ("Valeurs : km, énergie, coûts, trajets, recharges ou tout").
+
 ## 1.1.36-beta - Testi del pannello traducibili, plurali croati, geocoding a più passate
 
 - **Pannello**: i testi che erano scritti solo in italiano dentro il codice ora passano dalle traduzioni (IT/EN/FR/ES/DE/HR): avviso "kWh/€ mancanti" nella pagina Risparmi, `TOTALE` nelle tabelle, `sess`, `gg`, legenda e tooltip del grafico Termica/Elettrica/Netto, riga riepilogo mensile `FV · Bat · Pub`, "da configurare" nelle Automazioni, unità `gg` delle scadenze. Era lo stesso problema in tutte le lingue, non solo in croato.
