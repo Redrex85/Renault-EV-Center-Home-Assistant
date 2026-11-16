@@ -1,22 +1,17 @@
-## 1.1.41-beta
+## 1.1.41 - Release: manutenzione, wallbox e i18n (accorpa le beta 1.1.39→1.1.41)
 
-- **Configura → Wallbox**: i due campi "Avvio carica" e "Stop carica" non sono più obbligatori. Bloccavano il salvataggio a chi non ha una wallbox (o ne ha una senza switch di avvio/stop). Se mancano, «Avvia carica»/«Ferma carica» mostrano il solito avviso e il resto funziona uguale. Etichette aggiornate in tutte e 6 le lingue.
-- Il sensore di temperatura wallbox era già opzionale: nessuna modifica necessaria lì.
+Release stabile che raccoglie le ultime tre beta. In sintesi:
 
-## 1.1.40-beta
-
-- **Ultimo cambio gomme**: senza il valore impostato il pannello mostrava lo *stato* del sensore `prossima_scadenza` (giorni) come se fossero km (`35096 km`). Ora un attributo mancante vale "—" e non fa più da fallback (segnalato da Branimir).
-- **Prossimo cambio tagliando/gomme**: senza un intervento registrato il target veniva inventato dall'odometro attuale (65611 + 15000). Ora la scadenza a km esiste solo se c'è un ultimo cambio/servizio o un valore impostato, altrimenti il pannello mostra "nessun dato" (segnalato da Branimir).
-- **Giorni stimati**: la stima usava i km dell'anno solare diviso 365 (nei primi giorni d'uso ~0,4 km/giorno → 93589 giorni). Ora usa la media reale dall'installazione, con 15000 km/anno come riserva quando lo storico è insufficiente (segnalato da Branimir).
-- **Croato**: nome del dispositivo, sensori di risparmio, stato del tipo di ricarica e nomi delle scadenze arrivano ora tradotti nella lingua di HA (prima erano in italiano fisso). Nelle traduzioni pannello: "dodaje postavljeni interval guma" (segnalato da Branimir).
+- **Foto auto che sfarfallava**: l'URL della foto utente veniva rigenerato con un timestamp nuovo a ogni aggiornamento `hass`, ricaricando l'immagine più volte al secondo. Ora il cache-busting usa un timestamp per caricamento pagina e l'elemento viene ricostruito solo se il markup cambia.
+- **Configura → Auto**: la label "Modello" compariva grezza (`model`): la traduzione esisteva solo in `options...data` e non in `sections.car.data`, dove Home Assistant la cerca. Aggiunta in tutte e 6 le lingue.
+- **Manutenzione**: il backend anteponeva "a" alla data-km (`a 105573 km`) in italiano fisso e senza valore impostato inventava il prossimo cambio dall'odometro attuale. Ora la data-km è neutra (`105573 km`) e la scadenza a km esiste solo con un intervento registrato o un valore impostato (altrimenti "nessun dato").
+- **Giorni stimati**: la stima usava i km dell'anno solare diviso 365 (nei primi giorni d'uso ~0,4 km/giorno → decine di migliaia di giorni). Ora usa la media reale dall'installazione, con 15000 km/anno come riserva quando lo storico è insufficiente.
+- **Ultimo cambio gomme**: senza il valore impostato il pannello mostrava lo stato del sensore `prossima_scadenza` (giorni) come se fossero km. Ora un attributo mancante mostra "—".
+- **Nomi tradotti in HA**: nome dispositivo, sensori di risparmio, stato del tipo di ricarica e nomi delle scadenze seguono la lingua di Home Assistant (6 lingue, croato compreso); le scadenze portano un campo `key` stabile per la logica e per il pannello.
+- **Configura → Wallbox**: "Avvio carica" e "Stop carica" non sono più obbligatori: bloccavano il salvataggio a chi non ha wallbox o ne ha una senza switch. Il sensore di temperatura wallbox era già opzionale.
 - **Card**: il banner in console mostra la versione vera (`CARD_VER`) invece di `v1.1.25` fisso.
-
-## 1.1.39-beta
-
-- **Foto auto che sfarfallava**: l'URL della foto utente era rigenerato con un timestamp nuovo a ogni aggiornamento `hass`, ricaricando l'immagine più volte al secondo. Ora il cache-busting usa un timestamp per **caricamento pagina** e l'elemento viene ricostruito solo se il markup cambia (segnalato da Branimir).
-- **Configura → Auto**: nel form di configurazione la label del campo "Modello" compariva grezza (`model`) perché la traduzione era solo nel blocco `data` e non in `sections.car.data`. Aggiunta in tutte le 6 lingue (segnalato da Branimir).
-- **Manutenzione → Prossimo cambio**: il backend anteponeva "a" alla data-km (`a 105573 km`) in italiano fisso, non traducibile. Ora restituisce `105573 km` e la traduzione resta al pannello (segnalato da Branimir).
-- **Croato**: mancava uno spazio dopo "dodaje" nel suggerimento del cambio gomme ("dodajeinterval" → "dodaje interval", segnalato da Branimir).
+- **Croato**: "dodaje postavljeni interval guma" nel suggerimento del cambio gomme.
+- Segnalazioni e testi croati: grazie a Branimir.
 
 # Changelog
 
