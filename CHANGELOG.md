@@ -1,3 +1,11 @@
+## 1.1.40-beta
+
+- **Ultimo cambio gomme**: senza il valore impostato il pannello mostrava lo *stato* del sensore `prossima_scadenza` (giorni) come se fossero km (`35096 km`). Ora un attributo mancante vale "—" e non fa più da fallback (segnalato da Branimir).
+- **Prossimo cambio tagliando/gomme**: senza un intervento registrato il target veniva inventato dall'odometro attuale (65611 + 15000). Ora la scadenza a km esiste solo se c'è un ultimo cambio/servizio o un valore impostato, altrimenti il pannello mostra "nessun dato" (segnalato da Branimir).
+- **Giorni stimati**: la stima usava i km dell'anno solare diviso 365 (nei primi giorni d'uso ~0,4 km/giorno → 93589 giorni). Ora usa la media reale dall'installazione, con 15000 km/anno come riserva quando lo storico è insufficiente (segnalato da Branimir).
+- **Croato**: nome del dispositivo, sensori di risparmio, stato del tipo di ricarica e nomi delle scadenze arrivano ora tradotti nella lingua di HA (prima erano in italiano fisso). Nelle traduzioni pannello: "dodaje postavljeni interval guma" (segnalato da Branimir).
+- **Card**: il banner in console mostra la versione vera (`CARD_VER`) invece di `v1.1.25` fisso.
+
 ## 1.1.39-beta
 
 - **Foto auto che sfarfallava**: l'URL della foto utente era rigenerato con un timestamp nuovo a ogni aggiornamento `hass`, ricaricando l'immagine più volte al secondo. Ora il cache-busting usa un timestamp per **caricamento pagina** e l'elemento viene ricostruito solo se il markup cambia (segnalato da Branimir).

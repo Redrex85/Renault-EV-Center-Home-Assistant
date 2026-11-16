@@ -484,9 +484,17 @@ class TipoRicarica(MateSensor):
         self._attr_unique_id = f"{coordinator.entry.entry_id}_tipo_ricarica"
         self._attr_translation_key = "tipo_ricarica"
 
+    _TRADUZIONI = {
+        "Non in Carica": "tipo_nessuna",
+        "Ricarica a Casa": "tipo_casa",
+        "Ricarica Fotovoltaico": "tipo_fv",
+        "Ricarica Pubblica": "tipo_pubblica",
+    }
+
     @property
     def native_value(self):
-        return self.coordinator.data["tipo_ricarica"]
+        valore = self.coordinator.data["tipo_ricarica"]
+        return self.coordinator._ui(self._TRADUZIONI.get(valore, "tipo_nessuna"))
 
     @property
     def icon(self):
@@ -775,9 +783,9 @@ class RisparmioTermica(MateSensor):
         super().__init__(coordinator, name)
         self._periodo = periodo
         labels = {
-            "totale": "Risparmio Totale vs",
-            "mese": "Risparmio Mese vs",
-            "anno": "Risparmio Anno vs",
+            "totale": coordinator._ui("risp_totale"),
+            "mese": coordinator._ui("risp_mese"),
+            "anno": coordinator._ui("risp_anno"),
         }
         self._attr_unique_id = f"{coordinator.entry.entry_id}_risparmio_{periodo}"
         self._attr_name = f"{labels[periodo]} {coordinator.fuel_label}"
@@ -1126,15 +1134,16 @@ class RisparmioExtra(MateSensor):
 
     _attr_has_entity_name = False
     LABELS = {
-        "tagliandi": ("Risparmio Tagliandi vs", "mdi:wrench-clock"),
-        "bollo": ("Risparmio Bollo vs", "mdi:file-certificate"),
-        "netto": ("Risparmio Netto vs", "mdi:cash-check"),
+        "tagliandi": ("risp_tagliandi", "mdi:wrench-clock"),
+        "bollo": ("risp_bollo", "mdi:file-certificate"),
+        "netto": ("risp_netto", "mdi:cash-check"),
     }
 
     def __init__(self, coordinator, name, key):
         super().__init__(coordinator, name)
         self._key = key
         label, icon = self.LABELS[key]
+        label = coordinator._ui(label)
         self._attr_unique_id = f"{coordinator.entry.entry_id}_risparmio_{key}"
         self._attr_name = f"{label} {coordinator.fuel_label}"
         self._attr_native_unit_of_measurement = "€"

@@ -459,6 +459,78 @@ _NOTIFY_L10N: dict[str, dict[str, str]] = {
     },
 }
 
+# --- nomi di entita', stati e scadenze nella lingua di HA -----------------------
+# Questi testi finiscono in NOMI di entita' e VALORI di stato: HA non li traduce
+# da solo (le label del pannello si, questi no), quindi vanno scelti qui.
+_UI_L10N: dict[str, dict[str, str]] = {
+    "it": {
+        "model": "Renault E-Tech elettrica",
+        "risp_totale": "Risparmio Totale vs", "risp_mese": "Risparmio Mese vs",
+        "risp_anno": "Risparmio Anno vs", "risp_tagliandi": "Risparmio Tagliandi vs",
+        "risp_bollo": "Risparmio Bollo vs", "risp_netto": "Risparmio Netto vs",
+        "tipo_nessuna": "Non in Carica", "tipo_casa": "Ricarica a Casa",
+        "tipo_fv": "Ricarica Fotovoltaico", "tipo_pubblica": "Ricarica Pubblica",
+        "scad_assicurazione": "Assicurazione", "scad_bollo": "Bollo",
+        "scad_revisione": "Revisione", "scad_tagliando": "Tagliando",
+        "scad_gomme": "Cambio gomme", "scad_tagliando_annuale": "Tagliando annuale (consegna)",
+    },
+    "en": {
+        "model": "Renault E-Tech electric",
+        "risp_totale": "Total savings vs", "risp_mese": "Monthly savings vs",
+        "risp_anno": "Yearly savings vs", "risp_tagliandi": "Service savings vs",
+        "risp_bollo": "Road tax savings vs", "risp_netto": "Net savings vs",
+        "tipo_nessuna": "Not charging", "tipo_casa": "Home charging",
+        "tipo_fv": "Solar charging", "tipo_pubblica": "Public charging",
+        "scad_assicurazione": "Insurance", "scad_bollo": "Road tax",
+        "scad_revisione": "Inspection", "scad_tagliando": "Service",
+        "scad_gomme": "Tyre change", "scad_tagliando_annuale": "Yearly service (delivery)",
+    },
+    "fr": {
+        "model": "Renault E-Tech électrique",
+        "risp_totale": "Économies totales vs", "risp_mese": "Économies du mois vs",
+        "risp_anno": "Économies de l'année vs", "risp_tagliandi": "Économies entretien vs",
+        "risp_bollo": "Économies taxe vs", "risp_netto": "Économies nettes vs",
+        "tipo_nessuna": "Pas en charge", "tipo_casa": "Charge à domicile",
+        "tipo_fv": "Charge solaire", "tipo_pubblica": "Charge publique",
+        "scad_assicurazione": "Assurance", "scad_bollo": "Taxe",
+        "scad_revisione": "Contrôle technique", "scad_tagliando": "Entretien",
+        "scad_gomme": "Changement de pneus", "scad_tagliando_annuale": "Entretien annuel (livraison)",
+    },
+    "es": {
+        "model": "Renault E-Tech eléctrico",
+        "risp_totale": "Ahorro total vs", "risp_mese": "Ahorro mensual vs",
+        "risp_anno": "Ahorro anual vs", "risp_tagliandi": "Ahorro mantenimiento vs",
+        "risp_bollo": "Ahorro impuesto vs", "risp_netto": "Ahorro neto vs",
+        "tipo_nessuna": "Sin cargar", "tipo_casa": "Carga en casa",
+        "tipo_fv": "Carga solar", "tipo_pubblica": "Carga pública",
+        "scad_assicurazione": "Seguro", "scad_bollo": "Impuesto",
+        "scad_revisione": "ITV", "scad_tagliando": "Mantenimiento",
+        "scad_gomme": "Cambio de neumáticos", "scad_tagliando_annuale": "Mantenimiento anual (entrega)",
+    },
+    "de": {
+        "model": "Renault E-Tech elektrisch",
+        "risp_totale": "Ersparnis gesamt vs", "risp_mese": "Ersparnis Monat vs",
+        "risp_anno": "Ersparnis Jahr vs", "risp_tagliandi": "Ersparnis Service vs",
+        "risp_bollo": "Ersparnis Steuer vs", "risp_netto": "Ersparnis netto vs",
+        "tipo_nessuna": "Nicht laden", "tipo_casa": "Laden zu Hause",
+        "tipo_fv": "Solar laden", "tipo_pubblica": "Öffentlich laden",
+        "scad_assicurazione": "Versicherung", "scad_bollo": "Kfz-Steuer",
+        "scad_revisione": "Hauptuntersuchung", "scad_tagliando": "Service",
+        "scad_gomme": "Reifenwechsel", "scad_tagliando_annuale": "Jahresservice (Übergabe)",
+    },
+    "hr": {
+        "model": "Renault E-Tech elektricni",
+        "risp_totale": "Ukupna usteda vs", "risp_mese": "Mjesecna usteda vs",
+        "risp_anno": "Godisnja usteda vs", "risp_tagliandi": "Usteda na servisima vs",
+        "risp_bollo": "Usteda na cestarini vs", "risp_netto": "Neto usteda vs",
+        "tipo_nessuna": "Ne puni se", "tipo_casa": "Punjenje kod kuce",
+        "tipo_fv": "Solarno punjenje", "tipo_pubblica": "Javno punjenje",
+        "scad_assicurazione": "Osiguranje", "scad_bollo": "Cestarina",
+        "scad_revisione": "Tehnicki", "scad_tagliando": "Servis",
+        "scad_gomme": "Zamjena guma", "scad_tagliando_annuale": "Godisnji servis (isporuka)",
+    },
+}
+
 
 def _num(hass: HomeAssistant, entity_id: str | None, default: float = 0.0) -> float:
     if not entity_id:
@@ -689,7 +761,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             identifiers={(DOMAIN, self.entry.entry_id)},
             name=str(self.opts.get("name", "Renault EV")),
             manufacturer=MANUFACTURER,
-            model="Renault E-Tech elettrica",
+            model=self._ui("model"),
         )
 
     # ------------------------------------------------------------------- store
@@ -1574,6 +1646,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         costo_stimato = round(needed_kwh * current_price, 2)
 
         # --- tipo ricarica ------------------------------------------------------------
+        # il valore resta la CHIAVE interna (in italiano) per icone e logica:
+        # la traduzione avviene alla lettura (sensor.TipoRicarica)
         if not charging:
             tipo_ricarica = "Non in Carica"
         elif (location or "") == "home":
@@ -1797,11 +1871,11 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             oggi_d = now.date()
             scad_cfg = self.store.data.setdefault("scadenze", {})
             coppie = [
-                ("Assicurazione", scad_cfg.get("assicurazione") or self.scad_assicurazione),
-                ("Bollo", scad_cfg.get("bollo") or self.scad_bollo),
-                ("Revisione", scad_cfg.get("revisione") or self.scad_revisione),
+                ("assicurazione", scad_cfg.get("assicurazione") or self.scad_assicurazione),
+                ("bollo", scad_cfg.get("bollo") or self.scad_bollo),
+                ("revisione", scad_cfg.get("revisione") or self.scad_revisione),
             ]
-            for label, raw in coppie:
+            for key, raw in coppie:
                 raw = str(raw or "").strip()
                 if not raw:
                     continue
@@ -1825,12 +1899,25 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                         prossima = _date(oggi_d.year + 1, prossima.month, prossima.day)
                     except ValueError:
                         continue
-                scadenze.append({"nome": label, "data": prossima.isoformat(),
+                scadenze.append({"key": key, "nome": self._ui(f"scad_{key}"),
+                                 "data": prossima.isoformat(),
                                  "giorni": (prossima - oggi_d).days})
 
             # tagliando / cambio gomme: scadenza per km e/o data
-            km_anno = max(self._km_shown("yearly"), 1.0)
-            km_giorno = km_anno / 365.0
+            # km/giorno: media REALE dall'installazione. Il km dell'anno solare
+            # crolla nei primi giorni d'uso (4 giorni attivi ~ 0,4 km/giorno) e
+            # gonfiava i giorni a valori assurdi (93589 gg).
+            _inst = self.store.data.get("install") or {}
+            _km_giorno = 0.0
+            try:
+                _gg_attivi = (oggi_d - _date.fromisoformat(str(_inst.get("date"))[:10])).days
+            except ValueError:
+                _gg_attivi = 0
+            if _gg_attivi > 0:
+                _fatti = odometer - _f(_inst.get("odometer"))
+                if _fatti > 0:
+                    _km_giorno = _fatti / _gg_attivi
+            km_giorno = _km_giorno or 15000.0 / 365.0  # senza storico: 15000 km/anno
             manutenzioni = self.store.data.get("maintenance", [])
 
             def _due(label: str, key: str, interval_km: float, last_change: bool = False) -> None:
@@ -1845,22 +1932,26 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                 last_km = _f(last.get("km")) if last else 0.0
                 kmv = scad_cfg.get(f"{key}_km")
                 if kmv is None:
-                    base = last_km if last_km > 0 else (odometer if odometer > 0 else 0.0)
-                    kmv = base + interval_km
+                    # nessun km di partenza noto: NON si inventa dall'odometro,
+                    # semplicemente la scadenza a km non esiste (il pannello
+                    # mostra "nessuna scadenza" finche' non viene impostata)
+                    kmv = last_km + interval_km if last_km > 0 else 0.0
                 elif last_change:
                     # ultimo cambio dichiarato → obiettivo = ultimo + intervallo
                     kmv = _f(kmv) + interval_km
                 if kmv:
                     target = _f(kmv)
                     mancanti = target - odometer
-                    scadenze.append({"nome": label, "km": round(mancanti, 0),
+                    scadenze.append({"key": key, "nome": self._ui(f"scad_{key}"),
+                                     "km": round(mancanti, 0),
                                      "data": f"{target:.0f} km",
                                      "giorni": max(int(mancanti / km_giorno), 0)})
                 dv = str(scad_cfg.get(f"{key}_data") or "").strip()
                 if dv:
                     try:
                         td = _date.fromisoformat(dv)
-                        scadenze.append({"nome": label, "data": td.isoformat(),
+                        scadenze.append({"key": key, "nome": self._ui(f"scad_{key}"),
+                                         "data": td.isoformat(),
                                          "giorni": max((td - oggi_d).days, 0)})
                     except ValueError:
                         pass
@@ -1875,16 +1966,17 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     anniv = pd.replace(year=pd.year + (oggi_d.year - pd.year))
                     if anniv < oggi_d:
                         anniv = pd.replace(year=pd.year + (oggi_d.year - pd.year) + 1)
-                    scadenze.append({"nome": "Tagliando annuale (consegna)", "data": anniv.isoformat(),
+                    scadenze.append({"key": "tagliando", "nome": self._ui("scad_tagliando_annuale"),
+                                     "data": anniv.isoformat(),
                                      "giorni": (anniv - oggi_d).days})
                 except ValueError:
                     pass
             # se ci sono ENTRAMBI i tagliandi (km e consegna) tengo solo quello della consegna:
             # erano due voci per la stessa cosa e la prima restava a 0 giorni
-            ha_km = any(s["nome"] == "Tagliando" for s in scadenze)
-            ha_consegna = any(str(s["nome"]).startswith("Tagliando annuale") for s in scadenze)
+            ha_km = any(s.get("key") == "tagliando" and "km" in s for s in scadenze)
+            ha_consegna = any(s.get("key") == "tagliando" and "km" not in s for s in scadenze)
             if ha_km and ha_consegna:
-                scadenze = [s for s in scadenze if s["nome"] != "Tagliando"]
+                scadenze = [s for s in scadenze if not (s.get("key") == "tagliando" and "km" in s)]
             scadenze.sort(key=lambda s: s["giorni"])
             await self._check_notifications(scadenze, now)
 
@@ -3427,6 +3519,16 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             body = self._tr(key, **(self.NOTIFY_TEST_SAMPLES.get(tipo) or {}))
         await self._send_notify(self._tr(f"{tipo}_title"), body)
         return True
+
+    def _ui(self, key: str) -> str:
+        """Nomi/valori visibili in HA (entita', stati, scadenze) nella lingua di HA.
+
+        `_lang()` e' limitato alle lingue delle notifiche; qui serve la lingua
+        vera, croato compreso.
+        """
+        code = str(getattr(self.hass.config, "language", "") or "en").lower()[:2]
+        d = _UI_L10N.get(code) or _UI_L10N["en"]
+        return d.get(key) or _UI_L10N["en"].get(key, key)
 
     def _lang(self) -> str:
         """Codice lingua (2 lettere) da HA, con fallback a 'en'."""
