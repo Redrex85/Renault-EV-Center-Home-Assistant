@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "VERSION"
+  # avvio manuale: riallinea le note della release già pubblicata al CHANGELOG
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,15 +23,54 @@ jobs:
         id: v
         run: echo "ver=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
 
+      # HACS mostra il corpo della release nella schermata di aggiornamento:
+      # lo prendiamo dalla sezione del CHANGELOG della versione, così lì si
+      # leggono le modifiche vere invece del solo "Full Changelog".
+      - name: Note release dal CHANGELOG
+        id: notes
+        run: |
+          python3 - "${{ steps.v.outputs.ver }}" <<'PY'
+          import io, sys
+
+          ver = sys.argv[1].strip()
+          out, on = [], False
+          for line in io.open("CHANGELOG.md", encoding="utf-8").read().splitlines():
+              if line.startswith("## "):
+                  if on:
+                      break
+                  titolo = line[3:].strip()
+                  on = titolo == ver or titolo.startswith(ver + " ")
+                  continue
+              if on:
+                  out.append(line)
+          testo = "\n".join(out).strip()
+          if testo:
+              io.open("notes.md", "w", encoding="utf-8", newline="\n").write(testo + "\n")
+          PY
+          if [ -s notes.md ]; then
+            echo "file=notes.md" >> "$GITHUB_OUTPUT"
+          else
+            rm -f notes.md
+            echo "Nessuna sezione CHANGELOG per ${VER}: uso le note automatiche."
+          fi
+        env:
+          VER: ${{ steps.v.outputs.ver }}
+
       - name: Create tag + release if missing
         env:
           GH_TOKEN: ${{ github.token }}
+          NOTES_FILE: ${{ steps.notes.outputs.file }}
         run: |
           set -e
           V="${{ steps.v.outputs.ver }}"
           echo "Versione: $V"
           if gh release view "$V" >/dev/null 2>&1; then
-            echo "Release $V già esistente — niente da fare."
+            if [ -n "$NOTES_FILE" ]; then
+              echo "Release $V esistente: aggiorno le note dal CHANGELOG."
+              gh release edit "$V" --notes-file "$NOTES_FILE"
+            else
+              echo "Release $V già esistente — niente da fare."
+            fi
             exit 0
           fi
           git config user.name "github-actions[bot]"
@@ -46,4 +87,8 @@ jobs:
             *)   FLAG="" ;;
           esac
           echo "Flag release: '${FLAG:-stabile}'"
-          gh release create "$V" --title "$V" --generate-notes $FLAG
+          if [ -n "$NOTES_FILE" ]; then
+            gh release create "$V" --title "$V" --notes-file "$NOTES_FILE" $FLAG
+          else
+            gh release create "$V" --title "$V" --generate-notes $FLAG
+          fi
