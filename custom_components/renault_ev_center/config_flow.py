@@ -427,10 +427,12 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
             vol.Optional(
                 CONF_WB_SESSION_TIME, description={"suggested_value": defaults.get(CONF_WB_SESSION_TIME)}
             ): EntitySelector(EntitySelectorConfig(domain="sensor")),
-            vol.Required(
+            # opzionali: molte wallbox non espongono uno switch di avvio/stop
+            # (o l'utente non ha wallbox) e i campi obbligatori bloccavano il salvataggio
+            vol.Optional(
                 CONF_WB_CHARGE_SWITCH, description={"suggested_value": defaults.get(CONF_WB_CHARGE_SWITCH)}
             ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
-            vol.Required(
+            vol.Optional(
                 CONF_WB_STOP_SWITCH, description={"suggested_value": defaults.get(CONF_WB_STOP_SWITCH)}
             ): EntitySelector(EntitySelectorConfig(domain=["switch", "button"])),
             # temperatura wallbox: senza questa entita' mappata la pagina Wallbox

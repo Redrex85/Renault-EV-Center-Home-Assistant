@@ -28,8 +28,8 @@
               "wallbox_total_energy_entity": "Gesamtenergiezähler (kWh) — verwendet, wenn kein Sitzungszähler",
               "wallbox_max_current_entity": "Nummer für max. Ladestrom (optional)",
               "wallbox_session_time_entity": "Wallbox-Sitzungszeit (s/min/h) — optional, sonst interner Timer",
-              "wb_charge_switch": "Wallbox-Ladestart (switch oder button) — verwendet von Ladestart und der Automatisierung",
-              "wb_stop_switch": "Wallbox-Ladestopp (switch oder button) — verwendet von Ladestopp",
+              "wb_charge_switch": "Wallbox-Ladestart (switch oder button) — verwendet von Ladestart und der Automatisierung (optional)",
+              "wb_stop_switch": "Wallbox-Ladestopp (switch oder button) — verwendet von Ladestopp (optional)",
               "wallbox_temp_entity": "Wallbox-Temperatursensor (optional)"
             }
           },
@@ -113,8 +113,8 @@
               "wallbox_total_energy_entity": "Gesamtenergiezähler (kWh) — verwendet, wenn kein Sitzungszähler",
               "wallbox_max_current_entity": "Nummer für max. Ladestrom (optional)",
               "wallbox_session_time_entity": "Wallbox-Sitzungszeit (s/min/h) — optional, sonst interner Timer",
-              "wb_charge_switch": "Wallbox-Ladestart (switch oder button) — verwendet von Ladestart und der Automatisierung",
-              "wb_stop_switch": "Wallbox-Ladestopp (switch oder button) — verwendet von Ladestopp",
+              "wb_charge_switch": "Wallbox-Ladestart (switch oder button) — verwendet von Ladestart und der Automatisierung (optional)",
+              "wb_stop_switch": "Wallbox-Ladestopp (switch oder button) — verwendet von Ladestopp (optional)",
               "wallbox_temp_entity": "Wallbox-Temperatursensor (optional)"
             }
           },
@@ -328,8 +328,8 @@
               "wallbox_total_energy_entity": "Gesamtenergiezähler (kWh) — verwendet, wenn kein Sitzungszähler",
               "wallbox_max_current_entity": "Nummer für max. Ladestrom (optional)",
               "wallbox_session_time_entity": "Wallbox-Sitzungszeit (s/min/h) — optional, sonst interner Timer",
-              "wb_charge_switch": "Wallbox-Ladestart (switch oder button) — verwendet von Ladestart und der Automatisierung",
-              "wb_stop_switch": "Wallbox-Ladestopp (switch oder button) — verwendet von Ladestopp",
+              "wb_charge_switch": "Wallbox-Ladestart (switch oder button) — verwendet von Ladestart und der Automatisierung (optional)",
+              "wb_stop_switch": "Wallbox-Ladestopp (switch oder button) — verwendet von Ladestopp (optional)",
               "wallbox_temp_entity": "Wallbox-Temperatursensor (optional)"
             }
           },

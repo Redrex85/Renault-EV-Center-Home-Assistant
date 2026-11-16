@@ -1,3 +1,8 @@
+## 1.1.41-beta
+
+- **Configura → Wallbox**: i due campi "Avvio carica" e "Stop carica" non sono più obbligatori. Bloccavano il salvataggio a chi non ha una wallbox (o ne ha una senza switch di avvio/stop). Se mancano, «Avvia carica»/«Ferma carica» mostrano il solito avviso e il resto funziona uguale. Etichette aggiornate in tutte e 6 le lingue.
+- Il sensore di temperatura wallbox era già opzionale: nessuna modifica necessaria lì.
+
 ## 1.1.40-beta
 
 - **Ultimo cambio gomme**: senza il valore impostato il pannello mostrava lo *stato* del sensore `prossima_scadenza` (giorni) come se fossero km (`35096 km`). Ora un attributo mancante vale "—" e non fa più da fallback (segnalato da Branimir).

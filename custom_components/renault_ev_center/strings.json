@@ -28,8 +28,8 @@
               "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
               "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
               "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
-              "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione",
-              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»",
+              "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione (opzionale)",
+              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica» (opzionale)",
               "wallbox_temp_entity": "Sensore temperatura wallbox (opzionale)"
             }
           },
@@ -113,8 +113,8 @@
               "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
               "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
               "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
-              "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione",
-              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»",
+              "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione (opzionale)",
+              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica» (opzionale)",
               "wallbox_temp_entity": "Sensore temperatura wallbox (opzionale)"
             }
           },
@@ -328,8 +328,8 @@
               "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
               "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",
               "wallbox_session_time_entity": "Tempo sessione wallbox (s/min/h) — opzionale, altrimenti contatore interno",
-              "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione",
-              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica»",
+              "wb_charge_switch": "Avvio carica wallbox (switch o button) — usato da «Avvia carica» e dall'automazione (opzionale)",
+              "wb_stop_switch": "Stop carica wallbox (switch o button) — usato da «Ferma carica» (opzionale)",
               "wallbox_temp_entity": "Sensore temperatura wallbox (opzionale)"
             }
           },

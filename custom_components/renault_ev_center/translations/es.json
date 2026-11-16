@@ -28,8 +28,8 @@
               "wallbox_total_energy_entity": "Contador de energía total (kWh) — usado si no hay contador de sesión",
               "wallbox_max_current_entity": "Número de corriente máxima de carga (opcional)",
               "wallbox_session_time_entity": "Tiempo de sesión wallbox (s/min/h) — opcional, si no, temporizador interno",
-              "wb_charge_switch": "Inicio de recarga wallbox (switch o button) — usado por Iniciar recarga y la automatización",
-              "wb_stop_switch": "Parada de recarga wallbox (switch o button) — usado por Parar recarga",
+              "wb_charge_switch": "Inicio de recarga wallbox (switch o button) — usado por Iniciar recarga y la automatización (opcional)",
+              "wb_stop_switch": "Parada de recarga wallbox (switch o button) — usado por Parar recarga (opcional)",
               "wallbox_temp_entity": "Sensor de temperatura de la wallbox (opcional)"
             }
           },
@@ -113,8 +113,8 @@
               "wallbox_total_energy_entity": "Contador de energía total (kWh) — usado si no hay contador de sesión",
               "wallbox_max_current_entity": "Número de corriente máxima de carga (opcional)",
               "wallbox_session_time_entity": "Tiempo de sesión wallbox (s/min/h) — opcional, si no, temporizador interno",
-              "wb_charge_switch": "Inicio de recarga wallbox (switch o button) — usado por Iniciar recarga y la automatización",
-              "wb_stop_switch": "Parada de recarga wallbox (switch o button) — usado por Parar recarga",
+              "wb_charge_switch": "Inicio de recarga wallbox (switch o button) — usado por Iniciar recarga y la automatización (opcional)",
+              "wb_stop_switch": "Parada de recarga wallbox (switch o button) — usado por Parar recarga (opcional)",
               "wallbox_temp_entity": "Sensor de temperatura de la wallbox (opcional)"
             }
           },
@@ -328,8 +328,8 @@
               "wallbox_total_energy_entity": "Contador de energía total (kWh) — usado si no hay contador de sesión",
               "wallbox_max_current_entity": "Número de corriente máxima de carga (opcional)",
               "wallbox_session_time_entity": "Tiempo de sesión wallbox (s/min/h) — opcional, si no, temporizador interno",
-              "wb_charge_switch": "Inicio de recarga wallbox (switch o button) — usado por Iniciar recarga y la automatización",
-              "wb_stop_switch": "Parada de recarga wallbox (switch o button) — usado por Parar recarga",
+              "wb_charge_switch": "Inicio de recarga wallbox (switch o button) — usado por Iniciar recarga y la automatización (opcional)",
+              "wb_stop_switch": "Parada de recarga wallbox (switch o button) — usado por Parar recarga (opcional)",
               "wallbox_temp_entity": "Sensor de temperatura de la wallbox (opcional)"
             }
           },

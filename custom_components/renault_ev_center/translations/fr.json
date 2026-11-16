@@ -28,8 +28,8 @@
               "wallbox_total_energy_entity": "Compteur énergie total (kWh) — utilisé sans compteur session",
               "wallbox_max_current_entity": "Nombre courant max (optionnel)",
               "wallbox_session_time_entity": "Temps de session wallbox (s/min/h) — optionnel, sinon compteur interne",
-              "wb_charge_switch": "Démarrage charge wallbox (switch ou bouton) — utilisé par « Démarrer la charge » et l'automatisation",
-              "wb_stop_switch": "Arrêt charge wallbox (switch ou bouton) — utilisé par « Arrêter la charge »",
+              "wb_charge_switch": "Démarrage charge wallbox (switch ou bouton) — utilisé par « Démarrer la charge » et l'automatisation (optionnel)",
+              "wb_stop_switch": "Arrêt charge wallbox (switch ou bouton) — utilisé par « Arrêter la charge » (optionnel)",
               "wallbox_temp_entity": "Capteur de température du wallbox (optionnel)"
             }
           },
@@ -113,8 +113,8 @@
               "wallbox_total_energy_entity": "Compteur énergie total (kWh) — utilisé sans compteur session",
               "wallbox_max_current_entity": "Nombre courant max (optionnel)",
               "wallbox_session_time_entity": "Temps de session wallbox (s/min/h) — optionnel, sinon compteur interne",
-              "wb_charge_switch": "Démarrage charge wallbox (switch ou bouton) — utilisé par « Démarrer la charge » et l'automatisation",
-              "wb_stop_switch": "Arrêt charge wallbox (switch ou bouton) — utilisé par « Arrêter la charge »",
+              "wb_charge_switch": "Démarrage charge wallbox (switch ou bouton) — utilisé par « Démarrer la charge » et l'automatisation (optionnel)",
+              "wb_stop_switch": "Arrêt charge wallbox (switch ou bouton) — utilisé par « Arrêter la charge » (optionnel)",
               "wallbox_temp_entity": "Capteur de température du wallbox (optionnel)"
             }
           },
@@ -328,8 +328,8 @@
               "wallbox_total_energy_entity": "Compteur énergie total (kWh) — utilisé sans compteur session",
               "wallbox_max_current_entity": "Nombre courant max (optionnel)",
               "wallbox_session_time_entity": "Temps de session wallbox (s/min/h) — optionnel, sinon compteur interne",
-              "wb_charge_switch": "Démarrage charge wallbox (switch ou bouton) — utilisé par « Démarrer la charge » et l'automatisation",
-              "wb_stop_switch": "Arrêt charge wallbox (switch ou bouton) — utilisé par « Arrêter la charge »",
+              "wb_charge_switch": "Démarrage charge wallbox (switch ou bouton) — utilisé par « Démarrer la charge » et l'automatisation (optionnel)",
+              "wb_stop_switch": "Arrêt charge wallbox (switch ou bouton) — utilisé par « Arrêter la charge » (optionnel)",
               "wallbox_temp_entity": "Capteur de température du wallbox (optionnel)"
             }
           },

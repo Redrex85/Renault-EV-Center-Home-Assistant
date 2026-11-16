@@ -28,8 +28,8 @@
               "wallbox_total_energy_entity": "Ukupni brojač energije (kWh) — koristi se ako nema brojača punjenja",
               "wallbox_max_current_entity": "Broj za maks. struju punjenja (opcionalno)",
               "wallbox_session_time_entity": "Trajanje punjenja wallboxa (s/min/h) — opcionalno, inače interni brojač",
-              "wb_charge_switch": "Pokretanje punjenja wallboxa (prekidač ili gumb) — za Pokreni punjenje i automatizaciju",
-              "wb_stop_switch": "Zaustavljanje punjenja wallboxa (prekidač ili gumb) — za Zaustavi punjenje",
+              "wb_charge_switch": "Pokretanje punjenja wallboxa (prekidač ili gumb) — za Pokreni punjenje i automatizaciju (opcionalno)",
+              "wb_stop_switch": "Zaustavljanje punjenja wallboxa (prekidač ili gumb) — za Zaustavi punjenje (opcionalno)",
               "wallbox_temp_entity": "Senzor temperature wallboxa (opcionalno)"
             }
           },
@@ -113,8 +113,8 @@
               "wallbox_total_energy_entity": "Ukupni brojač energije (kWh) — koristi se ako nema brojača punjenja",
               "wallbox_max_current_entity": "Broj za maks. struju punjenja (opcionalno)",
               "wallbox_session_time_entity": "Trajanje punjenja wallboxa (s/min/h) — opcionalno, inače interni brojač",
-              "wb_charge_switch": "Pokretanje punjenja wallboxa (prekidač ili gumb) — za Pokreni punjenje i automatizaciju",
-              "wb_stop_switch": "Zaustavljanje punjenja wallboxa (prekidač ili gumb) — za Zaustavi punjenje",
+              "wb_charge_switch": "Pokretanje punjenja wallboxa (prekidač ili gumb) — za Pokreni punjenje i automatizaciju (opcionalno)",
+              "wb_stop_switch": "Zaustavljanje punjenja wallboxa (prekidač ili gumb) — za Zaustavi punjenje (opcionalno)",
               "wallbox_temp_entity": "Senzor temperature wallboxa (opcionalno)"
             }
           },
@@ -328,8 +328,8 @@
               "wallbox_total_energy_entity": "Ukupni brojač energije (kWh) — koristi se ako nema brojača punjenja",
               "wallbox_max_current_entity": "Broj za maks. struju punjenja (opcionalno)",
               "wallbox_session_time_entity": "Trajanje punjenja wallboxa (s/min/h) — opcionalno, inače interni brojač",
-              "wb_charge_switch": "Pokretanje punjenja wallboxa (prekidač ili gumb) — za Pokreni punjenje i automatizaciju",
-              "wb_stop_switch": "Zaustavljanje punjenja wallboxa (prekidač ili gumb) — za Zaustavi punjenje",
+              "wb_charge_switch": "Pokretanje punjenja wallboxa (prekidač ili gumb) — za Pokreni punjenje i automatizaciju (opcionalno)",
+              "wb_stop_switch": "Zaustavljanje punjenja wallboxa (prekidač ili gumb) — za Zaustavi punjenje (opcionalno)",
               "wallbox_temp_entity": "Senzor temperature wallboxa (opcionalno)"
             }
           },
