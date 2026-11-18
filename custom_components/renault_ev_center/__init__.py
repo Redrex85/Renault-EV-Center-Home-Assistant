@@ -188,7 +188,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for coord in _all_coordinators(hass):
             rec = coord.service_add_manual_charge(kwh, costo, tipo, quando,
                                                  str(call.data.get("descrizione", "") or ""),
-                                                 durata_min)
+                                                 durata_min,
+                                                 float(call.data.get("km", 0) or 0))
             _LOGGER.info("Ricarica manuale aggiunta: %s kWh (%s)", rec["kwh"], rec["tipo"])
             await coord.async_request_refresh()
 
@@ -202,7 +203,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_update_charge(call: ServiceCall) -> None:
         charge_id = int(call.data["charge_id"])
         fields = {k: call.data[k] for k in
-                  ("kwh", "costo", "tipo", "descrizione", "quando", "durata_min",
+                  ("kwh", "costo", "tipo", "descrizione", "quando", "durata_min", "km",
                    "soc_start", "soc_end") if k in call.data}
         for coord in _all_coordinators(hass):
             if coord.service_update_charge(charge_id, fields):
@@ -365,6 +366,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                   vol.Optional("descrizione", default=""): str,
                   vol.Optional("quando"): str,
                   vol.Optional("durata_min", default=0): vol.Coerce(float),
+        vol.Optional("km", default=0.0): vol.Coerce(float),
               }))
     _register(SERVICE_DELETE_CHARGE, handle_delete_charge,
               schema=vol.Schema({vol.Required("charge_id"): cv.positive_int}))
@@ -377,6 +379,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                   vol.Optional("descrizione"): str,
                   vol.Optional("quando"): str,
                   vol.Optional("durata_min"): vol.Coerce(float),
+        vol.Optional("km"): vol.Coerce(float),
                   vol.Optional("soc_start"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
                   vol.Optional("soc_end"): vol.All(vol.Coerce(float), vol.Range(min=0, max=100)),
               }))

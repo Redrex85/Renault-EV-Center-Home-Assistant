@@ -322,8 +322,8 @@
             "name": "🔌 Wallbox",
             "data": {
               "wallbox_enabled": "Ho una wallbox in Home Assistant",
-              "wallbox_power_entity": "Potenza istantanea di carica (W o kW)",
-              "wallbox_state_entity": "Stato della wallbox (es. charging)",
+              "wallbox_power_entity": "Potenza istantanea di carica (W o kW) (opzionale)",
+              "wallbox_state_entity": "Stato della wallbox (es. charging) (opzionale)",
               "wallbox_session_energy_entity": "Contatore energia sessione (kWh)",
               "wallbox_total_energy_entity": "Contatore energia totale (kWh) — usato se manca quello di sessione",
               "wallbox_max_current_entity": "Numero corrente massima di carica (opzionale)",

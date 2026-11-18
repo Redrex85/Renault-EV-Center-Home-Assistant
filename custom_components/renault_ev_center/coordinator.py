@@ -1513,12 +1513,15 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         if odometer and odometer > 0:
             _inst = self.store.data.setdefault("install", {})
             _man = _f(self.opts.get(CONF_INSTALL_ODO), 1.0)
-            if _man > 0:
+            if _man >= 100:
                 # baseline scelta a mano in Configura: vale piu' della cattura automatica
                 if _inst.get("odometer") != _man:
                     _inst["odometer"] = _man
                     _inst["date"] = _inst.get("date") or today_key
-            elif not _inst.get("odometer"):
+            elif _f(_inst.get("odometer")) < 100:
+                # valori di default (0/1 km) non sono una scelta: la baseline si
+                # aggancia all'odometro attuale, altrimenti "da quando usi
+                # l'integrazione" contava TUTTI i km dell'auto (segnalato)
                 _inst["odometer"] = round(odometer, 1)
                 _inst["date"] = today_key
         if not self.today_rec or self.today_rec.get("data") != today_key:
@@ -1695,7 +1698,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             # Km MIEI: si parte dall'odometro all'attivazione (auto comprata usata
             # con 10000 km: quei km non sono tuoi, il costo termico va sui tuoi).
             _base0 = _f(self.store.data.get("install", {}).get("odometer"))
-            km_tot = odometer - _base0 if 0 < _base0 < odometer else odometer
+            # baseline inaffidabile (1 km): meglio i km davvero tracciati
+            # dell'odometro intero (0 = "usa i viaggi", vedi _periodo)
+            km_tot = odometer - _base0 if 100 <= _base0 < odometer else 0.0
 
             def _chg_cost(pred) -> float:
                 """Costo ricariche del periodo, dai RECORD (i meter live non sono affidabili)."""
@@ -1710,14 +1715,23 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                         v += _f(t.get("km"))
                 return v
 
+            def _km_chg(pred) -> float:
+                """km dichiarati nelle ricariche (import storico): i meter non li vedono."""
+                return sum(_f(c.get("km")) for c in charges
+                           if pred(str(c.get("data", ""))))
+
             def _periodo(label: str, pred, km_meter: float) -> None:
                 km = km_meter if km_meter > 0 else _km_of(pred)
+                # mai meno dei km dichiarati nelle ricariche: un import senza km
+                # rendeva termica bassissima e risparmio/CO2 negativi
+                km = max(km, _km_chg(pred))
                 termica = km * litri_100 * _prezzo_of(pred) / 100.0
                 elettrico = _chg_cost(pred)
                 savings[label] = round(termica - elettrico, 2)
                 if label == "totale":
                     savings["termica_totale"] = round(termica, 2)
                     savings["elettrico_totale"] = elettrico
+                    savings["km_totali"] = round(km, 1)
 
             _periodo("totale", lambda d: True, km_tot)
             _periodo("mese", lambda d: d[:7] == keys["monthly"],
@@ -1726,7 +1740,6 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                      self._km_shown("yearly"))
             savings["prezzo_termico"] = round(_prezzo_of(lambda d: True), 3)
             savings["prezzo_live"] = round(prezzo_l, 3)
-            savings["km_totali"] = round(km_tot, 1)
 
             # --- dettaglio per voce: termica vs elettrica --------------------------
             carb_termica = _f(savings.get("termica_totale"))
@@ -3088,7 +3101,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
 
     def service_add_manual_charge(self, kwh: float, costo: float, tipo: str,
                                   quando: datetime | None, descrizione: str = "",
-                                  durata_min: int = 0) -> dict[str, Any]:
+                                  durata_min: int = 0, km: float = 0.0) -> dict[str, Any]:
         q = quando or dt_util.now()
         dur = max(0, int(durata_min or 0))
         record = {
@@ -3102,6 +3115,7 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
             "soc_end": 0.0,
             "potenza_media_kw": round(kwh / (dur / 60), 2) if dur > 0 and kwh > 0 else 0.0,
             "costo": round(costo, 2),
+            "km": round(max(0.0, _f(km)), 1),
             "tipo": _norm_tipo(tipo or "Manuale"),
             "note": str(descrizione or "").strip(),
         }
@@ -3132,6 +3146,8 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
                     c[_k] = round(_f(fields[_k]), 1)
             if "costo" in fields:
                 c["costo"] = round(_f(fields["costo"]), 2)
+            if "km" in fields:
+                c["km"] = round(max(0.0, _f(fields["km"])), 1)
             if "tipo" in fields:
                 c["tipo"] = _norm_tipo(fields["tipo"])
             if "descrizione" in fields:

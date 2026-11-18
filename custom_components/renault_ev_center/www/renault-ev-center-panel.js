@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.41";
+const REC_VER = "1.1.42-beta";
 let _recVerChecked = false;
 /** timestamp del caricamento pagina: cache-busting della foto utente senza flicker */
 const _REC_PAGE_TS = Date.now();
@@ -51,6 +51,7 @@ const I18N = {
     h3_rotte_consumo_per_zona: "Routes (consumption by area)",
     h3_storico_mensile_tutti_gli_anni: "Monthly history (all years)",
     h3_aggiungi_ricarica_manuale: "\u2795 Add manual charge",
+    ttl_km_ricarica: "km driven with this charge: used for the savings comparison",
     h3_distribuzione_ricariche: "\u{1F4CA} Charge distribution",
     h3_storico_ricariche: "Charge history",
     h3_soh_ufficiale: "Official SOH \u270F\uFE0F",
@@ -316,6 +317,7 @@ const I18N = {
     h3_rotte_consumo_per_zona: "Itinéraires (consommation par zone)",
     h3_storico_mensile_tutti_gli_anni: "Historique mensuel (toutes années)",
     h3_aggiungi_ricarica_manuale: "\u2795 Ajouter une recharge manuelle",
+    ttl_km_ricarica: "km parcourus avec cette recharge : servent à la comparaison des économies",
     h3_distribuzione_ricariche: "\u{1F4CA} Répartition des recharges",
     h3_storico_ricariche: "Historique des recharges",
     h3_soh_ufficiale: "SOH officiel \u270F\uFE0F",
@@ -589,6 +591,7 @@ const I18N = {
     h3_rotte_consumo_per_zona: "Rutas (consumo por zona)",
     h3_storico_mensile_tutti_gli_anni: "Historial mensual (todos los años)",
     h3_aggiungi_ricarica_manuale: "➕ Añadir recarga manual",
+    ttl_km_ricarica: "km recorridos con esta recarga: se usan en la comparación de ahorro",
     h3_distribuzione_ricariche: "📊 Distribución de recargas",
     h3_storico_ricariche: "Historial de recargas",
     h3_soh_ufficiale: "SOH oficial ✏️",
@@ -862,6 +865,7 @@ const I18N = {
     h3_rotte_consumo_per_zona: "Routen (Verbrauch nach Zone)",
     h3_storico_mensile_tutti_gli_anni: "Monatsverlauf (alle Jahre)",
     h3_aggiungi_ricarica_manuale: "➕ Manuelle Ladung hinzufügen",
+    ttl_km_ricarica: "km mit dieser Ladung: werden für den Ersparnisvergleich genutzt",
     h3_distribuzione_ricariche: "📊 Verteilung der Ladevorgänge",
     h3_storico_ricariche: "Ladeverlauf",
     h3_soh_ufficiale: "Offizieller SOH ✏️",
@@ -3366,6 +3370,78 @@ function _trText(raw) {
   }
 }
 
+const REG_ALIAS = {
+  "batteria_caricata_oggi": "pct_oggi_up",
+  "batteria_kwh_disponibili": "battery_kwh",
+  "batteria_minima_promemoria": "low_soc",
+  "batteria_per_100km": "perc_per_100km",
+  "batteria_persa_da_fermo_mese": "drain_mese",
+  "batteria_persa_da_fermo_oggi": "drain_oggi",
+  "batteria_scaricata_oggi": "pct_oggi_down",
+  "batteria_solo_senza_sole": "battery_night_only",
+  "bilanciamento_casa": "home_balance",
+  "bilanciamento_solare": "balance",
+  "capacita_batteria": "capacity",
+  "carica_orario_avvio": "charge_start_time",
+  "carica_orario_stop": "charge_stop_time",
+  "carica_programmata": "charge_sched",
+  "co2_risparmiata": "co2",
+  "consumo_per_zona": "consumo_zona",
+  "costo_assicurazione": "assic_costo",
+  "costo_colonnina": "price_public",
+  "costo_energia_casa": "price_home",
+  "costo_fotovoltaico": "price_solar",
+  "costo_per_100_km": "cost_per_100km",
+  "costo_per_km": "cost_per_km",
+  "costo_ricarica_annuale": "cost_yearly",
+  "costo_ricarica_corrente_stimato": "costo_corrente",
+  "costo_ricarica_giornaliero": "cost_daily",
+  "costo_ricarica_mensile": "cost_monthly",
+  "costo_ricarica_settimanale": "cost_weekly",
+  "costo_ricarica_totale": "cost_total",
+  "efficienza_ricarica": "eff_ricarica",
+  "energia_batteria_giornaliero": "batt_energy_daily",
+  "energia_batteria_ultima_ricarica": "batteria_ultima",
+  "energia_caricata_annuale": "wb_energy_yearly",
+  "energia_caricata_casa_totale": "energia_casa_tot",
+  "energia_caricata_fotovoltaico_totale": "fv_totale",
+  "energia_caricata_giornaliera": "wb_energy_daily",
+  "energia_caricata_mensile": "wb_energy_monthly",
+  "energia_caricata_settimanale": "wb_energy_weekly",
+  "energia_caricata_totale": "wb_energy_total",
+  "filtro_anno_ricariche": "filtro_anno",
+  "filtro_mese_ricariche": "filtro_mese",
+  "filtro_periodo_ricariche": "filtro_periodo",
+  "filtro_tipo_ricarica": "filtro_tipo",
+  "km_annuali": "km_yearly",
+  "km_giornalieri": "km_daily",
+  "km_mensili": "km_monthly",
+  "km_per_kwh": "eff_km_per_kwh",
+  "kwh_per_100km": "eff_kwh_100km",
+  "kwh_per_1_batteria": "kwh_per_1pct",
+  "kwh_totali_consumati": "kwh_totali",
+  "notifica_avvio_ricarica": "notify_start",
+  "notifica_fine_ricarica": "notify_end",
+  "obiettivo_ricarica": "target",
+  "ora_completamento_ricarica": "ora_completamento",
+  "perdite_ultima_ricarica": "perdite_ricarica",
+  "prezzo_carburante": "fuel_price",
+  "priorita_batteria_casa": "battery_priority",
+  "promemoria_batteria_bassa": "low_soc",
+  "promemoria_fine": "low_soc_end",
+  "promemoria_inizio": "low_soc_start",
+  "prossima_scadenza": "scadenze",
+  "ricaricato_fotovoltaico_mese": "fv_mese",
+  "soh_ufficiale": "soh_official",
+  "sperimentazione_gse": "gse",
+  "statistiche_viaggi": "stat_viaggi",
+  "tempo_ricarica_stimato": "tempo_ricarica",
+  "tipo_ricarica_attuale": "tipo_ricarica",
+  "viaggio_top_stop_del_mese": "viaggio_estremo",
+  "wallbox_potenza": "wb_potenza",
+  "wallbox_tempo_sessione": "wb_tempo_sessione",
+};
+
 class RenaultEvCenterPanel extends HTMLElement {
   /** Se la versione servita (config della card) differisce dalla mia, ricarica la pagina una volta. */
   _checkVersion(serverVer) {
@@ -3445,6 +3521,9 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._mode = localStorage.getItem("rec_panel_mode") || "dark";
     this._built = false;
     this._raf = null;
+    this._regM = null;        // unique_id/translation_key -> entity_id (registro)
+    this._regAsked = false;
+    this._regPfx = null;
     // SOLO ORA: queste usano this._cfg, quindi vanno dopo la sua assegnazione
     this._checkVersion(config.version);
     this._startVersionWatch();
@@ -3471,6 +3550,7 @@ class RenaultEvCenterPanel extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    this._loadReg();
     try {
       const _lang = localStorage.getItem("rec_lang") || _detectLang(hass);
       if (_lang !== _LANG) { _LANG = I18N[_lang] ? _lang : "it"; this._built = false; }
@@ -3544,6 +3624,17 @@ class RenaultEvCenterPanel extends HTMLElement {
     const u = String((s.attributes && s.attributes.unit_of_measurement) || "").trim().toLowerCase();
     return u === "wh" ? v / 1000 : v;
   }
+  /** potenza in kW: la pinza (Shelly EM) e molte wallbox la espongono in W, non in kW. */
+  _kwS(s) {
+    if (!s) return null;
+    const v = parseFloat(String(s.state).replace(",", "."));
+    if (isNaN(v)) return null;
+    const u = String((s.attributes && s.attributes.unit_of_measurement) || "").trim().toLowerCase();
+    if (u === "w") return v / 1000;
+    if (u === "mw") return v * 1000;
+    if (u === "kw") return v;
+    return Math.abs(v) > 100 ? v / 1000 : v;  // senza unità: oltre 100 è quasi certamente W
+  }
   _attrAny(state, keys) {
     if (!state || !state.attributes) return null;
     const norm = (k) => this._slug(k);
@@ -3579,6 +3670,7 @@ class RenaultEvCenterPanel extends HTMLElement {
    *  cancellata) vince quella con le entità vive; a parità nessuna -> niente
    *  scelte a caso. */
   _pfx() {
+    if (this._regPfx) return this._regPfx;      // dal registro: lingua-indipendente
     if (this._pfxV && Date.now() - this._pfxT < 30000) return this._pfxV;
     const suff = "_tagliandi";           // ancoraggio: questo sensore esiste sempre
     const vivi = new Map();
@@ -3599,6 +3691,47 @@ class RenaultEvCenterPanel extends HTMLElement {
     return this._pfxV;
   }
 
+  /** Mappa degli id vera dal registro entità: serve perché HA crea gli entity_id
+   *  dal nome TRADOTTO (sensor.<dispositivo>_last_charge su UI inglese), quindi
+   *  costruirli a mano funziona solo in italiano. Una chiamata per caricamento. */
+  _loadReg() {
+    if (this._regAsked || !this._hass || !this._hass.callWS) return;
+    this._regAsked = true;
+    Promise.resolve(this._hass.callWS({ type: "config/entity_registry/list" })).then((list) => {
+      const m = {};
+      let pfx = null;
+      for (const e of (list || [])) {
+        if (!e || e.platform !== "renault_ev_center" || !e.entity_id) continue;
+        const dom = String(e.entity_id).split(".")[0];
+        if (e.translation_key) m[`${dom}:${e.translation_key}`] = e.entity_id;
+        if (e.unique_id) m[`${dom}:${String(e.unique_id).replace(/^[^_]+_/, "")}`] = e.entity_id;
+        if (dom === "sensor") {
+          const p = String(e.entity_id);
+          if (pfx === null) pfx = p;
+          else {
+            let i = 0;
+            while (i < pfx.length && i < p.length && pfx[i] === p[i]) i++;
+            pfx = pfx.slice(0, i);
+          }
+        }
+      }
+      this._regM = m;
+      if (pfx) {
+        const j = pfx.lastIndexOf("_");          // via la coda: resta "sensor.<prefisso>"
+        pfx = j > 8 ? pfx.slice(0, j) : null;
+      }
+      this._regPfx = pfx;
+      this._built = false;                       // ricalcola i campi con gli id veri
+      try { this._build(); this._translateDom(); } catch (e) { this._showError(e); }
+    }).catch(() => { this._regM = null; });
+  }
+  /** entity_id dal registro per dominio + chiave (translation_key o unique_id) */
+  _regId(dom, key) {
+    const m = this._regM;
+    if (!m || !key) return null;
+    return m[`${dom}:${key}`] || m[`${dom}:${REG_ALIAS[key] || ""}`] || null;
+  }
+
   /** id entita integrazione: <dom>.<slug(name)>_<rest>, o il prefisso REALE se non esiste */
   _eid(dom, rest) {
     const d = `${dom}.${this._slug(this._cfg.name)}_${rest}`;
@@ -3607,6 +3740,9 @@ class RenaultEvCenterPanel extends HTMLElement {
     const cur = st[d];
     // entita col nome della card VIVA: è quella giusta (niente sorprese)
     if (cur && cur.state !== "unavailable" && cur.state !== "unknown") return d;
+    // id "italiano" assente (UI in un'altra lingua): lo dice il registro
+    const rid = this._regId(dom, rest);
+    if (rid) return rid;
     // altrimenti vince la famiglia REALE di _pfx(). NB: `rest` qui può essere un
     // PREFISSO (es. "risparmio_totale_vs"), non un id completo: si restituisce il
     // prefisso senza pretendere che l'id esista già, altrimenti la ricerca per
@@ -3785,7 +3921,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       case "costo_mese": return S._num(S._sid("costo_ricarica_mensile"), S._sid("costo_ricarica_mese"), "sensor.costo_ricarica_mese");
       case "costo_anno": return S._num(S._sid("costo_ricarica_annuale"), S._sid("costo_ricarica_anno"), "sensor.costo_ricarica_anno");
       case "lista_ric": return S._list(S._sid("lista_ricariche"));
-      case "wb_potenza": return S._num(S._sid("wallbox_potenza"));
+      case "wb_potenza": return S._kwS(S._st(S._sid("wallbox_potenza")));
       case "tipo_ric": return S._st(S._sid("tipo_ricarica_attuale"), "sensor.megane_charger_type", "sensor.megane_charging_mode");
       case "tempo_ric": return S._st(S._sid("tempo_ricarica_stimato"), S._car("sensor", "remaining_charge_time"));
       case "ora_compl": return S._st(S._sid("ora_completamento_ricarica"), "sensor.ora_completamento_ricarica", S._car("sensor", "remaining_charge_time"));
@@ -4353,7 +4489,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     const stateEnt = S._st(S._ov("wallbox_state"), "sensor.wallbox_charger_state");
     set("state", stateEnt ? (stMap[stateEnt.state] || stateEnt.state) : "—");
 
-    const power = S._num(S._ov("wallbox_power"), S._sid("wallbox_potenza"), "sensor.wallbox_instant_power");
+    const power = S._kwS(S._st(S._ov("wallbox_power"), S._sid("wallbox_potenza"), "sensor.wallbox_instant_power"));
     set("power", power === null ? "—" : S._fmt(power) + " kW");
     const curEnt = S._st(S._ov("wallbox_current")) || S._findState("sensor", "wallbox", "current")
       || S._findState("sensor", "wallbox", "amp") || S._findState("sensor", "current");
@@ -4659,10 +4795,12 @@ class RenaultEvCenterPanel extends HTMLElement {
         const data = (g("data") || {}).value || "";
         const tipo = (g("tipo") || {}).value || "Pubblica";
         const descrizione = ((g("descrizione") || {}).value || "").trim();
+        const km = parseFloat((g("km") || {}).value);
         if (this._editCid) {
           const payload = { charge_id: this._editCid, kwh, costo: isNaN(costo) ? 0 : costo, tipo, descrizione };
           if (data) payload.quando = `${data}T12:00:00`;
           if (!isNaN(durata) && durata > 0) payload.durata_min = durata;
+          if (!isNaN(km) && km > 0) payload.km = km;
           this._call("renault_ev_center", "update_charge", payload, _t("toast_charge_updated", "✏️ Ricarica modificata"));
           this._editCid = null;
           const btn = this.shadowRoot.querySelector('[data-cmd="add_charge_manual"]');
@@ -4672,9 +4810,10 @@ class RenaultEvCenterPanel extends HTMLElement {
           if (descrizione) payload.descrizione = descrizione;
           if (data) payload.quando = `${data}T12:00:00`;
           if (!isNaN(durata) && durata > 0) payload.durata_min = durata;
+          if (!isNaN(km) && km > 0) payload.km = km;
           this._call("renault_ev_center", "add_manual_charge", payload, _t("toast_charge_added", "➕ Ricarica registrata"));
         }
-        ["data", "kwh", "costo", "durata", "descrizione"].forEach((k) => { const el = g(k); if (el) el.value = ""; });
+        ["data", "kwh", "costo", "durata", "km", "descrizione"].forEach((k) => { const el = g(k); if (el) el.value = ""; });
         break;
       }
       case "tfilter-reset": {
@@ -5675,6 +5814,9 @@ class RenaultEvCenterPanel extends HTMLElement {
 
 /** trova un sensore dell'integrazione per prefisso (il nome carburante è configurabile) */
   _sensorByPrefix(prefix) {
+    // le chiavi storiche finiscono con "_vs <carburante>": il registro usa il nome vero
+    const rid = this._regId("sensor", String(prefix).replace(/_vs$/, ""));
+    if (rid && this._hass.states[rid]) return this._hass.states[rid];
     const base = this._eid("sensor", prefix);
     let trovato = null;
     for (const id of Object.keys(this._hass.states)) {
@@ -5979,6 +6121,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     set("data", r.data || "");
     set("kwh", r.kwh ?? r.energia ?? "");
     set("costo", r.costo ?? "");
+    set("km", r.km ?? "");
     set("durata", r.durata_min ?? "");
     set("tipo", r.tipo || "Manuale");
     set("descrizione", r.note || "");
@@ -6528,6 +6671,8 @@ const PAGES = () => ({
         <input type="number" data-mc="kwh" step="0.01" min="0" style="width:90px"></label>
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Costo €
         <input type="number" data-mc="costo" step="0.01" min="0" style="width:90px"></label>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)" title="${_t("ttl_km_ricarica", "km percorsi con questa ricarica: servono al confronto risparmi")}">km
+        <input type="number" data-mc="km" step="1" min="0" style="width:80px"></label>
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Durata min
         <input type="number" data-mc="durata" step="1" min="0" style="width:80px"></label>
       <label style="display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)">Tipo

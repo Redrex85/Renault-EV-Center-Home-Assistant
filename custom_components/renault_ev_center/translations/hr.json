@@ -322,8 +322,8 @@
             "name": "🔌 Wallbox",
             "data": {
               "wallbox_enabled": "Imam wallbox u Home Assistantu",
-              "wallbox_power_entity": "Trenutna snaga punjenja (W ili kW)",
-              "wallbox_state_entity": "Stanje wallboxa (npr. puni)",
+              "wallbox_power_entity": "Trenutna snaga punjenja (W ili kW) (neobavezno)",
+              "wallbox_state_entity": "Stanje wallboxa (npr. puni) (neobavezno)",
               "wallbox_session_energy_entity": "Brojač energije punjenja (kWh)",
               "wallbox_total_energy_entity": "Ukupni brojač energije (kWh) — koristi se ako nema brojača punjenja",
               "wallbox_max_current_entity": "Broj za maks. struju punjenja (opcionalno)",

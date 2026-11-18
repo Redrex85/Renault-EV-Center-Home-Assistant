@@ -1,17 +1,14 @@
-## 1.1.41 - Release: manutenzione, wallbox e i18n (accorpa le beta 1.1.39→1.1.41)
+## 1.1.42-beta
 
-Release stabile che raccoglie le ultime tre beta. In sintesi:
+Segnalazione dettagliata di **@PedroHA2026** (Renault Scenic E-Tech, Shelly EM al posto della wallbox, Home Assistant in portoghese): cinque problemi, tutti corretti qui.
 
-- **Foto auto che sfarfallava**: l'URL della foto utente veniva rigenerato con un timestamp nuovo a ogni aggiornamento `hass`, ricaricando l'immagine più volte al secondo. Ora il cache-busting usa un timestamp per caricamento pagina e l'elemento viene ricostruito solo se il markup cambia.
-- **Configura → Auto**: la label "Modello" compariva grezza (`model`): la traduzione esisteva solo in `options...data` e non in `sections.car.data`, dove Home Assistant la cerca. Aggiunta in tutte e 6 le lingue.
-- **Manutenzione**: il backend anteponeva "a" alla data-km (`a 105573 km`) in italiano fisso e senza valore impostato inventava il prossimo cambio dall'odometro attuale. Ora la data-km è neutra (`105573 km`) e la scadenza a km esiste solo con un intervento registrato o un valore impostato (altrimenti "nessun dato").
-- **Giorni stimati**: la stima usava i km dell'anno solare diviso 365 (nei primi giorni d'uso ~0,4 km/giorno → decine di migliaia di giorni). Ora usa la media reale dall'installazione, con 15000 km/anno come riserva quando lo storico è insufficiente.
-- **Ultimo cambio gomme**: senza il valore impostato il pannello mostrava lo stato del sensore `prossima_scadenza` (giorni) come se fossero km. Ora un attributo mancante mostra "—".
-- **Nomi tradotti in HA**: nome dispositivo, sensori di risparmio, stato del tipo di ricarica e nomi delle scadenze seguono la lingua di Home Assistant (6 lingue, croato compreso); le scadenze portano un campo `key` stabile per la logica e per il pannello.
-- **Configura → Wallbox**: "Avvio carica" e "Stop carica" non sono più obbligatori: bloccavano il salvataggio a chi non ha wallbox o ne ha una senza switch. Il sensore di temperatura wallbox era già opzionale.
-- **Card**: il banner in console mostra la versione vera (`CARD_VER`) invece di `v1.1.25` fisso.
-- **Croato**: "dodaje postavljeni interval guma" nel suggerimento del cambio gomme.
-- Segnalazioni e testi croati: grazie a Branimir.
+- **Pannello vuoto con Home Assistant in lingua diversa dall'italiano**: le entità hanno il nome tradotto, quindi HA crea `sensor.<dispositivo>_last_charge` invece di `..._ultima_ricarica`; il pannello costruiva gli id a mano e mostrava "—" su ricariche, viaggi, risparmi e zone. Ora gli id si leggono dal **registro entità** (lingua-indipendente), con un dizionario per le chiavi storiche del pannello. In italiano il comportamento non cambia.
+- **Potenza wallbox mostrata in kW anche con il sensore in W**: una pinza da 11,5 W appariva come "11,5 kW". Ora l'unità (`W`/`kW`/`MW`) viene normalizzata sul valore della tile "Potenza adesso" e nei valori derivati.
+- **Configura → Wallbox**: anche "Potenza istantanea" e "Stato della wallbox" sono opzionali. Un setup con la sola pinza di misura non resta più bloccato (etichette aggiornate in tutte e 6 le lingue).
+- **Ricarica manuale con km**: nuovo campo `km` nel form e nei servizi `add_manual_charge` / `update_charge`; le ricariche importate portano i loro km e il confronto risparmi non li ignora più (con soli costi importati, risparmio e CO₂ diventavano negativi).
+- **Km dall'installazione**: una baseline di 1 km (default di "km all'attivazione") faceva contare **tutto** l'odometro al box "da quando usi l'integrazione". Ora i valori sotto 100 km non sono considerati una scelta e valgono i km davvero tracciati.
+
+Grazie a **@PedroHA2026** per la segnalazione e per aver indicato dove intervenire.
 
 # Changelog
 

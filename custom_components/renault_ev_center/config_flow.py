@@ -405,14 +405,14 @@ def _wallbox_schema(defaults: dict[str, Any], profile: str = DEFAULT_PROFILE) ->
     if profile != PROFILE_BASE:
         schema[vol.Required("wallbox")] = section(vol.Schema({
             vol.Required(CONF_WALLBOX_ENABLED, default=defaults.get(CONF_WALLBOX_ENABLED, True)): BooleanSelector(),
-            # OBBLIGATORI in Pro/Enterprise: senza potenza e stato la pagina Wallbox
-            # e' vuota e il bilanciamento non ha nulla da leggere.
-            # Avvio/stop OBBLIGATORI pure loro (Pro/Enterprise): senza comandi la
-            # pagina Wallbox non puo' avviare ne' fermare la ricarica.
-            vol.Required(
+            # opzionali anche potenza e stato: chi misura solo con una pinza
+            # (Shelly EM) o ha una wallbox senza stato non deve restare bloccato.
+            # Senza potenza la pagina Wallbox e il bilanciamento restano fermi;
+            # senza stato il tipo di ricarica resta "Non in Carica".
+            vol.Optional(
                 CONF_WB_POWER, description={"suggested_value": defaults.get(CONF_WB_POWER)}
             ): EntitySelector(EntitySelectorConfig(domain=["sensor", "number"])),
-            vol.Required(
+            vol.Optional(
                 CONF_WB_STATE, description={"suggested_value": defaults.get(CONF_WB_STATE)}
             ): EntitySelector(EntitySelectorConfig(domain=["sensor", "binary_sensor"])),
             vol.Optional(
