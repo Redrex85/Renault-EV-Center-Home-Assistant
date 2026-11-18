@@ -1,4 +1,4 @@
-## 1.1.42-beta
+## 1.1.42 - Release: correzioni della segnalazione di @PedroHA2026
 
 Segnalazione dettagliata di **@PedroHA2026** (Renault Scenic E-Tech, Shelly EM al posto della wallbox, Home Assistant in portoghese): cinque problemi, tutti corretti qui.
 

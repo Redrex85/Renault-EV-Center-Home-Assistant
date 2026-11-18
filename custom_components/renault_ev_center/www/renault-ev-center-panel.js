@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.42-beta";
+const REC_VER = "1.1.42";
 let _recVerChecked = false;
 /** timestamp del caricamento pagina: cache-busting della foto utente senza flicker */
 const _REC_PAGE_TS = Date.now();
