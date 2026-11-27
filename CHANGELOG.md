@@ -1,3 +1,11 @@
+## 1.1.44 - Release: ricarica programmata, kWh a bordo, ora delle notifiche
+
+Tre correzioni, due delle quali da segnalazione degli utenti.
+
+- **La carica programmata partiva a mezzanotte invece che all'ora scelta**: con una finestra che attraversa mezzanotte (es. 23:05 → 07:00) il primo ciclo dopo le 00:00 rientrava già nella finestra, consumava la chiave "una volta al giorno" e premeva *Avvia* alle 00:01; alle 23:05 la chiave del giorno era già usata e non partiva più. L'avvio ora richiede anche `ora >= orario di avvio`. Confermato sui dati reali: `button.wallbox_charger_start` premuto alle 00:01:16, 00:01:27 e 00:01:07 (ora locale) nei tre giorni registrati, mai alle 23:05.
+- **"kWh a bordo" uguale su entrambe le auto (anteprima)**: il campo `batt_kwh` cadeva sull'id fisso `sensor.megane_battery_available_energy_2` e il registro entità era una mappa globale `translation_key → entity_id`: con due entry entrambe le card risolvevano sullo stesso sensore. Ora l'id fisso è rimosso (prima viene il sensore proprio della card) e il registro tiene una mappa separata per la famiglia della card quando ci sono più auto.
+- **Ora di invio delle notifiche**: due nuovi campi in *Opzioni → Notifiche* — **Ora riepilogo giornaliero** (default `21:00`, prima era fissato alle 21) e **Ora notifica scadenze** (default `00:00`, comportamento di sempre). Etichette tradotte in IT/EN/FR/ES/DE/HR.
+
 ## 1.1.42 - Release: correzioni della segnalazione di @PedroHA2026
 
 Segnalazione dettagliata di **@PedroHA2026** (Renault Scenic E-Tech, Shelly EM al posto della wallbox, Home Assistant in portoghese): cinque problemi, tutti corretti qui.

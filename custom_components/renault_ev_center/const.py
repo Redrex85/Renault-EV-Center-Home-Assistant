@@ -75,6 +75,11 @@ DEFAULT_TAGLIANDO_INTERVALLO = 15000
 CONF_NOTIFY_SERVICE = "notify_service"
 CONF_NOTIFY_DAYS = "notify_days"
 CONF_NOTIFY_TEXTS = "notify_texts"
+# ora (HH:MM) a partire dalla quale si inviano le due notifiche "a orario"
+CONF_NOTIFY_SUMMARY_TIME = "notify_summary_time"
+CONF_NOTIFY_SCADENZE_TIME = "notify_scadenze_time"
+DEFAULT_NOTIFY_SUMMARY_TIME = "21:00"
+DEFAULT_NOTIFY_SCADENZE_TIME = "00:00"
 
 # cartella (sotto /config) dove export_data scrive i backup JSON
 EXPORT_DIR = "renault_ev_center_export"

@@ -44,7 +44,9 @@ from .const import (
     CONF_MAINT_ENABLED,
     CONF_NAME,
     CONF_NOTIFY_DAYS,
+    CONF_NOTIFY_SCADENZE_TIME,
     CONF_NOTIFY_SERVICE,
+    CONF_NOTIFY_SUMMARY_TIME,
     CONF_NOTIFY_TEXTS,
     CONF_ODOMETER,
     CONF_NOTIFY_CHARGE_START,
@@ -54,6 +56,8 @@ from .const import (
     CONF_LOW_SOC_END,
     CONF_LOW_SOC_DAYS,
     DEFAULT_LOW_SOC_DAYS,
+    DEFAULT_NOTIFY_SCADENZE_TIME,
+    DEFAULT_NOTIFY_SUMMARY_TIME,
     WEEKDAYS,
     CONF_GSE_ENABLED,
     CONF_GSE_WPA,
@@ -637,6 +641,9 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         # usata dagli attributi dei sensori per l'auto-refresh della card
         self.version = ""
         self.notify_days = int(_f(opts.get(CONF_NOTIFY_DAYS), 30))
+        # ora (HH:MM) dalle quali partono le notifiche "a orario": riepilogo e scadenze
+        self.notify_summary_time = str(opts.get(CONF_NOTIFY_SUMMARY_TIME) or DEFAULT_NOTIFY_SUMMARY_TIME)[:5]
+        self.notify_scadenze_time = str(opts.get(CONF_NOTIFY_SCADENZE_TIME) or DEFAULT_NOTIFY_SCADENZE_TIME)[:5]
         self.tagliando_mode = str(opts.get(CONF_TAGLIANDO_MODE) or "km")
         self.tagliando_data = str(opts.get(CONF_TAGLIANDO_DATA) or "")
         self.assicurazione_costo = _f(opts.get(CONF_ASSICURAZIONE_COSTO), 400.0)
@@ -3460,6 +3467,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         """Invia una notifica al giorno se una scadenza rientra nel preavviso."""
         if not self.notify_service or not scadenze:
             return
+        # scadenze: invio a partire dall'ora scelta (default 00:00 = al primo ciclo
+        # dopo mezzanotte, comportamento di sempre)
+        if oggi.strftime("%H:%M") < self.notify_scadenze_time:
+            return
         counters = self.store.data["counters"]
         today_key = oggi.strftime("%Y-%m-%d")
         if counters.get("last_notify") == today_key:
@@ -3474,10 +3485,10 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         self.persist(force=True)
 
     async def _check_daily_summary(self, oggi) -> None:
-        """Riepilogo giornaliero: una notifica al giorno dopo le 21 (switch notify_daily)."""
+        """Riepilogo giornaliero: una notifica al giorno dall'ora scelta (switch notify_daily)."""
         if not self.notify_service or not self._switch_on("notify_daily"):
             return
-        if oggi.hour < 21:
+        if oggi.strftime("%H:%M") < self.notify_summary_time:
             return
         counters = self.store.data["counters"]
         today_key = oggi.strftime("%Y-%m-%d")
@@ -3965,11 +3976,17 @@ class RenaultMateCoordinator(DataUpdateCoordinator):
         counters = self.store.data["counters"]
         if mode == "orario":
             in_window = _in_window(hhmm, avvio_ora_s, stop_ora_s)
+            # orario d'avvio in HH:MM (il time entity restituisce HH:MM:SS)
+            avvio = avvio_ora_s[:5]
             giorni = [d for d in (_sc_prog.get("giorni") or []) if d in WEEKDAYS]
             oggi_ok = not giorni or WEEKDAYS[now.weekday()] in giorni
             # avvio: una volta sola per finestra/giorno
             key = f"sched_start_{now.strftime('%Y-%m-%d')}_{avvio_ora_s}"
-            if (in_window and oggi_ok and not charging
+            # la finestra avvolge mezzanotte: senza il confronto con l'orario di
+            # avvio il primo ciclo dopo le 00:00 rientrava nella finestra,
+            # consumava la chiave del giorno e la carica partiva a mezzanotte
+            # invece che all'ora scelta (23:05 -> partenza alle 00:01)
+            if (in_window and oggi_ok and not charging and hhmm >= avvio
                     and counters.get(key) != "1" and self.charge_start_button):
                 counters[key] = "1"
                 self.persist(force=True)

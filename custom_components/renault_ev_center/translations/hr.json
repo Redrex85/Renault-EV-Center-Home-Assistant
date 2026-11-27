@@ -218,6 +218,8 @@
             "data": {
               "notify_service": "Servis obavijesti (npr. notify.mobile_app_telefon)",
               "notify_days": "Dana upozorenja prije roka",
+              "notify_summary_time": "Vrijeme dnevnog sažetka",
+              "notify_scadenze_time": "Vrijeme obavijesti o rokovima",
               "notify_charge_start": "Obavijest o početku punjenja",
               "notify_charge_end": "Obavijest o kraju punjenja",
               "low_soc_enabled": "Podsjetnik na praznu bateriju (kod kuće)",
@@ -433,6 +435,8 @@
             "data": {
               "notify_service": "Servis obavijesti (npr. notify.mobile_app_telefon)",
               "notify_days": "Dana upozorenja prije roka",
+              "notify_summary_time": "Vrijeme dnevnog sažetka",
+              "notify_scadenze_time": "Vrijeme obavijesti o rokovima",
               "notify_charge_start": "Obavijest o početku punjenja",
               "notify_charge_end": "Obavijest o kraju punjenja",
               "low_soc_enabled": "Podsjetnik na praznu bateriju (kod kuće)",

@@ -218,6 +218,8 @@
             "data": {
               "notify_service": "Notify service (e.g. notify.michele)",
               "notify_days": "Deadline warning days",
+              "notify_summary_time": "Daily summary time",
+              "notify_scadenze_time": "Deadline notification time",
               "notify_charge_start": "Charge start notification",
               "notify_charge_end": "Charge end notification",
               "low_soc_enabled": "Low battery reminder (at home)",
@@ -433,6 +435,8 @@
             "data": {
               "notify_service": "Notify service (e.g. notify.michele)",
               "notify_days": "Deadline warning days",
+              "notify_summary_time": "Daily summary time",
+              "notify_scadenze_time": "Deadline notification time",
               "notify_charge_start": "Charge start notification",
               "notify_charge_end": "Charge end notification",
               "low_soc_enabled": "Low battery reminder (at home)",

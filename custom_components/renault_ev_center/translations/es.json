@@ -218,6 +218,8 @@
             "data": {
               "notify_service": "Servicio de notificación (ej. notify.michele)",
               "notify_days": "Días de aviso de vencimiento",
+              "notify_summary_time": "Hora del resumen diario",
+              "notify_scadenze_time": "Hora de la notificación de vencimientos",
               "notify_charge_start": "Notificación de inicio de recarga",
               "notify_charge_end": "Notificación de fin de recarga",
               "low_soc_enabled": "Recordatorio de batería baja (en casa)",
@@ -433,6 +435,8 @@
             "data": {
               "notify_service": "Servicio de notificación (ej. notify.michele)",
               "notify_days": "Días de aviso de vencimiento",
+              "notify_summary_time": "Hora del resumen diario",
+              "notify_scadenze_time": "Hora de la notificación de vencimientos",
               "notify_charge_start": "Notificación de inicio de recarga",
               "notify_charge_end": "Notificación de fin de recarga",
               "low_soc_enabled": "Recordatorio de batería baja (en casa)",

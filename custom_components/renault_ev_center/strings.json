@@ -218,6 +218,8 @@
             "data": {
               "notify_service": "Servizio notifiche (es. notify.michele)",
               "notify_days": "Giorni di preavviso scadenze",
+              "notify_summary_time": "Ora riepilogo giornaliero",
+              "notify_scadenze_time": "Ora notifica scadenze",
               "notify_charge_start": "Notifica avvio ricarica",
               "notify_charge_end": "Notifica fine ricarica",
               "low_soc_enabled": "Promemoria batteria bassa (a casa)",
@@ -433,6 +435,8 @@
             "data": {
               "notify_service": "Servizio notifiche (es. notify.michele)",
               "notify_days": "Giorni di preavviso scadenze",
+              "notify_summary_time": "Ora riepilogo giornaliero",
+              "notify_scadenze_time": "Ora notifica scadenze",
               "notify_charge_start": "Notifica avvio ricarica",
               "notify_charge_end": "Notifica fine ricarica",
               "low_soc_enabled": "Promemoria batteria bassa (a casa)",

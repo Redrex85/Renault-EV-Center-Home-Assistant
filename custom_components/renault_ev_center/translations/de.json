@@ -218,6 +218,8 @@
             "data": {
               "notify_service": "Benachrichtigungsdienst (z. B. notify.michele)",
               "notify_days": "Tage für Fristenwarnung",
+              "notify_summary_time": "Uhrzeit der Tagesübersicht",
+              "notify_scadenze_time": "Uhrzeit der Fälligkeitsbenachrichtigung",
               "notify_charge_start": "Benachrichtigung Ladestart",
               "notify_charge_end": "Benachrichtigung Ladeende",
               "low_soc_enabled": "Erinnerung bei niedriger Batterie (zuhause)",
@@ -433,6 +435,8 @@
             "data": {
               "notify_service": "Benachrichtigungsdienst (z. B. notify.michele)",
               "notify_days": "Tage für Fristenwarnung",
+              "notify_summary_time": "Uhrzeit der Tagesübersicht",
+              "notify_scadenze_time": "Uhrzeit der Fälligkeitsbenachrichtigung",
               "notify_charge_start": "Benachrichtigung Ladestart",
               "notify_charge_end": "Benachrichtigung Ladeende",
               "low_soc_enabled": "Erinnerung bei niedriger Batterie (zuhause)",

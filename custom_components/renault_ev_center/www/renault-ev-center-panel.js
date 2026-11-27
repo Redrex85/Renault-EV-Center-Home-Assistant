@@ -20,7 +20,7 @@
  */
 
 /** Versione compilata: usata per l'auto-refresh quando l'integrazione viene aggiornata. */
-const REC_VER = "1.1.42";
+const REC_VER = "1.1.44";
 let _recVerChecked = false;
 /** timestamp del caricamento pagina: cache-busting della foto utente senza flicker */
 const _REC_PAGE_TS = Date.now();
@@ -3522,6 +3522,7 @@ class RenaultEvCenterPanel extends HTMLElement {
     this._built = false;
     this._raf = null;
     this._regM = null;        // unique_id/translation_key -> entity_id (registro)
+    this._regOwn = null;      // stessa mappa limitata alla famiglia di questa card
     this._regAsked = false;
     this._regPfx = null;
     // SOLO ORA: queste usano this._cfg, quindi vanno dopo la sua assegnazione
@@ -3697,14 +3698,25 @@ class RenaultEvCenterPanel extends HTMLElement {
   _loadReg() {
     if (this._regAsked || !this._hass || !this._hass.callWS) return;
     this._regAsked = true;
+    const nm = this._slug(this._cfg.name);
+    const cm = this._slug(this._cfg.car);
+    // mappa LIMITATA a questa card: con piu' entry la mappa globale
+    // translation_key -> entity_id è ambigua e entrambe le auto
+    // risolvono sullo stesso sensore
+    const own = (id) => {
+      const rest = String(id).slice(String(id).indexOf(".") + 1);
+      return rest === nm || rest.startsWith(nm + "_") || rest === cm || rest.startsWith(cm + "_");
+    };
     Promise.resolve(this._hass.callWS({ type: "config/entity_registry/list" })).then((list) => {
       const m = {};
+      const mo = {};
+      const put = (k, id) => { m[k] = id; if (own(id)) mo[k] = id; };
       let pfx = null;
       for (const e of (list || [])) {
         if (!e || e.platform !== "renault_ev_center" || !e.entity_id) continue;
         const dom = String(e.entity_id).split(".")[0];
-        if (e.translation_key) m[`${dom}:${e.translation_key}`] = e.entity_id;
-        if (e.unique_id) m[`${dom}:${String(e.unique_id).replace(/^[^_]+_/, "")}`] = e.entity_id;
+        if (e.translation_key) put(`${dom}:${e.translation_key}`, e.entity_id);
+        if (e.unique_id) put(`${dom}:${String(e.unique_id).replace(/^[^_]+_/, "")}`, e.entity_id);
         if (dom === "sensor") {
           const p = String(e.entity_id);
           if (pfx === null) pfx = p;
@@ -3716,6 +3728,7 @@ class RenaultEvCenterPanel extends HTMLElement {
         }
       }
       this._regM = m;
+      this._regOwn = mo;
       if (pfx) {
         const j = pfx.lastIndexOf("_");          // via la coda: resta "sensor.<prefisso>"
         pfx = j > 8 ? pfx.slice(0, j) : null;
@@ -3729,7 +3742,17 @@ class RenaultEvCenterPanel extends HTMLElement {
   _regId(dom, key) {
     const m = this._regM;
     if (!m || !key) return null;
-    return m[`${dom}:${key}`] || m[`${dom}:${REG_ALIAS[key] || ""}`] || null;
+    const k1 = `${dom}:${key}`;
+    const k2 = `${dom}:${REG_ALIAS[key] || ""}`;
+    // prefisso comune nullo = piu' famiglie (piu' auto): la mappa globale è
+    // ambigua, vale prima quella della card. Se la card e' stata rinominata e la
+    // mappa propria non ha la chiave si ricade sulla globale (comportamento di
+    // sempre) invece di mostrare "-".
+    if (this._regPfx === null && this._regOwn) {
+      const r = this._regOwn[k1] || this._regOwn[k2];
+      if (r) return r;
+    }
+    return m[k1] || m[k2] || null;
   }
 
   /** id entita integrazione: <dom>.<slug(name)>_<rest>, o il prefisso REALE se non esiste */
@@ -3824,7 +3847,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       }
       case "charging": return S._st(S._ov("charging"), S._bid("in_carica"), S._sid("stato_di_carica"), S._sid("stato_ricarica_attuale"), S._car("sensor", "battery_state"), S._car("sensor", "charging_mode"), `binary_sensor.wallbox_${c}`);
       case "plug": return S._st(S._car("binary_sensor", "plug_status"), S._car("binary_sensor", "plugged_in"), S._sid("stato_della_spina"), `binary_sensor.wallbox_${c}`);
-      case "batt_kwh": return S._num(S._sid("batteria_kwh_disponibili"), "sensor.megane_battery_available_energy_2", S._car("sensor", "battery_remaining_capacity"));
+      case "batt_kwh": return S._num(S._sid("batteria_kwh_disponibili"), S._car("sensor", "battery_remaining_capacity"), S._car("sensor", "battery_available_energy"));
       case "km_oggi": {
         // priorità all'ODOMETRO (delta km giornaliero): è il dato reale dell'auto.
         // I km dei viaggi possono essere meno (trip non ancora chiusi).
@@ -4094,7 +4117,7 @@ class RenaultEvCenterPanel extends HTMLElement {
       batt: [S._ov("battery"), S._car("sensor", "batteria"), S._car("sensor", "battery_level"), S._sid("batteria")],
       range: [S._ov("range"), S._car("sensor", "range_electric"), S._sid("autonomia_della_batteria")],
       odo: [S._ov("odometer"), S._car("sensor", "odometer"), S._sid("chilometraggio")],
-      batt_kwh: [S._sid("batteria_kwh_disponibili"), "sensor.megane_battery_available_energy_2"],
+      batt_kwh: [S._sid("batteria_kwh_disponibili"), S._car("sensor", "battery_remaining_capacity"), S._car("sensor", "battery_available_energy")],
       km_oggi: [S._sid("km_giornalieri"), "sensor.km_giornalieri"],
       kwh_oggi_k: [S._sid("battery_energy_daily_discharge"), "sensor.megane_battery_energy_daily_discharge", S._sid("energia_batteria_giornaliero"), S._sid("batteria_scaricata_oggi")],
       drain: [S._sid("battery_perc_giorno_discharge"), "sensor.megane_battery_perc_giorno_discharge", S._sid("batteria_scaricata_oggi")],
